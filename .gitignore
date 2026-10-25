@@ -1,0 +1,10 @@
+.env
+.venv/
+build/
+dist/
+USB/
+model_es/
+__pycache__/
+*.spec
+publicar/
+_respaldo_actualizacion/

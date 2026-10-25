@@ -1,0 +1,25 @@
+# Dependencias de Jarvis. Todas tienen instalador para Windows en Python 3.11 a 3.14.
+# Micrófono: sounddevice (sustituye a PyAudio, que no instala en Python 3.14).
+# Audio de salida: pygame-ce (igual que pygame, pero con soporte para Python nuevos).
+# Cámara (revisar trabajos): opencv-python-headless.
+# Calendario (iCal): icalendar, recurring-ical-events y tzdata (zonas horarias en Windows).
+flask
+flask-socketio
+vosk
+sounddevice
+pygame-ce
+edge-tts
+ollama
+pywebview
+pystray
+Pillow
+pyautogui
+pyperclip
+psutil
+schedule
+python-docx
+sympy
+opencv-python-headless
+icalendar
+recurring-ical-events
+tzdata
