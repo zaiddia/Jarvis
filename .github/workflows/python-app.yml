@@ -48,13 +48,7 @@ jobs:
           if ($fallos.Count -gt 0) { Write-Host "Sin instalar: $($fallos -join ', ')" }
 
       - name: Revisar el código
-        run: |
-          python -m compileall -q -x "(\.venv|windows-app|publicar)" .
-          if ($LASTEXITCODE -ne 0) { exit 1 }
-          # Nombres sin definir o errores reales (no avisos de estilo).
-          $out = python -m pyflakes (Get-ChildItem *.py, tests\*.py | ForEach-Object FullName) 2>&1 |
-                 Select-String -Pattern "undefined name|syntax error|invalid syntax|unexpected indent|referenced before assignment"
-          if ($out) { $out | ForEach-Object { Write-Host "::error::$_" }; exit 1 }
+        run: python tests/revisar_codigo.py
 
       - name: Pruebas de comprensión
         run: python -m pytest -q tests
