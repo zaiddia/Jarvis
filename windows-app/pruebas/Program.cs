@@ -97,6 +97,13 @@ namespace Jarvis.Pruebas
                 Console.WriteLine("FALLOS:");
                 foreach (var f in Failures) Console.WriteLine(f);
             }
+            // En GitHub, los fallos como anotaciones (se ven en la página de la compilación y por la API), de diez en diez.
+            if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+                for (int k = 0; k < Failures.Count && k < 100; k += 10)
+                {
+                    string msg = string.Join("\n", Failures.Skip(k).Take(10)).Replace("%", "%25").Replace("\r", "").Replace("\n", "%0A");
+                    Console.WriteLine("::error title=Pruebas de comprensión (" + (k + 1) + "-" + Math.Min(k + 10, Failures.Count) + " de " + Failures.Count + ")::" + msg);
+                }
             // En GitHub, un resumen visible en la página de la compilación.
             string summary = Environment.GetEnvironmentVariable("GITHUB_STEP_SUMMARY");
             if (!string.IsNullOrEmpty(summary))
