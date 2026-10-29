@@ -268,7 +268,9 @@ namespace Jarvis.Commands
 
         public async Task<string> TryAsync(Cmd c)
         {
-            if (c.HasAny("tiempo", "clima", "temperatura", "llover", "lluvia", "llueve", "llovera", "calor", "frio", "paraguas", "sol", "pronostico", "grados") &&
+            // «busca en Google el clima de Bogotá» es una búsqueda, no el tiempo de una ciudad llamada «Google».
+            bool search = c.W(0) == "busca" && c.HasAny("google", "internet", "web", "bing", "youtube", "navegador");
+            if (!search && c.HasAny("tiempo", "clima", "temperatura", "llover", "lluvia", "llueve", "llovera", "calor", "frio", "paraguas", "sol", "pronostico", "grados") &&
                 !c.Has("temporizador") && !c.Contains("cuanto tiempo") && !c.Contains("tiempo encendido") && !c.Contains("tiempo lleva"))
             {
                 bool weatherish = c.HasAny("hace", "que", "como", "va", "llover", "llueve", "llovera", "pronostico", "dime", "temperatura", "clima", "paraguas", "esta") || c.Size <= 3;

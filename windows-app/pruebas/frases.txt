@@ -184,6 +184,7 @@ hazme reír => Talk.Chat
 dime un dato curioso => Talk.Chat
 lanza una moneda => Talk.Chat
 tira un dado => Talk.Chat
+tira los dados => Talk.Chat
 dime un número entre 1 y 10 => Talk.Chat
 elige entre pizza o hamburguesa => Talk.Chat
 estoy cansado => Social
@@ -204,10 +205,17 @@ abre la carpeta de descargas => Apps
 abre la configuración del wifi => Apps
 busca recetas de arepas => Apps
 busca en Google el clima de Bogotá => Apps
+busca el clima en internet => Apps
+
+# --- escribir en la ventana activa (y no confundirlo con «redáctame algo»)
+escribe la fecha => Extra
+escribe hola qué tal => Sys
 
 # --- lo que debe ir a la IA (preguntas abiertas, no órdenes)
 explícame cómo funciona un motor eléctrico => IA
 escríbeme un poema sobre el mar => IA
+escribe una carta para mi jefe => IA
+escríbeme un mensaje de cumpleaños para mi mamá => IA
 qué opinas de la inteligencia artificial => IA
 ayúdame a redactar un correo para mi jefe => IA
 cuál es la capital de Australia y cuántos habitantes tiene => IA

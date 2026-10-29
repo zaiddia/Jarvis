@@ -28,6 +28,24 @@ namespace Jarvis.Commands
             return Volume(c, s) ?? Media(c, s) ?? Windows(c, s) ?? Power(c, s) ?? Tools(c, s) ?? Status(c, s);
         }
 
+        // «Escríbeme un poema sobre el mar», «escribe una carta para mi jefe»: es pedir que lo redacte la IA,
+        // no que teclee esas palabras (antes las tecleaba tal cual en la ventana activa).
+        static readonly string[] Compositions =
+        {
+            "poema", "poesia", "cuento", "historia", "carta", "correo", "email", "mail", "mensaje", "ensayo", "resumen", "cancion",
+            "texto", "articulo", "discurso", "parrafo", "informe", "redaccion", "post", "publicacion", "tweet", "felicitacion", "dedicatoria",
+            "codigo", "script", "programa", "funcion", "receta", "lista", "plan", "guion", "chiste", "frase", "slogan", "eslogan", "biografia",
+        };
+
+        internal static bool AsksToCompose(Cmd c)
+        {
+            int i = 1;
+            while (i < c.Size && Text.IsOneOf(c.W(i), "me", "le", "nos", "un", "una", "unos", "unas", "algo", "corto", "corta", "breve", "pequeno", "pequena", "bonito", "bonita")) i++;
+            if (i >= c.Size || !Compositions.Contains(c.W(i))) return false;
+            // «escribe correo arroba gmail» o «escribe mensaje recibido» son dictados cortos; con artículo o tema, es redactar.
+            return i > 1 || c.HasAny("sobre", "acerca", "para", "de", "que", "con");
+        }
+
         // ---------------------------------------------------------------- volumen
 
         string Volume(Cmd c, string s)
@@ -261,7 +279,7 @@ namespace Jarvis.Commands
                 return hr == 0 ? "Papelera vacía" + Sir + "." : "La papelera ya estaba vacía.";
             }
             // Dictado: «escribe hola qué tal»
-            if ((c.W(0) == "escribe" || c.W(0) == "teclea" || c.W(0) == "dicta") && c.Size > 1)
+            if ((c.W(0) == "escribe" || c.W(0) == "teclea" || c.W(0) == "dicta") && c.Size > 1 && !AsksToCompose(c))
             {
                 string t = c.OrigFrom(1);
                 IntPtr w = E.Host.TargetWindow;

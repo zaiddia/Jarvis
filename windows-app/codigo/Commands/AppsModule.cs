@@ -183,6 +183,8 @@ namespace Jarvis.Commands
             if (i >= c.Size) return null;
             string what = c.Join(i);
             string orig = c.OrigFrom(i);
+            // «lanza una moneda», «tira los dados»: es un juego, no un programa.
+            if (Text.IsOneOf(what, "moneda", "una moneda", "dado", "un dado", "dados", "los dados", "dos dados") || what.EndsWith(" dados")) return null;
 
             // «pon» solo para música/vídeo o «pon el bloc de notas» (si existe el programa)
             if (verb == "pon" && FindApp(what, true) == null && !Sites.ContainsKey(what)) return null;
