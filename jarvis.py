@@ -22,6 +22,7 @@ import json
 import time
 import uuid
 import array
+import hmac
 import queue
 import random
 import socket
@@ -40,7 +41,7 @@ from collections import deque
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "6.8"
+VERSION = "7.0"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -321,6 +322,11 @@ import perfil
 import correo
 import infodia
 import buscar
+import diario
+import proactivo
+import vigilante
+import habilidades
+import mcp_cliente
 
 
 # =============================================================================
@@ -619,6 +625,27 @@ DEFAULT_SETTINGS = {
     "email_book": "",              # agenda de correos: "Coordinadora = ana@colegio.edu.co" (una por línea)
     "spotify_client_id": "",       # opcional: para reproducir por nombre con la API
     "spotify_client_secret": "",
+    # 7.0: Jarvis habla primero (con criterio)
+    "proactive_enabled": True,     # avisos proactivos (pausas, batería, lluvia, saludo, ofrecer rutinas)
+    "proactive_quiet": "21:30-06:30",   # horas en las que nunca habla por su cuenta
+    "proactive_max": 12,           # como mucho tantos avisos al día
+    "proactive_breaks": True,      # recordar pausas
+    "proactive_break_min": 120,    # tras cuántos minutos seguidos en el equipo
+    "proactive_battery": True,     # batería baja sin cargador
+    "proactive_rain": True,        # lluvia a la hora de salida
+    "proactive_greeting": True,    # saludo del primer uso del día
+    "proactive_offer_routines": True,   # «¿activo el modo clase?» antes de un evento del calendario
+    "leave_time": "",              # hora a la que sueles salir («12:30»), para avisar de lluvia
+    # 7.0: diario, tarjetas, conectores, panel del celular
+    "diary_enabled": True,         # anotar lo que haces con Jarvis («¿qué hice ayer?»)
+    "diary_days": 30,              # cuántos días guardar
+    "hud_cards": True,             # tarjetas holográficas en el HUD
+    "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
+    "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
+    "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
+    "mobile_enabled": False,       # panel en el celular por la wifi de casa
+    "mobile_port": 5055,
+    "mobile_token": "",            # código secreto del panel (se genera solo)
     # Rutinas
     "morning_enabled": True,
     "morning_time": "07:30",
@@ -631,7 +658,7 @@ for _pid, _sp in PROVIDERS.items():
         DEFAULT_SETTINGS.setdefault(f"{_pid}_model", _sp.get("model", ""))
 API_KEY_FIELDS = tuple(k for k in DEFAULT_SETTINGS if k.endswith("_api_key"))
 # Nunca salen hacia las páginas (solo «guardado sí/no»): claves y el enlace secreto del calendario
-SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls", "telegram_token", "email_app_password") + (
+SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls", "telegram_token", "email_app_password", "mobile_token") + (
     ("spotify_client_secret",) if "spotify_client_secret" in DEFAULT_SETTINGS else ())
 AI_SETTING_KEYS = ({"ai_provider", "ollama_host", "ollama_model", "openai_base_url"}
                    | set(API_KEY_FIELDS) | {f"{p}_model" for p in PROVIDERS})
@@ -645,6 +672,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -687,6 +715,15 @@ def _validate(key, value):
                "whisper_model": {k: 1 for k, _ in WHISPER_SIZES}}
     if key in choices and v not in choices[key]:
         raise ValueError("opción desconocida")
+    if key in ("leave_time",) and v:
+        m = re.fullmatch(r"(\d{1,2}):(\d{2})", v)
+        if not m or int(m.group(1)) > 23 or int(m.group(2)) > 59:
+            raise ValueError("hora inválida, usa HH:MM")
+        v = f"{int(m.group(1)):02d}:{m.group(2)}"
+    if key == "proactive_quiet" and v and not proactivo.parse_range(v):
+        raise ValueError("usa el formato 21:30-06:30")
+    if key == "mcp_servers" and v:
+        mcp_cliente.parse_config(v)               # lanza ValueError con un mensaje claro
     if key == "morning_time":
         m = re.fullmatch(r"(\d{1,2}):(\d{2})", v)
         if not m or int(m.group(1)) > 23 or int(m.group(2)) > 59:
@@ -1263,6 +1300,7 @@ def reply(text, origin="JARVIS"):
         cap.append(str(text))
         return
     push_chat("jarvis", text, origin)
+    _auto_card(text, origin)
     if not getattr(_tl, "quiet", False):
         speak(text)
 
@@ -2077,6 +2115,13 @@ CAPABILITIES = [
                  "silencia las notificaciones", "activa las notificaciones",
                  "crea una rutina buenos días a las 7 de lunes a viernes que diga el clima y mis pendientes"]),
     ("Prueba completa", ["prueba completa", "revisa todo", "(en Telegram) /prueba"]),
+    ("Avísame cuando termine", ["avísame cuando termine la descarga", "avísame cuando se cierre Zoom",
+                                "avísame cuando termine de instalar", "¿qué estás vigilando?"]),
+    ("Diario", ["¿qué hice ayer?", "¿qué hice hoy?", "resume mi semana", "borra mi diario"]),
+    ("Habilidades", ["busca la fotosíntesis en wikipedia", "cómo se dice buenos días en inglés", "modo concentración",
+                     "dame un dato curioso de los volcanes", "¿qué habilidades tengo?"]),
+    ("Leer el tablero", ["lee lo que hay en el tablero", "pasa esta hoja a Word", "haz un quiz con lo que hay en el tablero"]),
+    ("Conectores (MCP)", ["lo que ofrezcan los conectores que añadas en Ajustes › Integraciones"]),
     ("Lo que sabe de ti", ["mi hermana se llama Ana", "me gusta el vallenato", "¿cómo se llama mi hermana?",
                            "¿qué sabes de mí?", "olvida que me gusta el vallenato"]),
     ("Calendario", ["¿qué tengo hoy?", "¿cuál es mi próxima clase?", "¿qué sigue?", "¿qué tengo esta semana?",
@@ -2147,6 +2192,10 @@ def ask_ai(prompt, route=False):
         # Seguridad: la IA solo ve acciones NO destructivas. Apagar, reiniciar, vaciar la
         # papelera, etc. nunca se activan por interpretación: solo con la orden directa exacta.
         safe = "\n".join(s.describe() for s in skills.REGISTRY.values() if not s.dangerous)
+        mcp = mcp_hub.catalog()
+        if mcp:
+            safe += "\n" + "\n".join(mcp) + ("\n(Las acciones mcp__… son conectores: «args» lleva los campos que pide "
+                                             "cada una; los marcados con * son obligatorios.)")
         system += ROUTER_PROMPT.format(skills=safe)
     user_msg = {"role": "user", "content": prompt}
     keep = settings["history_turns"] * 2
@@ -2168,6 +2217,11 @@ def ask_ai(prompt, route=False):
             data = {"accion": "chat", "respuesta": str(data)}
         action = str(data.get("accion") or "chat").strip()
         args = data.get("args") if isinstance(data.get("args"), dict) else {}
+        if mcp_hub.find(action):
+            chat_history.extend([user_msg, {"role": "assistant", "content": f"(usé el conector {action})"}])
+            del chat_history[:-max(keep, 2)]
+            save_memory()
+            return ("mcp", action, args)
         sk = skills.REGISTRY.get(action)
         if sk and sk.dangerous:
             # Blindaje: nunca ejecutar acciones destructivas elegidas por la IA.
@@ -2295,6 +2349,7 @@ def trigger_alarm(seconds, label="Recordatorio"):
     t = threading.Timer(seconds, _fire)
     t.daemon = True
     t.start()
+    diario.log("recordatorio", label)
 
 
 # =============================================================================
@@ -2353,6 +2408,7 @@ def add_timer(seconds, label=""):
     with timers_lock:
         timers[tid] = {"label": label.strip(), "end": time.time() + seconds, "total": seconds}
     _emit_timers()
+    diario.log("temporizador", f"{_spoken_duration(seconds)}" + (f" para {label.strip()}" if label.strip() else ""))
     return tid
 
 
@@ -4032,7 +4088,7 @@ def tono_sismo_alerta():
 # CÓMO TE TRATA + MEMORIA QUE APRENDE SOLA (perfil). Lógica de perfil en perfil.py.
 # =============================================================================
 def _user_ctx(question=""):
-    ctx = perfil.context_for_ai(question=question)
+    ctx = perfil.context_for_ai(question=question) + (diario.today_context() if settings["diary_enabled"] else "")
     name = settings["address_name"].strip()
     if name:
         ctx += f" Cuando te dirijas al usuario, llámalo «{name}»."
@@ -4308,6 +4364,8 @@ def _cal_worker():
                 for ev, mins in calendario.due_alerts(before_min=settings["calendar_notice_min"]):
                     hud_show()
                     alert(f"En {mins} minuto{'s' if mins != 1 else ''}: {calendario.what(ev)}.", "CALENDARIO")
+                    if mins > 0:
+                        offer_routine_for(str(ev.get("titulo") or calendario.what(ev)))
         except Exception as e:
             log_terminal(f"Calendario: {e}", "AVISO")
         time.sleep(30)
@@ -4427,6 +4485,8 @@ def run_routine(r):
         return
     routine_state["running"] = r["nombre"]
     log_terminal(f"Rutina «{r['nombre']}»: {len(r['pasos'])} pasos.", "RUTINA")
+    diario.log("rutina", r["nombre"])
+    card("rutina", r["nombre"], "En marcha…", "▶", secs=6 + 2 * len(r["pasos"]), steps=r["pasos"], step=0)
 
     def work():
         saltados, hablo_al_final = [], False
@@ -4452,6 +4512,7 @@ def run_routine(r):
                     log_terminal(f"Rutina: me salto «{val}» (una rutina no puede lanzar otra).", "AVISO")
                     continue
                 log_terminal(f"Paso {i + 1}: {val}", "RUTINA")
+                card("rutina", r["nombre"], val, "▶", secs=8, steps=r["pasos"], step=i)
                 _tl.quiet = True
                 try:
                     process_command(val)
@@ -5892,6 +5953,8 @@ def process_command(text):
 
     if _email_confirm_pending(t):                      # «sí, envíalo» / «no» de un correo pendiente
         return
+    if proactive_answer(t) or mcp_answer(t):           # «sí» a «¿activo el modo clase?» o a un conector
+        return
     if _CHECK_RE.search(t):                            # «prueba completa», «revisa todo»
         if getattr(_tl, "remote", False):
             reply(check_report(run_system_check(speak_it=False)), "PRUEBA")
@@ -5967,6 +6030,14 @@ def process_command(text):
 
     # Rutinas: «modo clase», «fin de clase», «¿qué rutinas tengo?»
     if routine_voice(text, t):
+        return
+    if skill_voice(text, t):                           # habilidades instaladas («busca X en wikipedia»…)
+        return
+    if watch_voice(text, t):                           # «avísame cuando termine la descarga»
+        return
+    if diary_voice(text, t):                           # «¿qué hice ayer?», «resume mi semana»
+        return
+    if board_voice(text, t):                           # «lee lo que hay en el tablero», «haz un quiz con esta hoja»
         return
 
     # Calendario: «¿cuál es mi próxima clase?», «¿qué sigue?», «actualiza el calendario»
@@ -6089,12 +6160,16 @@ def process_command(text):
             return
         # Preguntas claras -> respuesta en streaming (más rápida, sin pasar por el enrutador).
         is_question = text.strip().endswith("?") or bool(QUESTION_RE.search(t))
-        if (is_question or not settings["ai_router"]) and not getattr(_tl, "remote", False):
+        # Con conectores MCP, también las preguntas pasan por el enrutador («¿qué tengo en Notion?»).
+        has_mcp = settings["ai_router"] and bool(mcp_hub.catalog(1))
+        if (is_question or not settings["ai_router"]) and not getattr(_tl, "remote", False) and not has_mcp:
             answer_question_streaming(text)
             return
         result = ask_ai(text, route=True)
         if result[0] == "skill":
             run_skill(result[1], result[2])
+        elif result[0] == "mcp":
+            run_mcp(result[1], result[2], text)
         else:
             reply(result[1])
 
@@ -6109,6 +6184,7 @@ def submit_command(text, source="texto"):
         return
     if not dictation_on.is_set():
         push_chat("user", text, source)
+        diario.log("pregunta" if text.strip().endswith("?") else "orden", text)
     command_queue.put(text)
 
 
@@ -7153,6 +7229,17 @@ def apply_settings(data):
         hud["window"].on_top = settings["hud_on_top"]
     if "hud_position" in changed:
         hud_reposition()
+    if changed & {"diary_enabled", "diary_days"}:
+        diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
+    if "mcp_servers" in changed:
+        mcp_reconfigure()
+    if "mcp_server_enabled" in changed:
+        mcp_server_apply()
+    if changed & {"mobile_enabled", "mobile_port"}:
+        if settings["mobile_enabled"] and not settings["mobile_token"]:
+            settings["mobile_token"] = uuid.uuid4().hex[:24]
+            save_settings_file()
+        threading.Thread(target=mobile_apply, daemon=True).start()
     if changed:
         log_terminal(f"Ajustes guardados ({len(changed)} cambios).", "SISTEMA")
     return errors
@@ -7897,6 +7984,718 @@ def handle_shutdown():
 
 
 # =============================================================================
+# 7.0 · TARJETAS DEL HUD: lo que Jarvis cuenta, también a la vista (clima, agenda, rutinas, avisos…)
+# =============================================================================
+_CARD_ORIGINS = {
+    "CLIMA": ("clima", "☁", "Clima"), "AGENDA": ("agenda", "▦", "Agenda"), "NOTAS": ("notas", "✎", "Notas"),
+    "CALENDARIO": ("agenda", "▦", "Próximo"), "TIMER": ("timer", "⏱", "Temporizador"), "ALARMA": ("timer", "⏰", "Recordatorio"),
+    "RUTINA": ("rutina", "▶", "Rutina"), "PRUEBA": ("prueba", "◎", "Prueba completa"), "MEMORIA": ("memoria", "◈", "Memoria"),
+    "PROACTIVO": ("proactivo", "✦", "Jarvis"), "VIGILANTE": ("vigilante", "◉", "Aviso"), "HABILIDAD": ("habilidad", "✧", "Habilidad"),
+    "DIARIO": ("diario", "☰", "Diario"), "MCP": ("mcp", "⧉", "Conector"), "TABLERO": ("tablero", "▣", "Tablero"),
+    "NOTICIAS": ("noticias", "≡", "Noticias"), "ACTUALIZACIÓN": ("update", "⟳", "Actualización"), "MATE": ("mate", "∑", "Cálculo"),
+}
+
+
+def card(kind, title, body="", icon="✦", secs=9, steps=None, step=None):
+    """Tarjeta holográfica en el HUD (y en el panel del celular)."""
+    c = {"kind": kind, "title": str(title)[:60], "body": str(body)[:400], "icon": icon, "secs": secs,
+         "time": datetime.datetime.now().strftime("%H:%M")}
+    if steps is not None:
+        c.update(steps=[str(s)[:60] for s in steps][:12], step=step)
+    recent_cards.append(c)
+    try:
+        socketio.emit("card", c)
+    except Exception:
+        pass
+
+
+recent_cards = deque(maxlen=12)
+
+
+def _auto_card(text, origin):
+    k = _CARD_ORIGINS.get(origin)
+    if k and settings.get("hud_cards", True) and len(str(text)) > 3:
+        card(k[0], k[2], text, k[1], secs=min(16, 6 + len(str(text)) // 40))
+
+
+# =============================================================================
+# 7.0 · DIARIO (memoria del día a día): «¿qué hice ayer?», «resume mi semana»
+# =============================================================================
+_DIARY_RE = re.compile(r"\b(?:que hice|que hicimos|que he hecho|resum\w* (?:de )?(?:mi |la |el )?(?:dia|semana|jornada)|"
+                       r"resumen de (?:hoy|ayer|la semana|mi semana|mi dia)|como fue (?:mi|el) dia|mi diario)\b")
+
+
+def diary_voice(text, t):
+    if re.search(r"\b(?:borra|borrar|elimina|vacia|limpia)\b.*\bdiario\b", t):
+        diario.clear()
+        reply("Listo, borré tu diario. Desde ahora empiezo uno nuevo.", "DIARIO")
+        return True
+    if not _DIARY_RE.search(t):
+        return False
+    if not settings["diary_enabled"]:
+        reply("El diario está apagado. Lo enciendes en Ajustes, sección Memoria.", "DIARIO")
+        return True
+    today = datetime.date.today()
+    if re.search(r"\bsemana\b", t):
+        d1, label = today - datetime.timedelta(days=6), "esta semana"
+    elif re.search(r"\bantier|anteayer\b", t):
+        d1 = today - datetime.timedelta(days=2)
+        label = "anteayer"
+        today = d1
+    elif re.search(r"\bayer\b", t):
+        d1 = today = today - datetime.timedelta(days=1)
+        label = "ayer"
+    else:
+        d1, label = today, "hoy"
+    entries = diario.days(d1, today)
+    if not entries:
+        reply(f"No tengo nada anotado de {label}.", "DIARIO")
+        return True
+    try:
+        if state.get("ai") != "ok":
+            raise AIError("sin IA", kind="config")
+        out = ai_chat([{"role": "system", "content": settings["system_prompt"] + VOICE_RULE + _user_ctx()},
+                       {"role": "user", "content": diario.prompt(entries, label)}], max_tokens=500)
+        reply(out.strip() or diario.spoken(entries, label), "DIARIO")
+    except Exception:
+        reply(diario.spoken(entries, label), "DIARIO")
+    return True
+
+
+# =============================================================================
+# 7.0 · PROACTIVIDAD: Jarvis habla primero (con criterio). Lógica en proactivo.py.
+# =============================================================================
+pro_state = proactivo.State()
+pro_offer = {"routine": None, "expires": 0.0}
+_pro_weather = {"day": None, "hourly": []}
+
+
+def _pro_cfg():
+    return {k: settings[k] for k in settings if k.startswith("proactive_")}
+
+
+def _pro_say(key, text, optional=True):
+    now = datetime.datetime.now()
+    if not proactivo.can_speak(pro_state, now, _pro_cfg(), optional):
+        return False
+    proactivo.said(pro_state, now, key, optional)
+    hud_show()
+    reply(text, "PROACTIVO")
+    diario.log("aviso", text)
+    if settings["telegram_alerts"] and settings["telegram_remote"] and _idle_seconds() > 600:
+        threading.Thread(target=telegram_send, args=(f"✦ {text}",), daemon=True).start()
+    return True
+
+
+def offer_routine_for(event_title):
+    """Un evento empieza pronto: «¿activo el modo clase?» (y un «sí» la lanza)."""
+    if not settings["proactive_offer_routines"]:
+        return
+    r = proactivo.routine_for_event(event_title, rutinas.routines)
+    if not r or routine_state["running"]:
+        return
+    if _pro_say(f"ofrece:{event_title}", f"¿Activo la rutina {r['nombre']}?", optional=False):
+        pro_offer.update(routine=r, expires=time.time() + 180)
+
+
+def proactive_answer(t):
+    """Respuesta a «¿activo la rutina…?». True si la contestó."""
+    r = pro_offer["routine"]
+    if not r or time.time() > pro_offer["expires"]:
+        return False
+    if re.fullmatch(rf"{CONFIRM_RE}(?: .*)?", t) or re.fullmatch(r"(?:activala|lanzala|si activala|hazlo|ponla)", t):
+        pro_offer.update(routine=None, expires=0)
+        run_routine(r)
+        return True
+    if re.fullmatch(rf"{DENY_RE}(?: .*)?", t):
+        pro_offer.update(routine=None, expires=0)
+        reply("Vale, la dejo para después.", "PROACTIVO")
+        return True
+    return False
+
+
+def _pro_hourly():
+    """Probabilidad de lluvia por hora de hoy (una consulta al día)."""
+    today = datetime.date.today()
+    if _pro_weather["day"] == today:
+        return _pro_weather["hourly"]
+    _pro_weather.update(day=today, hourly=[])
+    city = settings["weather_city"].strip()
+    if not city or is_offline():
+        return []
+    try:
+        g = _geo(city)
+        if g:
+            url = infodia.forecast_url(g["lat"], g["lon"]).replace(infodia.FORECAST_URL, FORECAST_URL)
+            h = (json.loads(_get_text(url)).get("hourly") or {})
+            _pro_weather["hourly"] = list(zip(h.get("time") or [], h.get("precipitation_probability") or []))
+    except Exception as e:
+        log_terminal(f"Avisos (lluvia): {e}", "AVISO")
+    return _pro_weather["hourly"]
+
+
+def smart_greeting():
+    """El saludo del primer uso del día: la hora, el clima en una frase y lo que tienes hoy."""
+    now = datetime.datetime.now()
+    name = settings["address_name"].strip()
+    parts = [f"Buenos días{', ' + name if name else ''}. Son las {now:%H:%M}."]
+    if settings["weather_city"].strip() and not is_offline():
+        w = weather_text()
+        if w and not w.startswith(("No ", "Para ", "Ahora")):
+            parts.append(re.split(r"(?<=\.)\s", w)[0])
+    try:
+        items = agenda("hoy", with_day=False)
+    except Exception:
+        items = []
+    if items:
+        parts.append(f"Hoy tienes {len(items)} cosa{'s' if len(items) != 1 else ''} en la agenda; la primera: {items[0]}.")
+    return " ".join(parts)
+
+
+def _proactive_worker():
+    time.sleep(60)
+    while True:
+        try:
+            now = datetime.datetime.now()
+            cfg = _pro_cfg()
+            idle = _idle_seconds() if IS_WIN else 0.0
+            proactivo.activity(pro_state, now, idle)
+            if cfg.get("proactive_enabled", True):
+                if proactivo.greeting_due(pro_state, now, idle, cfg, done_today=_upd_load().get("saludo") == now.date().isoformat()):
+                    if _pro_say("saludo", smart_greeting()):
+                        _upd_save(saludo=now.date().isoformat())
+                for due in (proactivo.break_due(pro_state, now, cfg),):
+                    if due:
+                        _pro_say(*due)
+                bat = None
+                try:
+                    b = psutil.sensors_battery() if psutil else None
+                    bat = (b.percent, b.power_plugged) if b else None
+                except Exception:
+                    pass
+                if bat:
+                    due = proactivo.battery_due(pro_state, bat[0], bat[1], cfg)
+                    if due:
+                        _pro_say(*due)
+                if settings["leave_time"].strip():
+                    due = proactivo.rain_due(pro_state, now, settings["leave_time"], _pro_hourly(), cfg)
+                    if due:
+                        _pro_say(*due)
+        except Exception as e:
+            log_terminal(f"Avisos proactivos: {e}", "AVISO")
+        time.sleep(30)
+
+
+# =============================================================================
+# 7.0 · «AVÍSAME CUANDO TERMINE…» (lógica en vigilante.py)
+# =============================================================================
+watches = []
+psutil = skills.psutil                     # opcional (puede faltar)
+
+
+def _downloads_dir():
+    return os.path.join(os.path.expanduser("~"), "Downloads")
+
+
+def _partial_downloads():
+    try:
+        return [f for f in os.listdir(_downloads_dir()) if f.lower().endswith(vigilante.PARTIAL)]
+    except OSError:
+        return []
+
+
+def watch_voice(text, t):
+    if re.search(r"\b(?:que (?:estas )?vigilando|que avisos tienes pendientes)\b", t):
+        if not watches:
+            reply("No estoy vigilando nada ahora mismo.", "VIGILANTE")
+        else:
+            reply("Estoy pendiente de: " + ", ".join(w.label for w, _ in watches) + ".", "VIGILANTE")
+        return True
+    if re.search(r"\b(?:deja de vigilar|ya no me avises|cancela (?:los |el )?avisos? de)\b", t):
+        n = len(watches)
+        watches.clear()
+        reply("Listo, dejo de vigilar." if n else "No estaba vigilando nada.", "VIGILANTE")
+        return True
+    req = vigilante.parse(text)
+    if not req:
+        return False
+    if psutil is None and req["kind"] != "descarga":
+        reply("Para vigilar programas me falta un componente (psutil). Vuelve a ejecutar instalar.bat.", "VIGILANTE")
+        return True
+    if req["kind"] == "descarga" and not os.path.isdir(_downloads_dir()):
+        reply("No encuentro tu carpeta de Descargas.", "VIGILANTE")
+        return True
+    watches.append((vigilante.Watch(req), {"remote": bool(getattr(_tl, "remote", False))}))
+    reply(f"Vale, te aviso cuando termine {req['label']}." if req["kind"] != "cierre"
+          else f"Vale, te aviso cuando se cierre {req['target']}.", "VIGILANTE")
+    return True
+
+
+def _watch_worker():
+    cpu_prev = {}
+    while True:
+        time.sleep(5)
+        if not watches:
+            continue
+        try:
+            now = datetime.datetime.now()
+            partial = _partial_downloads()
+            running, cpu_of = [], {}
+            if psutil is not None and any(w.kind != "descarga" for w, _ in watches):
+                for p in psutil.process_iter(["name", "pid"]):
+                    try:
+                        name = (p.info["name"] or "").lower().replace(".exe", "")
+                        running.append(name)
+                        if any(name and vigilante._match(vigilante.procs_for(w.target), [name]) for w, _ in watches if w.kind == "proceso"):
+                            proc = cpu_prev.get(p.info["pid"]) or p
+                            cpu_prev[p.info["pid"]] = proc
+                            cpu_of[name] = cpu_of.get(name, 0.0) + proc.cpu_percent(None) / max(1, psutil.cpu_count() or 1)
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+            for item in list(watches):
+                w, meta = item
+                cpu = None
+                if w.kind == "proceso":
+                    hits = vigilante._match(vigilante.procs_for(w.target), list(cpu_of))
+                    cpu = sum(cpu_of[h] for h in hits) if hits else None
+                out = w.step(now, partial, running, cpu)
+                if out is None:
+                    continue
+                watches.remove(item)
+                if out == "timeout":
+                    reply(f"No vi {w.label} en marcha, así que dejo de vigilarla." if w.kind == "descarga"
+                          else f"Dejo de vigilar {w.label}: pasaron demasiadas horas.", "VIGILANTE")
+                elif out == "notfound":
+                    reply(f"No veo {w.target} abierto, así que no hay nada que vigilar.", "VIGILANTE")
+                else:
+                    hud_show()
+                    play_sound(resolve_alarm_sound(), max_seconds=3)
+                    alert(out, "VIGILANTE")
+                    diario.log("aviso", out)
+                    if meta.get("remote") and not (settings["telegram_alerts"] and settings["telegram_remote"]):
+                        threading.Thread(target=telegram_send, args=(f"🔔 {out}",), daemon=True).start()
+        except Exception as e:
+            log_terminal(f"Vigilante: {e}", "AVISO")
+
+
+# =============================================================================
+# 7.0 · HABILIDADES INSTALABLES (lógica en habilidades.py)
+# =============================================================================
+habilidades.configure(CONFIG_DIR)
+
+
+def skill_voice(text, t):
+    if re.search(r"\b(?:que|cuales) habilidades\b|\bmis habilidades\b|\bhabilidades instaladas\b", t):
+        hs = habilidades.skills
+        if not hs:
+            reply("No tienes habilidades instaladas. Se instalan en Ajustes, sección Rutinas.", "HABILIDAD")
+        else:
+            reply(f"Tienes {len(hs)} habilidades: " + "; ".join(f"{h['nombre']} («{h['frases'][0]}»)" for h in hs[:8]) + ".", "HABILIDAD")
+        return True
+    m = habilidades.match(text)
+    if not m:
+        return False
+    h, vals = m
+    diario.log("habilidad", h["nombre"])
+    log_terminal(f"Habilidad «{h['nombre']}» {vals}", "HABILIDAD")
+    if h["accion"] == "abrir":
+        url = habilidades.fill(h["url"], vals, url=True)
+        webbrowser.open(url)
+        reply(f"Abriendo {h['nombre']}.", "HABILIDAD")
+    elif h["accion"] == "decir":
+        reply(habilidades.fill(h["texto"], vals), "HABILIDAD")
+    elif h["accion"] == "ia":
+        prompt = habilidades.fill(h["texto"], vals)
+        if getattr(_tl, "remote", False) or getattr(_tl, "capture", None) is not None:
+            reply(ask_ai(prompt)[1], "HABILIDAD")
+        else:
+            answer_question_streaming(prompt)
+    else:
+        run_routine({"nombre": h["nombre"], "pasos": [habilidades.fill(p, vals) for p in h["pasos"]]})
+    return True
+
+
+@socketio.on("habilidades_get")
+def handle_habilidades_get(data=None):
+    errors = habilidades.load()
+    return {"habilidades": habilidades.snapshot(), "errores": [f"{a}: {b}" for a, b in errors], "carpeta": habilidades._dir}
+
+
+@socketio.on("habilidades_install")
+def handle_habilidades_install(data):
+    try:
+        h = habilidades.install(str((data or {}).get("texto", "")))
+    except ValueError as e:
+        return {"ok": False, "error": str(e), "habilidades": habilidades.snapshot()}
+    log_terminal(f"Habilidad instalada: {h['nombre']}", "HABILIDAD")
+    return {"ok": True, "nombre": h["nombre"], "habilidades": habilidades.snapshot()}
+
+
+@socketio.on("habilidades_delete")
+def handle_habilidades_delete(data):
+    habilidades.delete(str((data or {}).get("nombre", "")))
+    return {"habilidades": habilidades.snapshot()}
+
+
+@socketio.on("habilidades_export")
+def handle_habilidades_export(data):
+    return {"texto": habilidades.export(str((data or {}).get("nombre", ""))) or ""}
+
+
+@socketio.on("habilidades_folder")
+def handle_habilidades_folder(data=None):
+    if IS_WIN:
+        try:
+            os.startfile(habilidades._dir)
+        except OSError:
+            pass
+    return {"ok": True}
+
+
+# =============================================================================
+# 7.0 · CONECTORES MCP (lógica en mcp_cliente.py) y Jarvis como servidor MCP (jarvis_mcp.py)
+# =============================================================================
+mcp_hub = mcp_cliente.Hub(VERSION, log=lambda m: log_terminal(m, "MCP"))
+mcp_pending = {"tid": None, "args": None, "prompt": "", "expires": 0.0}
+
+
+def mcp_trusted(tid):
+    p = mcp_cliente.split_id(tid)
+    trusted = {x.strip().lower() for x in settings["mcp_trusted"].split(",") if x.strip()}
+    return bool(p) and p[0].lower() in trusted
+
+
+def mcp_reconfigure():
+    def work():
+        try:
+            mcp_hub.configure(settings["mcp_servers"])
+        except ValueError as e:
+            log_terminal(f"MCP: {e}", "AVISO")
+        socketio.emit("mcp_status", mcp_hub.status())
+    threading.Thread(target=work, daemon=True, name="mcp").start()
+
+
+def run_mcp(tid, args, prompt="", confirmed=False):
+    s = mcp_hub.find(tid)
+    if not s:
+        reply("Ese conector no está disponible ahora mismo.", "MCP")
+        return
+    server, tool = mcp_cliente.split_id(tid)
+    if getattr(_tl, "remote", False) and not mcp_trusted(tid):
+        reply(f"Desde el celular solo uso los conectores marcados como de confianza, y «{server}» no lo está.", "MCP")
+        return
+    if not confirmed and not mcp_trusted(tid):
+        mcp_pending.update(tid=tid, args=args, prompt=prompt, expires=time.time() + 30)
+        reply(f"¿Uso «{tool}» del conector {server}? Di «confirmar» o «cancelar».", "MCP")
+        return
+    box = {}
+
+    def work():
+        try:
+            box["out"] = mcp_hub.call(tid, args)
+        except mcp_cliente.MCPError as e:
+            box["err"] = str(e)
+    th = threading.Thread(target=work, daemon=True)
+    th.start()
+    th.join(90)
+    if th.is_alive():
+        reply("El conector está tardando demasiado; lo dejo.", "MCP")
+        return
+    if "err" in box:
+        reply(f"El conector {server} falló: {box['err']}", "MCP")
+        return
+    text, is_err = box["out"]
+    diario.log("orden", f"conector {server}: {tool}")
+    try:
+        answer = ai_chat([{"role": "system", "content": settings["system_prompt"] + VOICE_RULE + _user_ctx(prompt)},
+                          {"role": "user", "content": f"Pedí: «{prompt}». La herramienta «{tool}» del conector {server} "
+                                                      f"{'dio un error' if is_err else 'respondió'}:\n{text[:6000]}\n\n"
+                                                      "Cuéntamelo en una a tres frases, como para decirlo en voz alta."}],
+                         max_tokens=400).strip()
+    except Exception:
+        answer = text[:600] or "Hecho."
+    reply(answer or "Hecho.", "MCP")
+
+
+def mcp_answer(t):
+    if not mcp_pending["tid"] or time.time() > mcp_pending["expires"]:
+        return False
+    tid, args, prompt = mcp_pending["tid"], mcp_pending["args"], mcp_pending["prompt"]
+    if re.fullmatch(rf"{CONFIRM_RE}(?: .*)?", t):
+        mcp_pending.update(tid=None, args=None, expires=0)
+        run_mcp(tid, args, prompt, confirmed=True)
+        return True
+    if re.fullmatch(rf"{DENY_RE}(?: .*)?", t):
+        mcp_pending.update(tid=None, args=None, expires=0)
+        reply("Cancelado.", "MCP")
+        return True
+    return False
+
+
+_MCP_LINK = os.path.join(CONFIG_DIR, "mcp_enlace.json")
+mcp_server_token = {"value": ""}
+
+
+def mcp_server_apply():
+    """Jarvis como servidor MCP: escribe (o borra) el enlace que usa jarvis_mcp.py."""
+    try:
+        if settings["mcp_server_enabled"]:
+            mcp_server_token["value"] = uuid.uuid4().hex + uuid.uuid4().hex
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            with open(_MCP_LINK, "w", encoding="utf-8") as f:
+                json.dump({"url": URL, "token": mcp_server_token["value"]}, f)
+        else:
+            mcp_server_token["value"] = ""
+            if os.path.exists(_MCP_LINK):
+                os.remove(_MCP_LINK)
+    except OSError as e:
+        log_terminal(f"Servidor MCP: {e}", "AVISO")
+
+
+def jarvis_status_text():
+    lines = [f"Jarvis {VERSION}. Micrófono: {state.get('mic')}. IA: {state.get('ai_label') or state.get('ai')}."]
+    snap = _timers_snapshot()
+    if snap:
+        lines.append("Temporizadores: " + "; ".join(f"{_spoken_duration(x['remaining'])}" + (f" para {x['label']}" if x['label'] else "") for x in snap) + ".")
+    try:
+        items = agenda("hoy", with_day=False)
+        if items:
+            lines.append("Hoy: " + "; ".join(items[:6]) + ".")
+    except Exception:
+        pass
+    last = [c for c in list(chat_buffer)[-6:]]
+    if last:
+        lines.append("Últimos mensajes: " + " | ".join(f"{c['role']}: {c['text'][:80]}" for c in last))
+    return "\n".join(lines)
+
+
+@app.route("/api/mcp", methods=["POST"])
+def api_mcp():
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        abort(403)
+    tok = request.headers.get("X-Jarvis-Token", "")
+    if not (settings["mcp_server_enabled"] and mcp_server_token["value"]) or not hmac.compare_digest(tok, mcp_server_token["value"]):
+        abort(403)
+    d = request.get_json(silent=True) or {}
+    tool, args = str(d.get("tool", "")), d.get("args") or {}
+    texto = str(args.get("texto", "")).strip()[:1000]
+    if tool == "jarvis_orden" and texto:
+        log_terminal(f"Desde otra IA (MCP): {texto}", "MCP")
+        return {"text": telegram_run(texto)}
+    if tool == "jarvis_decir" and texto:
+        reply(texto, "MCP")
+        return {"text": "Dicho."}
+    if tool == "jarvis_estado":
+        return {"text": jarvis_status_text()}
+    return {"text": "Herramienta desconocida o sin texto.", "error": True}
+
+
+@socketio.on("mcp_info")
+def handle_mcp_info(data=None):
+    py = sys.executable.replace("pythonw.exe", "python.exe")
+    cfg = {"mcpServers": {"jarvis": {"command": py, "args": [os.path.join(APP_DIR, "jarvis_mcp.py")]}}}
+    return {"status": mcp_hub.status(), "claude_config": json.dumps(cfg, indent=2, ensure_ascii=False),
+            "server": bool(settings["mcp_server_enabled"])}
+
+
+@socketio.on("mcp_reload")
+def handle_mcp_reload(data=None):
+    mcp_reconfigure()
+    return {"ok": True}
+
+
+# =============================================================================
+# 7.0 · PANEL EN EL CELULAR (misma wifi): página con código secreto y QR
+# =============================================================================
+mobile = {"server": None, "port": 0, "fails": {}, "last": 0.0}
+
+
+def lan_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("10.255.255.255", 1))           # no envía nada: solo elige la interfaz de la red local
+        return s.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
+    finally:
+        s.close()
+
+
+def mobile_url():
+    return f"http://{lan_ip()}:{settings['mobile_port']}/?k={settings['mobile_token']}"
+
+
+mobile_app = Flask("jarvis_movil", template_folder=get_resource_path("templates"), static_folder=None)
+
+
+def _mobile_ok():
+    ip = request.remote_addr or "?"
+    f = mobile["fails"].get(ip, (0, 0.0))
+    if f[0] >= 20 and time.time() - f[1] < 600:
+        abort(429)
+    tok = request.headers.get("X-Jarvis-Token") or request.args.get("k", "")
+    if not settings["mobile_token"] or not hmac.compare_digest(str(tok), settings["mobile_token"]):
+        mobile["fails"][ip] = (f[0] + 1, time.time())
+        abort(403)
+    mobile["fails"].pop(ip, None)
+
+
+@mobile_app.route("/")
+def mobile_index():
+    _mobile_ok()
+    return render_template("movil.html", version=VERSION)
+
+
+@mobile_app.route("/api/estado")
+def mobile_state():
+    _mobile_ok()
+    try:
+        items = agenda("hoy", with_day=False)
+    except Exception:
+        items = []
+    return {"state": state, "timers": _timers_snapshot(), "agenda": items[:8], "version": VERSION,
+            "chat": list(chat_buffer)[-24:], "cards": list(recent_cards)[-4:], "name": settings["address_name"].strip()}
+
+
+@mobile_app.route("/api/orden", methods=["POST"])
+def mobile_order():
+    _mobile_ok()
+    if time.time() - mobile["last"] < 1.0:
+        return {"text": "Despacio: una orden cada vez."}
+    mobile["last"] = time.time()
+    texto = str((request.get_json(silent=True) or {}).get("texto", "")).strip()[:500]
+    if not texto:
+        return {"text": ""}
+    push_chat("user", texto, "celular")
+    log_terminal(f"Desde el panel del celular: {texto}", "CELULAR")
+    out = telegram_run(texto)
+    push_chat("jarvis", out, "celular")
+    return {"text": out}
+
+
+def mobile_apply():
+    """Arranca, para o reinicia el panel del celular según los ajustes."""
+    want = settings["mobile_enabled"] and bool(settings["mobile_token"])
+    srv = mobile["server"]
+    if srv and (not want or mobile["port"] != settings["mobile_port"]):
+        try:
+            srv.shutdown()
+        except Exception:
+            pass
+        mobile.update(server=None, port=0)
+    if want and not mobile["server"]:
+        from werkzeug.serving import make_server
+        try:
+            srv = make_server("0.0.0.0", settings["mobile_port"], mobile_app, threaded=True)
+        except OSError as e:
+            log_terminal(f"Panel del celular: no pude abrir el puerto {settings['mobile_port']} ({e}).", "AVISO")
+            return
+        mobile.update(server=srv, port=settings["mobile_port"])
+        threading.Thread(target=srv.serve_forever, daemon=True, name="panel-celular").start()
+        log_terminal(f"Panel del celular en {mobile_url().split('?')[0]} (con tu código secreto).", "SISTEMA")
+
+
+@socketio.on("mobile_info")
+def handle_mobile_info(data=None):
+    d = data or {}
+    if d.get("new_token") or (settings["mobile_enabled"] and not settings["mobile_token"]):
+        settings["mobile_token"] = uuid.uuid4().hex[:24]
+        save_settings_file()
+        mobile_apply()
+    info = {"enabled": settings["mobile_enabled"], "running": bool(mobile["server"]),
+            "url": mobile_url() if settings["mobile_token"] else ""}
+    if info["url"]:
+        try:
+            import qrcode
+            import io
+            import base64
+            img = qrcode.make(info["url"], border=2)
+            buf = io.BytesIO()
+            img.save(buf, "PNG")
+            info["qr"] = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+        except Exception:
+            info["qr"] = ""
+    return info
+
+
+# =============================================================================
+# 7.0 · LEER EL TABLERO O UNA HOJA CON LA CÁMARA (y convertirlo en quiz o taller)
+# =============================================================================
+_BOARD_WHAT = r"(?:tablero|pizarra|pizarron|hoja|cuaderno|libro|pagina|lo que (?:te )?(?:muestro|ensen\w+)|esto que (?:te )?muestro)"
+_BOARD_READ = re.compile(rf"\b(?:lee(?:me)?|transcribe|copia|pasa|anota|guarda|digitaliza|escanea)\b.*\b{_BOARD_WHAT}\b")
+_BOARD_MAKE = re.compile(rf"\b(?:crea|haz|hazme|prepara|genera|convierte|arma)\b.*\b(?:quiz|evaluacion|examen|taller|preguntas|resumen)\b.*\b{_BOARD_WHAT}\b"
+                         rf"|\bconvierte\b.*\b{_BOARD_WHAT}\b.*\b(?:quiz|evaluacion|examen|taller)\b")
+_OCR_PROMPT = ("Transcribe fielmente TODO el texto escrito en esta imagen (un tablero, una hoja o un cuaderno), en el "
+               "orden en que se lee. Conserva títulos, viñetas y fórmulas en texto plano (x², 3/4, √9). No añadas "
+               "comentarios ni explicaciones. Si una parte no se lee, pon [ilegible].")
+
+
+def board_voice(text, t):
+    make = _BOARD_MAKE.search(t)
+    if not make and not _BOARD_READ.search(t):
+        return False
+    if getattr(_tl, "remote", False):
+        reply("Leer el tablero o una hoja necesita que estés frente a la cámara del equipo.", "TABLERO")
+        return True
+    cfg, err = _vision_cfg()
+    if err:
+        reply(err, "TABLERO")
+        return True
+    use_screen = bool(re.search(r"\bpantalla\b", t))
+    reply("Muéstramelo a la cámara: en tres segundos tomo la foto." if not use_screen else "Leo lo que hay en la pantalla.", "TABLERO")
+
+    def work():
+        try:
+            path = capture_screen_for_review() if use_screen else capture_camera(wait=3.0)
+            transcript = "".join(_vision_chunks(cfg, _OCR_PROMPT, path)).strip()
+            transcript = re.sub(r"<think>.*?</think>", "", transcript, flags=re.S).strip()
+            if len(transcript) < 3:
+                reply("No alcancé a leer nada. Acércalo un poco más a la cámara, con buena luz, y repite.", "TABLERO")
+                return
+            diario.log("orden", "leí el tablero/una hoja")
+            if make:
+                kind = aula.detect_kind(text) or "quiz"
+                generate_material(f"{text}. Basado en este contenido (transcrito del tablero o la hoja):\n{transcript[:6000]}", kind=kind)
+                return
+            saved = ""
+            if Document is not None:
+                doc = Document()
+                doc.add_heading(f"Tablero · {datetime.datetime.now():%d/%m/%Y %H:%M}", 1)
+                try:
+                    from docx.shared import Inches
+                    doc.add_picture(path, width=Inches(6))
+                except Exception:
+                    pass
+                for line in transcript.splitlines():
+                    doc.add_paragraph(line)
+                folder = os.path.join(settings["output_dir"], "Tablero")
+                os.makedirs(folder, exist_ok=True)
+                saved = os.path.join(folder, f"Tablero {datetime.datetime.now():%Y-%m-%d %H%M}.docx")
+                doc.save(saved)
+                generated_files.add(saved)
+            if skills.pyperclip is not None:
+                try:
+                    skills.pyperclip.copy(transcript)
+                except Exception:
+                    pass
+            card("tablero", "Lo que leí", transcript[:380], "▣", secs=20)
+            reply("Listo: " + ("lo pasé a Word (carpeta Tablero) y " if saved else "") + "lo copié al portapapeles. "
+                  + "Empieza así: " + re.sub(r"\s+", " ", transcript)[:160] + ("…" if len(transcript) > 160 else ""), "TABLERO")
+            if saved and IS_WIN and settings["aula_open_docs"]:
+                try:
+                    os.startfile(saved)
+                except OSError:
+                    pass
+        except ValueError as e:
+            reply(str(e), "TABLERO")
+        except Exception as e:
+            log_terminal(f"Tablero: {e}", "ERROR")
+            reply("No pude leerlo esta vez. Inténtalo de nuevo con más luz.", "TABLERO")
+    threading.Thread(target=work, daemon=True, name="tablero").start()
+    return True
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -8007,6 +8806,8 @@ def main():
 
     def _start_services():
         load_memory()
+        diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
+        diario.purge()
         skills.start()
         _init_audio()
         if audio_ready:
@@ -8016,13 +8817,16 @@ def main():
         for target in (_command_worker, _voice_worker, schedule_worker, audio_loop, _ai_monitor,
                        hotkey_loop, _timers_worker, _copilot_worker, _notes_worker, _cal_worker,
                        _net_worker, _update_worker, _backup_worker, _telegram_worker, _quake_worker,
-                       _routines_worker):
+                       _routines_worker, _proactive_worker, _watch_worker):
             threading.Thread(target=target, daemon=True).start()
         threading.Thread(target=check_ai, args=(True,), daemon=True).start()
         threading.Thread(target=warm_ai, daemon=True).start()
         announce_startup(start_hidden)      # confirma por voz que el núcleo se cargó
         threading.Timer(4.0, notes_today_summary).start()   # 📌 pendientes de hoy en el HUD
         threading.Timer(9.0, _routines_at_start).start()    # rutina «al iniciar», tras el saludo
+        mcp_reconfigure()                                    # conectores MCP
+        mcp_server_apply()                                   # Jarvis como servidor MCP (si está activado)
+        mobile_apply()                                       # panel del celular (si está activado)
 
     threading.Thread(target=_start_services, daemon=True, name="servicios").start()
     start_tray()

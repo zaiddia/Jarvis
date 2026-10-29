@@ -4,6 +4,7 @@
 # Cámara (revisar trabajos): opencv-python-headless.
 # Conversación en vivo con Gemini: websockets.
 # Presentaciones y hojas de Excel: python-pptx y openpyxl.
+# Código QR del panel del celular: qrcode.
 # Calendario (iCal): icalendar, recurring-ical-events y tzdata (zonas horarias en Windows).
 flask
 flask-socketio
@@ -28,3 +29,4 @@ tzdata
 websockets
 python-pptx
 openpyxl
+qrcode

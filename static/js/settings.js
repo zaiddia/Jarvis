@@ -329,6 +329,7 @@
       btn.disabled = false;
       saved = res.settings;
       if (res.ok) { toast("Ajustes guardados.", "ok"); setDirty(false); }
+      setTimeout(() => { socket.emit("mobile_info", {}, renderMobile); socket.emit("mcp_info", {}, renderMcp); }, 800);
       if (meta && meta.update) { meta.update.repo = saved.update_repo; renderUpdate(meta.update); }
       else { toast(`Algunos ajustes no se guardaron: ${res.errors.join(" · ")}`, "err", 7000); populate(res.settings); }
     });
@@ -852,4 +853,84 @@
   $("#btn-open-folder").addEventListener("click", () => {
     socket.emit("open_output", (res) => { if (!res.ok) toast(res.error, "info", 6000); });
   });
+
+  /* 7.0: habilidades */
+  function renderSkills(res) {
+    const ul = $("#hb-list");
+    ul.innerHTML = "";
+    const list = (res && res.habilidades) || [];
+    if (!list.length) ul.innerHTML = '<li class="empty">No hay habilidades instaladas.</li>';
+    list.forEach((h) => {
+      const li = document.createElement("li");
+      const b = document.createElement("div"); b.className = "r-body";
+      const n = document.createElement("span"); n.className = "r-name"; n.textContent = h.nombre;
+      const m = document.createElement("span"); m.className = "r-meta";
+      m.textContent = `«${h.frases[0]}» · ${h.accion}` + (h.autor ? ` · ${h.autor}` : "") + (h.descripcion ? ` — ${h.descripcion}` : "");
+      b.append(n, m);
+      const exp = document.createElement("button"); exp.type = "button"; exp.className = "text-btn"; exp.textContent = "Compartir";
+      exp.addEventListener("click", () => socket.emit("habilidades_export", { nombre: h.nombre }, (r) => {
+        const blob = new Blob([r.texto || ""], { type: "application/json" });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = (h.archivo || h.nombre + ".json");
+        document.body.appendChild(a); a.click(); a.remove();
+      }));
+      const del = document.createElement("button"); del.type = "button"; del.className = "text-btn"; del.textContent = "Quitar";
+      del.addEventListener("click", () => { if (confirm(`¿Quitar la habilidad «${h.nombre}»?`)) socket.emit("habilidades_delete", { nombre: h.nombre }, renderSkills); });
+      li.append(b, exp, del);
+      ul.appendChild(li);
+    });
+    const st = $("#hb-status");
+    st.className = "status" + (res && res.errores && res.errores.length ? " err" : "");
+    st.textContent = res && res.errores && res.errores.length ? "No se pudieron leer: " + res.errores.join(" · ") : "";
+  }
+  $("#hb-file").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    f.text().then((texto) => socket.emit("habilidades_install", { texto }, (r) => {
+      renderSkills(r);
+      const st = $("#hb-status");
+      st.className = "status " + (r.ok ? "ok" : "err");
+      st.textContent = r.ok ? `Instalada: «${r.nombre}».` : r.error;
+    }));
+    e.target.value = "";
+  });
+  $("#hb-folder").addEventListener("click", () => socket.emit("habilidades_folder"));
+  socket.on("connect", () => socket.emit("habilidades_get", {}, renderSkills));
+
+  /* 7.0: conectores MCP */
+  function renderMcp(info) {
+    const ul = $("#mcp-status");
+    ul.innerHTML = "";
+    const st = (info && info.status) || info || [];
+    if (!st.length) ul.innerHTML = '<li class="chk-info"><b>•</b><span>Ningún conector configurado.</span></li>';
+    st.forEach((c) => {
+      const li = document.createElement("li");
+      li.className = c.ok ? "chk-ok" : "chk-fallo";
+      const b = document.createElement("b"); b.textContent = c.ok ? "✓" : "✗";
+      const t = document.createElement("span");
+      t.textContent = c.ok ? `${c.nombre}: ${c.herramientas.length} herramientas (${c.herramientas.slice(0, 5).join(", ")}${c.herramientas.length > 5 ? "…" : ""})` : `${c.nombre}: ${c.error}`;
+      li.append(b, t); ul.appendChild(li);
+    });
+    if (info && info.claude_config !== undefined) {
+      $("#mcp-claude").textContent = info.claude_config;
+      $("#mcp-claude-box").hidden = !info.server;
+    }
+  }
+  $("#btn-mcp-reload").addEventListener("click", () => socket.emit("mcp_reload", {}, () => toast("Reconectando los conectores…", "info")));
+  socket.on("mcp_status", renderMcp);
+  socket.on("connect", () => socket.emit("mcp_info", {}, renderMcp));
+
+  /* 7.0: panel del celular */
+  function renderMobile(m) {
+    $("#mobile-box").hidden = !(m && m.enabled && m.url);
+    if (!m || !m.url) return;
+    $("#mobile-url").textContent = m.url.split("?")[0] + (m.running ? "  · en marcha" : "  · guardando…");
+    const img = $("#mobile-qr");
+    img.hidden = !m.qr;
+    if (m.qr) img.src = m.qr;
+    $("#btn-mobile-copy").onclick = () => navigator.clipboard.writeText(m.url).then(() => toast("Enlace copiado. Es secreto: no lo compartas.", "ok"));
+  }
+  $("#btn-mobile-new").addEventListener("click", () => {
+    if (confirm("El enlace actual dejará de funcionar y tendrás que escanear el nuevo. ¿Seguir?")) socket.emit("mobile_info", { new_token: true }, renderMobile);
+  });
+  socket.on("connect", () => socket.emit("mobile_info", {}, renderMobile));
 })();

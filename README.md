@@ -1,4 +1,4 @@
-# Jarvis 6.8 — Asistente virtual para Windows
+# Jarvis 7.0 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -151,6 +151,49 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## Jarvis 7.0: habla primero, se conecta a todo y se ve de película (v7.0)
+
+**Habla primero, con criterio.** Sin que preguntes, Jarvis avisa cuando de verdad ayuda: el **saludo de la mañana**
+(la primera vez que usas el equipo: la hora, el clima en una frase y lo que tienes hoy), **«¿activo el modo clase?»**
+unos minutos antes de una clase de tu calendario (si dices «sí», la lanza), **lluvia a tu hora de salida**, una
+**pausa** tras dos horas seguidas en el equipo y la **batería baja**. Nunca en tus horas de silencio (21:30–06:30 por
+defecto), como mucho 12 avisos al día y al menos 15 minutos entre uno y otro. Todo se ajusta en *Ajustes › General*.
+
+**Tarjetas holográficas.** Cuando Jarvis te cuenta el clima, tu agenda, una rutina (con su barra de pasos), un aviso
+o el resultado de la prueba completa, también lo ves en una tarjeta animada en el HUD, con los números resaltados.
+
+**Conectores MCP.** MCP es el estándar con el que Claude, Goose o Jan se conectan a otras apps. En *Ajustes ›
+Integraciones › Conectores MCP* pegas la configuración (el mismo formato que Claude Desktop) y Jarvis le enseña esas
+herramientas a su IA: cuando le pides algo que encaja, la usa, **preguntándote antes** salvo en los conectores que
+marques como de confianza. Funciona con conectores locales (`command`) y remotos (`url` con su token).
+Y al revés: activa **«Dejar que otras IA usen Jarvis»** y Claude Desktop podrá darle órdenes («pon un temporizador»,
+«¿qué tengo hoy?»), con las mismas reglas que el celular. Jarvis te muestra la configuración exacta para copiarla.
+
+**Habilidades instalables.** Una habilidad es un archivo `.json` que le enseña algo nuevo: frases con huecos
+(`busca {tema} en wikipedia`) y qué hacer (abrir una web, decir algo, preguntarle a la IA o una lista de órdenes).
+Vienen cuatro de ejemplo (Wikipedia, Traductor, Modo concentración, Dato del día). Se instalan, se quitan y se
+**comparten** en *Ajustes › Rutinas › Habilidades instaladas*: pásale a un colega tu habilidad en un archivo.
+
+**Diario.** Jarvis anota lo que haces con él (órdenes, rutinas, temporizadores, avisos) para responder **«¿qué hice
+ayer?»**, **«¿qué hice hoy?»** o **«resume mi semana»** (con la IA, un resumen humano; sin ella, las cifras), y para que
+la IA sepa en qué estás hoy. Solo en tu equipo, se borra solo pasados 30 días y nunca anota lo que suene a contraseña.
+
+**«Avísame cuando termine…».** «Avísame cuando termine la descarga», «avísame cuando se cierre Zoom», «avísame cuando
+termine de instalar» o «cuando Premiere termine»: Jarvis vigila y te avisa con un tono y la voz (y por Telegram si te
+fuiste). «¿Qué estás vigilando?», «deja de vigilar».
+
+**Panel en el celular.** En *Ajustes › Integraciones › Panel en el celular* lo activas y escaneas el código QR: el
+celular muestra el reactor, la conversación, tus temporizadores, lo de hoy y botones rápidos (pausa, volumen, clima,
+10 minutos, prueba completa…). Solo en tu wifi y con un código secreto; con las mismas reglas de seguridad que Telegram.
+
+**Lee el tablero.** «Lee lo que hay en el tablero» o «pasa esta hoja a Word»: Jarvis toma una foto con la cámara,
+transcribe el texto (con fórmulas), lo guarda en Word en la carpeta *Tablero* y lo copia al portapapeles. Y **«haz un
+quiz con lo que hay en el tablero»** convierte lo fotografiado en un quiz o taller listo en Word.
+
+Nuevo componente: `qrcode` (para el código del panel). Si actualizas desde Ajustes, Jarvis lo instala solo.
+
+
 
 ## Prueba completa, rutinas solas, memoria de tu gente y más (v6.8)
 

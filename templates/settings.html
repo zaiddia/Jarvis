@@ -57,6 +57,48 @@
       <div class="ft"><label for="f-autostart">Iniciar con Windows</label><p id="autostart-help">Jarvis arranca en silencio al iniciar sesión, sin ventanas de consola.</p></div>
       <label class="switch"><input type="checkbox" id="f-autostart" data-key="autostart"><span></span></label>
     </div>
+    <div class="group">Jarvis habla primero</div>
+    <p class="pane-intro">Avisos útiles sin que preguntes: el saludo de la mañana con el clima y tu agenda, «¿activo el modo clase?» antes de una clase del calendario, lluvia a tu hora de salida, una pausa tras mucho rato seguido y la batería baja. Nunca en tus horas de silencio, y con un máximo al día.</p>
+    <div class="field">
+      <div class="ft"><label for="f-pro">Avisos proactivos</label><p>Apagado = Jarvis solo habla cuando le hablas (salvo recordatorios y alarmas).</p></div>
+      <label class="switch"><input type="checkbox" id="f-pro" data-key="proactive_enabled"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-pro-greet">Saludo de la mañana</label><p>La primera vez que usas el equipo en el día: la hora, el clima y lo que tienes hoy.</p></div>
+      <label class="switch"><input type="checkbox" id="f-pro-greet" data-key="proactive_greeting"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-pro-offer">Ofrecer tus rutinas</label><p>Si un evento del calendario encaja con una rutina («Clase 7A» → «Modo clase»), te pregunta si la activa.</p></div>
+      <label class="switch"><input type="checkbox" id="f-pro-offer" data-key="proactive_offer_routines"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-pro-breaks">Recordar pausas</label><p>Tras mucho rato seguido en el equipo sin descansar.</p></div>
+      <label class="switch"><input type="checkbox" id="f-pro-breaks" data-key="proactive_breaks"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-pro-break-min">Pausa cada</label></div>
+      <div class="range"><input type="range" id="f-pro-break-min" min="30" max="240" step="15" data-key="proactive_break_min" data-unit=" min"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-pro-bat">Batería baja</label><p>Al 20 % y sin cargador.</p></div>
+      <label class="switch"><input type="checkbox" id="f-pro-bat" data-key="proactive_battery"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-pro-rain">Lluvia a la hora de salida</label><p>Necesita tu ciudad (Integraciones › Clima) y la hora a la que sueles salir.</p></div>
+      <label class="switch"><input type="checkbox" id="f-pro-rain" data-key="proactive_rain"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-leave">Hora de salida</label><p>Por ejemplo <code>12:30</code>. Vacío = sin aviso de lluvia.</p></div>
+      <input class="inp narrow" type="text" id="f-leave" data-key="leave_time" placeholder="12:30" maxlength="5">
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-quiet">Horas de silencio</label><p>En este rango nunca habla por su cuenta. Formato <code>21:30-06:30</code>.</p></div>
+      <input class="inp narrow" type="text" id="f-quiet" data-key="proactive_quiet" placeholder="21:30-06:30" maxlength="11">
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-pro-max">Máximo de avisos al día</label></div>
+      <div class="range"><input type="range" id="f-pro-max" min="0" max="30" step="1" data-key="proactive_max"><output></output></div>
+    </div>
     <div class="group">Archivos</div>
     <div class="field stack">
       <div class="ft"><label for="f-output">Carpeta de Jarvis</label><p>Documentos STEAM y capturas de pantalla.</p></div>
@@ -69,6 +111,11 @@
 
   <!-- HUD -->
   <section class="pane" data-pane="hud">
+    <div class="group">Tarjetas holográficas</div>
+    <div class="field">
+      <div class="ft"><label for="f-cards">Mostrar tarjetas</label><p>Cuando Jarvis te cuenta el clima, tu agenda, una rutina o un aviso, también lo ves en una tarjeta animada en el HUD (y en el panel del celular).</p></div>
+      <label class="switch"><input type="checkbox" id="f-cards" data-key="hud_cards"><span></span></label>
+    </div>
     <div class="group">Ventana flotante</div>
     <div class="field stack">
       <div class="ft"><label>Tamaño al iniciar</label><p>Puedes cambiarlo en cualquier momento con los botones del HUD o con doble clic en el reactor.</p></div>
@@ -446,6 +493,49 @@
 
   <!-- INTEGRACIONES -->
   <section class="pane" data-pane="integra">
+    <div class="group">Panel en el celular (misma wifi)</div>
+    <p class="pane-intro">Abre Jarvis en el navegador del celular, sin instalar nada: escanea el código, y verás el reactor, la conversación, tus temporizadores y botones rápidos. Solo funciona en tu red y con el código secreto; desde ahí no se apaga el equipo, ni se cierran programas, ni se escribe en ventanas, ni se borran datos. La primera vez, Windows puede preguntar si permites el acceso en redes privadas: acepta.</p>
+    <div class="field">
+      <div class="ft"><label for="f-mobile">Activar el panel del celular</label></div>
+      <label class="switch"><input type="checkbox" id="f-mobile" data-key="mobile_enabled"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-mobile-port">Puerto</label><p>Cámbialo solo si otro programa usa el 5055.</p></div>
+      <input class="inp narrow" type="text" id="f-mobile-port" data-key="mobile_port" data-type="number" maxlength="5">
+    </div>
+    <div class="field stack" id="mobile-box" hidden>
+      <div class="ft"><label>Escanéalo con la cámara del celular</label><p id="mobile-url" class="mono" style="word-break:break-all"></p></div>
+      <img id="mobile-qr" alt="Código QR del panel" style="width:180px;height:180px;background:#fff;padding:6px;border-radius:8px" hidden>
+      <div class="row-btns">
+        <button class="btn btn-ghost" type="button" id="btn-mobile-copy">Copiar el enlace</button>
+        <button class="btn btn-ghost" type="button" id="btn-mobile-new">Código nuevo</button>
+      </div>
+    </div>
+
+    <div class="group">Conectores MCP</div>
+    <p class="pane-intro">MCP es el estándar con el que Claude, Goose o Jan se conectan a otras apps. Pega aquí la configuración de los conectores que quieras (el mismo formato que Claude Desktop): Jarvis le enseña sus herramientas a la IA y las usa cuando le pides algo que encaja, <b>preguntándote antes</b> salvo en los que marques como de confianza. Necesita la IA encendida.</p>
+    <div class="field stack">
+      <div class="ft"><label for="f-mcp">Configuración</label><p>Ejemplo: <code>{"mcpServers": {"hora": {"command": "uvx", "args": ["mcp-server-time"]}}}</code>. Remotos: <code>{"url": "https://…/mcp", "headers": {"Authorization": "Bearer …"}}</code>.</p></div>
+      <textarea class="inp mono" id="f-mcp" rows="6" data-key="mcp_servers" spellcheck="false" placeholder='{"mcpServers": {}}'></textarea>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-mcp-trust">De confianza (sin preguntar)</label><p>Nombres separados por comas. Solo estos se pueden usar desde el celular.</p></div>
+      <input class="inp" type="text" id="f-mcp-trust" data-key="mcp_trusted" placeholder="hora">
+    </div>
+    <div class="field stack">
+      <div class="ft"><label>Estado</label></div>
+      <ul class="chk-list" id="mcp-status"></ul>
+      <button class="btn btn-ghost" type="button" id="btn-mcp-reload"><svg class="i"><use href="#i-refresh"/></svg>Reconectar</button>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-mcp-server">Dejar que otras IA usen Jarvis</label><p>Claude Desktop (u otra app con MCP) podrá darle órdenes a Jarvis: «pon un temporizador», «¿qué tengo hoy?». Con las mismas reglas que el celular.</p></div>
+      <label class="switch"><input type="checkbox" id="f-mcp-server" data-key="mcp_server_enabled"><span></span></label>
+    </div>
+    <div class="field stack" id="mcp-claude-box" hidden>
+      <div class="ft"><label>Para Claude Desktop</label><p>Configuración › Desarrollador › Editar configuración, y añade esto dentro de <code>mcpServers</code>:</p></div>
+      <pre class="inp mono" id="mcp-claude" style="white-space:pre-wrap;font-size:11px"></pre>
+    </div>
+
     <div class="group">Visión de pantalla</div>
     <div class="field stack">
       <div class="ft"><label for="f-vision-model">Modelo de visión (Ollama)</label><p>Para «¿qué hay en la pantalla?». Descárgalo una vez: en una terminal <code>ollama pull moondream</code> (ligero) o <code>ollama pull llava</code> (más detallado).</p></div>
@@ -594,6 +684,16 @@
       <div class="ft"><label for="f-notes-ai">Que la IA conozca tus notas</label><p>Así puedes preguntar con naturalidad: «¿a qué hora era lo de los padres?». Tus pendientes se envían a tu proveedor de IA junto con cada pregunta.</p></div>
       <label class="switch"><input type="checkbox" id="f-notes-ai" data-key="notes_ai_context"><span></span></label>
     </div>
+    <div class="group">Diario</div>
+    <p class="pane-intro">Jarvis anota lo que haces con él (tus órdenes, rutinas, temporizadores y avisos) para responder «¿qué hice ayer?» o «resume mi semana», y para que la IA sepa en qué estás hoy. Solo en tu equipo; lo que suene a contraseña o clave nunca se anota.</p>
+    <div class="field">
+      <div class="ft"><label for="f-diary">Llevar el diario</label></div>
+      <label class="switch"><input type="checkbox" id="f-diary" data-key="diary_enabled"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-diary-days">Guardar</label><p>Los días más viejos se borran solos.</p></div>
+      <div class="range"><input type="range" id="f-diary-days" min="7" max="365" step="1" data-key="diary_days" data-unit=" días"><output></output></div>
+    </div>
   </section>
 
   <section class="pane" data-pane="rutinas">
@@ -645,6 +745,15 @@
         <button class="btn btn-ghost" type="button" id="btn-test-alarm"><svg class="i"><use href="#i-play"/></svg>Probar</button>
       </div>
     </div>
+    <div class="group">Habilidades instaladas</div>
+    <p class="pane-intro">Una habilidad es un archivo <code>.json</code> que le enseña a Jarvis algo nuevo: frases con huecos (<code>busca {tema} en wikipedia</code>) y qué hacer (abrir una web, decir algo, preguntarle a la IA o una lista de órdenes). Se comparten como un archivo: instálalas aquí o ponlas en su carpeta.</p>
+    <ul class="routines" id="hb-list"></ul>
+    <div class="row-btns">
+      <label class="btn btn-ghost" for="hb-file" style="cursor:pointer">+ Instalar habilidad (.json)…</label>
+      <input type="file" id="hb-file" accept=".json,application/json" hidden>
+      <button class="btn btn-ghost" type="button" id="hb-folder">Abrir la carpeta</button>
+    </div>
+    <p class="status" id="hb-status"></p>
   </section>
 
   <!-- ACERCA -->

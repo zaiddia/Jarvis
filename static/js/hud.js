@@ -71,6 +71,49 @@
     if (changed) renderTimers();
   }, 250);
 
+  /* ---------------- 7.0: tarjetas holográficas ---------------- */
+  const holo = { box: $("#holo"), t: $("#holo-t"), i: $("#holo-i"), b: $("#holo-b"), time: $("#holo-time"),
+                 steps: $("#holo-steps"), bar: $("#holo-bar"), timer: null };
+  function holoBody(text) {
+    // Números con su unidad, resaltados (23 grados, 15 minutos, 07:30, 40 %)
+    const frag = document.createDocumentFragment();
+    const re = /(\d+(?:[.,:]\d+)?\s?(?:%|por ciento|grados|°|minutos?|horas?|segundos?|pasos?)?)/g;
+    let last = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > last) frag.append(text.slice(last, m.index));
+      const b = document.createElement("b"); b.textContent = m[0]; frag.append(b);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) frag.append(text.slice(last));
+    return frag;
+  }
+  function showCard(c) {
+    if (!c || body.dataset.size === "orbe") { el.reactor.classList.add("ping"); setTimeout(() => el.reactor.classList.remove("ping"), 900); return; }
+    holo.box.dataset.kind = c.kind || "";
+    holo.i.textContent = c.icon || "✦";
+    holo.t.textContent = c.title || "";
+    holo.time.textContent = c.time || "";
+    holo.b.textContent = "";
+    holo.b.append(holoBody(String(c.body || "")));
+    holo.steps.hidden = !c.steps;
+    holo.steps.innerHTML = "";
+    (c.steps || []).forEach((s, i) => {
+      const d = document.createElement("i");
+      d.className = i < c.step ? "done" : i === c.step ? "now" : "";
+      d.title = s;
+      holo.steps.appendChild(d);
+    });
+    holo.box.hidden = false;
+    holo.box.classList.remove("in"); void holo.box.offsetWidth; holo.box.classList.add("in");
+    const secs = Math.max(3, Math.min(30, c.secs || 9));
+    holo.bar.style.transition = "none"; holo.bar.style.width = "100%"; void holo.bar.offsetWidth;
+    holo.bar.style.transition = `width ${secs}s linear`; holo.bar.style.width = "0%";
+    clearTimeout(holo.timer);
+    holo.timer = setTimeout(() => { holo.box.classList.add("out"); setTimeout(() => { holo.box.hidden = true; holo.box.classList.remove("out"); }, 380); }, secs * 1000);
+    poke();
+  }
+  $("#holo").addEventListener("click", () => { clearTimeout(holo.timer); holo.box.hidden = true; });
+
   /* ---------------- Utilidades ---------------- */
   function setTheme(name) { root.dataset.theme = name || "cyan"; }
 
@@ -224,6 +267,7 @@
   socket.on("settings_updated", applySettings);
   socket.on("hud_size", ({ size }) => { body.dataset.size = size; updateSizeButton(); poke(); });
   socket.on("timers", ({ timers }) => { setTimers(timers || []); });
+  socket.on("card", (c) => showCard(c));
   socket.on("dictation", ({ on }) => {
     dictating = on;
     body.classList.toggle("dictating", on);

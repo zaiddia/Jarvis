@@ -110,3 +110,28 @@ cel: escribe: hola qué tal => bloqueado
 cel: borra todas mis notas => bloqueado
 cel: olvida la conversación => bloqueado
 cel: prueba completa => prueba completa
+
+# ================================================================ 7.0: diario
+qué hice hoy => DIARIO
+¿qué hice ayer? => DIARIO
+resume mi semana => DIARIO
+
+# ================================================================ 7.0: avísame cuando termine
+avísame cuando termine la descarga => VIGILANTE
+avísame cuando se cierre Zoom => VIGILANTE
+qué estás vigilando => VIGILANTE
+deja de vigilar => VIGILANTE
+avísame en 10 minutos => recordatorio|temporizador
+
+# ================================================================ 7.0: habilidades instaladas (las de ejemplo)
+busca la fotosíntesis en wikipedia => abrir :: wikipedia
+¿cómo se dice buenos días en inglés? => IA
+modo concentración => rutina:Modo concentración
+dame un dato curioso de los volcanes => IA
+qué habilidades tengo => HABILIDAD :: wikipedia
+
+# ================================================================ 7.0: leer el tablero (sin IA de visión, explica qué falta)
+lee lo que hay en el tablero => TABLERO
+pasa esta hoja a word => TABLERO
+haz un quiz con lo que hay en el tablero => TABLERO
+cel: lee lo que hay en el tablero => TABLERO

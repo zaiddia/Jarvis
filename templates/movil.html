@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#03060c">
+<meta name="robots" content="noindex">
+<title>Jarvis</title>
+<style>
+  :root { --bg: #03060c; --text: #d6f2ff; --muted: #6c86a0; --a: #2ee6ff; --a-rgb: 46, 230, 255; --a2: #ffb547; --a2-rgb: 255, 181, 71;
+          --ok: #3dff9a; --err: #ff4d5e; color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font: 15px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  body { min-height: 100dvh; display: flex; flex-direction: column;
+         background: radial-gradient(120% 60% at 50% -10%, rgba(var(--a-rgb), .16), transparent 60%),
+                     repeating-linear-gradient(0deg, rgba(var(--a-rgb), .04) 0 1px, transparent 1px 26px), var(--bg); }
+  header { display: flex; align-items: center; gap: 14px; padding: max(14px, env(safe-area-inset-top)) 16px 10px; }
+  .reactor { width: 62px; height: 62px; flex: none; position: relative; color: var(--a); }
+  .reactor i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(var(--a-rgb), .55); }
+  .reactor i:nth-child(1) { border-style: dashed; animation: spin 14s linear infinite; }
+  .reactor i:nth-child(2) { inset: 9px; border-color: rgba(var(--a-rgb), .8); border-right-color: transparent; animation: spin 4s linear infinite reverse; }
+  .reactor i:nth-child(3) { inset: 21px; background: radial-gradient(circle, #fff, var(--a) 45%, transparent 72%); border: none; box-shadow: 0 0 22px var(--a); animation: pulse 2.4s ease-in-out infinite; }
+  body[data-mode="speaking"] .reactor i:nth-child(3), body[data-mode="thinking"] .reactor i:nth-child(3) { animation-duration: .7s; }
+  body[data-mode="thinking"] .reactor { color: var(--a2); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 50% { transform: scale(.82); opacity: .75; } }
+  .brand { font-weight: 700; letter-spacing: .28em; font-size: 18px; color: var(--a); text-shadow: 0 0 12px rgba(var(--a-rgb), .7); }
+  .mode { font-size: 11px; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+  .leds { display: flex; gap: 6px; margin-top: 5px; }
+  .leds span { font-size: 11px; padding: 1px 8px; border-radius: 99px; border: 1px solid rgba(var(--a-rgb), .3); color: var(--muted); }
+  .leds span.on { color: var(--ok); border-color: rgba(61, 255, 154, .45); }
+  .leds span.err { color: var(--err); border-color: rgba(255, 77, 94, .5); }
+  main { flex: 1; padding: 4px 16px 24px; display: flex; flex-direction: column; gap: 14px; }
+  .card { position: relative; padding: 11px 13px; border: 1px solid rgba(var(--a-rgb), .45); border-radius: 12px;
+          background: linear-gradient(160deg, rgba(var(--a-rgb), .16), rgba(5, 11, 20, .9) 60%); box-shadow: 0 0 18px rgba(var(--a-rgb), .14); }
+  .card .k { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--a); display: flex; gap: 8px; }
+  .card .k em { margin-left: auto; font-style: normal; color: var(--muted); letter-spacing: .06em; }
+  .card p { margin-top: 4px; }
+  .card b { color: var(--a2); }
+  h2 { font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .grid button { padding: 12px 6px; border-radius: 12px; border: 1px solid rgba(var(--a-rgb), .32); background: rgba(var(--a-rgb), .07);
+                 color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+  .grid button:active { background: rgba(var(--a-rgb), .25); transform: scale(.97); }
+  .grid button span { display: block; font-size: 20px; color: var(--a); margin-bottom: 2px; }
+  ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .tmr li { display: flex; justify-content: space-between; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(var(--a2-rgb), .45); background: rgba(var(--a2-rgb), .08); }
+  .tmr b { color: var(--a2); font-variant-numeric: tabular-nums; }
+  .ag li { padding: 6px 0; border-bottom: 1px solid rgba(var(--a-rgb), .12); }
+  .chat { display: flex; flex-direction: column; gap: 8px; }
+  .msg { max-width: 88%; padding: 8px 12px; border-radius: 14px; white-space: pre-wrap; word-wrap: break-word; }
+  .msg.user { align-self: flex-end; background: rgba(var(--a2-rgb), .14); border: 1px solid rgba(var(--a2-rgb), .35); }
+  .msg.jarvis { align-self: flex-start; background: rgba(var(--a-rgb), .10); border: 1px solid rgba(var(--a-rgb), .3); }
+  .msg small { display: block; font-size: 10px; color: var(--muted); letter-spacing: .1em; }
+  form { position: sticky; bottom: 0; z-index: 2; display: flex; gap: 8px; padding: 10px 16px max(12px, env(safe-area-inset-bottom));
+         background: linear-gradient(0deg, var(--bg) 70%, transparent); }
+  input { flex: 1; min-width: 0; padding: 13px 15px; border-radius: 14px; border: 1px solid rgba(var(--a-rgb), .4);
+          background: rgba(5, 11, 20, .9); color: var(--text); font: inherit; font-size: 16px; }
+  input:focus { outline: 2px solid var(--a); }
+  form button { padding: 0 18px; border-radius: 14px; border: none; background: var(--a); color: #021018; font-weight: 700; font: inherit; cursor: pointer; }
+  .empty { color: var(--muted); font-size: 13px; }
+  .err { color: var(--err); }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { .reactor i { animation: none !important; } }
+</style>
+</head>
+<body data-mode="idle">
+<header>
+  <div class="reactor" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div>
+    <div class="brand">JARVIS</div>
+    <div class="mode" id="mode">conectando…</div>
+    <div class="leds"><span id="l-mic">micrófono</span><span id="l-ai">IA</span><span id="l-net">red</span></div>
+  </div>
+</header>
+<main>
+  <div id="cards"></div>
+  <section id="sec-tmr" hidden><h2>Temporizadores</h2><ul class="tmr" id="tmr"></ul></section>
+  <section>
+    <h2>Rápido</h2>
+    <div class="grid">
+      <button data-cmd="pausa"><span>⏯</span>Pausa</button>
+      <button data-cmd="siguiente canción"><span>⏭</span>Siguiente</button>
+      <button data-cmd="silencio"><span>∅</span>Silencio</button>
+      <button data-cmd="baja el volumen"><span>−</span>Volumen</button>
+      <button data-cmd="sube el volumen"><span>+</span>Volumen</button>
+      <button data-cmd="¿qué tengo hoy?"><span>▦</span>Hoy</button>
+      <button data-cmd="¿cómo está el clima?"><span>☁</span>Clima</button>
+      <button data-cmd="pon un temporizador de 10 minutos"><span>⏱</span>10 min</button>
+      <button data-cmd="prueba completa"><span>◎</span>Prueba</button>
+    </div>
+  </section>
+  <section id="sec-ag" hidden><h2>Hoy</h2><ul class="ag" id="ag"></ul></section>
+  <section><h2>Conversación</h2><div class="chat" id="chat"><p class="empty">Escríbele como le hablarías.</p></div></section>
+</main>
+<form id="f" autocomplete="off">
+  <input id="in" maxlength="500" placeholder="Escribe una orden…" aria-label="Orden para Jarvis" enterkeyhint="send">
+  <button type="submit">Enviar</button>
+</form>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const params = new URLSearchParams(location.search);
+  let token = params.get("k") || "";
+  try { if (token) sessionStorage.setItem("jk", token); else token = sessionStorage.getItem("jk") || ""; } catch (e) {}
+  if (params.get("k")) history.replaceState(null, "", location.pathname);   // que el código no quede en la barra
+  const MODES = { idle: "en espera", awaiting: "te escucha", thinking: "procesando", speaking: "respondiendo" };
+  const api = (path, opts = {}) => fetch(path, { ...opts, headers: { "Content-Type": "application/json", "X-Jarvis-Token": token, ...(opts.headers || {}) } })
+    .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  const fmt = (s) => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), ss = s % 60; return `${m}:${String(ss).padStart(2, "0")}`; };
+  let lastChat = "";
+
+  function render(d) {
+    const st = d.state || {};
+    document.body.dataset.mode = st.mode || "idle";
+    $("#mode").textContent = (MODES[st.mode] || "en espera") + ` · v${d.version}`;
+    const set = (id, ok, err) => { const e = $(id); e.className = ok ? "on" : err ? "err" : ""; };
+    set("#l-mic", st.mic === "on", st.mic === "error");
+    set("#l-ai", st.ai === "ok", st.ai === "error");
+    set("#l-net", st.net !== "offline", st.net === "offline");
+    const tm = d.timers || [];
+    $("#sec-tmr").hidden = !tm.length;
+    $("#tmr").replaceChildren(...tm.map((t) => { const li = document.createElement("li"); li.innerHTML = "<span></span><b></b>";
+      li.firstChild.textContent = t.label || "Temporizador"; li.lastChild.textContent = fmt(t.remaining); return li; }));
+    const ag = d.agenda || [];
+    $("#sec-ag").hidden = !ag.length;
+    $("#ag").replaceChildren(...ag.map((a) => { const li = document.createElement("li"); li.textContent = a; return li; }));
+    $("#cards").replaceChildren(...(d.cards || []).slice(-1).map((c) => {
+      const el = document.createElement("div"); el.className = "card";
+      el.innerHTML = '<div class="k"><span></span><span></span><em></em></div><p></p>';
+      const k = el.firstChild.children; k[0].textContent = c.icon || "✦"; k[1].textContent = c.title || ""; k[2].textContent = c.time || "";
+      el.lastChild.textContent = c.body || ""; return el; }));
+    const chat = d.chat || [];
+    const key = chat.map((c) => c.time + c.text).join("|");
+    if (key !== lastChat) {
+      lastChat = key;
+      const box = $("#chat");
+      box.replaceChildren(...chat.slice(-16).map((c) => { const m = document.createElement("div"); m.className = "msg " + (c.role === "user" ? "user" : "jarvis");
+        const sm = document.createElement("small"); sm.textContent = (c.role === "user" ? "TÚ" : "JARVIS") + " · " + (c.time || "");
+        m.append(sm, document.createTextNode(c.text)); return m; }));
+      if (!chat.length) box.innerHTML = '<p class="empty">Escríbele como le hablarías.</p>';
+    }
+  }
+  function poll() {
+    api("/api/estado").then(render).catch((e) => { $("#mode").textContent = e.message === "403" ? "código no válido: vuelve a escanear el QR" : "sin conexión con el equipo"; $("#mode").className = "mode err"; });
+  }
+  function send(text) {
+    text = (text || "").trim();
+    if (!text) return;
+    document.body.dataset.mode = "thinking";
+    api("/api/orden", { method: "POST", body: JSON.stringify({ texto: text }) }).then(poll).catch(() => alert("No pude enviarlo. ¿Sigues en la misma wifi?"));
+  }
+  $("#f").addEventListener("submit", (e) => { e.preventDefault(); send($("#in").value); $("#in").value = ""; });
+  document.querySelectorAll("[data-cmd]").forEach((b) => b.addEventListener("click", () => send(b.dataset.cmd)));
+  poll();
+  setInterval(() => { if (!document.hidden) poll(); }, 2500);
+})();
+</script>
+</body>
+</html>

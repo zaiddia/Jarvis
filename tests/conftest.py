@@ -81,6 +81,9 @@ def jv():
     jarvis.add_timer = lambda seconds, label="": rec.other.append("temporizador")
     jarvis.trigger_alarm = lambda seconds, label="Recordatorio": rec.other.append("recordatorio")
 
+    jarvis.webbrowser.open = lambda *a, **k: rec.other.append("abrir")
+    jarvis.ai_chat = lambda *a, **k: (_ for _ in ()).throw(jarvis.AIError("sin IA en las pruebas", kind="config"))
+
     def no_net(*a, **k):
         raise OSError("sin internet en las pruebas")
     jarvis._get_text = no_net
