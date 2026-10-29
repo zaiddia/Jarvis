@@ -78,4 +78,9 @@ jobs:
           $notes = "Compilado automáticamente (commit ${{ github.sha }}) y con todas las pruebas de comprensión superadas.`n`n" +
                    "**Cómo instalar:** descargue **JARVIS-$v.zip**, descomprímalo (mejor fuera de OneDrive, por ejemplo en C:\JARVIS) y ejecute **instalar.bat**. " +
                    "Ya viene compilado: no hace falta el SDK de .NET, solo el entorno de ejecución de escritorio .NET 8 (si falta, Windows ofrece instalarlo al abrir JARVIS)."
-          gh release create $tag "paquete/JARVIS-$v.zip" --target ${{ github.sha }} --title "JARVIS para Windows $v" --notes $notes --latest
+          gh release create $tag "paquete/JARVIS-$v.zip" --target ${{ github.sha }} --title "JARVIS para Windows $v" --notes $notes --latest=false
+          # La marca «última versión» es para el JARVIS de Python (actualizar.py la usa para actualizarse):
+          # se devuelve a su Release más reciente.
+          $py = gh release list --limit 50 --json tagName,createdAt | ConvertFrom-Json |
+                Where-Object { -not $_.tagName.StartsWith('windows-') } | Sort-Object createdAt -Descending | Select-Object -First 1
+          if ($py) { gh release edit $py.tagName --latest; Write-Host "Última versión (Python): $($py.tagName)" }
