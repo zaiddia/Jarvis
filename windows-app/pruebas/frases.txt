@@ -260,3 +260,29 @@ mis rutinas => Rutinas
 prueba completa => Talk.Control
 revisa todo => Talk.Control
 haz una prueba completa => Talk.Control
+
+# ================================================================ actualizaciones
+busca actualizaciones => Actualizar :: al dia
+hay una versión nueva => Actualizar
+qué versión eres => Actualizar
+actualízate => Actualizar :: descargo
+actualiza la página => Sys
+
+# ================================================================ desde el celular («cel:»): lo seguro se hace, lo peligroso no
+cel: qué hora es => Time
+cel: pon un temporizador de 5 minutos => Time
+cel: sube el volumen => Sys
+cel: pon un video de Karol G => YouTube
+cel: anota comprar pan => Info
+cel: apaga el equipo => Celular
+cel: reinicia el computador => Celular
+cel: bloquea el equipo => Celular
+cel: cierra chrome => Celular
+cel: escribe hola qué tal => Celular
+cel: vacía la papelera => Celular
+cel: borra mis notas => Celular
+cel: olvida todo lo que sabes de mí => Celular
+cel: cierrate => Celular
+cel: actualízate => Actualizar :: desde el equipo
+cel: escríbeme un poema sobre el mar => IA
+control desde el celular => Talk.Control

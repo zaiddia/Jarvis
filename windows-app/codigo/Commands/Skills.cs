@@ -60,8 +60,8 @@ namespace Jarvis.Commands
             S("Diversión", "chistes, datos curiosos, adivinanzas, moneda y dados",
               new[] { "cuéntame un chiste", "dime un dato curioso", "lanza una moneda", "dime una adivinanza" }),
             S("El propio asistente", "diagnóstico, ajustes y dejar de escuchar",
-              new[] { "prueba completa", "diagnóstico de voz" },
-              "abre tus ajustes", "deja de escuchar"),
+              new[] { "prueba completa", "diagnóstico de voz", "busca actualizaciones", "qué versión eres" },
+              "abre tus ajustes", "deja de escuchar", "actualízate", "control desde el celular"),
         };
 
         public static IEnumerable<string> Tested => All.SelectMany(s => s.Examples);

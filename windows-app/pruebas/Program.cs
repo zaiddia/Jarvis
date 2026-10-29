@@ -60,7 +60,12 @@ namespace Jarvis.Pruebas
                     if (Split(line, "=>", out var a, out var b))
                     {
 #if COMPLETO
-                        await Route(engine, n, a, b);
+                        // «cel: …» = la orden llega desde el celular
+                        bool phone = a.StartsWith("cel: ");
+                        if (phone) a = a.Substring(5);
+                        Engine.FromPhone = phone;
+                        try { await Route(engine, n, a, b); }
+                        finally { Engine.FromPhone = false; }
 #else
                         _skip++;
 #endif
@@ -107,6 +112,7 @@ namespace Jarvis.Pruebas
             foreach (var ex in Skills.Tested)
                 await Route(engine, 0, ex, "!IA", "catálogo");
 #endif
+            ReleaseTests();
             Console.WriteLine();
             Console.WriteLine($"Correctas: {_ok}   Fallidas: {_fail}" + (_skip > 0 ? $"   Solo en Windows: {_skip}" : ""));
             if (Failures.Count > 0)
@@ -137,6 +143,30 @@ namespace Jarvis.Pruebas
                 File.AppendAllText(summary, sb.ToString());
             }
             return _fail > 0 ? 1 : 0;
+        }
+
+        // Lectura de las Releases de GitHub (actualización automática): solo cuentan las «windows-v…» con su zip.
+        static void ReleaseTests()
+        {
+            string json = @"[
+              {""tag_name"":""v6.8"",""draft"":false,""prerelease"":false,""html_url"":""p"",""assets"":[{""name"":""jarvis_project_v6.8.zip"",""browser_download_url"":""u0"",""size"":1}]},
+              {""tag_name"":""windows-v4.1.0"",""draft"":false,""prerelease"":false,""html_url"":""p1"",""assets"":[{""name"":""JARVIS-4.1.0.zip"",""browser_download_url"":""u1"",""size"":10,""digest"":""sha256:ABC""}]},
+              {""tag_name"":""windows-v4.10.0"",""draft"":false,""prerelease"":true,""assets"":[{""name"":""JARVIS-4.10.0.zip"",""browser_download_url"":""u2"",""size"":10}]},
+              {""tag_name"":""windows-v4.2.0"",""draft"":true,""prerelease"":false,""assets"":[{""name"":""JARVIS-4.2.0.zip"",""browser_download_url"":""u3"",""size"":10}]},
+              {""tag_name"":""windows-v4.0.9"",""draft"":false,""prerelease"":false,""assets"":[{""name"":""JARVIS-4.0.9.zip"",""browser_download_url"":""u4"",""size"":10}]},
+              {""tag_name"":""windows-v5.0.0"",""draft"":false,""prerelease"":false,""assets"":[{""name"":""otra-cosa.zip"",""browser_download_url"":""u5"",""size"":10}]}
+            ]";
+            var best = Releases.Newest(json);
+            Report(0, best != null && best.Version.ToString() == "4.1.0" && best.Url == "u1" && best.Sha256 == "abc" && best.Size == 10,
+                   "Releases.Newest", best == null ? "null" : best.Version + " " + best.Url + " " + best.Sha256, "4.1.0 u1 abc", "actualizaciones");
+            void V(string cand, string cur, bool expect) =>
+                Report(0, Releases.IsNewer(Releases.ParseVersion(cand), Releases.ParseVersion(cur)) == expect, cand + " > " + cur, (!expect).ToString(), expect.ToString(), "versiones");
+            V("windows-v4.1.0", "4.0.0", true);
+            V("4.10.0", "4.9.3", true);
+            V("4.0.0", "4.0.0", false);
+            V("3.9.0", "4.0.0", false);
+            V("v4.0.1", "4.0.0.0", true);
+            Report(0, Releases.Newest("[]") == null, "Releases.Newest([])", "no null", "null", "actualizaciones");
         }
 
         static bool Split(string line, string sep, out string a, out string b)
@@ -203,6 +233,7 @@ namespace Jarvis.Pruebas
             public void ShowVoiceDiagnostics() { }
             public void ReloadSettings() { }
             public void ShowSystemCheck() { }
+            public Task<string> Updates(bool install) => Task.FromResult(install ? "Descargo la versión nueva." : "Estoy al día.");
         }
 #endif
     }

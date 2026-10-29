@@ -22,6 +22,8 @@ namespace Jarvis.Ui
         public Action<Settings, string> TestVoice;
         public Action RunDiagnostics;
         public Action RunFullCheck;
+        public Func<bool, System.Threading.Tasks.Task<string>> CheckUpdates;
+        public Func<string> NewTopic;
 
         static Settings Clone(Settings s) => JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(s));
 
@@ -479,6 +481,43 @@ namespace Jarvis.Ui
             };
             Row(g, "", new StackPanel { Children = { phoneTest, phoneResult } });
 
+            Section(g, "Control desde el celular (ntfy)");
+            var remoteTopic = new TextBox { Text = _s.RemoteTopic, IsReadOnly = true, Padding = new Thickness(3), FontFamily = new FontFamily("Cascadia Mono, Consolas") };
+            var remoteOn = new CheckBox { Content = "Recibir órdenes desde el celular", IsChecked = _s.RemoteControl, Margin = new Thickness(0, 4, 0, 4) };
+            void EnsureTopic()
+            {
+                if (remoteTopic.Text.Trim().Length < 16 && NewTopic != null) remoteTopic.Text = NewTopic();
+            }
+            remoteOn.Checked += (o, e) => EnsureTopic();
+            _commit.Add(() =>
+            {
+                _s.RemoteControl = remoteOn.IsChecked == true;
+                if (_s.RemoteControl) EnsureTopic();
+                _s.RemoteTopic = remoteTopic.Text.Trim();
+            });
+            Row(g, "", remoteOn,
+                "Escríbale desde el teléfono «pon música», «¿qué tiempo hace?», «recuérdame a las 6 sacar la ropa» o «¿qué hay en mi pantalla?» y le contesta en el mismo canal. " +
+                "Por seguridad, desde el celular no apaga ni reinicia el equipo, no cierra programas, no escribe en ventanas y no borra datos.");
+            var topicButtons = new WrapPanel { Margin = new Thickness(0, 4, 0, 0) };
+            Button Small(string text, Action a)
+            {
+                var b = new Button { Content = text, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 8, 0) };
+                b.Click += (o, e) => { try { a(); } catch (Exception ex) { MessageBox.Show(ex.Message, Title); } };
+                return b;
+            }
+            string Server() => _s.NtfyServer.Trim() == "" ? "https://ntfy.sh" : _s.NtfyServer.Trim().TrimEnd('/');
+            topicButtons.Children.Add(Small("Copiar el canal", () => { EnsureTopic(); Clipboard.SetText(remoteTopic.Text.Trim()); }));
+            topicButtons.Children.Add(Small("Copiar el enlace", () => { EnsureTopic(); Clipboard.SetText(Server() + "/" + remoteTopic.Text.Trim()); }));
+            topicButtons.Children.Add(Small("Canal nuevo", () =>
+            {
+                if (NewTopic == null) return;
+                if (MessageBox.Show("El canal actual dejará de funcionar y tendrá que suscribirse al nuevo en el teléfono. ¿Seguir?", Title, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    remoteTopic.Text = NewTopic();
+            }));
+            Row(g, "Canal secreto", new StackPanel { Children = { remoteTopic, topicButtons } },
+                "En la app ntfy del teléfono: + › Suscribirse a un tema › escriba este nombre (mismo servidor que arriba). Quien no sepa el nombre no puede mandarle nada: " +
+                "no lo comparta, y si cree que alguien lo sabe, pulse «Canal nuevo». También sirve el enlace en el navegador del teléfono.");
+
             Section(g, "Casa inteligente (Home Assistant)");
             Row(g, "Dirección", Str(() => _s.HaUrl, v => _s.HaUrl = v), "Por ejemplo http://homeassistant.local:8123 o http://192.168.1.50:8123");
             Row(g, "Token de acceso", Secret(() => _s.HaToken, v => _s.HaToken = v),
@@ -632,6 +671,33 @@ namespace Jarvis.Ui
                 return b;
             }
             if (RunFullCheck != null) row.Children.Add(B("Prueba completa", () => RunFullCheck()));
+            if (CheckUpdates != null)
+            {
+                var upResult = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
+                var auto = new CheckBox { Content = "Buscar versiones nuevas automáticamente (y avisarme)", IsChecked = _s.AutoUpdate, Margin = new Thickness(0, 4, 0, 4) };
+                _commit.Add(() => _s.AutoUpdate = auto.IsChecked == true);
+                Button install = null;
+                install = B("Actualizar ahora", async () =>
+                {
+                    try { upResult.Text = await CheckUpdates(true); install.IsEnabled = false; }
+                    catch (Exception ex) { upResult.Text = "No se pudo: " + ex.Message; }
+                });
+                install.Visibility = Visibility.Collapsed;
+                var check = B("Buscar actualizaciones", async () =>
+                {
+                    upResult.Text = "Consultando GitHub…";
+                    try
+                    {
+                        string r = await CheckUpdates(false);
+                        upResult.Text = r;
+                        install.Visibility = r.Contains("actualízate") ? Visibility.Visible : Visibility.Collapsed;
+                    }
+                    catch (Exception ex) { upResult.Text = "No se pudo: " + ex.Message; }
+                });
+                p.Children.Add(auto);
+                p.Children.Add(new WrapPanel { Children = { check, install } });
+                p.Children.Add(upResult);
+            }
             row.Children.Add(B("Carpeta de ajustes y datos", () => Process.Start(new ProcessStartInfo(Settings.Folder) { UseShellExecute = true })));
             row.Children.Add(B("Ver el registro", () => Process.Start(new ProcessStartInfo(Path.Combine(Settings.Folder, "jarvis.log")) { UseShellExecute = true })));
             row.Children.Add(B("Carpeta de voces", () =>

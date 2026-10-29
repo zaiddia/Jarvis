@@ -107,6 +107,10 @@ namespace Jarvis.Ai
                         if (fact.Trim() == "") return "Falta el dato.";
                         return Memory.Add(fact) ? "Guardado (sustituye a lo que había sobre eso)." : "Guardado.";
                     }
+                    case "olvidar" when Engine.FromPhone:
+                        return "Desde el celular no borro datos de la memoria; dígaselo al usuario.";
+                    case "crear_rutina" when Engine.FromPhone:
+                        return "Desde el celular no se crean rutinas (podrían lanzar órdenes en el equipo sin nadie delante); dígaselo al usuario.";
                     case "olvidar":
                     {
                         string what = input?["tema"]?.GetValue<string>() ?? "";

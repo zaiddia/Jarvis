@@ -167,6 +167,22 @@ namespace Jarvis
                 if (_s.HaUrl.Trim() == "" && _s.NtfyTopic.Trim() == "" && _s.CalendarUrl.Trim() == "")
                     Add(new CheckItem { Group = G5, State = CheckState.Info, Text = "Ninguna configurada (agenda, Home Assistant, avisos al celular). Son opcionales." });
 
+                if (_s.RemoteControl)
+                    Add(CheckItem.Of(G5, _remoteOnline, "Control desde el celular: escuchando su canal de ntfy.",
+                        _s.RemoteTopic.Trim().Length < 16 ? "Activó el control desde el celular, pero falta el canal (Ajustes › Integraciones)." : "Control desde el celular activado, pero no consigo conectar con ntfy ahora mismo.",
+                        "Ajustes", OpenSettings));
+
+                // ---- versión
+                const string G7 = "Versión";
+                try
+                {
+                    var up = await CheckUpdate(announce: false);
+                    Add(CheckItem.Of(G7, up == null, "Tiene la versión más reciente (" + Current.ToString(3) + ").",
+                        up == null ? "" : "Hay una versión nueva: la " + up.Version.ToString(3) + " (tiene la " + Current.ToString(3) + ").",
+                        "Actualizar", () => _ = Updates(true), onlyWarn: true));
+                }
+                catch { Add(new CheckItem { Group = G7, State = CheckState.Info, Text = "No pude consultar si hay versión nueva (versión actual " + Current.ToString(3) + ")." }); }
+
                 // ---- equipo
                 const string G6 = "Equipo";
                 bool mod = FindWindow("WindhawkJarvisHud", null) != IntPtr.Zero;

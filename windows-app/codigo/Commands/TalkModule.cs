@@ -107,6 +107,14 @@ namespace Jarvis.Commands
                 E.Host.ShowSystemCheck();
                 return Pick("Hago una prueba completa de mis sistemas" + Sir + ".", "Revisando todos los sistemas.", "Comprobando todo, un momento.");
             }
+            if (Text.IsOneOf(s, "control desde el celular", "control remoto", "como te controlo desde el celular", "como te mando ordenes desde el celular",
+                             "activa el control desde el celular", "quiero controlarte desde el celular", "controlarte desde el telefono", "control desde el telefono"))
+            {
+                E.Host.OpenSettings();
+                return E.S.RemoteControl
+                    ? "Ya está activado" + Sir + ". Escríbame en su canal de la app ntfy y le contesto allí. Le abro los ajustes por si quiere ver el canal."
+                    : "Le abro mis ajustes" + Sir + ": en Integraciones, marque «Recibir órdenes desde el celular» y suscríbase a ese canal en la app ntfy del teléfono.";
+            }
             if (Text.IsOneOf(s, "diagnostico de voz", "diagnostico del microfono", "prueba el microfono", "revisa el microfono", "no me oyes bien",
                              "por que no me oyes", "por que no me entiendes", "revisa la escucha", "prueba la escucha"))
             {

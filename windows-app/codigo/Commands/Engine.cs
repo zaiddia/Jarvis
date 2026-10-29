@@ -26,6 +26,7 @@ namespace Jarvis.Commands
         void ShowVoiceDiagnostics();  // revisar micrófono y reconocimiento de voz
         void ReloadSettings();        // volver a leer ajustes.json (tras restaurar una copia)
         void ShowSystemCheck();       // «prueba completa»: micrófono, voz, IA, internet e integraciones
+        Task<string> Updates(bool install);   // buscar (e instalar) una versión nueva; devuelve qué decir
     }
 
     public sealed class Reply
@@ -100,6 +101,7 @@ namespace Jarvis.Commands
             // El orden importa: lo más concreto primero.
             Add("Talk.Control", Sync(Talk.Control));
             Add("Rutinas", Sync(Routines.Try));      // «qué rutinas tengo», «borra la rutina…»
+            Add("Actualizar", UpdateCommand);        // «actualízate», «hay versión nueva»
             Add("Vision", Sync(Vision.Try));
             Add("Time", Sync(Time.Try));
             Add("Integrations", Sync(Integrations.Try));  // pomodoro, copias de seguridad
@@ -185,6 +187,50 @@ namespace Jarvis.Commands
             if (r == null) return null;
             if (!sq.StartsWith("otra vez")) LastCommand = text;
             return Done(r, text);
+        }
+
+        // ---------------------------------------------------------------- órdenes desde el celular
+
+        // ¿Esta orden (o lo que pida la IA mientras contesta) viene del celular? Viaja con la tarea, así una orden
+        // dicha en el equipo a la vez no se ve afectada.
+        static readonly System.Threading.AsyncLocal<bool> _fromPhone = new System.Threading.AsyncLocal<bool>();
+        public static bool FromPhone { get => _fromPhone.Value; set => _fromPhone.Value = value; }
+
+        // Lo que no se hace desde el celular: a distancia no se ve qué hay abierto ni quién está delante del equipo.
+        public static string RemoteBlocked(Cmd c)
+        {
+            string w = c.W(0), s = c.Join(0);
+            const string Tail = " Hágalo en el equipo, o dígamelo de viva voz.";
+            if ((Text.IsOneOf(w, "apaga", "reinicia", "suspende", "hiberna", "cierra", "bloquea") &&
+                 c.HasAny("equipo", "computador", "computadora", "pc", "ordenador", "sesion", "windows", "maquina", "portatil")) ||
+                Text.IsOneOf(s, "apagate", "cierrate", "sal", "cierra jarvis", "apaga jarvis", "salir de jarvis", "cierra viernes", "apaga viernes", "reinicia el explorador"))
+                return "Por seguridad, no apago, reinicio ni cierro el equipo desde el celular." + Tail;
+            if (Text.IsOneOf(w, "cierra", "mata", "termina", "finaliza"))
+                return "Desde el celular no cierro programas: podría perderse trabajo sin guardar." + Tail;
+            if (Text.IsOneOf(w, "escribe", "teclea", "dicta", "pega") && !SystemModule.AsksToCompose(c))
+                return "Desde el celular no escribo en la ventana del equipo: no sé qué hay abierta." + Tail;
+            if (c.Has("papelera") && c.HasAny("vacia", "limpia", "borra"))
+                return "Desde el celular no vacío la papelera." + Tail;
+            if (Text.IsOneOf(w, "borra", "olvida", "elimina", "vacia", "limpia", "quita", "cancela") &&
+                c.HasAny("memoria", "notas", "nota", "lista", "listas", "rutina", "rutinas", "protocolo", "todo", "recordatorios", "alarmas", "temporizadores", "datos"))
+                return "Desde el celular no borro datos." + Tail;
+            if (c.Has("restaura") && c.HasAny("copia", "respaldo", "seguridad"))
+                return "Desde el celular no restauro copias de seguridad." + Tail;
+            return null;
+        }
+
+        // ---------------------------------------------------------------- actualizaciones
+
+        async Task<string> UpdateCommand(Cmd c)
+        {
+            string s = c.Join(0);
+            bool install = Text.IsOneOf(s, "actualizate", "instala la actualizacion", "instala la nueva version", "actualiza jarvis",
+                                        "actualiza viernes", "actualiza el programa", "ponte al dia", "descarga la actualizacion", "actualizate ya");
+            bool check = Text.IsOneOf(s, "busca actualizaciones", "hay actualizaciones", "hay una version nueva", "hay version nueva", "estas actualizado", "estas actualizada",
+                                      "que version eres", "que version tienes", "cual es tu version", "en que version estas", "busca una version nueva", "comprueba actualizaciones");
+            if (!install && !check) return null;
+            if (install && FromPhone) return "Las actualizaciones se instalan desde el equipo: al terminar me reinicio y desde aquí no vería si algo falla.";
+            return await Host.Updates(install);
         }
 
         // Para órdenes que no deben contestar nada (cállate, silenciar…): ni siquiera «listo».
@@ -282,6 +328,12 @@ namespace Jarvis.Commands
             var c = Cmd.Parse(text);
             LastHandler = "";
             if (c.Size == 0) return null;
+            if (FromPhone && RemoteBlocked(c) is string why)
+            {
+                LastHandler = "Celular";
+                Log.Write("Orden del celular bloqueada: «" + text + "»");
+                return why;
+            }
             for (int i = 0; i < _handlers.Count; i++)
             {
                 try

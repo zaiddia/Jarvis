@@ -38,6 +38,6 @@
     <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-    <Compile Include="../codigo/Core/Text.cs;../codigo/Commands/Calc.cs;../codigo/Commands/Skills.cs" />
+    <Compile Include="../codigo/Core/Text.cs;../codigo/Core/Releases.cs;../codigo/Commands/Calc.cs;../codigo/Commands/Skills.cs" />
   </ItemGroup>
 </Project>

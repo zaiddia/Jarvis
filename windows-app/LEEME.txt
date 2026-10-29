@@ -1,4 +1,4 @@
-J.A.R.V.I.S. 4.0.0 — programa para Windows
+J.A.R.V.I.S. 4.1.0 — programa para Windows
 ==========================================
 
 Es el mismo asistente del mod de Windhawk, rehecho como programa propio en C# (.NET 8):
@@ -70,6 +70,17 @@ AGENDA (Ajustes › Agenda)
 AVISOS
   Batería baja, disco casi lleno y programas que dejan de responder. Durante una llamada
   (otra app usa el micrófono) contesta solo en el panel, sin hablar.
+
+NOVEDADES 4.1.0
+  - CONTROL DESDE EL CELULAR (Ajustes › Integraciones): marque «Recibir órdenes desde el celular»,
+    suscríbase en la app ntfy del teléfono al canal secreto que aparece, y escríbale: «pon música»,
+    «¿qué tiempo hace?», «recuérdame a las 6 sacar la ropa», «¿qué hay en mi pantalla?». Contesta en
+    el mismo canal. Por seguridad, desde el celular no apaga ni reinicia el equipo, no cierra programas,
+    no escribe en ventanas, no borra datos ni crea rutinas. Si cree que alguien sabe el canal: «Canal nuevo».
+  - ACTUALIZACIÓN AUTOMÁTICA: al arrancar y cada 12 horas mira si hay versión nueva en GitHub y avisa.
+    Diga «actualízate» (o Ajustes › Acerca de › Actualizar ahora): la descarga, comprueba su huella
+    SHA-256, se reinstala y vuelve a abrirse. Sus ajustes, memoria y rutinas no se tocan.
+    «¿Hay versión nueva?», «¿qué versión eres?». La prueba completa también lo revisa.
 
 NOVEDADES 4.0.0
   - PRUEBA COMPLETA: diga «prueba completa» o «revisa todo» (o menú de la bandeja › Prueba completa).

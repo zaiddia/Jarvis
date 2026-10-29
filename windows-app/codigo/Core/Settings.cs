@@ -42,6 +42,10 @@ namespace Jarvis.Core
         public string NtfyTopic { get; set; } = "";             // tema de ntfy para avisos al celular
         public string NtfyServer { get; set; } = "";            // vacío = https://ntfy.sh
         public bool PhoneReminders { get; set; } = true;        // recordatorios y avisos también al celular
+        public bool RemoteControl { get; set; } = false;        // recibir órdenes desde el celular (ntfy)
+        public string RemoteTopic { get; set; } = "";           // canal secreto para esas órdenes (se genera solo; se guarda cifrado)
+        public bool AutoUpdate { get; set; } = true;            // buscar versiones nuevas en GitHub y avisar
+        public string UpdateRepo { get; set; } = "zaiddia/Jarvis";
         public string BriefingTime { get; set; } = "";          // «07:30»: resumen del día automático (vacío = no)
         public string RadioCountry { get; set; } = "CO";        // país preferido para las emisoras
         public string YouTubeApiKey { get; set; } = "";         // opcional: búsqueda oficial de YouTube (Google Cloud, API de YouTube Data v3)
@@ -166,7 +170,7 @@ namespace Jarvis.Core
             {
                 // Las claves se guardan cifradas con DPAPI: solo su usuario de Windows en este equipo puede leerlas.
                 var node = JsonSerializer.SerializeToNode(this, Options).AsObject();
-                foreach (var k in new[] { "apiKey", "cloudKey", "haToken", "youTubeApiKey" })
+                foreach (var k in new[] { "apiKey", "cloudKey", "haToken", "youTubeApiKey", "remoteTopic" })
                     if (node[k] is JsonValue v && v.TryGetValue(out string plain)) node[k] = Protect(plain);
                 if (node["apiKeys"] is JsonObject keys)
                     foreach (var name in keys.Select(kv => kv.Key).ToList())
@@ -232,6 +236,7 @@ namespace Jarvis.Core
             CloudKey = Unprotect(CloudKey, ref plain);
             HaToken = Unprotect(HaToken, ref plain);
             YouTubeApiKey = Unprotect(YouTubeApiKey, ref plain);
+            RemoteTopic = Unprotect(RemoteTopic, ref plain);
             if (ApiKeys != null)
                 foreach (var k in ApiKeys.Keys.ToList()) ApiKeys[k] = Unprotect(ApiKeys[k], ref plain);
             return plain;

@@ -117,6 +117,8 @@ namespace Jarvis
             CreateTray();
             RegisterHotkey();
             ApplyStartup();
+            ApplyRemote();
+            AfterUpdate();
 
             _tick.Tick += (o, e) => OnTick();
             _tick.Start();
@@ -535,6 +537,8 @@ namespace Jarvis
             };
             _settingsWin.RunDiagnostics = ShowVoiceDiagnostics;
             _settingsWin.RunFullCheck = ShowSystemCheck;
+            _settingsWin.CheckUpdates = Updates;
+            _settingsWin.NewTopic = NewRemoteTopic;
             _settingsWin.Saved += ns =>
             {
                 _s = ns;
@@ -562,6 +566,7 @@ namespace Jarvis
             else _listener.UseSettings(_s);
             RegisterHotkey();
             ApplyStartup();
+            ApplyRemote();
             if (_tray != null) _tray.Text = _s.Name;
             UpdateListenItem();
         }));
@@ -577,6 +582,7 @@ namespace Jarvis
             {
                 _tick.Stop();
                 _meter.Stop();
+                _remoteCts?.Cancel();
                 _ptt.Stop();
                 try { _duckChain.Wait(1500); } catch { }
                 Ducker.Restore();
@@ -656,6 +662,7 @@ namespace Jarvis
             if (!IsOurs(fg) && Native.WindowClass(fg) != "Shell_TrayWnd") _target = fg;
             try { _engine.Tick(); }
             catch (Exception e) { Log.Write("Avisos: " + e.Message); }
+            UpdateTick();
             // Si la escucha se cayó (micrófono desconectado, Windows la cortó…), se vuelve a montar sola cada 20 segundos.
             bool down = _listening && _s.VoiceInput && !_listener.Running;
             if (!down) _notListeningSince = DateTime.MaxValue;
