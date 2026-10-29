@@ -2,6 +2,8 @@
 # Micrófono: sounddevice (sustituye a PyAudio, que no instala en Python 3.14).
 # Audio de salida: pygame-ce (igual que pygame, pero con soporte para Python nuevos).
 # Cámara (revisar trabajos): opencv-python-headless.
+# Conversación en vivo con Gemini: websockets.
+# Presentaciones y hojas de Excel: python-pptx y openpyxl.
 # Calendario (iCal): icalendar, recurring-ical-events y tzdata (zonas horarias en Windows).
 flask
 flask-socketio
@@ -23,3 +25,6 @@ opencv-python-headless
 icalendar
 recurring-ical-events
 tzdata
+websockets
+python-pptx
+openpyxl

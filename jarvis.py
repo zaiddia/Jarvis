@@ -39,7 +39,7 @@ from collections import deque
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "5.9"
+VERSION = "6.7"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -243,6 +243,8 @@ SAME_JARVIS_RUNNING = False
 
 def _resolve_port():
     global SAME_JARVIS_RUNNING
+    if not _port_busy(5000):                 # puerto libre: arranque rápido, sin escanear procesos
+        return 5000
     same = _close_other_jarvis()
     if same:
         SAME_JARVIS_RUNNING = True
@@ -311,6 +313,13 @@ import rutinas
 import calendario
 import actualizar
 import respaldo
+import envivo
+import oficina
+import sismos
+import perfil
+import correo
+import infodia
+import buscar
 
 
 # =============================================================================
@@ -325,11 +334,22 @@ def _optional_import(name):
 
 pygame = _optional_import("pygame")
 edge_tts = _optional_import("edge_tts")
-try:
-    from piper import PiperVoice
-    from piper.config import SynthesisConfig
-except Exception:
-    PiperVoice = SynthesisConfig = None
+import importlib.util
+# Piper trae onnxruntime, que tarda en cargar: se importa solo cuando se usa, no al arrancar.
+PiperVoice = SynthesisConfig = None
+PIPER_INSTALLED = importlib.util.find_spec("piper") is not None
+
+
+def _ensure_piper():
+    global PiperVoice, SynthesisConfig
+    if PiperVoice is None and PIPER_INSTALLED:
+        try:
+            from piper import PiperVoice as _PV
+            from piper.config import SynthesisConfig as _SC
+            PiperVoice, SynthesisConfig = _PV, _SC
+        except Exception:
+            pass
+    return PiperVoice is not None
 ollama = _optional_import("ollama")
 pyaudio = _optional_import("pyaudio")
 if pyaudio is None:                 # Python 3.14+: PyAudio no instala -> sounddevice
@@ -380,6 +400,9 @@ THEMES = {
     "rojo": ("Rojo Mark III", (255, 77, 94)),
     "verde": ("Verde terminal", (61, 255, 154)),
     "violeta": ("Violeta", (180, 140, 255)),
+    "azul": ("Azul profundo", (79, 157, 255)),
+    "magenta": ("Magenta", (255, 92, 200)),
+    "hielo": ("Blanco frío", (169, 221, 255)),
 }
 
 HUD_SIZES = {"orbe": (96, 96), "compacto": (430, 150), "expandido": (440, 620)}
@@ -517,7 +540,20 @@ DEFAULT_SETTINGS = {
     "mic_device": -1,
     "wake_word_enabled": True,
     "wake_words": "jarvis, yarvis, harvis, charvis, yarbis, asistente",
-    "wake_window": 8,
+    "wake_window": 10,
+    "followup_listen": 6,
+    "listen_mode": "auto",         # "auto" (en vivo si hay clave de Gemini), "vivo" o "clasico"
+    "live_model": "gemini-3.8-live",
+    "live_idle": 15,               # segundos de silencio para cerrar la conversación en vivo
+    "live_search": True,           # en vivo puede buscar en Google datos actuales
+    "live_barge_level": 30,
+    "live_provider": "gemini",     # "gemini" (gratis), "openai" (ChatGPT, de pago) o "deepgram" (con crédito)
+    "live_fallback": True,         # si el elegido falla, probar los otros que tengan clave
+    "openai_live_model": "gpt-realtime",
+    "openai_live_voice": "marin",
+    "deepgram_api_key": "",
+    "deepgram_voice": "aura-2-celeste-es",
+    "deepgram_think_model": "gpt-4o-mini",        # volumen de tu voz para interrumpirlo mientras habla (en vivo)          # segundos que sigue escuchando tras responder (0 = siempre decir «Jarvis»)
     "barge_in": True,              # poder interrumpirlo mientras habla («Jarvis, para» o una pregunta nueva)
     "mic_sensitivity": 0,          # 0 = no filtra (recomendado); subirlo ignora sonidos lejanos/flojos
     "require_hotkey": False,       # solo escuchar tras pulsar Ctrl+Alt+Espacio (anti ambiente total)
@@ -531,7 +567,7 @@ DEFAULT_SETTINGS = {
     "ollama_model": "llama3.2",
     "offline_auto": True,          # sin internet: usar la IA de tu equipo (Ollama) y la voz Piper
     "offline_model": "",
-    "update_repo": "",             # repositorio de GitHub con las versiones (usuario/nombre)
+    "update_repo": "zaiddia/Jarvis",  # repositorio de GitHub con las versiones (usuario/nombre)
     "update_auto": True,           # mirar una vez al día si hay versión nueva (solo avisa)
     "github_api_key": "",          # solo para repositorios privados
     "backup_auto": True,           # copia de seguridad automática cada semana
@@ -566,7 +602,20 @@ DEFAULT_SETTINGS = {
     "vision_model": "moondream",   # modelo de visión de Ollama (moondream, llava, llama3.2-vision)
     "contacts": "",                # agenda: "Juan = +573001112233" (una por línea)
     "telegram_token": "",          # token del bot de Telegram (@BotFather)
-    "telegram_chat": "",           # chat id a donde enviar
+    "telegram_chat": "",           # chat id a donde enviar (y el único que puede darle órdenes)
+    "telegram_remote": False,      # recibir órdenes desde Telegram (solo de ese chat)
+    "telegram_alerts": True,       # enviar recordatorios, avisos del calendario y temporizadores al celular
+    "weather_city": "",            # ciudad para el clima («Bogotá», «Medellín»…)
+    "morning_weather": True,       # clima en el reporte de la mañana
+    "morning_news": False,         # noticias en el reporte de la mañana
+    "news_feeds": "",              # direcciones RSS (una por línea); vacío = Google Noticias Colombia y BBC Mundo
+    "quake_alerts": False,         # avisar de sismos (datos del USGS, gratis)
+    "quake_min_mag": 4.5,          # magnitud mínima para el aviso suave
+    "address_name": "",            # cómo quieres que Jarvis te trate ("profe", tu nombre…)
+    "email_address": "",           # tu Gmail para enviar correos por voz
+    "email_app_password": "",      # contraseña de aplicación (16 letras), no tu clave normal
+    "email_sender_name": "",       # con qué nombre firmas los correos
+    "email_book": "",              # agenda de correos: "Coordinadora = ana@colegio.edu.co" (una por línea)
     "spotify_client_id": "",       # opcional: para reproducir por nombre con la API
     "spotify_client_secret": "",
     # Rutinas
@@ -581,7 +630,8 @@ for _pid, _sp in PROVIDERS.items():
         DEFAULT_SETTINGS.setdefault(f"{_pid}_model", _sp.get("model", ""))
 API_KEY_FIELDS = tuple(k for k in DEFAULT_SETTINGS if k.endswith("_api_key"))
 # Nunca salen hacia las páginas (solo «guardado sí/no»): claves y el enlace secreto del calendario
-SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls",)
+SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls", "telegram_token", "email_app_password") + (
+    ("spotify_client_secret",) if "spotify_client_secret" in DEFAULT_SETTINGS else ())
 AI_SETTING_KEYS = ({"ai_provider", "ollama_host", "ollama_model", "openai_base_url"}
                    | set(API_KEY_FIELDS) | {f"{p}_model" for p in PROVIDERS})
 # Modelos por defecto antiguos que ya no admiten claves nuevas: se migran al actual.
@@ -589,9 +639,9 @@ LEGACY_DEFAULT_MODELS = {"gemini_model": ("gemini-2.5-flash", "gemini-2.0-flash"
 
 RANGES = {
     "tts_rate": (-50, 50), "tts_volume": (-50, 50), "tts_pitch": (-50, 50),
-    "wake_window": (3, 30), "history_turns": (0, 30), "ai_temperature": (0.0, 2.0),
+    "wake_window": (3, 30), "followup_listen": (0, 20), "live_idle": (5, 120), "live_barge_level": (5, 80), "history_turns": (0, 30), "ai_temperature": (0.0, 2.0),
     "mic_device": (-1, 999), "hud_opacity": (30, 100),
-    "mic_sensitivity": (0, 60), "min_command_chars": (0, 20),
+    "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
 }
@@ -629,6 +679,10 @@ def _validate(key, value):
                "tts_backend": ("edge", "piper", "gemini"), "stt_backend": ("vosk", "whisper"),
                "gemini_tts_model": ("gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts"),
                "stt_refine": ("auto", "gemini", "whisper", "off"),
+               "listen_mode": ("auto", "vivo", "clasico"),
+               "live_provider": ("gemini", "openai", "deepgram"),
+               "openai_live_voice": tuple(v for v, _ in envivo.OPENAI_VOICES),
+               "deepgram_voice": tuple(v for v, _ in envivo.DEEPGRAM_VOICES),
                "whisper_model": {k: 1 for k, _ in WHISPER_SIZES}}
     if key in choices and v not in choices[key]:
         raise ValueError("opción desconocida")
@@ -639,6 +693,10 @@ def _validate(key, value):
         v = f"{int(m.group(1)):02d}:{m.group(2)}"
     if key == "update_repo" and v:
         v = actualizar.clean_repo(v)
+    if key in ("openai_live_model", "deepgram_think_model") and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.\-_:]{1,80}", v):
+        raise ValueError("nombre de modelo inválido")
+    if key == "live_model" and not re.fullmatch(r"[a-z0-9][a-z0-9.\-]{2,80}", v):
+        raise ValueError("nombre de modelo inválido")
     if key == "gemini_tts_voice" and v not in {n for n, _ in GEMINI_TTS_VOICES}:
         raise ValueError("voz de Gemini desconocida")
     if key == "gemini_tts_style":
@@ -723,6 +781,8 @@ def load_settings():
     for k, old in LEGACY_DEFAULT_MODELS.items():
         if settings.get(k) in old:
             settings[k] = DEFAULT_SETTINGS[k]
+    if not settings["update_repo"]:                 # instalaciones anteriores: repositorio oficial
+        settings["update_repo"] = DEFAULT_SETTINGS["update_repo"]
     for k, v in _read_env().items():
         ku = k.upper()
         key = ENV_ALIASES.get(ku) or (ku[7:].lower() if ku.startswith("JARVIS_") else None)
@@ -796,7 +856,12 @@ def push_chat(role, text, source=""):
 # =============================================================================
 # ESTADO EN VIVO
 # =============================================================================
-state = {"net": "online", "mic": "off", "ai": "unknown", "ai_label": "", "tts": "off", "mode": "idle", "copilot": False}
+jarvis_rest = {"on": False}              # «Jarvis, descansa»: oculto y solo atiende al nombre
+# conversación en vivo (ver CONVERSACIÓN EN VIVO más abajo)
+live = {"session": None, "player": None, "active": False, "connecting": False, "prebuf": bytearray(),
+        "started": 0.0, "last": 0.0, "in_buf": "", "out_buf": "", "pause": {}, "provider": "", "why": "",
+        "ending": False, "model": "", "turn_audio": False}
+state = {"resting": False, "viewing": "", "live": False, "net": "online", "mic": "off", "ai": "unknown", "ai_label": "", "tts": "off", "mode": "idle", "copilot": False}
 state_lock = threading.Lock()
 thinking = 0
 wake_until = 0.0
@@ -812,6 +877,10 @@ def set_state(**changes):
 
 
 def refresh_mode():
+    if live.get("active"):
+        p = live.get("player")
+        set_state(mode="speaking" if (p is not None and p.playing()) or tts_playing.is_set() else "awaiting")
+        return
     if tts_playing.is_set():
         mode = "speaking"
     elif thinking > 0:
@@ -878,6 +947,7 @@ def is_stop_command(t):
 tts_queue = queue.Queue()
 tts_playing = threading.Event()
 tts_stop = threading.Event()
+tts_prompt = threading.Event()           # suena un «¿Sí?»: el micrófono sigue escuchando
 tts_gen = {"n": 0}                       # sube al interrumpir: lo que estaba en cola se descarta
 tts_now = {"text": ""}                   # frase que suena ahora
 tts_recent = deque(maxlen=6)             # (hora, frase) de lo último dicho: filtro de eco al interrumpir
@@ -892,7 +962,7 @@ def _init_audio():
         log_terminal("Pygame no instalado: las respuestas solo se mostrarán en texto.", "AVISO")
         set_state(tts="error")
         return
-    if not (edge_tts or PiperVoice or _gemini_for_stt()):
+    if not (edge_tts or PIPER_INSTALLED or _gemini_for_stt()):
         log_terminal("Ni Edge-TTS ni Piper instalados: las respuestas solo se mostrarán en texto.", "AVISO")
         set_state(tts="error")
         return
@@ -936,6 +1006,7 @@ def _get_piper(model_path):
 
 
 def _piper_synth(text, path, rate, volume):
+    _ensure_piper()
     model = find_piper_voice()
     if not model:
         raise RuntimeError("No hay voz de Piper. Ejecuta descargar_voz.py o indícala en Ajustes › Voz.")
@@ -968,13 +1039,16 @@ def _clean_for_speech(text):
     return re.sub(r"[*#`_>|«»]", "", text).strip()
 
 
-def speak(text, voice=None, rate=None, volume=None, pitch=None, force=False, backend=None, gemini=None):
+def speak(text, voice=None, rate=None, volume=None, pitch=None, force=False, backend=None, gemini=None,
+          prompt=False):
     if not text or not audio_ready:
         return
     if not (settings["tts_enabled"] or force):
         return
+    if getattr(_tl, "capture", None) is not None:
+        return
     item = {"text": text, "voice": voice, "rate": rate, "volume": volume, "pitch": pitch,
-            "backend": backend, "gemini": gemini or {}, "gen": tts_gen["n"]}
+            "backend": backend, "gemini": gemini or {}, "gen": tts_gen["n"], "prompt": prompt}
     # La voz se genera YA, en paralelo, mientras suena la frase anterior: así no hay
     # pausas entre frases aunque el motor (p. ej. Gemini) tarde un segundo en responder.
     item["future"] = _synth_pool.submit(_synthesize, item)
@@ -1088,7 +1162,7 @@ def _synthesize(item):
                 out = _gemini_tts(text, path, item.get("gemini"))
                 return out, out == path
             if b == "piper":
-                if PiperVoice is None:
+                if not _ensure_piper():
                     continue
                 path = os.path.join(tempfile.gettempdir(), f"jarvis_{uuid.uuid4().hex}.wav")
                 _piper_synth(text, path, rate, volume)
@@ -1121,6 +1195,10 @@ def _tts_worker():
             continue
         tts_stop.clear()
         tts_playing.set()
+        if item.get("prompt"):
+            tts_prompt.set()
+        else:
+            tts_prompt.clear()
         refresh_mode()
         path, delete = None, False
         try:
@@ -1153,9 +1231,13 @@ def _tts_worker():
                 except OSError:
                     pass
             if tts_queue.empty():
-                time.sleep(0.4)
+                was_prompt = bool(item.get("prompt"))
+                time.sleep(0.05 if was_prompt else 0.4)
                 tts_playing.clear()
+                tts_prompt.clear()
                 refresh_mode()
+                if not was_prompt:
+                    open_followup()
 
 
 def stop_speech(log=True):
@@ -1175,6 +1257,10 @@ _tl = threading.local()                 # _tl.quiet: este hilo ejecuta una rutin
 
 def reply(text, origin="JARVIS"):
     log_terminal(text, origin)
+    cap = getattr(_tl, "capture", None)
+    if cap is not None:                     # orden pedida en la conversación en vivo: la dice Gemini
+        cap.append(str(text))
+        return
     push_chat("jarvis", text, origin)
     if not getattr(_tl, "quiet", False):
         speak(text)
@@ -2005,6 +2091,16 @@ CAPABILITIES = [
     ("Ayuda con tu pantalla", ["ayúdame con esto", "¿qué me sugieres?", "revisa lo que estoy haciendo",
                                "activa el copiloto", "copiloto cada 10 minutos", "desactiva el copiloto"]),
     ("Música (Spotify)", ["reproduce Despacito en Spotify", "pausa Spotify", "siguiente en Spotify"]),
+    ("Presentaciones y Excel", ["haz una presentación de 8 diapositivas sobre el ciclo del agua para quinto",
+                                "crea la planilla de notas de 7A con 4 notas",
+                                "crea una tabla en Excel de los planetas con su distancia al sol"]),
+    ("En vivo: ver", ["(en la conversación en vivo) mira esto", "mira mi pantalla y ayúdame", "deja de mirar"]),
+    ("Clima y noticias", ["¿cómo está el clima?", "¿va a llover mañana?", "clima en Cali", "noticias", "noticias de educación"]),
+    ("Buscar en internet", ["busca en internet qué pasó con la reforma educativa", "averigua cuándo es el día del maestro", "busca la biografía de Policarpa y resúmemela"]),
+    ("Manejar el navegador", ["busca el ciclo del agua en una pestaña nueva", "cambia de pestaña", "busca la palabra fotosíntesis en la página", "baja la página", "ve atrás", "recarga la página"]),
+    ("Desde el celular (Telegram)", ["escríbele a tu bot: ¿qué tengo hoy?", "abre la presentación", "recuérdame a las 3 llamar a la coordinadora"]),
+    ("Sismos y correo", ["avísame de los sismos (actívalo en Ajustes)", "escríbele un correo a la coordinadora diciendo que mañana llego a las 7"]),
+    ("Personal", ["llámame profe", "trabajo en el colegio San José", "apaga el pc a las 6", "Jarvis, descansa"]),
     ("Mensajería", ["manda un whatsapp a Juan que llego tarde", "manda un telegram diciendo reunión a las 3"]),
     ("Pantalla y archivos", ["toma una captura de pantalla", "busca el archivo informe", "brillo al 70"]),
     ("Modo sigilo", ["modo sigilo", "mostrar panel"]),
@@ -2037,7 +2133,7 @@ def _extract_json(text):
 
 def ask_ai(prompt, route=False):
     """Devuelve ('chat', respuesta) o ('skill', nombre, args)."""
-    system = settings["system_prompt"] + ACTION_RULE + VOICE_RULE + f" Hoy es {fecha_hablada(datetime.date.today())}." + _notes_ctx()
+    system = settings["system_prompt"] + ACTION_RULE + VOICE_RULE + f" Hoy es {fecha_hablada(datetime.date.today())}." + _notes_ctx() + _user_ctx()
     if route:
         # Seguridad: la IA solo ve acciones NO destructivas. Apagar, reiniciar, vaciar la
         # papelera, etc. nunca se activan por interpretación: solo con la orden directa exacta.
@@ -2115,7 +2211,7 @@ def answer_question_streaming(prompt):
     if cfg["kind"] == "ollama" and (ollama is None or not cfg["model"]):
         reply(ask_ai(prompt, route=False)[1])
         return
-    system = settings["system_prompt"] + ACTION_RULE + VOICE_RULE + f" Hoy es {fecha_hablada(datetime.date.today())}." + _notes_ctx()
+    system = settings["system_prompt"] + ACTION_RULE + VOICE_RULE + f" Hoy es {fecha_hablada(datetime.date.today())}." + _notes_ctx() + _user_ctx()
     user_msg = {"role": "user", "content": prompt}
     keep = settings["history_turns"] * 2
     history = chat_history[-keep:] if keep else []
@@ -2282,7 +2378,7 @@ def _timers_worker():
             hud_show()
             play_sound(resolve_alarm_sound())
             lbl = f" de {d['label']}" if d["label"] else ""
-            reply(f"¡Tiempo{lbl}! Terminó el temporizador de {_spoken_duration(d['total'])}.", "TIMER")
+            alert(f"¡Tiempo{lbl}! Terminó el temporizador de {_spoken_duration(d['total'])}.", "TIMER")
         if timers:
             _emit_timers()        # refresca la cuenta regresiva cada segundo mientras haya alguno
 
@@ -2381,8 +2477,21 @@ def morning_report():
     hoy = fecha_hablada(datetime.date.today())
     hora = datetime.datetime.now().strftime("%H:%M")
     ia = "operativo" if check_ai() else "sin conexión o sin modelo; revisa los ajustes"
-    reply(f"Buenos días. Hoy es {hoy}, son las {hora}. El modelo de inteligencia artificial está {ia}.", "RUTINA")
+    saludo = f"Buenos días, {settings['address_name'].strip()}." if settings["address_name"].strip() else "Buenos días."
+    reply(f"{saludo} Hoy es {hoy}, son las {hora}. El modelo de inteligencia artificial está {ia}.", "RUTINA")
+    if settings["morning_weather"] and settings["weather_city"].strip():
+        reply(weather_text(), "CLIMA")
     notes_today_summary(speak_it=True)
+    if settings["morning_news"]:
+        reply(news_text(), "NOTICIAS")
+    if settings["telegram_alerts"] and settings["telegram_remote"]:
+        resumen = [f"☀️ Buenos días. Hoy es {hoy}."]
+        if settings["weather_city"].strip():
+            resumen.append(weather_text())
+        lines = agenda("hoy") if "agenda" in globals() else []
+        if lines:
+            resumen.append("Hoy tienes: " + "; ".join(lines[:8]) + ".")
+        threading.Thread(target=telegram_send, args=("\n\n".join(resumen),), daemon=True).start()
 
 
 def reschedule():
@@ -2841,6 +2950,1296 @@ def backup_voice(text, t):
 
 
 # =============================================================================
+# CONVERSACIÓN EN VIVO (Gemini Live). Protocolo en envivo.py.
+# Tras «Jarvis», el audio del micrófono va directo a Gemini, que lo oye tal cual, sabe solo
+# cuándo terminaste, contesta con voz natural y se deja interrumpir. Lo del ambiente (sin
+# «Jarvis») sigue sin salir del PC: el reconocimiento local solo busca la palabra.
+# =============================================================================
+LIVE_URL = envivo.LIVE_URL
+LIVE_STATE_PATH = os.path.join(CONFIG_DIR, "envivo.json")
+_live_lock = threading.Lock()
+
+LIVE_RULE = (
+    " Ahora hablas con el usuario por voz, en vivo: respóndele en español de Colombia, natural, cálido y breve "
+    "(una o dos frases, salvo que pida más). "
+    "Para CUALQUIER acción en su computador (abrir o cerrar programas, volumen, brillo, WhatsApp, música, "
+    "temporizadores, alarmas, recordatorios, notas, rutinas, calendario, el tablero del aula, material de clase, "
+    "dictado, capturas de pantalla, el videobeam, etc.) llama a la función ejecutar_orden con la orden completa "
+    "en español, como la diría el usuario (por ejemplo: «manda un WhatsApp a Andrea Ortiz diciendo que llego "
+    "tarde»). Nunca digas que hiciste algo si la función no lo confirma: cuéntale lo que ella responda. Si la "
+    "función dice que no es una orden del computador, responde tú. "
+    "Si te pide que mires algo (con la cámara o en su pantalla), llama a la función mirar; cuando termine, a "
+    "dejar_de_mirar. Nunca leas en voz alta contraseñas ni datos personales que aparezcan en la imagen. "
+    "Si lo que oyes no va dirigido a ti (una conversación de fondo, un video, alumnos hablando), no respondas. "
+    "Cuando el usuario se despida o diga que eso es todo, despídete en pocas palabras y llama a "
+    "terminar_conversacion.")
+
+LIVE_FUNCS = [
+    {"name": "ejecutar_orden",
+     "description": ("Hace que Jarvis ejecute una orden en el computador del usuario (Windows): abrir o cerrar "
+                     "programas, volumen, WhatsApp, temporizadores, recordatorios, notas, rutinas, calendario, "
+                     "tablero del aula, material de clase, dictado, etc. Devuelve lo que Jarvis respondió."),
+     "parameters": {"type": "OBJECT", "properties": {"orden": {
+         "type": "STRING", "description": "La orden completa en español, como la diría el usuario."}},
+         "required": ["orden"]}},
+    {"name": "terminar_conversacion",
+     "description": "Cierra la conversación en vivo cuando el usuario se despide o dice que eso es todo."},
+    {"name": "mirar",
+     "description": ("Empieza a ver lo que el usuario te quiere mostrar: fuente 'camara' (algo frente a la cámara: "
+                     "un cuaderno, un objeto, un experimento, un dibujo) o 'pantalla' (lo que tiene en su "
+                     "computador). Úsala cuando diga «mira esto», «¿qué ves?», «mira mi pantalla», «ayúdame con "
+                     "esto que tengo abierto». Luego describe o ayuda con lo que veas."),
+     "parameters": {"type": "OBJECT", "properties": {"fuente": {
+         "type": "STRING", "enum": ["camara", "pantalla"], "description": "camara o pantalla"}},
+         "required": ["fuente"]}},
+    {"name": "dejar_de_mirar",
+     "description": "Deja de ver la cámara o la pantalla (cuando el usuario dice «ya», «deja de mirar», «listo»)."},
+]
+
+
+def _ws_installed():
+    try:
+        import importlib.util
+        return importlib.util.find_spec("websockets") is not None
+    except Exception:
+        return False
+
+
+LIVE_PROVIDERS = {"gemini": "Gemini Live", "openai": "OpenAI Realtime", "deepgram": "Deepgram"}
+OPENAI_LIVE_URL = envivo.OPENAI_URL
+DEEPGRAM_URL = envivo.DEEPGRAM_URL
+
+
+def _live_key(p):
+    if p == "gemini":
+        c = _gemini_for_stt()
+        return c["key"] if c else ""
+    if p == "openai":
+        return settings["chatgpt_api_key"].strip()
+    if p == "deepgram":
+        return settings["deepgram_api_key"].strip()
+    return ""
+
+
+def _live_order(include_paused=False):
+    """Proveedores a probar, en orden: el elegido y, si falla, los otros que tengan clave."""
+    first = settings["live_provider"]
+    order = [first] + ([p for p in LIVE_PROVIDERS if p != first] if settings["live_fallback"] else [])
+    pause = live.setdefault("pause", {})
+    return [p for p in order if _live_key(p) and (include_paused or time.time() >= pause.get(p, 0))]
+
+
+def live_mode():
+    """'vivo' si la conversación en vivo se usará ahora, si no 'clasico' (el motivo queda en live['why'])."""
+    if settings["listen_mode"] == "clasico":
+        return "clasico"
+    for cond, why in ((not _live_order(include_paused=True), "falta la clave del proveedor de voz en vivo"),
+                      (not _ws_installed(), "falta un componente (websockets): ejecuta instalar.bat"),
+                      (is_offline(), "no hay internet"),
+                      (dictation_on.is_set(), "estás dictando")):
+        if cond:
+            live["why"] = why
+            return "clasico"
+    if not _live_order():                              # todos fallaron hace poco: el motivo ya está en live["why"]
+        return "clasico"
+    return "vivo"
+
+
+def _live_load():
+    try:
+        with open(LIVE_STATE_PATH, encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _live_save(**kw):
+    d = _live_load()
+    d.update(kw)
+    try:
+        with open(LIVE_STATE_PATH, "w", encoding="utf-8") as f:
+            json.dump(d, f)
+    except OSError:
+        pass
+
+
+def _live_system():
+    now = datetime.datetime.now()
+    recent = ""
+    hist = [m for m in chat_history[-8:] if m.get("role") in ("user", "assistant")]
+    if hist:
+        recent = " Conversación reciente: " + " | ".join(
+            f"{'Usuario' if m['role'] == 'user' else 'Tú'}: {str(m['content'])[:200]}" for m in hist) + "."
+    return (settings["system_prompt"] + VOICE_RULE + f" Hoy es {fecha_hablada(now.date())}, son las "
+            f"{now:%H:%M}." + _notes_ctx() + _user_ctx() + recent + LIVE_RULE)
+
+
+def _live_attempts():
+    """Combinaciones a probar (modelo, formato, extras). La que funcionó la última vez va primero."""
+    voice = settings["gemini_tts_voice"]
+    system = _live_system()
+    models = [settings["live_model"]] + [m for m in envivo.MODELS if m != settings["live_model"]]
+    combos = [(m, v, full) for m in models for v in ("nested", "flat") for full in (True, False)]
+    saved = _live_load().get("combo")
+    if saved:
+        saved = (saved[0], saved[1], bool(saved[2]))
+        if saved in combos:
+            combos.remove(saved)
+            combos.insert(0, saved)
+    out = []
+    for m, v, full in combos:
+        tools = [{"functionDeclarations": LIVE_FUNCS}]
+        if full and settings["live_search"]:
+            tools.append({"googleSearch": {}})
+        setup = envivo.build_setup(m, voice, system, tools, v)
+        if full:
+            setup["setup"]["proactivity"] = {"proactiveAudio": True}   # puede ignorar lo que no va con él
+        out.append((m, f"{v}|{int(full)}", setup))
+    return out
+
+
+def _live_session(p, key, **cb):
+    """(sesión, intentos) para el proveedor p."""
+    system = _live_system()
+    if p == "openai":
+        models = [settings["openai_live_model"]] + [m for m in envivo.OPENAI_MODELS if m != settings["openai_live_model"]]
+        return (envivo.OpenAIRealtime(key, url=OPENAI_LIVE_URL, **cb),
+                [(m, envivo.openai_session(m, settings["openai_live_voice"], system, LIVE_FUNCS)) for m in models])
+    if p == "deepgram":
+        return (envivo.DeepgramAgent(key, url=DEEPGRAM_URL, **cb),
+                [(f"Deepgram ({settings['deepgram_voice']})",
+                  envivo.deepgram_settings(settings["deepgram_voice"], settings["deepgram_think_model"], system, LIVE_FUNCS))])
+    return envivo.LiveSession(key, url=LIVE_URL, **cb), _live_attempts()
+
+
+def _live_open(p, cb=None):
+    """Abre una sesión con el proveedor p. Devuelve (sesión, modelo) o lanza LiveError."""
+    sess, attempts = _live_session(p, _live_key(p), **(cb or {}))
+    try:
+        model, combo = sess.start(attempts)
+    except Exception as e:
+        raise e if isinstance(e, envivo.LiveError) else envivo.LiveError(str(e))
+    if p == "gemini":
+        v, full = combo.split("|")
+        _live_save(combo=[model, v, int(full)])
+    return sess, model
+
+
+def live_start(initial_audio=None):
+    """Abre la conversación en vivo. False si no se pudo (entonces se usa el modo clásico)."""
+    with _live_lock:
+        if live["active"] or live["connecting"]:
+            return True
+        if live_mode() != "vivo":
+            return False
+        live.update(connecting=True, prebuf=bytearray(initial_audio or b""))
+    t0 = time.time()
+    cb = dict(on_audio=_live_on_audio, on_input_text=_live_on_input, on_output_text=_live_on_output,
+              on_interrupted=_live_on_interrupted, on_turn_complete=_live_on_turn_complete,
+              on_tool_calls=_live_tools, on_closed=_live_on_closed, on_go_away=lambda *_: None,
+              on_error=lambda m: log_terminal(f"Voz en vivo: {m}", "AVISO"))
+    errors, sess, model, used = [], None, "", ""
+    for p in _live_order():
+        try:
+            sess, model = _live_open(p, cb)
+            used = p
+            break
+        except envivo.LiveError as e:
+            pause = {"key": 1800, "model": 1800, "schema": 1800, "quota": 900}.get(e.kind, 120)
+            live.setdefault("pause", {})[p] = time.time() + pause
+            errors.append(f"{LIVE_PROVIDERS[p]}: {e}")
+    if sess is None:
+        live.update(connecting=False, prebuf=bytearray(), why="; ".join(errors) or "sin proveedor")
+        log_terminal(f"La conversación en vivo no está disponible ({'; '.join(errors)}). "
+                     "Mientras tanto uso el modo clásico.", "AVISO")
+        return False
+    if errors:
+        log_terminal(f"{'; '.join(errors)}. Uso {LIVE_PROVIDERS[used]} como respaldo.", "AVISO")
+    if live["player"] is None:
+        live["player"] = envivo.Player()
+    with _live_lock:
+        live.update(session=sess, active=True, connecting=False, started=time.time(), last=time.time(),
+                    in_buf="", out_buf="", ending=False, model=model, why="", turn_audio=False, provider=used)
+        pre, live["prebuf"] = bytes(live["prebuf"]), bytearray()
+    for i in range(0, len(pre), 8000):                 # lo que dijiste mientras conectaba
+        sess.send_audio(pre[i:i + 8000])
+    set_state(live=True)
+    refresh_mode()
+    log_terminal(f"Conversación en vivo con {model} ({time.time() - t0:.1f} s). Habla con normalidad; "
+                 f"termina sola tras {settings['live_idle']} s de silencio.", "EN VIVO")
+    threading.Thread(target=_live_watchdog, args=(sess,), daemon=True).start()
+    return True
+
+
+def live_stop(reason="cerrada"):
+    s = live["session"]
+    if s is not None:
+        s.close(reason)
+
+
+def live_feed(data, peak):
+    """Cada trozo del micrófono mientras la conversación está abierta (o conectándose)."""
+    if live["connecting"]:
+        if len(live["prebuf"]) < 16000 * 2 * 15:
+            live["prebuf"] += data
+        return
+    s = live["session"]
+    if not live["active"] or s is None:
+        return
+    p = live["player"]
+    echo = (p is not None and p.playing()) or tts_playing.is_set()
+    if echo and not (settings["barge_in"] and peak >= settings["live_barge_level"] / 100):
+        data = b"\x00" * len(data)                     # su propia voz por los parlantes: no se la manda
+    s.send_audio(data)
+
+
+def _live_on_audio(pcm):
+    live["last"] = time.time()
+    if not live["turn_audio"]:
+        live["turn_audio"] = True
+        _live_flush_user()
+    try:
+        live["player"].write(pcm)
+    except Exception as e:
+        log_terminal(f"No pude reproducir la voz en vivo: {e}", "ERROR")
+        live_stop("sin salida de audio")
+        return
+    set_state(mode="speaking")
+
+
+def _live_on_input(text):
+    live["last"] = time.time()
+    live["in_buf"] += text
+    socketio.emit("heard", {"text": live["in_buf"].strip()})
+
+
+def _live_on_output(text):
+    live["out_buf"] += text
+
+
+def _live_flush_user():
+    said = re.sub(r"\s+", " ", live["in_buf"]).strip()
+    live["in_buf"] = ""
+    if said:
+        log_terminal(f'"{said}"', "VOZ")
+        push_chat("user", said, "voz")
+        chat_history.append({"role": "user", "content": said})
+    return said
+
+
+def _live_flush_jarvis(cut=False):
+    ans = re.sub(r"\s+", " ", live["out_buf"]).strip()
+    live["out_buf"] = ""
+    if ans:
+        if cut:
+            ans += " (interrumpido)"
+        log_terminal(ans, "JARVIS")
+        push_chat("jarvis", ans, "EN VIVO")
+        chat_history.append({"role": "assistant", "content": ans})
+        del chat_history[:-40]
+    return ans
+
+
+def _live_on_interrupted():
+    if live["player"] is not None:
+        live["player"].clear()
+    _live_flush_jarvis(cut=True)
+    live["turn_audio"] = False
+    refresh_mode()
+
+
+def _live_on_turn_complete():
+    live["last"] = time.time()
+    _live_flush_user()
+    _live_flush_jarvis()
+    live["turn_audio"] = False
+    save_memory()
+
+
+def _live_on_closed(reason):
+    live_view_stop()
+    with _live_lock:
+        was = live["active"]
+        live.update(active=False, connecting=False, session=None)
+    _live_flush_user()
+    _live_flush_jarvis()
+    set_state(live=False)
+    refresh_mode()
+    if was:
+        log_terminal(f"Conversación en vivo terminada ({reason}). Di «Jarvis» para empezar otra.", "EN VIVO")
+
+
+def _live_watchdog(sess):
+    while not sess.closed.is_set():
+        time.sleep(0.4)
+        p = live["player"]
+        playing = p is not None and p.playing()
+        refresh_mode()
+        if live["ending"] and not playing:
+            live_stop("te despediste")
+        elif not playing and time.time() - live["last"] > settings["live_idle"]:
+            live_stop(f"{settings['live_idle']} s sin hablar")
+        elif time.time() - live["started"] > 9 * 60:
+            live_stop("límite de tiempo de la sesión")
+
+
+def live_run_order(order):
+    """La función ejecutar_orden: corre la orden por el mismo camino que una orden escrita,
+    sin voz (la respuesta la dice Gemini) y sin acciones peligrosas."""
+    order = re.sub(r"\s+", " ", str(order or "")).strip()[:400]
+    if not order:
+        return {"error": "La orden llegó vacía."}
+    pending.update(skill=None, args=None, expires=0)  # nunca confirmar algo peligroso desde aquí
+    direct = skills.parse(order)
+    sk = skills.REGISTRY.get(direct[0]) if direct else None
+    if sk is not None and sk.dangerous:
+        log_terminal(f"Orden peligrosa pedida en vivo, no ejecutada: {order}", "AVISO")
+        return {"error": "Por seguridad, esa acción (apagar, reiniciar, cerrar sesión, vaciar la papelera…) no se "
+                         "hace desde la conversación en vivo. Dile al usuario que la escriba en el panel de Jarvis."}
+    log_terminal(f"Orden: {order}", "EN VIVO")
+    _tl.capture, _tl.live, _tl.no_order = [], True, False
+    try:
+        process_command(order)
+        said, no_order = list(_tl.capture), _tl.no_order
+    except Exception as e:
+        return {"error": f"Falló: {e}"}
+    finally:
+        _tl.capture, _tl.live, _tl.no_order = None, False, False
+    if no_order and not said:
+        return {"result": "Eso no es una orden del computador: respóndela tú."}
+    return {"result": " ".join(said) or "Hecho."}
+
+
+def _live_tools(calls):
+    out = []
+    for c in calls:
+        name, args = c.get("name"), c.get("args") or {}
+        live["last"] = time.time()
+        if name == "terminar_conversacion":
+            live["ending"] = True
+            res = {"result": "La conversación se cerrará al terminar de hablar."}
+        elif name == "ejecutar_orden":
+            res = live_run_order(args.get("orden", ""))
+        elif name == "mirar":
+            res = live_view_start(str(args.get("fuente") or "camara"))
+        elif name == "dejar_de_mirar":
+            live_view_stop()
+            res = {"result": "Ya no estás viendo."}
+        else:
+            res = {"error": f"Función desconocida: {name}"}
+        out.append({"id": c.get("id"), "name": name, "response": res})
+    return out
+
+
+_BEEP = {"path": None}
+
+
+def _beep_path():
+    """Un «tin» corto para avisar que ya te escucha (en vivo no se dice «¿Sí?»)."""
+    if _BEEP["path"] and os.path.exists(_BEEP["path"]):
+        return _BEEP["path"]
+    import math
+    import wave
+    path = os.path.join(tempfile.gettempdir(), "jarvis_escucha.wav")
+    rate, n = 22050, int(22050 * 0.16)
+    frames = bytearray()
+    for i in range(n):
+        env = min(1.0, i / 300) * min(1.0, (n - i) / 900)
+        v = int(9000 * env * (math.sin(2 * math.pi * 880 * i / rate) + 0.4 * math.sin(2 * math.pi * 1320 * i / rate)))
+        frames += int(max(-32767, min(32767, v))).to_bytes(2, "little", signed=True)
+    with wave.open(path, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(bytes(frames))
+    _BEEP["path"] = path
+    return path
+
+
+def live_test():
+    """Botón «Probar» de Ajustes: abre y cierra una sesión con cada proveedor que tenga clave."""
+    if live["active"]:
+        return {"ok": True, "msg": f"Ya hay una conversación en vivo abierta con {live['model']}."}
+    if not _ws_installed():
+        return {"ok": False, "msg": "Falta un componente (websockets). Ejecuta instalar.bat o actualiza Jarvis."}
+    live["pause"] = {}
+    live["why"] = ""
+    provs = _live_order()
+    if not provs:
+        return {"ok": False, "msg": "No hay clave para ningún proveedor de voz en vivo (Gemini en Ajustes › IA)."}
+    lines, ok_any = [], False
+    for p in provs:
+        t0 = time.time()
+        try:
+            sess, model = _live_open(p)
+            sess.close("prueba")
+            lines.append(f"✓ {LIVE_PROVIDERS[p]}: conectado con {model} en {time.time() - t0:.1f} s")
+            ok_any = True
+        except envivo.LiveError as e:
+            lines.append(f"✗ {LIVE_PROVIDERS[p]}: {e}")
+    return {"ok": ok_any, "msg": "  ·  ".join(lines)}
+
+
+# =============================================================================
+# PRESENTACIONES Y HOJAS DE EXCEL POR VOZ (lógica en oficina.py)
+# =============================================================================
+office_job = {"busy": False}
+
+
+def notify(text, origin="JARVIS"):
+    """Avisa algo que terminó en segundo plano. Si hay una conversación en vivo abierta, se lo
+    pasa a la IA de voz para que lo diga ella (así no hablan dos voces a la vez). Si la orden
+    vino del celular (Telegram) hace poco, también se lo cuenta allá."""
+    if settings["telegram_remote"] and time.time() - tg["last_cmd"] < 900:
+        threading.Thread(target=telegram_send, args=(text,), daemon=True).start()
+    s = live.get("session")
+    if live.get("active") and s is not None:
+        log_terminal(text, origin)
+        push_chat("jarvis", text, origin)
+        try:
+            s.send_text(f"[Aviso de Jarvis para que se lo digas al usuario en una frase: {text}]")
+            return
+        except Exception:
+            pass
+    reply(text, origin)
+
+
+def _open_doc(path):
+    generated_files.add(path)
+    if IS_WIN and settings["aula_open_docs"]:
+        try:
+            os.startfile(path)
+            return True
+        except OSError:
+            pass
+    return False
+
+
+def _course_in(t):
+    """El curso nombrado en la frase («de 7A»), o el activo del tablero."""
+    for c in sorted(aula.data["cursos"], key=len, reverse=True):
+        if re.search(rf"\b{re.escape(normalize(c))}\b", t):
+            return c, aula.data["cursos"][c]
+    return aula.active()
+
+
+def _periodo_in(t):
+    m = re.search(r"\b(?:periodo|bimestre|trimestre)\s+(\d|uno|dos|tres|cuatro)\b"
+                  r"|\b(primer|segundo|tercer|cuarto)\s+(?:periodo|bimestre|trimestre)\b", t)
+    if not m:
+        return ""
+    w = m.group(1) or m.group(2)
+    n = {"uno": 1, "primer": 1, "dos": 2, "segundo": 2, "tres": 3, "tercer": 3, "cuatro": 4, "cuarto": 4}.get(w, w)
+    return f"Periodo {n}"
+
+
+def _office_ai_json(prompt, validate, request, max_tokens=8000):
+    m, last = None, None
+    for _ in range(2):                                 # un reintento si la IA devuelve algo mal formado
+        try:
+            raw = ai_chat([{"role": "user", "content": prompt}], json_mode=True, max_tokens=max_tokens)
+            return validate(_extract_json(raw), request)
+        except (ValueError, TypeError) as e:
+            last = e
+    raise ValueError(str(last) or "respuesta no válida")
+
+
+def office_voice(text, t):
+    """«haz una presentación sobre…», «crea la planilla de notas de 7A», «crea una tabla en Excel de…»."""
+    found = oficina.detect(text)
+    if not found:
+        return False
+    kind, d = found
+    if kind == "notas":
+        try:
+            course, names = _course_in(t)
+        except ValueError as e:
+            reply(str(e), "AULA")
+            return True
+        try:
+            path = oficina.build_grades_xlsx(course, names, d["count"], settings["output_dir"],
+                                             settings["aula_docente"], settings["aula_institucion"], _periodo_in(t))
+        except ImportError:
+            reply("Para crear hojas de Excel falta un componente (openpyxl). Actualiza Jarvis o ejecuta instalar.bat.", "ERROR")
+            return True
+        opened = _open_doc(path)
+        log_terminal(f"Planilla guardada en: {path}", "AULA")
+        reply(f"Listo, la planilla de notas de {course}: {len(names)} estudiantes y {d['count']} notas, con promedio "
+              "y desempeño automáticos. La guardé en Documentos, Jarvis, Planillas" + (" y la abrí." if opened else "."), "AULA")
+        return True
+    if office_job["busy"]:
+        reply("Ya estoy preparando otro documento. Cuando termine, hago este.", "AULA")
+        return True
+    what = "la presentación" if kind == "pptx" else "la tabla"
+    office_job["busy"] = True
+    reply(f"Preparando {what}. Te aviso cuando esté lista; suele tardar menos de un minuto.", "AULA")
+
+    def work():
+        try:
+            if kind == "pptx":
+                m = _office_ai_json(oficina.pptx_prompt(d["request"], d["count"], d["grade"]),
+                                    oficina.pptx_validate, d["request"])
+                path = oficina.build_pptx(m, settings["output_dir"], settings["aula_docente"],
+                                          settings["aula_institucion"], d["grade"])
+                n = len(m["diapositivas"])
+                msg = (f"Lista la presentación «{m['titulo']}»: {n} diapositivas, con notas para ti debajo de cada una. "
+                       "La guardé en la carpeta Material de clase")
+            else:
+                m = _office_ai_json(oficina.table_prompt(d["request"]), oficina.table_validate, d["request"])
+                path = oficina.build_table_xlsx(m, settings["output_dir"])
+                msg = f"Lista la tabla «{m['titulo']}» con {len(m['filas'])} filas. La guardé en Documentos, Jarvis, Planillas"
+            opened = _open_doc(path)
+            log_terminal(f"Guardado en: {path}", "AULA")
+            notify(msg + (" y la abrí." if opened else "."), "AULA")
+        except ImportError:
+            notify("Para crear presentaciones y hojas de Excel falta un componente. Actualiza Jarvis o ejecuta instalar.bat.", "ERROR")
+        except AIError as e:
+            notify(ai_error_reply(e), "AULA")
+        except Exception as e:
+            log_terminal(f"Documento: {e}", "ERROR")
+            notify(f"No me salió bien {what}. Inténtalo otra vez, quizá con un tema más concreto.", "AULA")
+        finally:
+            office_job["busy"] = False
+    threading.Thread(target=work, daemon=True, name="oficina").start()
+    return True
+
+
+# =============================================================================
+# JARVIS VE EN VIVO: cámara o pantalla dentro de la conversación en vivo
+# =============================================================================
+live_view = {"src": None, "until": 0.0, "cap": None, "stop": threading.Event(), "sensitive": False}
+LIVE_VIEW_MAX = 180                                    # segundos como máximo por cada «mira»
+
+
+def _jpeg_from_bgr(frame, max_w=1024):
+    import cv2
+    h, w = frame.shape[:2]
+    if w > max_w:
+        frame = cv2.resize(frame, (max_w, int(h * max_w / w)))
+    ok, buf = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+    if not ok:
+        raise ValueError("no pude codificar la imagen")
+    return buf.tobytes()
+
+
+def _live_camera_frame():
+    import cv2
+    cap = live_view["cap"]
+    if cap is None:
+        idx = settings["camera_index"]
+        cap = cv2.VideoCapture(idx, cv2.CAP_DSHOW) if IS_WIN else cv2.VideoCapture(idx)
+        if not cap.isOpened():
+            cap.release()
+            raise ValueError("No pude abrir la cámara: revisa que no la use otra aplicación (Teams, Zoom…) y "
+                             "que Windows le dé permiso en Configuración › Privacidad › Cámara.")
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        live_view["cap"] = cap
+        t0 = time.time()
+        while time.time() - t0 < 0.8:                  # que ajuste luz y foco
+            cap.read()
+    frame = None
+    for _ in range(3):
+        ok, f = cap.read()
+        if ok:
+            frame = f
+    if frame is None:
+        raise ValueError("La cámara no entregó imagen.")
+    return _jpeg_from_bgr(frame)
+
+
+def _live_screen_frame():
+    """JPEG de la pantalla, o None si la ventana activa es privada (no se captura)."""
+    if skills.pyautogui is None:
+        raise ValueError("Para ver la pantalla falta la librería pyautogui.")
+    title = _foreground_title()
+    if title and SENSITIVE_TITLES.search(title):
+        return None
+    import io
+    img = skills.pyautogui.screenshot()
+    if img.width > 1280:
+        img = img.resize((1280, round(img.height * 1280 / img.width)))
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, "JPEG", quality=70)
+    return buf.getvalue()
+
+
+def _live_frame(src):
+    return _live_camera_frame() if src == "camara" else _live_screen_frame()
+
+
+def live_view_stop(reason=""):
+    live_view["stop"].set()
+    live_view["src"] = None
+    cap, live_view["cap"] = live_view["cap"], None
+    if cap is not None:
+        try:
+            cap.release()
+        except Exception:
+            pass
+    set_state(viewing="")
+
+
+def live_view_start(src):
+    """Lo llama la IA de voz (función «mirar»). Devuelve el resultado para ella."""
+    src = "camara" if src in ("camara", "cámara", "camera") else "pantalla"
+    s = live.get("session")
+    if not live.get("active") or s is None:
+        return {"error": "No hay conversación en vivo."}
+    if not hasattr(s, "send_image") or live.get("provider") == "deepgram":
+        return {"error": "Con este proveedor de voz no puedo ver imágenes. Funciona con Gemini Live u OpenAI Realtime."}
+    live_view_stop()
+    try:
+        frame = _live_frame(src)
+    except ImportError:
+        return {"error": "Para usar la cámara falta un componente (opencv). Ejecuta instalar.bat."}
+    except ValueError as e:
+        return {"error": str(e)}
+    if frame is None:
+        return {"error": "La ventana activa parece privada (contraseñas, banco o pagos): no la voy a mirar. "
+                         "Dile al usuario que cambie a otra ventana."}
+    if not s.send_image(frame):
+        return {"error": "No pude enviar la imagen."}
+    live_view.update(src=src, until=time.time() + LIVE_VIEW_MAX, sensitive=False)
+    live_view["stop"] = threading.Event()
+    set_state(viewing=src)
+    que = "la cámara" if src == "camara" else "la pantalla"
+    log_terminal(f"Mirando {que} (máximo {LIVE_VIEW_MAX // 60} minutos; di «deja de mirar» para parar).", "EN VIVO")
+    if live.get("provider") == "gemini":                # Gemini Live recibe video: 1 imagen por segundo
+        threading.Thread(target=_live_view_loop, args=(s, src, live_view["stop"]), daemon=True).start()
+        return {"result": f"Ya estás viendo {que} en vivo (una imagen por segundo). Describe o ayuda con lo que veas."}
+    return {"result": f"Te envié una imagen de {que}. Si el usuario cambia algo, vuelve a llamar a mirar."}
+
+
+def _live_view_loop(sess, src, stop):
+    while not stop.wait(1.0):
+        if sess.closed.is_set() or time.time() > live_view["until"]:
+            break
+        try:
+            frame = _live_frame(src)
+        except Exception as e:
+            log_terminal(f"Visión en vivo: {e}", "AVISO")
+            break
+        if frame is None:                              # cambió a una ventana privada: no se envía
+            if not live_view["sensitive"]:
+                live_view["sensitive"] = True
+                log_terminal("Ventana privada en pantalla: dejo de enviar imágenes mientras esté abierta.", "EN VIVO")
+            continue
+        live_view["sensitive"] = False
+        sess.send_image(frame)
+    if live_view["stop"] is stop:
+        live_view_stop()
+
+
+
+# =============================================================================
+# CLIMA Y NOTICIAS (lógica en infodia.py)
+# =============================================================================
+GEO_URL = infodia.GEO_URL
+FORECAST_URL = infodia.FORECAST_URL
+_geo_cache = {}
+
+
+def _get_text(url, timeout=12):
+    req = urllib.request.Request(url, headers={"User-Agent": f"Mozilla/5.0 (Jarvis/{VERSION})",
+                                               "Accept-Language": "es-CO,es;q=0.9"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read().decode("utf-8", "replace")
+
+
+def _geo(city):
+    key = normalize(city)
+    if key not in _geo_cache:
+        url = infodia.geo_url(city).replace(infodia.GEO_URL, GEO_URL)
+        _geo_cache[key] = infodia.parse_geo(json.loads(_get_text(url)))
+    return _geo_cache[key]
+
+
+def weather_text(city="", day=0):
+    city = (city or settings["weather_city"]).strip()
+    if not city:
+        return ("Para darte el clima dime de qué ciudad, por ejemplo «clima en Medellín», o escribe tu ciudad "
+                "en Ajustes, sección Integraciones.")
+    if is_offline():
+        return "Ahora no hay internet, así que no puedo consultar el clima."
+    try:
+        g = _geo(city)
+        if not g:
+            return f"No encontré la ciudad «{city}». Prueba con otro nombre."
+        url = infodia.forecast_url(g["lat"], g["lon"]).replace(infodia.FORECAST_URL, FORECAST_URL)
+        return infodia.describe(json.loads(_get_text(url)), g["name"], day)
+    except Exception as e:
+        log_terminal(f"Clima: {e}", "AVISO")
+        return "No pude consultar el clima en este momento."
+
+
+def _news_items(topic=""):
+    feeds = [infodia.topic_feed(topic)] if topic else (
+        [u.strip() for u in settings["news_feeds"].splitlines() if u.strip().startswith("http")] or infodia.DEFAULT_FEEDS)
+    lists = []
+    for u in feeds[:5]:
+        try:
+            lists.append(infodia.parse_rss(_get_text(u)))
+        except Exception as e:
+            log_terminal(f"Noticias ({urllib.parse.urlsplit(u).netloc}): {e}", "AVISO")
+    return infodia.merge(lists, limit=10)
+
+
+def news_text(topic=""):
+    if is_offline():
+        return "Ahora no hay internet, así que no puedo traer las noticias."
+    items = _news_items(topic)
+    if not items:
+        return "No pude traer las noticias en este momento."
+    try:
+        return ai_chat([{"role": "user", "content": infodia.news_prompt(items, topic)}], max_tokens=900).strip()
+    except Exception:
+        return infodia.headlines_spoken(items)          # sin IA: los titulares tal cual
+
+
+_WEATHER_RE = re.compile(r"\b(?:clima|tiempo (?:que hace|hace|va a hacer)|temperatura|pronostico|va a llover|"
+                         r"llovera|esta lloviendo|hace (?:frio|calor)|que tal el dia)\b")
+_NEWS_RE = re.compile(r"\b(?:noticias|titulares|que (?:hay de nuevo|esta pasando)|que paso hoy|resumen de noticias)\b")
+
+
+def info_voice(text, t):
+    """«¿cómo está el clima?», «¿va a llover mañana?», «clima en Cali», «noticias», «noticias de educación»."""
+    if _WEATHER_RE.search(t) and not re.search(r"\b(?:temperatura del? (?:pc|cpu|procesador|equipo))\b", t):
+        day = 1 if re.search(r"\bmanana\b", t) else 0
+        m = re.search(r"\b(?:en|de|para)\s+([a-zñ ]{3,40}?)\s*(?:hoy|manana|ahora)?$", t)
+        city = ""
+        if m and m.group(1).strip() not in ("hoy", "manana", "la manana", "la tarde", "la noche", "el dia"):
+            city = m.group(1).strip().title()
+        reply(weather_text(city, day), "CLIMA")
+        return True
+    if _NEWS_RE.search(t):
+        m = re.search(r"\bnoticias\s+(?:de|del|sobre|acerca de)\s+(?:la |el |los |las )?(.{3,60})$", t)
+        topic = m.group(1).strip() if m and m.group(1).strip() not in ("hoy", "el dia", "colombia hoy") else ""
+        reply("Buscando las noticias" + (f" de {topic}" if topic else "") + "…", "NOTICIAS")
+        reply(news_text(topic), "NOTICIAS")
+        return True
+    return False
+
+
+_SEARCH_RE = re.compile(
+    r"\b(?:busca|buscame|averigua|averiguame|investiga|consulta|resumeme)\b.{0,40}\b(?:en internet|en la web|en linea|en google|en la red)\b"
+    r"|^(?:oye |jarvis )?(?:averigua|averiguame|investiga)\b"
+    r"|\bbusca(?:me)?\b.{0,60}\by (?:res[uú]m\w*|cu[eé]nta\w*|me cu[eé]nta\w*)\b")
+_SEARCH_NOT = re.compile(r"\b(?:archivo|carpeta|documento|youtube|you tube|spotify|cancion|video|musica|"
+                         r"aplicacion|programa|en mi (?:pc|equipo|computador))\b")
+
+
+def search_voice(text, t):
+    """«busca en internet qué pasó con…», «averigua…», «busca y resúmeme…»."""
+    if _SEARCH_NOT.search(t) or not _SEARCH_RE.search(t):
+        return False
+    q = re.sub(r"^(?:oye |jarvis )?(?:busca(?:me)?|averigua(?:me)?|investiga|consulta|resumeme)\s+", "", text.strip(), flags=re.I)
+    q = re.sub(r"\b(?:en internet|en la web|en linea|en l[ií]nea|en google|en la red)\b", "", q, flags=re.I)
+    q = re.sub(r"\s+y (?:res[uú]m\w*|cu[eé]nta\w*|me cu[eé]nta\w*)\b.*$", "", q, flags=re.I)
+    q = re.sub(r"^(?:sobre|acerca de|que|qu[eé]|lo de|por)\s+", "", q.strip(" ,.:"), flags=re.I).strip(" ,.:¿?")
+    if len(q) < 3:
+        reply("¿Qué quieres que busque en internet?", "INTERNET")
+        return True
+    web_search(q)
+    return True
+
+
+def web_search(query):
+    if is_offline():
+        reply("Ahora no hay internet, así que no puedo buscar.", "INTERNET")
+        return
+    reply(f"Busco en internet sobre {query}…", "INTERNET")
+
+    def work():
+        results = []
+        for lite in (False, True):
+            try:
+                results = buscar.parse_results(_get_text(buscar.search_url(query, lite=lite), timeout=12))
+            except Exception as e:
+                log_terminal(f"Búsqueda web: {e}", "AVISO")
+            if results:
+                break
+        if not results:
+            reply("No pude buscar en internet en este momento. Inténtalo de nuevo en un momento.", "INTERNET")
+            return
+        try:
+            ans = ai_chat([{"role": "user", "content": buscar.prompt(query, results)}], max_tokens=600).strip()
+        except AIError:
+            ans = buscar.spoken_fallback(query, results)
+        except Exception:
+            ans = buscar.spoken_fallback(query, results)
+        reply(ans or buscar.spoken_fallback(query, results), "INTERNET")
+        fuentes = buscar.sources(results)
+        if fuentes:
+            log_terminal("Fuentes: " + " · ".join(f"{s['titulo']} ({s['fuente']})" for s in fuentes), "INTERNET")
+    threading.Thread(target=work, daemon=True, name="buscar").start()
+
+
+# =============================================================================
+# TELEGRAM: controla Jarvis desde tu celular y recibe ahí tus avisos
+# =============================================================================
+TELEGRAM_API = "https://api.telegram.org"
+tg = {"offset": None, "last_cmd": 0.0, "unknown_warned": set(), "ok": False, "error": ""}
+
+
+def _tg_call(method, params=None, timeout=35, files=None):
+    token = settings["telegram_token"].strip()
+    url = f"{TELEGRAM_API}/bot{token}/{method}"
+    if files:                                          # multipart para la captura de pantalla
+        import uuid as _u
+        bnd = "----jarvis" + _u.uuid4().hex
+        body = bytearray()
+        for k, v in (params or {}).items():
+            body += f"--{bnd}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n".encode()
+        for k, (fname, data, ctype) in files.items():
+            body += (f"--{bnd}\r\nContent-Disposition: form-data; name=\"{k}\"; filename=\"{fname}\"\r\n"
+                     f"Content-Type: {ctype}\r\n\r\n").encode() + data + b"\r\n"
+        body += f"--{bnd}--\r\n".encode()
+        req = urllib.request.Request(url, data=bytes(body), method="POST",
+                                     headers={"Content-Type": f"multipart/form-data; boundary={bnd}"})
+    else:
+        req = urllib.request.Request(url, data=json.dumps(params or {}).encode(), method="POST",
+                                     headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        d = json.loads(r.read().decode("utf-8", "replace"))
+    if not d.get("ok"):
+        raise RuntimeError(d.get("description") or "Telegram rechazó la petición")
+    return d.get("result")
+
+
+def telegram_send(text, chat=None):
+    chat = chat or settings["telegram_chat"].strip()
+    if not (settings["telegram_token"].strip() and chat):
+        return False
+    try:
+        for i in range(0, len(text), 3800):
+            _tg_call("sendMessage", {"chat_id": chat, "text": text[i:i + 3800]}, timeout=15)
+        return True
+    except Exception as e:
+        log_terminal(f"Telegram: {e}", "AVISO")
+        return False
+
+
+def alert(text, origin="JARVIS"):
+    """Un aviso (recordatorio, calendario, temporizador): en el PC y, si lo activaste, en tu celular."""
+    reply(text, origin)
+    if settings["telegram_alerts"] and settings["telegram_remote"]:
+        threading.Thread(target=telegram_send, args=(f"🔔 {text}",), daemon=True).start()
+
+
+_TG_HELP = ("Soy Jarvis, en tu computador. Escríbeme como me hablarías, por ejemplo:\n"
+            "• ¿qué tengo hoy?\n• abre la presentación de ciencias\n• recuérdame a las 3 llamar a la coordinadora\n"
+            "• volumen al 30\n• ¿cómo está el clima?\n• noticias\n\n"
+            "/captura – foto de la pantalla\n/estado – cómo está el PC\n/ayuda – esta ayuda\n\n"
+            "Por seguridad, apagar, reiniciar, cerrar sesión o borrar no se hacen desde aquí.")
+
+
+def telegram_run(text):
+    """Ejecuta un mensaje de Telegram como una orden escrita y devuelve la respuesta en texto."""
+    t = normalize(text)
+    pending.update(skill=None, args=None, expires=0)   # nada peligroso se confirma desde el celular
+    direct = skills.parse(text)
+    sk = skills.REGISTRY.get(direct[0]) if direct else None
+    if sk is not None and sk.dangerous:
+        log_terminal(f"Orden peligrosa pedida por Telegram, no ejecutada: {text}", "AVISO")
+        return "Por seguridad, eso (apagar, reiniciar, cerrar sesión, borrar…) no lo hago desde Telegram."
+    if re.search(DICTATION_START_RE, t):
+        return "El dictado solo funciona hablando frente al computador."
+    _tl.capture, _tl.remote = [], True
+    try:
+        process_command(text)
+        said = list(_tl.capture)
+    except Exception as e:
+        return f"No pude hacerlo: {e}"
+    finally:
+        _tl.capture, _tl.remote = None, False
+    return "\n".join(said) or "Hecho."
+
+
+def _tg_screenshot(chat):
+    if skills.pyautogui is None:
+        return "No puedo capturar la pantalla (falta pyautogui)."
+    title = _foreground_title()
+    if title and SENSITIVE_TITLES.search(title):
+        return "La ventana abierta parece privada (contraseñas, banco o pagos): no la capturo."
+    import io
+    img = skills.pyautogui.screenshot()
+    if img.width > 1600:
+        img = img.resize((1600, round(img.height * 1600 / img.width)))
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, "JPEG", quality=75)
+    _tg_call("sendPhoto", {"chat_id": chat, "caption": title or "Pantalla"},
+             files={"photo": ("pantalla.jpg", buf.getvalue(), "image/jpeg")}, timeout=30)
+    return None
+
+
+def _tg_handle(msg):
+    chat = str((msg.get("chat") or {}).get("id", ""))
+    text = (msg.get("text") or "").strip()
+    who = (msg.get("from") or {}).get("first_name", "alguien")
+    allowed = settings["telegram_chat"].strip()
+    if not allowed:
+        # aún no hay chat configurado: le dice su número para que lo pongas en Ajustes
+        log_terminal(f"Telegram: escribió {who} (chat id {chat}). Si eres tú, pon {chat} en Ajustes › "
+                     "Integraciones › Chat id.", "TELEGRAM")
+        telegram_send(f"Hola {who}. Tu chat id es {chat}. Escríbelo en Jarvis (Ajustes › Integraciones › Chat id) "
+                      "para que pueda obedecerte desde aquí.", chat)
+        return
+    if chat != allowed:
+        if chat not in tg["unknown_warned"]:
+            tg["unknown_warned"].add(chat)
+            log_terminal(f"Telegram: ignoré un mensaje de un chat desconocido ({who}, {chat}).", "AVISO")
+        return
+    if not text:
+        telegram_send("Por ahora solo entiendo mensajes de texto.")
+        return
+    tg["last_cmd"] = time.time()
+    log_terminal(f"Desde el celular: {text}", "TELEGRAM")
+    push_chat("user", text, "telegram")
+    low = normalize(text.lstrip("/"))
+    if low in ("start", "ayuda", "help"):
+        out = _TG_HELP
+    elif low in ("captura", "pantalla", "screenshot"):
+        try:
+            out = _tg_screenshot(chat)
+        except Exception as e:
+            out = f"No pude enviar la captura: {e}"
+    elif low in ("estado", "status"):
+        out = telegram_run("estado del sistema")
+    else:
+        out = telegram_run(text)
+    if out:
+        telegram_send(out)
+
+
+def _telegram_worker():
+    """Recibe los mensajes del bot (long polling). Solo obedece a tu chat."""
+    while True:
+        if not (settings["telegram_remote"] and settings["telegram_token"].strip()) or is_offline():
+            tg["ok"] = False
+            time.sleep(5)
+            continue
+        try:
+            if tg["offset"] is None:                    # al arrancar no se ejecutan mensajes viejos
+                old = _tg_call("getUpdates", {"timeout": 0, "offset": -1}, timeout=15) or []
+                tg["offset"] = (old[-1]["update_id"] + 1) if old else 0
+            ups = _tg_call("getUpdates", {"timeout": 25, "offset": tg["offset"],
+                                          "allowed_updates": ["message"]}, timeout=35) or []
+            if not tg["ok"]:
+                tg.update(ok=True, error="")
+                log_terminal("Telegram conectado: puedes escribirle a tu bot desde el celular.", "TELEGRAM")
+            for u in ups:
+                tg["offset"] = u["update_id"] + 1
+                if u.get("message"):
+                    try:
+                        _tg_handle(u["message"])
+                    except Exception as e:
+                        log_terminal(f"Telegram: {e}", "ERROR")
+        except Exception as e:
+            if str(e) != tg["error"]:
+                tg["error"] = str(e)
+                log_terminal(f"Telegram: {e}", "AVISO")
+            tg["ok"] = False
+            time.sleep(15)
+
+
+def telegram_test():
+    if not settings["telegram_token"].strip():
+        return {"ok": False, "msg": "Primero pega el token del bot y guarda."}
+    try:
+        me = _tg_call("getMe", timeout=10)
+    except Exception as e:
+        return {"ok": False, "msg": f"El token no funciona: {e}"}
+    name = me.get("username", "")
+    if not settings["telegram_chat"].strip():
+        return {"ok": True, "msg": f"Bot @{name} listo. Escríbele «hola» desde tu Telegram y te responderá con tu "
+                                   "chat id; pégalo aquí y guarda."}
+    ok = telegram_send(f"✅ Jarvis conectado. Escríbeme aquí tus órdenes. /ayuda para ver ejemplos.")
+    return {"ok": ok, "msg": f"Bot @{name}: " + ("te envié un mensaje de prueba." if ok else "no pude escribirte; revisa el chat id.")}
+
+
+
+# =============================================================================
+# TONOS (avisos cortos sintetizados): descanso, despertar, sismo
+# =============================================================================
+_TONES = {}
+
+
+def _tone(name, notes, vol=9000):
+    """notes = [(frecuencia_hz, duración_s), …]. Devuelve la ruta a un WAV cacheado."""
+    if name in _TONES and os.path.exists(_TONES[name]):
+        return _TONES[name]
+    import math
+    import wave
+    rate = 22050
+    frames = bytearray()
+    for freq, dur in notes:
+        n = int(rate * dur)
+        for i in range(n):
+            env = min(1.0, i / 300) * min(1.0, (n - i) / 500)
+            s = vol * env * math.sin(2 * math.pi * freq * i / rate)
+            frames += int(max(-32767, min(32767, s))).to_bytes(2, "little", signed=True)
+    path = os.path.join(tempfile.gettempdir(), f"jarvis_tono_{name}.wav")
+    with wave.open(path, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(bytes(frames))
+    _TONES[name] = path
+    return path
+
+
+def tono_descanso():
+    return _tone("descanso", [(660, 0.14), (520, 0.14), (392, 0.2)])     # desciende
+
+
+def tono_despertar():
+    return _tone("despertar", [(392, 0.12), (523, 0.12), (660, 0.18)])   # asciende
+
+
+def tono_sismo_aviso():
+    return _tone("sismo1", [(700, 0.18), (0, 0.08), (700, 0.18)])
+
+
+def tono_sismo_alerta():
+    return _tone("sismo2", [(880, 0.16), (0, 0.06), (880, 0.16), (0, 0.06), (880, 0.16),
+                            (0, 0.06), (1100, 0.3)], vol=12000)
+
+
+# =============================================================================
+# CÓMO TE TRATA + MEMORIA QUE APRENDE SOLA (perfil). Lógica de perfil en perfil.py.
+# =============================================================================
+def _user_ctx():
+    ctx = perfil.context_for_ai()
+    name = settings["address_name"].strip()
+    if name:
+        ctx += f" Cuando te dirijas al usuario, llámalo «{name}»."
+    return ctx
+
+
+_NAME_RE = re.compile(r"^(?:oye |jarvis )?(?:ll[aá]mame|dime de ahora en adelante|tr[aá]tame de|"
+                      r"refi[eé]rete a m[ií] como|me llamo|mi nombre es|puedes llamarme)\s+(.{2,30})$", re.I)
+
+
+def profile_voice(text, t):
+    """Aprende datos del usuario sin que diga «recuerda», y «llámame X»."""
+    m = _NAME_RE.match(t)
+    if m and not re.search(r"\b(?:recuerda|anota|apunta)\b", t):
+        name = re.sub(r"[.?!]+$", "", text.split(None, 1)[-1]).strip().strip('"').title()[:30]
+        # «llámame profe» → toma la última palabra o dos
+        raw = text.strip().rstrip(".?!")
+        name = raw.split(" ", 1)[1].strip() if " " in raw else raw
+        name = re.sub(r"^(?:ll[aá]mame|dime|trátame de|tratame de|refi[eé]rete a m[ií] como|me llamo|"
+                      r"mi nombre es|puedes llamarme)\s+", "", name, flags=re.I).strip().strip('"')[:30]
+        if name and len(name.split()) <= 3 and not re.search(r"\b(?:para|que|como se|cual|un nombre)\b", name, re.I):
+            apply_settings({"address_name": name})
+            reply(f"Listo, te diré {name} de ahora en adelante.", "MEMORIA")
+            return True
+    forgotten = perfil.forget(text)
+    if forgotten:
+        reply(f"Listo, lo olvidé: {forgotten}.", "MEMORIA")
+        _profile_changed()
+        return True
+    fact = perfil.detect(text)
+    if fact:
+        perfil.add(fact)
+        _profile_changed()
+        reply("Lo tendré en cuenta.", "MEMORIA")
+        return True
+    return False
+
+
+def _profile_changed():
+    socketio.emit("profile_updated", perfil.snapshot())
+
+
+# =============================================================================
+# DESCANSAR («Jarvis, descansa» / «despierta»): sigilo con tonos, solo atiende al nombre
+# =============================================================================
+def _rest_voice(text, t):
+    if re.search(r"\b(?:descansa|ponte a descansar|ve a descansar|duerme(?:te)?|ponte en pausa|"
+                 r"tomate un descanso|modo descanso)\b", t):
+        reply("Vale, me voy a descansar. Di «Jarvis, despierta» cuando me necesites.", "SISTEMA")
+        jarvis_rest["on"] = True
+        set_state(resting=True)
+
+        def go():
+            play_sound(tono_descanso(), 2)
+            time.sleep(1.4)
+            hud_hide()
+        threading.Thread(target=go, daemon=True).start()
+        return True
+    if jarvis_rest["on"] and re.search(r"\b(?:despierta(?:te)?|ya (?:volvi|regrese|estoy)|vuelve|despabilate|"
+                                       r"sal del descanso|ya llegue)\b", t):
+        jarvis_rest["on"] = False
+        set_state(resting=False)
+        hud_show()
+        play_sound(tono_despertar(), 2)
+        reply("Aquí estoy. ¿En qué te ayudo?", "SISTEMA")
+        return True
+    return False
+
+
+# =============================================================================
+# CORREO POR VOZ (lógica en correo.py). Redacta, lee y, solo si confirmas, envía por Gmail.
+# =============================================================================
+email_pending = {"to": None, "asunto": "", "cuerpo": "", "expires": 0.0}
+_MAIL_RE = re.compile(
+    r"\b(?:escrib(?:e|ir|ele|irle)|manda(?:le)?|env(?:ia|iale|iar)|redacta(?:me)?|hazle?|pon(?:le)?)\b"
+    r".{0,25}\b(?:correo|email|mail|e-mail|mensaje de correo)\b"
+    r"|\b(?:correo|email|mail)\b.{0,20}\b(?:a|para)\b")
+
+
+def _mail_book():
+    return correo.parse_book(settings["email_book"])
+
+
+def email_voice(text, t):
+    """«escríbele un correo a la coordinadora diciendo que mañana llego a las 7»."""
+    if not _MAIL_RE.search(t):
+        return False
+    if not correo.valid_sender(settings["email_address"]):
+        reply("Para enviar correos primero pon tu dirección de Gmail y una «contraseña de aplicación» "
+              "en Ajustes, sección Integraciones.", "CORREO")
+        return True
+    if not settings["email_app_password"].strip():
+        reply("Falta la contraseña de aplicación de tu correo (Ajustes › Integraciones › Correo).", "CORREO")
+        return True
+    # ¿a quién?
+    m = re.search(r"\b(?:a|para)\s+(.+?)\s+(?:que|diciendo|sobre|acerca de|con el (?:tema|asunto)|:)\b", text, re.I)
+    quien = m.group(1).strip() if m else ""
+    m2 = re.search(r"\b(?:que|diciendo|sobre|acerca de|con el (?:tema|asunto)|:)\s+(.+)$", text, re.I)
+    mensaje = m2.group(1).strip() if m2 else ""
+    if not quien:
+        reply("¿A quién le escribo? Dime el nombre de la agenda o el correo.", "CORREO")
+        return True
+    dest = correo.resolve_recipient(quien, _mail_book())
+    if not dest:
+        reply(f"No tengo el correo de «{quien}». Agrégalo en Ajustes › Integraciones › Agenda de correos, "
+              "o dime el correo completo.", "CORREO")
+        return True
+    if not mensaje:
+        reply(f"¿Qué le digo a {dest[0] or dest[1]}?", "CORREO")
+        return True
+    reply("Redacto el correo…", "CORREO")
+
+    def work():
+        try:
+            prompt = correo.prompt(f"Para {dest[0] or dest[1]}: {mensaje}", settings["email_sender_name"])
+            raw = ai_chat([{"role": "user", "content": prompt}], json_mode=True, max_tokens=900)
+            m = correo.validate(_extract_json(raw))
+        except AIError as e:
+            reply(ai_error_reply(e), "CORREO")
+            return
+        except Exception as e:
+            log_terminal(f"Correo: {e}", "ERROR")
+            reply("No pude redactar el correo. Inténtalo otra vez.", "CORREO")
+            return
+        email_pending.update(to=dest, asunto=m["asunto"], cuerpo=m["cuerpo"], expires=time.time() + 180)
+        reply(correo.spoken_preview(dest[0], dest[1], m["asunto"], m["cuerpo"]), "CORREO")
+    threading.Thread(target=work, daemon=True, name="correo").start()
+    return True
+
+
+def _email_confirm_pending(t):
+    """Si hay un correo esperando confirmación, trata «sí/no» aquí. Devuelve True si lo gestionó."""
+    if not (email_pending["to"] and time.time() < email_pending["expires"]):
+        return False
+    if re.fullmatch(rf"{CONFIRM_RE}(?: .*)?", t) or re.search(r"\b(?:envialo|enviala|mandalo|mandala|enviar|"
+                                                              r"si envialo|dale envialo)\b", t):
+        dest = email_pending["to"]
+        asunto, cuerpo = email_pending["asunto"], email_pending["cuerpo"]
+        email_pending.update(to=None, expires=0)
+        try:
+            correo.send(settings["email_address"].strip(), settings["email_app_password"].strip(),
+                        dest[1], asunto, cuerpo, settings["email_sender_name"].strip())
+            reply(f"Correo enviado a {dest[0] or dest[1]}.", "CORREO")
+        except Exception as e:
+            reply(f"No pude enviarlo: {e}", "CORREO")
+        return True
+    if re.fullmatch(rf"{DENY_RE}(?: .*)?", t):
+        email_pending.update(to=None, expires=0)
+        reply("Vale, no lo envío.", "CORREO")
+        return True
+    return False
+
+
+# =============================================================================
+# ALERTA DE SISMOS (datos del USGS, gratis). Lógica en sismos.py.
+# =============================================================================
+quake = {"seen": set(), "started": 0.0}
+
+
+def _quake_user_latlon():
+    city = settings["weather_city"].strip()
+    if not city:
+        return None
+    try:
+        g = _geo(city)
+        return (g["lat"], g["lon"]) if g else None
+    except Exception:
+        return None
+
+
+def _quake_worker():
+    time.sleep(40)
+    while True:
+        try:
+            if settings["quake_alerts"] and not is_offline():
+                _quake_check()
+        except Exception as e:
+            log_terminal(f"Sismos: {e}", "AVISO")
+        time.sleep(90)
+
+
+def _quake_check():
+    user = _quake_user_latlon()
+    nuevos = []
+    for url in sismos.FEEDS:
+        try:
+            for q in sismos.parse(json.loads(_get_text(url, timeout=12))):
+                if q["id"] and q["id"] not in quake["seen"]:
+                    nuevos.append(q)
+        except Exception as e:
+            log_terminal(f"Sismos ({urllib.parse.urlsplit(url).netloc}): {e}", "AVISO")
+    now = time.time()
+    first = not quake["started"]
+    if first:
+        quake["started"] = now
+    for q in nuevos:
+        quake["seen"].add(q["id"])
+        if len(quake["seen"]) > 400:
+            quake["seen"] = set(list(quake["seen"])[-200:])
+        # al arrancar, no avisar de los que ya habían pasado (solo marcarlos como vistos)
+        if first or now - q["time"] / 1000 > 1800:
+            continue
+        lvl = sismos.level(q, user, settings["quake_min_mag"])
+        if lvl <= 0:
+            continue
+        if jarvis_rest["on"]:
+            hud_show()
+            jarvis_rest["on"] = False
+            set_state(resting=False)
+        play_sound(tono_sismo_alerta() if lvl >= 2 else tono_sismo_aviso(), 4)
+        time.sleep(0.2)
+        alert(sismos.describe(q, lvl, user, now), "SISMO")
+        log_terminal(f"Sismo detectado (nivel {lvl}): {sismos.short(q)}", "SISMO")
+
+
+def quake_test():
+    if not settings["weather_city"].strip():
+        return {"ok": True, "msg": "Vigilaré los sismos de Colombia. Para avisarte según qué tan cerca te "
+                                   "quedan, escribe tu ciudad arriba en «Clima y noticias»."}
+    user = _quake_user_latlon()
+    if not user:
+        return {"ok": False, "msg": f"No pude ubicar «{settings['weather_city']}». Revisa el nombre de la ciudad."}
+    return {"ok": True, "msg": f"Listo. Vigilaré los sismos cerca de {settings['weather_city']} y te avisaré "
+                               "con un tono y por voz. Los lejanos y pequeños no te molestarán."}
+
+
+
+# =============================================================================
 # CALENDARIO (Google, Outlook… por su enlace iCal, solo lectura). Lógica en calendario.py.
 # =============================================================================
 cal_state = {"missing_lib": False}
@@ -2876,7 +4275,7 @@ def _cal_worker():
                 cal_refresh()
                 for ev, mins in calendario.due_alerts(before_min=settings["calendar_notice_min"]):
                     hud_show()
-                    reply(f"En {mins} minuto{'s' if mins != 1 else ''}: {calendario.what(ev)}.", "CALENDARIO")
+                    alert(f"En {mins} minuto{'s' if mins != 1 else ''}: {calendario.what(ev)}.", "CALENDARIO")
         except Exception as e:
             log_terminal(f"Calendario: {e}", "AVISO")
         time.sleep(30)
@@ -2927,6 +4326,21 @@ def calendar_voice(text, t):
         reply(f"Calendario actualizado: {n} eventos en el próximo mes."
               + (f" Ojo: {c['errors'][0]}" if c["errors"] else ""), "CALENDARIO")
         return True
+    if (re.search(r"\b(?:calendario|agenda)\b", t)
+            and re.search(r"\b(?:revisa|mira|muestra|muestrame|dime|consulta|lee|leeme|abre|que|cuales|cuantos|"
+                          r"hay|tengo|eventos?|pendientes?|programado)\b", t)
+            and not re.search(r"\bproxim[ao]\b", t)):
+        scope = "manana" if re.search(r"\bmanana\b", t) else "semana" if re.search(r"\bsemana\b", t) else "hoy"
+        if not _cal_urls():
+            reply("Aún no conectaste tu calendario. En Ajustes, sección Memoria, pega la «dirección secreta "
+                  "en formato iCal» de Google Calendar (o el enlace ICS de Outlook) y pulsa Probar.", "CALENDARIO")
+            return True
+        cal_refresh()
+        titles = {"hoy": ("Hoy tienes", "Hoy no tienes nada en el calendario ni en tus notas."),
+                  "manana": ("Mañana tienes", "Mañana no tienes nada en el calendario ni en tus notas."),
+                  "semana": ("Esta semana tienes", "Esta semana no tienes nada en el calendario ni en tus notas.")}
+        _say_agenda(scope, titles[scope][1], titles[scope][0])
+        return True
     m = re.search(r"\b(?:mi |la |el )?proxim[ao] (clase|reunion|evento|cita|actividad|compromiso)\b"
                   r"|\bque (?:sigue|me toca|tengo ahora)\b|\bque (?:hay|tengo) en (?:el|mi) calendario\b", t)
     if not m:
@@ -2943,8 +4357,10 @@ def calendar_voice(text, t):
         return True
     kw = {"clase": "clase", "reunion": "reuni", "cita": "cita"}.get(m.group(1) or "", "")
     nx = calendario.upcoming(limit=1, keyword=kw)
+    fallback = False
     if not nx and kw:
         nx = calendario.upcoming(limit=1)
+        fallback = bool(nx)
     if not nx:
         reply("No tienes más eventos con hora en tu calendario este mes.", "CALENDARIO")
         return True
@@ -2956,6 +4372,9 @@ def calendar_voice(text, t):
     else:
         que = {"clase": "Tu próxima clase", "reunion": "Tu próxima reunión", "cita": "Tu próxima cita"}.get(
             m.group(1) or "", "Lo próximo")
+        if fallback:
+            que = {"clase": "No veo más clases este mes. Lo próximo", "reunion": "No veo más reuniones este mes. "
+                   "Lo próximo", "cita": "No veo más citas este mes. Lo próximo"}.get(m.group(1) or "", "Lo próximo")
         reply(f"{que}: {_event_line(ev)}.", "CALENDARIO")
     return True
 
@@ -3169,10 +4588,10 @@ def _notes_worker():
                 que = notas.what(n)
                 hud_show()
                 if tipo == "antes":
-                    reply(f"Recordatorio: en {settings['notes_notice_min']} minutos, {que}.", "NOTAS")
+                    alert(f"Recordatorio: en {settings['notes_notice_min']} minutos, {que}.", "NOTAS")
                 else:
                     play_sound(resolve_alarm_sound())
-                    reply(f"Es la hora: {que}.", "NOTAS")
+                    alert(f"Es la hora: {que}.", "NOTAS")
                 _notes_changed()
         except Exception as e:
             log_terminal(f"Avisos de notas: {e}", "AVISO")
@@ -3195,6 +4614,7 @@ def notes_today_summary(speak_it=False):
 #   La lógica está en aula.py; aquí se conecta con la voz, el tablero y la IA.
 # =============================================================================
 aula.configure(CONFIG_DIR)
+perfil.configure(CONFIG_DIR)
 aula_ui = {"last": None, "view": "ruleta", "attendance_until": 0.0}
 material_job = {"busy": False}
 generated_files = set()                     # solo estos archivos se pueden abrir desde el tablero
@@ -4118,6 +5538,11 @@ def process_command(text):
             reply("Cancelado.", "PC")
             return
 
+    if _email_confirm_pending(t):                      # «sí, envíalo» / «no» de un correo pendiente
+        return
+    if _rest_voice(text, t):                           # «Jarvis, descansa» / «despierta»
+        return
+
     if dictation_on.is_set():
         handle_dictation(text)
         return
@@ -4197,13 +5622,23 @@ def process_command(text):
     # Memoria personal: «recuerda que…», «¿qué tengo pendiente?», «ya hice lo de…»
     if notes_voice(text, t):
         return
+    if email_voice(text, t):                           # «escríbele un correo a…»
+        return
 
     # Revisar trabajos: «revisa el taller de Juan», «califica este examen en la pantalla»
     if review_voice(text, t):
         return
 
     # Aula: sorteo, grupos, asistencia, semáforo, tablero y material de clase
+    if info_voice(text, t):
+        return
+    if search_voice(text, t):                          # «busca en internet… / averigua…»
+        return
+    if office_voice(text, t):
+        return
     if aula_voice(text, t):
+        return
+    if profile_voice(text, t):                         # aprende datos/gustos y «llámame X» (tras los comandos)
         return
 
     # Copiloto: «activa el copiloto», «copiloto cada 10 minutos», «desactiva el copiloto»
@@ -4291,9 +5726,12 @@ def process_command(text):
         if direct:
             run_skill(*direct)
             return
+        if getattr(_tl, "live", False):
+            _tl.no_order = True                        # en vivo: lo responde Gemini directamente
+            return
         # Preguntas claras -> respuesta en streaming (más rápida, sin pasar por el enrutador).
         is_question = text.strip().endswith("?") or bool(QUESTION_RE.search(t))
-        if is_question or not settings["ai_router"]:
+        if (is_question or not settings["ai_router"]) and not getattr(_tl, "remote", False):
             answer_question_streaming(text)
             return
         result = ask_ai(text, route=True)
@@ -4323,6 +5761,8 @@ def _command_worker():
             process_command(text)
         except Exception as e:
             log_terminal(f"Error procesando '{text}': {e}", "ERROR")
+        if not tts_playing.is_set() and tts_queue.empty():
+            open_followup()                            # orden sin respuesta hablada
 
 
 # =============================================================================
@@ -4357,13 +5797,58 @@ def list_mics():
     return devices
 
 
-def activate_listening():
+convo = {"armed": False, "chain": 0, "kind": ""}
+FOLLOWUP_MAX_CHAIN = 8                     # como mucho 8 órdenes seguidas sin decir «Jarvis»
+_CMD_START = re.compile(
+    r"^(?:y |ahora |tambien |luego |despues |ya |oye |porfa |por favor )*"
+    r"(?:abr|cierr|cerr|pon|quit|sub|baj|busc|mand|envi|escrib|cre|hac|haz|dim|di |dec|cuent|"
+    r"explic|recuerd|apag|encend|activ|desactiv|muestr|mostr|le[ea]|reproduc|paus|para|deten|"
+    r"silenci|guard|copi|peg|selecciona|minimiz|maximiz|cambi|ve |ir |vamos|llam|program|agend|"
+    r"marc|borr|elimin|tom|captur|traduc|calcul|resum|revis|compart|inici|empez|termin|fin|"
+    r"que |cual|cuant|como |cuando |donde |quien|por que|sabes|puedes|me |necesito|quiero)")
+
+
+def _looks_like_command(text):
+    """Para lo que llega SIN decir «Jarvis»: ¿suena a una orden o pregunta para él?
+    (evita que una conversación o un video de fondo se tome como orden)."""
+    t = normalize(text)
+    if not t:
+        return False
+    try:
+        if skills.parse(text):
+            return True
+    except Exception:
+        pass
+    return bool(_CMD_START.match(t)) or text.strip().endswith("?")
+
+
+def open_followup():
+    """Después de contestar una orden hablada, escucha unos segundos más: puedes seguir
+    («y ahora ciérralo», «súbele el volumen») sin repetir «Jarvis»."""
+    global wake_until
+    secs = settings["followup_listen"]
+    if not convo["armed"] or not secs or convo["chain"] >= FOLLOWUP_MAX_CHAIN or dictation_on.is_set():
+        return
+    if thinking > 0:
+        return                                         # aún está generando la respuesta
+    convo["armed"] = False
+    wake_until = time.time() + secs
+    convo["kind"] = "followup"
+    refresh_mode()
+    threading.Timer(secs + 0.1, refresh_mode).start()
+
+
+def activate_listening(allow_live=True):
     """Como decir «Jarvis»: la siguiente frase se toma como orden."""
     global wake_until
+    if allow_live and live_mode() == "vivo" and live_start():
+        play_sound(_beep_path(), 1)
+        return
     wake_until = time.time() + settings["wake_window"]
     refresh_mode()
+    convo["kind"] = "wake"
     threading.Timer(settings["wake_window"] + 0.1, refresh_mode).start()
-    speak("¿Sí?")
+    speak("¿Sí?", prompt=True)                     # mientras suena, ya te está escuchando
 
 
 # -----------------------------------------------------------------------------
@@ -4378,7 +5863,7 @@ _WAKE_FILLERS = {"hola", "oye", "oiga", "ey", "hey", "eh", "ya", "la", "el", "a"
                  "ok", "okay", "vale", "ahora", "y", "pues", "mira"}
 _STT_WORDS = ("WhatsApp, Telegram, Spotify, YouTube, Google, Chrome, Edge, Word, Excel, PowerPoint, "
               "Gemini, temporizador, recordatorio, volumen, brillo, captura de pantalla, diapositiva, "
-              "videobeam, dictado, modo sigilo, mostrar panel, calculadora, explorador de archivos")
+              "videobeam, dictado, modo sigilo, mostrar panel, calculadora, explorador de archivos, pestaña, navegador")
 
 
 def _match_wake(text):
@@ -4400,6 +5885,17 @@ def _match_wake(text):
             if ok and all(x in _WAKE_FILLERS for x in words[:start]):
                 rest = orig[start + n:] if len(orig) == len(words) else words[start + n:]
                 return " ".join(rest).strip(" ,.:;")
+    # «abre Word, Jarvis» / «oye, abre Word Jarvis»: el nombre exacto en cualquier lugar
+    for w in get_wake_words():
+        ww = normalize(w).split()
+        n = len(ww)
+        if n != 1 or len(ww[0]) < 5:
+            continue
+        for i in range(len(words)):
+            if words[i] == ww[0]:
+                src = orig if len(orig) == len(words) else words
+                rest = [x for j, x in enumerate(src) if j != i]
+                return " ".join(rest).strip(" ,.:;¿?¡!")
     return None
 
 
@@ -4514,14 +6010,14 @@ def refine_speech(raw, fallback):
 
 def _voice_worker():
     while True:
-        text, raw = voice_queue.get()
+        item = voice_queue.get()
         try:
-            handle_voice(text, raw)
+            handle_voice(*item)
         except Exception as e:
             log_terminal(f"Error procesando la voz: {e}", "ERROR")
 
 
-def handle_voice(text, raw=None):
+def handle_voice(text, raw=None, started=None):
     global wake_until
     socketio.emit("heard", {"text": text})
     # En dictado, todo lo que se oye se escribe sin necesidad de decir «Jarvis».
@@ -4535,9 +6031,14 @@ def handle_voice(text, raw=None):
         log_terminal(f'"{text}"', "VOZ")
         return
 
-    window_open = (time.time() < wake_until
-                   or (pending["skill"] and time.time() < pending["expires"])
-                   or (followup["skill"] and time.time() < followup["expires"]))
+    # La ventana cuenta desde que EMPEZASTE a hablar: una orden larga que termina un poco
+    # después de que se cerró la ventana sigue valiendo.
+    t0 = min(time.time(), started) if started else time.time()
+    in_wake = t0 < wake_until
+    asked = ((pending["skill"] and t0 < pending["expires"])
+             or (followup["skill"] and t0 < followup["expires"]))
+    window_open = in_wake or asked
+    via_followup = in_wake and convo["kind"] == "followup" and not asked
     wake_rest = None
     if settings["require_hotkey"]:                     # solo tras Ctrl+Alt+Espacio
         if time.time() >= wake_until:
@@ -4545,9 +6046,23 @@ def handle_voice(text, raw=None):
             return
     elif settings["wake_word_enabled"]:
         wake_rest = _match_wake(text)
-        if wake_rest is None and not window_open:      # conversación del ambiente: no sale del PC
-            log_terminal(f'"{text}"', "VOZ")
+        if wake_rest is None and normalize(text) in ("mostrar panel", "muestra el panel", "muestra panel",
+                                                     "mostrar el panel", "abre el panel"):
+            log_terminal(f'"{text}"', "VOZ")             # inofensivo: funciona sin decir «Jarvis»
+            submit_command("mostrar panel", "voz")
             return
+        if wake_rest is None and not window_open:      # conversación del ambiente: no sale del PC
+            late = 0 < t0 - wake_until < 8
+            log_terminal(f'"{text}"' + ("  (llegó después de que dejé de escucharte: di «Jarvis» y la orden "
+                                        "seguidas, o sube «Tiempo de espera» en Ajustes › Escucha)" if late else ""), "VOZ")
+            return
+        if wake_rest is not None and not asked and live_mode() == "vivo":
+            log_terminal(f'"{text}"', "VOZ")
+            # con orden incluida («Jarvis, abre Word»), Gemini oye esa misma grabación
+            if live_start(initial_audio=raw if wake_rest else None):
+                if not wake_rest:
+                    play_sound(_beep_path(), 1)
+                return
         if wake_rest == "":                            # solo dijo «Jarvis»
             log_terminal(f'"{text}"', "VOZ")
             activate_listening()
@@ -4562,17 +6077,32 @@ def handle_voice(text, raw=None):
         elif rest == "":
             final = wake_rest or ""
     final = final.strip().rstrip(".").strip()
+    if wake_rest is None and in_wake and not asked:
+        # el «¿Sí?» de Jarvis puede colarse al principio de la grabación
+        final = re.sub(r"^\s*[¿¡]?\s*s[ií]\s*[?!,.]*\s+(?=\S)", "", final, flags=re.I)
+        if normalize(final) in ("si", "si si", "aja"):
+            return                                     # solo se oyó su propio «¿Sí?»: sigue esperando
     log_terminal(f'"{final}"', "VOZ")
     if not final.strip():
+        if via_followup:
+            return                                     # ruido mientras esperaba: no insiste
         activate_listening()
         return
+    if via_followup and wake_rest is None and (len(normalize(final).split()) < 2 or not _looks_like_command(final)):
+        log_terminal("(no parece una orden para mí; si lo era, empieza con «Jarvis»)", "VOZ")
+        return
+    convo["chain"] = convo["chain"] + 1 if (via_followup and wake_rest is None) else 0
+    convo["armed"] = True
     wake_until = 0.0
+    convo["kind"] = ""
     refresh_mode()
     submit_command(final, "voz")
 
 
 def _passes_gate(text, peak):
     gate = settings["mic_sensitivity"] / 100
+    if gate and peak < gate and settings["wake_word_enabled"] and _match_wake(text) is not None:
+        return True                                    # te llamó por su nombre: siempre cuenta
     if gate and peak < gate:
         log_terminal(f"Ignorado (sonido lejano/flojo): «{text}»", "AUDIO")
         return False
@@ -4594,6 +6124,8 @@ class VoskEngine:
         self.utt_peak = 0.0
         self.audio = bytearray()          # audio de la frase en curso (para la 2ª etapa)
         self.last_audio = b""
+        self.speech_start = None          # cuándo empezaste a hablar en esta frase
+        self.last_start = None
 
     MAX_AUDIO = 16000 * 2 * 20            # guarda como mucho 20 s
 
@@ -4606,14 +6138,22 @@ class VoskEngine:
             text = json.loads(self.rec.Result()).get("text", "").strip()
             up, self.utt_peak = self.utt_peak, 0.0
             self.last_audio, self.audio = bytes(self.audio), bytearray()
+            self.last_start, self.speech_start = self.speech_start or time.time(), None
             if text and _passes_gate(text, up):
                 return text
+        elif self.speech_start is None:
+            try:
+                if json.loads(self.rec.PartialResult()).get("partial", "").strip():
+                    self.speech_start = time.time() - 0.3
+            except ValueError:
+                pass
         return None
 
     def reset(self):
         self.rec.Reset()
         self.utt_peak = 0.0
         self.audio = bytearray()
+        self.speech_start = None
 
 
 class WhisperEngine:
@@ -4637,6 +6177,8 @@ class WhisperEngine:
     def feed(self, data, peak):
         thr = max(0.02, settings["mic_sensitivity"] / 100)     # umbral de habla
         if peak >= thr:
+            if not self.speaking:
+                self.speech_start = time.time() - self.CHUNK_SEC
             self.speaking = True
             self.silence = 0
             self.speech_chunks += 1
@@ -4654,6 +6196,7 @@ class WhisperEngine:
     def _finish(self):
         raw = bytes(self.buf)
         self.last_audio = raw
+        self.last_start = getattr(self, "speech_start", None) or time.time()
         up = self.utt_peak
         speech = self.speech_chunks
         self.reset()
@@ -4783,7 +6326,11 @@ def audio_loop():
                 if now - last_level > 0.12:
                     socketio.emit("mic_level", {"v": round(min(1.0, peak * 1.6), 3)})
                     last_level = now
-                if tts_playing.is_set():
+                if live["active"] or live["connecting"]:
+                    live_feed(data, peak)               # conversación en vivo: el audio va a Gemini
+                    was_speaking = True
+                    continue
+                if tts_playing.is_set() and not tts_prompt.is_set():
                     was_speaking = True
                     if not settings["barge_in"] or dictation_on.is_set():
                         continue
@@ -4800,7 +6347,7 @@ def audio_loop():
                 if text:
                     # La 2ª etapa (Gemini/Whisper) tarda ~1 s: se hace en otro hilo para no
                     # dejar de leer el micrófono mientras tanto.
-                    voice_queue.put((text, getattr(engine, "last_audio", b"")))
+                    voice_queue.put((text, getattr(engine, "last_audio", b""), getattr(engine, "last_start", None)))
         except Exception as e:
             set_state(mic="error")
             log_terminal(f"Lectura de micrófono interrumpida: {e}", "ERROR")
@@ -5609,6 +7156,70 @@ def handle_backup_open_folder(data=None):
         webbrowser.open(f"file://{folder}")
 
 
+@socketio.on("telegram_test")
+def handle_telegram_test(data=None):
+    return telegram_test()
+
+
+@socketio.on("quake_test")
+def handle_quake_test(data=None):
+    return quake_test()
+
+
+@socketio.on("get_profile")
+def handle_get_profile(data=None):
+    return {"facts": perfil.snapshot()}
+
+
+@socketio.on("delete_fact")
+def handle_delete_fact(data):
+    perfil.delete(str((data or {}).get("id", "")))
+    return {"facts": perfil.snapshot()}
+
+
+@socketio.on("clear_profile")
+def handle_clear_profile(data=None):
+    perfil.clear()
+    return {"facts": perfil.snapshot()}
+
+
+@socketio.on("email_test")
+def handle_email_test(data=None):
+    addr = settings["email_address"].strip()
+    if not correo.valid_sender(addr):
+        return {"ok": False, "msg": "Escribe tu dirección de correo (Gmail) y guarda."}
+    if not settings["email_app_password"].strip():
+        return {"ok": False, "msg": "Falta la contraseña de aplicación (16 letras)."}
+    host, port = correo.SMTP.get(addr.split("@")[-1].lower(), ("smtp.gmail.com", 587))
+    import smtplib, ssl
+    try:
+        with smtplib.SMTP(host, port, timeout=20) as sm:
+            sm.ehlo(); sm.starttls(context=ssl.create_default_context())
+            sm.login(addr, settings["email_app_password"].strip())
+        return {"ok": True, "msg": f"Conexión correcta con {host}. Ya puedes dictar correos."}
+    except smtplib.SMTPAuthenticationError:
+        return {"ok": False, "msg": "Tu cuenta rechazó la contraseña. Usa una «contraseña de aplicación» de 16 letras, no tu clave normal."}
+    except Exception as e:
+        return {"ok": False, "msg": f"No pude conectar: {e}"}
+
+
+@socketio.on("weather_preview")
+def handle_weather_preview(data=None):
+    city = str((data or {}).get("city") or "").strip()
+    if not city and not settings["weather_city"].strip():
+        return {"ok": False, "msg": "Escribe tu ciudad arriba (por ejemplo, Bogotá) y guarda."}
+    txt = weather_text(city)
+    ok = not txt.lower().startswith(("no ", "ahora no", "para darte"))
+    if ok:
+        speak(txt)
+    return {"ok": ok, "msg": txt}
+
+
+@socketio.on("live_test")
+def handle_live_test(data=None):
+    return live_test()
+
+
 @socketio.on("update_check")
 def handle_update_check(data=None):
     try:
@@ -5646,7 +7257,7 @@ def handle_get_settings():
         "portable": PORTABLE,
         "env_path": ENV_PATH if env_overrides else "",
         "alarm_found": resolve_alarm_sound() or "",
-        "piper_installed": PiperVoice is not None,
+        "piper_installed": PIPER_INSTALLED,
         "piper_found": find_piper_voice() or "",
         "whisper_installed": _whisper_installed(),
         "stt_refine_mode": stt_refine_mode(),
@@ -5655,8 +7266,17 @@ def handle_get_settings():
         "gemini_tts_models": GEMINI_TTS_MODELS,
         "gemini_key_set": bool(_gemini_for_stt()),
         "update": update_status(),
+        "profile": perfil.snapshot(),
+        "email_info": {"sender_ok": correo.valid_sender(settings["email_address"]),
+                       "pass": bool(settings["email_app_password"].strip())},
+        "tg_info": {"ok": tg["ok"], "remote": settings["telegram_remote"], "error": tg["error"],
+                    "token": bool(settings["telegram_token"].strip()), "chat": bool(settings["telegram_chat"].strip())},
+        "live_info": {"mode": live_mode(), "why": live["why"], "ws": _ws_installed(),
+                      "key": bool(_live_order(include_paused=True)), "model": _live_load().get("combo", [""])[0],
+                      "keys": {p: bool(_live_key(p)) for p in LIVE_PROVIDERS},
+                      "openai_voices": envivo.OPENAI_VOICES, "deepgram_voices": envivo.DEEPGRAM_VOICES},
         "offline_info": {"offline": net["offline"], "local_model": local_ai_model(refresh=True),
-                         "piper": bool(PiperVoice is not None and find_piper_voice())},
+                         "piper": bool(PIPER_INSTALLED and find_piper_voice())},
         "default_system_prompt": DEFAULT_SYSTEM_PROMPT,
         "providers": {k: {"short": v["short"], "kind": v["kind"], "default_model": v.get("model", "")}
                       for k, v in PROVIDERS.items()},
@@ -5728,7 +7348,7 @@ def handle_preview_voice(data):
                 except Exception:
                     return {"ok": False, "error": "Opción de voz de Gemini no válida."}
     if backend == "piper":
-        if PiperVoice is None:
+        if not _ensure_piper():
             return {"ok": False, "error": "Piper no está instalado (pip install piper-tts)."}
         if not find_piper_voice():
             return {"ok": False, "error": "No hay voz de Piper. Ejecuta descargar_voz.py."}
@@ -5989,26 +7609,15 @@ def main():
         return
 
     _fix_autostart_path()
-    load_memory()
     skills.configure(output_dir=lambda: settings["output_dir"], hide_hud=_temp_hide,
                      custom=lambda: settings["custom_commands"],
                      talleres_dir=lambda: settings["talleres_dir"],
                      contacts=lambda: settings["contacts"],
                      setting=lambda key: settings.get(key, ""),
                      log=lambda m: log_terminal(m, "PC"))
-    skills.start()
-    _init_audio()
-    if audio_ready:
-        threading.Thread(target=_tts_worker, daemon=True).start()
-    reschedule()
-    set_state(copilot=settings["copilot_enabled"])
-    for target in (_command_worker, _voice_worker, schedule_worker, audio_loop, _ai_monitor,
-                   hotkey_loop, _timers_worker, _copilot_worker, _notes_worker, _cal_worker,
-                   _net_worker, _update_worker, _backup_worker):
-        threading.Thread(target=target, daemon=True).start()
-    threading.Thread(target=check_ai, args=(True,), daemon=True).start()
-    threading.Thread(target=warm_ai, daemon=True).start()
 
+    # El servidor se abre primero para estar «en línea» cuanto antes; lo pesado (audio, modelo de
+    # voz, índice de apps, IA) se carga en segundo plano y no retrasa el arranque.
     threading.Thread(target=_run_server, daemon=True, name="servidor").start()
     server_ready = _wait_server()
     log_terminal(f"Jarvis {VERSION} en línea{' · modo USB portable' if PORTABLE else ''}.", "SISTEMA")
@@ -6019,9 +7628,25 @@ def main():
     if env_overrides:
         log_terminal(f"Valores tomados de .env: {', '.join(sorted(env_overrides))}.", "SISTEMA")
 
+    def _start_services():
+        load_memory()
+        skills.start()
+        _init_audio()
+        if audio_ready:
+            threading.Thread(target=_tts_worker, daemon=True).start()
+        reschedule()
+        set_state(copilot=settings["copilot_enabled"])
+        for target in (_command_worker, _voice_worker, schedule_worker, audio_loop, _ai_monitor,
+                       hotkey_loop, _timers_worker, _copilot_worker, _notes_worker, _cal_worker,
+                       _net_worker, _update_worker, _backup_worker, _telegram_worker, _quake_worker):
+            threading.Thread(target=target, daemon=True).start()
+        threading.Thread(target=check_ai, args=(True,), daemon=True).start()
+        threading.Thread(target=warm_ai, daemon=True).start()
+        announce_startup(start_hidden)      # confirma por voz que el núcleo se cargó
+        threading.Timer(4.0, notes_today_summary).start()   # 📌 pendientes de hoy en el HUD
+
+    threading.Thread(target=_start_services, daemon=True, name="servicios").start()
     start_tray()
-    announce_startup(start_hidden)      # confirma por voz que el núcleo se cargó
-    threading.Timer(4.0, notes_today_summary).start()   # 📌 pendientes de hoy en el HUD
     if start_hidden:
         log_terminal("Arranque en modo sigilo: panel oculto, micrófono activo. "
                      "Di «mostrar panel» o pulsa Ctrl+Alt+J.", "SISTEMA")

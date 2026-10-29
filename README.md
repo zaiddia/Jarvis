@@ -1,4 +1,4 @@
-# Jarvis 5.9 — Asistente virtual para Windows
+# Jarvis 6.7 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -152,6 +152,172 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Manejar el navegador por voz (v6.7)
+
+Ahora Jarvis puede moverse por el navegador mientras lo usas (por ejemplo en YouTube o leyendo una página):
+- **«busca el ciclo del agua en una pestaña nueva»** — abre una pestaña y hace la búsqueda.
+- **«cambia de pestaña»**, **«pestaña anterior»**, **«ve a la pestaña 3»**, **«cierra la pestaña»**, **«reabre la pestaña»**, **«abre una pestaña nueva»**.
+- **«busca la palabra fotosíntesis en la página»** (como Ctrl+F).
+- **«baja la página»**, **«sube la página»**, **«ve al final»**, **«ve atrás»**, **«adelante»**, **«recarga la página»**.
+- Y lo de siempre: **«busca X en YouTube»**, **«busca X en Google»**, **«pausa»/«siguiente»** para el video.
+
+Para las órdenes de teclado (cambiar de pestaña, buscar en la página, desplazar), tu navegador debe estar
+visible; Jarvis lo pone al frente y envía la tecla. Abrir una pestaña con una búsqueda funciona siempre.
+Lo que Jarvis todavía no hace es hacer clic dentro de la página ni elegir un resultado por ti: abre la
+búsqueda y tú das el clic final.
+
+## HUD más futurista y nuevos colores (v6.6)
+
+El panel se ve más vivo y elegante, sin perder legibilidad:
+- El **reactor brilla al ritmo de tu voz** (crece y se ilumina mientras hablas) y «respira» despacio en reposo.
+- **Vidrio con profundidad:** fondo con capas, una rejilla muy sutil y un brillo tenue en los bordes.
+- **Esquinas tipo visor** (como una nave), los indicadores laten suave y el nombre «JARVIS» brilla al escuchar o hablar.
+- **Más colores de tema** en *Ajustes › General › Apariencia*: además de cian, ámbar, rojo, verde y violeta, ahora hay **azul profundo, magenta y blanco frío**.
+
+## Buscar en internet y arranque más rápido (v6.5)
+
+**Búsqueda web hablada.** Di «busca en internet qué pasó con la reforma educativa», «averigua cuándo
+es el día del maestro» o «busca la biografía de Policarpa y resúmemela». Jarvis busca en internet
+(DuckDuckGo, sin clave), lee los primeros resultados y te los **resume en voz**, y deja las fuentes
+en el Registro. Es distinto de «busca X en Google», que abre el navegador: esto te lo cuenta en voz.
+
+**Arranca más rápido.** Jarvis ahora queda «en línea» mucho antes: el panel y el servidor se abren
+primero, y lo pesado (el modelo de voz, el motor de voz Piper con su onnxruntime, el índice de
+aplicaciones, la IA) se carga en segundo plano sin frenar el arranque. Además, si el puerto está
+libre ya no revisa todos los procesos del equipo al iniciar. (Recuerda: si Jarvis está dentro de
+OneDrive, la sincronización lo vuelve lento; tenerlo en C:\Jarvis ayuda mucho.)
+
+## Sismos, memoria que aprende sola, correo por voz y detalles (v6.4)
+
+**Alerta de sismos.** Actívala en *Ajustes › Integraciones › Alerta de sismos*. Con los datos del
+USGS (gratis), Jarvis vigila los temblores y, si uno es relevante **para tu zona** (usa tu ciudad del
+apartado Clima), te avisa con un tono y por voz: tono suave para los moderados, tono de alerta y
+recomendaciones de seguridad para los fuertes y cercanos. Los lejanos o pequeños no te molestan.
+
+**Memoria que aprende sola.** Cuando le cuentas algo tuyo («trabajo en el colegio San José»,
+«prefiero respuestas cortas», «dicto ciencias en séptimo»), Jarvis lo recuerda **sin que digas
+“recuerda”** y lo tiene en cuenta al responder. Lo ves y lo borras en *Ajustes › Memoria › Lo que
+Jarvis ha aprendido de ti*, o le dices «olvida que…».
+
+**Correo por voz (Gmail).** En *Ajustes › Integraciones › Correo por voz* pon tu Gmail y una
+**contraseña de aplicación** (16 letras, de la seguridad de tu cuenta de Google; no tu clave normal),
+y una agenda de correos. Luego di «escríbele un correo a la coordinadora diciendo que mañana llego a
+las 7»: Jarvis lo redacta, **te lo lee y solo lo envía si confirmas** («sí, envíalo» / «no»).
+
+**Detalles.**
+- **Cómo te llama:** en *Ajustes › General › Trato* escribe «profe» o tu nombre, o dilo: «llámame profe».
+- **Apagado programado:** «apaga el pc a las 6», «apaga en 30 minutos» (te pide confirmar).
+- **Descansar:** «Jarvis, descansa» se despide con un tono suave y se oculta; «Jarvis, despierta» vuelve.
+
+## Clima, noticias y control desde el celular (v6.3)
+
+**Clima y noticias.** En *Ajustes › Integraciones › Clima y noticias* escribe tu ciudad y pulsa
+«Probar clima». Luego di **«¿cómo está el clima?»**, **«¿va a llover mañana?»** o **«clima en Cali»**:
+Jarvis dice la temperatura, la humedad, la probabilidad de lluvia (con la hora en que empieza) y
+recomendaciones para el día (paraguas, bloqueador si el sol estará fuerte, abrigo si hará frío). Di
+**«noticias»** o **«noticias de educación»** para un resumen hablado de los titulares del día. Puedes
+activar que el **reporte de la mañana** incluya el clima y las noticias. El clima es de Open-Meteo,
+gratis y sin clave; las noticias, de Google Noticias Colombia y BBC Mundo (puedes cambiar las fuentes).
+
+**Controlar Jarvis desde el celular (Telegram).** En *Ajustes › Integraciones › Telegram*:
+1. Crea un bot con `@BotFather` en Telegram y pega su token.
+2. Pulsa «Probar», escríbele «hola» al bot y Jarvis te dirá tu **chat id**; pégalo y guarda.
+3. Activa **«Controlar Jarvis desde el celular»**.
+
+Entonces, desde donde estés, le escribes como le hablarías: «¿qué tengo hoy?», «abre la presentación
+de ciencias», «recuérdame a las 3 llamar a la coordinadora», «¿cómo está el clima?». Comandos
+rápidos: `/captura` (foto de la pantalla), `/estado`, `/ayuda`. Solo obedece a tu chat; cualquier
+otro se ignora. Por seguridad, **apagar, reiniciar, cerrar sesión o borrar no se hacen desde el
+celular**. Con **«Enviarme los avisos al celular»** activado, los recordatorios, los avisos del
+calendario, los temporizadores y el reporte de la mañana también te llegan por Telegram.
+
+## Jarvis ve en vivo, y presentaciones y Excel por voz (v6.2)
+
+**Ver en vivo.** En la conversación en vivo di **«mira esto»** y muéstrale algo a la cámara (un
+cuaderno, un experimento, un dibujo), o **«mira mi pantalla»** para que te guíe con lo que tienes
+abierto. Con Gemini Live lo ve como video (una imagen por segundo) y comenta mientras hablas; con
+OpenAI Realtime ve una foto cada vez que se lo pides. Di **«deja de mirar»** para parar (se detiene
+solo a los 3 minutos o al terminar la conversación). El HUD muestra «VIENDO CÁMARA/PANTALLA».
+Nunca mira ventanas de contraseñas, bancos, pagos ni navegación privada: si cambias a una, deja de
+enviar imágenes mientras esté abierta.
+
+**Presentaciones.** «Haz una presentación de 8 diapositivas sobre el ciclo del agua para quinto»:
+portada con tu colegio y tu nombre, diapositivas de contenido, una pregunta para pensar y una
+actividad al final, y **notas para ti** debajo de cada diapositiva (qué decir o preguntar). Queda en
+*Documentos › Jarvis › Material de clase* y se abre en PowerPoint.
+
+**Planilla de notas.** «Crea la planilla de notas de 7A con 4 notas del segundo periodo»: la lista del
+curso (del tablero del aula), promedio y desempeño automáticos, colores por desempeño, notas en rojo
+si están en Bajo, resumen del curso y solo acepta notas de 1,0 a 5,0. La escala (Superior, Alto,
+Básico, Bajo) está en la hoja «Escala»: cámbiala según el SIEE de tu colegio y todo se recalcula.
+
+**Tablas.** «Crea una tabla en Excel de los planetas con su distancia al sol»: la IA arma la tabla con
+números de verdad (para ordenar, filtrar y graficar). Quedan en *Documentos › Jarvis › Planillas*.
+
+## Otros proveedores de voz en vivo (v6.1)
+
+En *Ajustes › Escucha › Proveedor de voz en vivo* puedes elegir quién conversa contigo en vivo:
+
+| Proveedor | Costo | Clave |
+|---|---|---|
+| **Gemini Live** (recomendado) | Gratis con límites diarios | La de Gemini (sección IA) |
+| **OpenAI Realtime** (la voz de ChatGPT) | De pago | La de ChatGPT (sección IA) |
+| **Deepgram** | 200 USD de crédito al registrarte, sin tarjeta | La de console.deepgram.com |
+
+Con **«Si falla, usar otro»** activado, si el elegido no responde o se le acaba la cuota, Jarvis
+prueba solo los otros que tengan clave, y si ninguno puede, usa el modo clásico. **Probar conexión
+en vivo** revisa todos y te dice cuál funciona. En todos, las acciones en el PC las hace Jarvis y
+apagar, reiniciar o borrar no se hacen desde la conversación en vivo.
+
+## Conversación en vivo con Gemini Live (v6.0)
+
+Antes, Jarvis escuchaba por pasos: un reconocedor pasaba tu voz a texto, la IA respondía en texto y
+otra voz lo leía. Cada paso podía equivocarse o cortar la frase. Ahora, después de decir **«Jarvis»**,
+tu voz va **directo a Gemini Live**, el modo de voz en tiempo real de Gemini (el mismo que usan los
+asistentes que «entienden como una persona»):
+
+- Gemini **oye tu voz tal cual**: acentos, ruido, pausas, nombres. Nada se pierde al pasar a texto.
+- **Sabe solo cuándo terminaste** de hablar (no corta tus frases ni espera de más).
+- Responde con **voz natural** (la que elegiste en *Voz › Gemini*) y puedes **interrumpirlo**.
+- **Sigues conversando sin repetir «Jarvis»**; la conversación termina sola tras 15 s de silencio o
+  cuando te despides («gracias, eso es todo»).
+- **Hace cosas en tu PC:** cuando le pides una acción («abre Word», «manda un WhatsApp a Andrea…»,
+  «pon un temporizador»), Gemini se la pide a Jarvis, que la ejecuta y le cuenta el resultado.
+  Por seguridad, apagar, reiniciar o borrar **no** se hacen desde la conversación en vivo.
+- **Privacidad igual que antes:** lo que se habla en el salón sin decir «Jarvis» nunca sale de tu PC;
+  el reconocimiento local solo busca la palabra «Jarvis».
+- Si Gemini Live no está disponible (sin internet, sin clave, sin cuota), Jarvis usa solo el modo
+  clásico y lo explica en el Registro.
+
+Se configura en *Ajustes › Escucha › Cómo conversas con Jarvis* (Automático, Siempre en vivo o
+Clásico) y tiene un botón **Probar conexión en vivo**. Consejo: con audífonos funciona aún mejor;
+con parlantes, si se interrumpe solo, sube «Fuerza de voz para interrumpirlo».
+
+## Escucha más paciente (v5.11)
+
+- **La espera cuenta desde que empiezas a hablar.** Antes, si decías «Jarvis», esperabas un momento y
+  dabas una orden larga, la ventana se cerraba mientras aún hablabas y la orden se perdía. Ahora vale
+  si la *empezaste* a tiempo. Además, la espera tras decir «Jarvis» sube a 10 segundos.
+- **Más órdenes seguidas sin repetir «Jarvis»** (hasta 8), pero solo lo que suena a orden o pregunta
+  («abre…», «cierra…», «¿qué hora es?»): una conversación o un video de fondo no se toma como orden.
+- **«Mostrar panel»** funciona sin decir «Jarvis», como indica el aviso del modo sigilo.
+- Si una orden llega cuando ya dejó de escucharte, el Registro lo dice y te explica qué hacer.
+
+## Te entiende mejor (v5.10)
+
+Cambios hechos a partir de un registro real de uso:
+- **Tu «Jarvis» ya no se pierde.** Con la «Sensibilidad del micrófono» subida (para ignorar un video o
+  el ruido del salón) también se descartaba tu propia voz. Ahora la sensibilidad nunca descarta una
+  frase en la que lo llamas por su nombre; sigue ignorando el resto del ruido.
+- **«Jarvis» donde quieras:** «abre Word, Jarvis» o «oye, Jarvis, abre Word» también funcionan.
+- **El «¿Sí?» ya no tapa tu orden:** mientras Jarvis dice «¿Sí?», ya te está escuchando, así que
+  puedes hablar de inmediato.
+- **Seguir la conversación:** después de responderte, sigue escuchando unos segundos (6 por defecto),
+  así que puedes decir «ahora ciérralo» sin repetir «Jarvis» (hasta 3 órdenes seguidas). Se ajusta
+  en *Ajustes › Escucha › Seguir la conversación* (0 = siempre decir «Jarvis»).
+- **Calendario:** entiende «revisa mi calendario», «¿qué eventos hay en mi calendario?», «¿qué tengo
+  en la agenda mañana?»… y si aún no está conectado, te dice cómo conectarlo.
+
 ## Copias de seguridad (v5.9)
 
 En *Ajustes › Acerca de › Copias de seguridad* (o diciendo **«Jarvis, haz una copia de seguridad»**)
@@ -192,7 +358,7 @@ tu equipo; te lo dice en voz alta y en el HUD aparece un rombo naranja junto a l
   ves si quedó todo listo y puedes elegir el modelo.
 
 **Actualizar con un botón.** En *Ajustes › Acerca de › Actualizaciones*:
-1. Escribe el repositorio de GitHub donde publicas Jarvis (`usuario/jarvis`) y guarda.
+1. El repositorio oficial ya viene puesto: `zaiddia/Jarvis` (puedes cambiarlo si publicas en otro).
 2. **Buscar actualización** → si hay una más nueva, verás sus novedades y el botón **Actualizar**.
 3. Jarvis descarga el .zip, guarda una **copia de seguridad** de lo que reemplaza, instala los
    componentes nuevos si hacen falta y se reinicia solo.

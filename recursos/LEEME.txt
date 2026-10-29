@@ -1,0 +1,13 @@
+Carpeta de recursos de Jarvis
+=============================
+
+Pon aquí los archivos que Jarvis debe llevar consigo. Se incluyen al compilar
+y también se copian a la versión USB.
+
+  sirena.mp3   -> sonido que suena al saltar una alarma o recordatorio,
+                  antes de que Jarvis lea el aviso. También vale alarma.mp3,
+                  sirena.wav o alarma.wav. Para usar otro archivo, indícalo en
+                  Ajustes > Rutinas > Sonido de alarma.
+
+  icono.ico    -> icono propio de Jarvis para la bandeja, el .exe y los accesos
+                  directos. Si no lo pones, se usa el icono cian generado.

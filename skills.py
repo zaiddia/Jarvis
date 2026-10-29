@@ -786,6 +786,100 @@ def type_text(texto):
     return f"Escrito en «{_title_of(h)}»."
 
 
+def _focus_browser():
+    """Pone al frente la última ventana que usabas (tu navegador) antes de mandar teclas."""
+    try:
+        h = target_window()
+        focus_window(h)
+        time.sleep(0.25)
+        return _title_of(h)
+    except SkillError:
+        return ""
+
+
+def _paste_type(texto):
+    """Escribe texto de forma fiable (con tildes) pegándolo desde el portapapeles."""
+    if pyperclip:
+        try:
+            old = pyperclip.paste()
+        except Exception:
+            old = None
+        pyperclip.copy(texto)
+        time.sleep(0.05)
+        pyautogui.hotkey("ctrl", "v")
+        if old is not None:
+            threading.Timer(1.0, lambda: pyperclip.copy(old)).start()
+    else:
+        pyautogui.write(texto, interval=0.01)
+
+
+@skill("navegador_buscar", "Abre una pestaña nueva del navegador y busca algo", "consulta", windows_only=False)
+def browser_search(consulta):
+    if not consulta:
+        raise SkillError("¿Qué quieres que busque?", need="consulta")
+    # Abrir la pestaña con la búsqueda ya hecha es lo más fiable (no depende del foco ni del teclado).
+    webbrowser.open("https://www.google.com/search?q=" + urllib.parse.quote_plus(consulta))
+    return f"Abrí una pestaña nueva buscando «{consulta}»."
+
+
+@skill("pestana", "Cambia, abre o cierra pestañas del navegador",
+       "accion: siguiente|anterior|cerrar|reabrir|nueva|numero, numero: 1-9")
+def tab(accion="siguiente", numero=None):
+    _need_gui()
+    _focus_browser()
+    a = normalize(accion)
+    n = to_int(str(numero)) if numero is not None else to_int(a)
+    if n and 1 <= n <= 9:
+        pyautogui.hotkey("ctrl", str(min(n, 9)))
+        return f"Pestaña {n}."
+    if a.startswith("sig") or "derecha" in a or "adelante" in a:
+        pyautogui.hotkey("ctrl", "tab"); return "Pestaña siguiente."
+    if a.startswith("ant") or "izquierda" in a or "atras" in a:
+        pyautogui.hotkey("ctrl", "shift", "tab"); return "Pestaña anterior."
+    if a.startswith("cerr") or "cierra" in a:
+        pyautogui.hotkey("ctrl", "w"); return "Pestaña cerrada."
+    if a.startswith("reabr") or "recuper" in a or "vuelve" in a:
+        pyautogui.hotkey("ctrl", "shift", "t"); return "Reabrí la última pestaña."
+    if a.startswith("nuev") or "abre" in a:
+        pyautogui.hotkey("ctrl", "t"); return "Pestaña nueva."
+    pyautogui.hotkey("ctrl", "tab"); return "Pestaña siguiente."
+
+
+@skill("buscar_en_pagina", "Busca una palabra dentro de la página abierta (Ctrl+F)", "texto", windows_only=False)
+def find_in_page(texto):
+    _need_gui()
+    if not texto:
+        raise SkillError("¿Qué palabra busco en la página?", need="texto")
+    _focus_browser()
+    pyautogui.hotkey("ctrl", "f")
+    time.sleep(0.3)
+    _paste_type(texto)
+    time.sleep(0.1)
+    pyautogui.press("enter")
+    return f"Buscando «{texto}» en la página."
+
+
+@skill("navegar", "Controla la página: atrás, adelante, recargar, subir, bajar, arriba o al final",
+       "accion", windows_only=False)
+def navigate(accion="abajo"):
+    _need_gui()
+    _focus_browser()
+    a = normalize(accion)
+    if "atras" in a or "anterior" in a or "regresa" in a or "vuelve" in a:
+        pyautogui.hotkey("alt", "left"); return "Atrás."
+    if "adelante" in a or "siguiente" in a:
+        pyautogui.hotkey("alt", "right"); return "Adelante."
+    if "recarg" in a or "actualiz" in a or "refresc" in a:
+        pyautogui.press("f5"); return "Recargando."
+    if "inicio" in a or "arriba del todo" in a or "principio" in a:
+        pyautogui.press("home"); return "Al principio."
+    if "final" in a or "fondo" in a or "abajo del todo" in a:
+        pyautogui.press("end"); return "Al final."
+    if "sube" in a or "arriba" in a:
+        pyautogui.scroll(600); return "Subiendo."
+    pyautogui.scroll(-600); return "Bajando."
+
+
 # =============================================================================
 # HABILIDADES: AULA (presentaciones, proyector, dictado matemático)
 # =============================================================================
@@ -1203,11 +1297,20 @@ def lock():
     return "Equipo bloqueado."
 
 
-@skill("apagar", "Apaga el equipo en un minuto", dangerous=True,
-       confirm="¿Apago el equipo? Se apagará en un minuto; di «cancela el apagado» para detenerlo.")
-def shutdown():
-    _run_quiet(["shutdown", "/s", "/t", "60"])
-    return "El equipo se apagará en un minuto."
+def _shutdown_confirm(a):
+    c = a.get("cuando") or "en un minuto"
+    return f"¿Apago el equipo {c}? Di «cancela el apagado» para detenerlo."
+
+
+@skill("apagar", "Apaga el equipo (en un minuto, o a la hora / dentro del tiempo que indiques)",
+       "segundos, cuando", dangerous=True, confirm=_shutdown_confirm)
+def shutdown(segundos=60, cuando=""):
+    try:
+        segundos = max(0, min(86400, int(segundos)))
+    except (TypeError, ValueError):
+        segundos = 60
+    _run_quiet(["shutdown", "/s", "/t", str(segundos)])
+    return f"El equipo se apagará {cuando or 'en un minuto'}."
 
 
 @skill("reiniciar", "Reinicia el equipo en un minuto", dangerous=True,
@@ -1251,6 +1354,34 @@ _CLOSE = r"(?:cierra|cerrar|cierre|cierrame|termina|finaliza|mata|quita)"
 _PC = r"(?:el |la )?(?:equipo|pc|computador|computadora|ordenador|maquina|portatil)"
 
 
+def _shutdown_delay(t):
+    """De «apaga a las 6», «apaga en 30 minutos», «apaga en 2 horas» saca (segundos, texto)."""
+    import datetime
+    m = re.search(rf"\ben\s+{NUM_RE}\s*(hora|horas|minuto|minutos|min|segundo|segundos)\b", t)
+    if m:
+        n = to_int(m.group(1)) or 1
+        unit = m.group(2)[:3]
+        secs = n * (3600 if unit == "hor" else 1 if unit == "seg" else 60)
+        nombre = {"hor": "hora", "min": "minuto", "seg": "segundo"}[unit]
+        return secs, f"en {n} {nombre}{'s' if n != 1 else ''}"
+    m = re.search(r"\ba la[s]?\s+(\d{1,2})(?:[:y ]\s*(\d{2}))?\s*(de la (?:manana|tarde|noche)|a\.?m|p\.?m)?\b", t)
+    if m:
+        hh = int(m.group(1)); mm = int(m.group(2) or 0)
+        suf = (m.group(3) or "").replace(".", "")
+        if "tarde" in suf or "noche" in suf or suf == "pm":
+            if hh < 12:
+                hh += 12
+        elif ("manana" in suf or suf == "am") and hh == 12:
+            hh = 0
+        now = datetime.datetime.now()
+        target = now.replace(hour=hh % 24, minute=mm, second=0, microsecond=0)
+        if target <= now:
+            target += datetime.timedelta(days=1)
+        secs = int((target - now).total_seconds())
+        return secs, f"a las {target.strftime('%H:%M')}"
+    return 60, ""
+
+
 def parse(text):
     """Devuelve (habilidad, argumentos) para órdenes directas, o None."""
     t = normalize(text)
@@ -1289,8 +1420,9 @@ def parse(text):
     # Sistema y energía
     if re.search(r"\b(?:cancela(?:r)?|deten|anula) (?:el )?(?:apagado|reinicio)\b|\bno (?:apagues|reinicies)\b", t):
         return "cancelar_apagado", {}
-    if re.search(rf"\b(?:apaga|apagar|apague) {_PC}\b", t):
-        return "apagar", {}
+    if re.search(rf"\b(?:apaga|apagar|apague|apagate)\b(?:\s+{_PC})?", t) and not re.search(r"\b(?:pantalla|monitor|musica|video|notificacion|alarma|sonido|volumen|luz|linterna)\b", t):
+        secs, cuando = _shutdown_delay(t)
+        return "apagar", {"segundos": secs, "cuando": cuando}
     if re.search(rf"\b(?:reinicia|reiniciar|reinicie) {_PC}\b", t):
         return "reiniciar", {}
     if re.search(rf"\b(?:suspende|suspender|hiberna|hibernar|pon a dormir) {_PC}\b", t):
@@ -1396,6 +1528,41 @@ def parse(text):
         if m:
             return "spotify", {"accion": "reproducir", "cancion": m.group(1).strip()}
         return "spotify", {"accion": "reproducir", "cancion": ""}
+
+    # Navegador: pestañas, buscar dentro de la página, moverse (control por teclado)
+    m = re.match(r"^\s*(?:busca|buscame|abre|pon)\s+(.+?)\s+en\s+(?:una\s+|otra\s+|la\s+)?(?:pesta[nñ]a(?:\s+nueva)?|nueva\s+pesta[nñ]a)\s*$", orig, re.I)
+    if m:
+        return "navegador_buscar", {"consulta": m.group(1).strip()}
+    m = re.match(r"^\s*(?:busca|buscame|encuentra|resalta)\s+(?:la\s+palabra\s+|el\s+texto\s+)?(.+?)\s+en\s+(?:esta\s+|la\s+)?p[aá]gina\s*$", orig, re.I)
+    if m:
+        return "buscar_en_pagina", {"texto": m.group(1).strip()}
+    if re.search(r"\b(?:cierra|cerrar)\s+(?:la\s+|esta\s+)?pesta[nñ]a\b", t):
+        return "pestana", {"accion": "cerrar"}
+    if re.search(r"\b(?:reabre|recupera|vuelve a abrir)\b.*\bpesta[nñ]a\b", t):
+        return "pestana", {"accion": "reabrir"}
+    m = re.search(r"\b(?:pesta[nñ]a|ve(?:te)? a la pesta[nñ]a|abre la pesta[nñ]a)\s+(?:numero\s+)?(\d|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve)\b", t)
+    if m:
+        return "pestana", {"accion": "numero", "numero": m.group(1)}
+    if re.search(r"\bcambia de pesta[nñ]a\b|\b(?:siguiente|otra)\s+pesta[nñ]a\b|\bpesta[nñ]a\s+siguiente\b|\bpasa (?:de|a la siguiente) pesta[nñ]a\b", t):
+        return "pestana", {"accion": "siguiente"}
+    if re.search(r"\bpesta[nñ]a\s+anterior\b|\banterior pesta[nñ]a\b|\bpesta[nñ]a de la izquierda\b", t):
+        return "pestana", {"accion": "anterior"}
+    if re.search(r"\b(?:abre|abreme)\s+(?:una\s+)?pesta[nñ]a(?:\s+(?:nueva|en blanco))?\b", t):
+        return "pestana", {"accion": "nueva"}
+    if re.search(r"\b(?:recarga|refresca|actualiza)\s+(?:la\s+|esta\s+)?(?:p[aá]gina|pesta[nñ]a|web|sitio)\b", t):
+        return "navegar", {"accion": "recargar"}
+    if re.search(r"\b(?:ve|regresa|vuelve|vete)\s+(?:a la\s+|la\s+)?(?:p[aá]gina\s+)?atras\b|\bp[aá]gina anterior\b|\batras en (?:el navegador|la p[aá]gina|internet)\b", t):
+        return "navegar", {"accion": "atras"}
+    if re.search(r"\b(?:ve|pasa|avanza)\s+adelante\b|\bp[aá]gina siguiente\b.*navegador|\badelante en (?:el navegador|la p[aá]gina)\b", t):
+        return "navegar", {"accion": "adelante"}
+    if re.search(r"\b(?:baja|desplaza(?:te)?)\b.*\b(?:la\s+)?(?:p[aá]gina|pantalla)\b", t):
+        return "navegar", {"accion": "abajo"}
+    if re.search(r"\bsube\b.*\b(?:la\s+)?(?:p[aá]gina|pantalla)\b", t):
+        return "navegar", {"accion": "arriba"}
+    if re.search(r"\b(?:ve|baja)\s+(?:al|hasta el)\s+(?:final|fondo)\s+de la p[aá]gina\b", t):
+        return "navegar", {"accion": "final"}
+    if re.search(r"\b(?:ve|sube)\s+(?:al|hasta el)\s+(?:principio|inicio)\s+de la p[aá]gina\b", t):
+        return "navegar", {"accion": "inicio"}
 
     # YouTube y búsquedas web (con el texto original para conservar tildes)
     m = re.match(r"^\s*(?:pon|ponme|reproduce|reproducir|busca|buscar)\s+(.+?)\s+en\s+youtube\s*$", orig, re.I)

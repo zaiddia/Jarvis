@@ -44,6 +44,9 @@ pyinstaller --noconfirm --clean --onedir --windowed --name jarvis --icon "%ICONO
   --collect-all webview ^
   --hidden-import engineio.async_drivers.threading ^
   --hidden-import pystray._win32 ^
+  --collect-submodules websockets ^
+  --collect-all pptx ^
+  --collect-submodules openpyxl ^
   jarvis.py
 if errorlevel 1 (
   echo.

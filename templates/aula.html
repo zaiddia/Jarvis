@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula · Jarvis</title>
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/aula.css">
+</head>
+<body data-view="ruleta">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-dice" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.6-.3 4.8 1.2 5.5 4.3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></symbol>
+  <symbol id="i-light" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="3"/><circle cx="12" cy="7" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="17" r="1.6"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-screen" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="brand"><b>JARVIS</b><span>AULA</span></div>
+  <label class="course">
+    <span>Curso</span>
+    <select class="inp" id="course" aria-label="Curso activo"></select>
+  </label>
+  <nav class="tabs" role="tablist">
+    <button class="tab" data-tab="ruleta"><svg class="i"><use href="#i-dice"/></svg><span>Ruleta</span></button>
+    <button class="tab" data-tab="grupos"><svg class="i"><use href="#i-users"/></svg><span>Grupos</span></button>
+    <button class="tab" data-tab="asistencia"><svg class="i"><use href="#i-check"/></svg><span>Asistencia</span></button>
+    <button class="tab" data-tab="semaforo"><svg class="i"><use href="#i-light"/></svg><span>Semáforo</span></button>
+    <button class="tab" data-tab="revisar"><svg class="i"><use href="#i-pen"/></svg><span>Revisar</span></button>
+    <button class="tab" data-tab="material"><svg class="i"><use href="#i-doc"/></svg><span>Material</span></button>
+    <button class="tab" data-tab="cursos"><svg class="i"><use href="#i-list"/></svg><span>Cursos</span></button>
+  </nav>
+  <button class="btn btn-ghost sq" id="btn-full" title="Pantalla completa (F11)"><svg class="i"><use href="#i-expand"/></svg></button>
+</header>
+
+<main>
+  <!-- RULETA -->
+  <section class="view" data-view="ruleta">
+    <div class="stage">
+      <p class="kicker" id="pick-kicker">Le toca a</p>
+      <div class="pick-name" id="pick-name">—</div>
+      <p class="pick-meta" id="pick-meta">Di «Jarvis, escoge un estudiante» o pulsa Sortear.</p>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary big" id="btn-pick"><svg class="i"><use href="#i-dice"/></svg>Sortear</button>
+      <button class="text-btn" id="btn-reset-pick"><svg class="i"><use href="#i-refresh"/></svg>Nueva ronda (todos vuelven a participar)</button>
+    </div>
+  </section>
+
+  <!-- GRUPOS -->
+  <section class="view" data-view="grupos" hidden>
+    <div class="toolbar">
+      <label>Grupos de <input class="inp num" type="number" id="g-size" min="2" max="20" value="4"></label>
+      <span class="or">o</span>
+      <label><input class="inp num" type="number" id="g-count" min="1" max="30" placeholder="—"> grupos</label>
+      <button class="btn btn-primary" id="btn-groups"><svg class="i"><use href="#i-users"/></svg>Hacer grupos</button>
+    </div>
+    <div class="groups" id="groups"><p class="empty">Di «Jarvis, haz grupos de 4» o usa los controles de arriba. Los ausentes de hoy no se incluyen.</p></div>
+  </section>
+
+  <!-- ASISTENCIA -->
+  <section class="view" data-view="asistencia" hidden>
+    <div class="toolbar">
+      <p class="count" id="att-count">—</p>
+      <span class="hint">Toca a quien falte · o di «falta Juan»</span>
+      <button class="btn btn-primary" id="btn-export"><svg class="i"><use href="#i-check"/></svg>Guardar asistencia</button>
+    </div>
+    <div class="chips" id="att-list"></div>
+  </section>
+
+  <!-- SEMÁFORO -->
+  <section class="view" data-view="semaforo" hidden>
+    <div class="light-wrap">
+      <div class="light" id="light"><span id="light-label">Bien</span></div>
+      <div class="meter"><i id="meter-fill"></i><i class="mark" id="mark-y"></i><i class="mark" id="mark-r"></i></div>
+      <p class="hint" id="light-hint">Escucha con el micrófono de Jarvis. No se graba nada.</p>
+      <label class="tol">Tolerancia al ruido <input type="range" id="tol" min="0.08" max="0.7" step="0.01"></label>
+    </div>
+  </section>
+
+  <!-- REVISAR TRABAJOS -->
+  <section class="view" data-view="revisar" hidden>
+    <div class="cols">
+      <div class="card">
+        <h2>1 · Imagen del trabajo</h2>
+        <div class="src-btns">
+          <button class="btn btn-ghost" id="rv-cam"><svg class="i"><use href="#i-cam"/></svg>Cámara</button>
+          <button class="btn btn-ghost" id="rv-screen"><svg class="i"><use href="#i-screen"/></svg>Pantalla</button>
+          <label class="btn btn-ghost" for="rv-file"><svg class="i"><use href="#i-upload"/></svg>Subir foto</label>
+          <input type="file" id="rv-file" accept="image/*" hidden>
+          <label class="cam-sel">Cámara n.º <input class="inp num" type="number" id="rv-camidx" min="0" max="9" value="0"></label>
+        </div>
+        <div class="preview" id="rv-preview"><p class="empty">Pon la hoja frente a la cámara y pulsa <b>Cámara</b>, abre el archivo y pulsa <b>Pantalla</b>, o sube una foto tomada con el celular.</p></div>
+      </div>
+      <div class="card">
+        <h2>2 · Datos (opcionales)</h2>
+        <label class="f">Estudiante <select class="inp" id="rv-student"></select></label>
+        <div class="row2">
+          <label class="f">¿Qué es? <input class="inp" id="rv-que" placeholder="Ej.: taller de fracciones"></label>
+          <label class="f">Grado <input class="inp" id="rv-grado" placeholder="Ej.: 7°"></label>
+        </div>
+        <label class="f">Respuestas correctas o criterios <textarea class="inp" id="rv-clave" rows="4" placeholder="Opcional, pero mejora mucho la revisión. Ej.: 1) 3/4  2) 5/6  3) 1 1/2"></textarea></label>
+        <button class="btn btn-primary" id="rv-run"><svg class="i"><use href="#i-pen"/></svg>Revisar con IA</button>
+        <p class="status" id="rv-status">Por voz: «Jarvis, revisa el taller de Juan» (usa la cámara) o «… en la pantalla».</p>
+      </div>
+    </div>
+    <div class="result" id="rv-result" hidden>
+      <div class="res-head">
+        <div class="grade" id="rv-grade">—</div>
+        <div class="res-sum"><p class="res-who" id="rv-who"></p><p id="rv-resumen"></p><p class="res-just" id="rv-just"></p></div>
+        <button class="btn btn-ghost" id="rv-open" hidden>Abrir Word</button>
+      </div>
+      <div class="res-cols">
+        <div><h3 class="ok-t">Aciertos</h3><ul id="rv-ok"></ul></div>
+        <div><h3 class="err-t">Por corregir</h3><ul id="rv-err"></ul></div>
+      </div>
+      <div class="feedback"><h3>Mensaje para el estudiante</h3><p id="rv-feedback"></p></div>
+      <p class="note">Revisión sugerida por la IA: la nota y la decisión final son tuyas. Se guardó en <b>Revisiones</b> con la foto, y en el registro para Excel.</p>
+    </div>
+  </section>
+
+  <!-- MATERIAL -->
+  <section class="view" data-view="material" hidden>
+    <div class="cols">
+      <form class="card" id="mat-form" autocomplete="off">
+        <h2>Generar material en Word</h2>
+        <div class="seg kinds">
+          <label><input type="radio" name="kind" value="quiz" checked><span>Evaluación</span></label>
+          <label><input type="radio" name="kind" value="taller"><span>Taller</span></label>
+          <label><input type="radio" name="kind" value="rubrica"><span>Rúbrica</span></label>
+          <label><input type="radio" name="kind" value="plan"><span>Plan de clase</span></label>
+        </div>
+        <label class="f">Tema <input class="inp" id="m-tema" placeholder="Ej.: suma y resta de fracciones" required></label>
+        <div class="row2">
+          <label class="f">Grado <input class="inp" id="m-grado" placeholder="Ej.: 7°"></label>
+          <label class="f" id="m-cant-wrap"><span id="m-cant-label">Preguntas</span> <input class="inp" type="number" id="m-cant" min="1" max="40" placeholder="10"></label>
+        </div>
+        <label class="f">Indicaciones (opcional) <textarea class="inp" id="m-extra" rows="3" placeholder="Ej.: con situaciones de la vida real, nivel básico, incluir gráficos de pizza"></textarea></label>
+        <button class="btn btn-primary" id="btn-mat" type="submit"><svg class="i"><use href="#i-doc"/></svg>Generar en Word</button>
+        <p class="status" id="mat-status">También por voz: «Jarvis, crea un quiz de 10 preguntas sobre fracciones para séptimo».</p>
+      </form>
+      <div class="card">
+        <h2>Tus datos para el encabezado</h2>
+        <label class="f">Docente <input class="inp" id="t-docente" placeholder="Tu nombre"></label>
+        <label class="f">Institución <input class="inp" id="t-inst" placeholder="Nombre del colegio"></label>
+        <label class="chk"><input type="checkbox" id="t-open"> Abrir el Word al terminar</label>
+        <h2 class="mt">Generado hoy</h2>
+        <ul class="files" id="files"><li class="empty">Aún nada.</li></ul>
+        <button class="text-btn" id="btn-folder"><svg class="i"><use href="#i-folder"/></svg>Abrir la carpeta «Material de clase»</button>
+        <p class="note">La IA puede equivocarse: revisa el material antes de usarlo en clase.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CURSOS -->
+  <section class="view" data-view="cursos" hidden>
+    <div class="cols courses">
+      <div class="card">
+        <h2>Tus cursos</h2>
+        <ul class="course-list" id="course-list"></ul>
+        <button class="btn btn-ghost" id="btn-new-course"><svg class="i"><use href="#i-plus"/></svg>Nuevo curso</button>
+      </div>
+      <div class="card">
+        <h2 id="ed-title">Nuevo curso</h2>
+        <label class="f">Nombre del curso <input class="inp" id="ed-name" placeholder="Ej.: 7A"></label>
+        <label class="f"><span>Estudiantes <small id="ed-count"></small></span>
+          <textarea class="inp names" id="ed-names" placeholder="Un nombre por línea.&#10;Puedes copiar la columna de nombres desde Excel y pegarla aquí."></textarea></label>
+        <div class="row-btns">
+          <button class="btn btn-primary" id="btn-save-course">Guardar curso</button>
+          <button class="btn btn-danger" id="btn-del-course" hidden><svg class="i"><use href="#i-trash"/></svg>Eliminar</button>
+        </div>
+        <p class="status" id="ed-status">Para usarlo por voz: «Jarvis, usa el curso 7A».</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script src="/static/vendor/socket.io.min.js"></script>
+<script src="/static/js/aula.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+Voces de Piper (voz offline de Jarvis)
+======================================
+
+Aquí van los modelos .onnx de Piper. Para descargar uno (solo una vez, con internet):
+
+    .venv\Scripts\python descargar_voz.py          (voz de España)
+    .venv\Scripts\python descargar_voz.py mx       (voz de México)
+    .venv\Scripts\python descargar_voz.py --lista  (ver todas)
+
+Después, en Jarvis: Ajustes > Voz > Motor de voz = Piper (offline).

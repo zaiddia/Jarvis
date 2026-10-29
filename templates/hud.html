@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jarvis</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hud.css') }}">
+</head>
+<body data-size="compacto" data-state="idle">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></symbol>
+  <symbol id="i-collapse" viewBox="0 0 24 24"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></symbol>
+  <symbol id="i-orb" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-mic-off" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2-7-8-1z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+</svg>
+
+<div class="shell" id="shell">
+  <!-- Reactor: también sirve para arrastrar el HUD -->
+  <div class="orb drag-zone" id="orb" title="Arrastra para mover · doble clic para cambiar de tamaño">
+    <div class="reactor" id="reactor">
+      <svg viewBox="0 0 100 100" class="reactor-svg" aria-hidden="true">
+        <defs>
+          <radialGradient id="coreGrad">
+            <stop offset="0" stop-color="#ffffff" stop-opacity=".95"/>
+            <stop offset=".4" stop-color="currentColor" stop-opacity=".85"/>
+            <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle class="wave w1" cx="50" cy="50" r="16"/>
+        <circle class="wave w2" cx="50" cy="50" r="16"/>
+        <g class="ring spin-slow"><circle class="r-ticks" cx="50" cy="50" r="46"/></g>
+        <g class="ring spin-a"><circle class="r-arc-a" cx="50" cy="50" r="38"/></g>
+        <g class="ring spin-b"><circle class="r-arc-b" cx="50" cy="50" r="30"/></g>
+        <circle class="r-inner" cx="50" cy="50" r="22"/>
+        <g class="core">
+          <circle class="core-glow" cx="50" cy="50" r="19" fill="url(#coreGrad)"/>
+          <circle class="core-dot" cx="50" cy="50" r="7"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="head">
+    <div class="titles drag-zone">
+      <span class="brand">JARVIS</span>
+      <span class="mode" id="mode" aria-live="polite">EN ESPERA</span>
+    </div>
+    <div class="leds" id="leds">
+      <i id="led-mic" title="Micrófono"></i><i id="led-ai" title="IA"></i><i id="led-tts" title="Voz"></i><i id="led-cop" class="cop" title="Copiloto: mirando tu pantalla" hidden></i><i id="led-net" class="net" title="Sin internet: Jarvis usa lo que hay en tu equipo" hidden></i>
+    </div>
+    <div class="win-btns">
+      <button type="button" id="btn-size" title="Expandir"><svg class="i"><use href="#i-expand"/></svg></button>
+      <button type="button" id="btn-orb" title="Reducir a orbe"><svg class="i"><use href="#i-orb"/></svg></button>
+      <button type="button" id="btn-settings" title="Ajustes"><svg class="i"><use href="#i-sliders"/></svg></button>
+      <button type="button" id="btn-hide" title="Ocultar (Ctrl+Alt+J para volver)"><svg class="i"><use href="#i-minus"/></svg></button>
+      <button type="button" id="btn-quit" class="danger" title="Salir de Jarvis"><svg class="i"><use href="#i-power"/></svg></button>
+    </div>
+  </div>
+
+  <div class="preview" id="preview"></div>
+
+  <div class="timers" id="timers" hidden></div>
+
+  <div class="panel" id="panel">
+    <div class="xtabs">
+      <button type="button" class="xtab active" data-view="chat">Conversación</button>
+      <button type="button" class="xtab" data-view="log">Registro</button>
+      <span class="spacer"></span>
+      <button type="button" class="text-btn" id="btn-clear" title="Nueva conversación"><svg class="i"><use href="#i-trash"/></svg>Nueva</button>
+    </div>
+    <div class="scroll" id="view-chat"><div class="chat" id="chat"></div></div>
+    <div class="scroll" id="view-log" hidden><div class="log" id="log"></div></div>
+  </div>
+
+  <form class="bar" id="bar" autocomplete="off">
+    <button type="button" class="bar-btn" id="btn-mic" title="Pausar micrófono"><svg class="i"><use href="#i-mic"/></svg></button>
+    <input type="text" id="input" maxlength="1000" placeholder="Escribe una orden…" aria-label="Orden para Jarvis">
+    <button type="submit" class="bar-btn send" id="btn-send" title="Enviar"><svg class="i"><use href="#i-send"/></svg></button>
+    <button type="button" class="bar-btn stop" id="btn-stop" title="Detener voz"><svg class="i"><use href="#i-stop"/></svg></button>
+  </form>
+</div>
+
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/hud.js') }}"></script>
+</body>
+</html>

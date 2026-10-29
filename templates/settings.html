@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ajustes · Jarvis</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/></symbol>
+</svg>
+
+<header class="page-head">
+  <div>
+    <span class="eyebrow">Configuración</span>
+    <h1>Ajustes de Jarvis</h1>
+  </div>
+  <span class="ver">v{{ version }}</span>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab active" type="button" data-tab="general">General</button>
+  <button class="tab" type="button" data-tab="hud">HUD</button>
+  <button class="tab" type="button" data-tab="voz">Voz</button>
+  <button class="tab" type="button" data-tab="escucha">Escucha</button>
+  <button class="tab" type="button" data-tab="ia">IA</button>
+  <button class="tab" type="button" data-tab="pc">Control del PC</button>
+  <button class="tab" type="button" data-tab="integra">Integraciones</button>
+  <button class="tab" type="button" data-tab="memoria">Memoria</button>
+  <button class="tab" type="button" data-tab="rutinas">Rutinas</button>
+  <button class="tab" type="button" data-tab="acerca">Acerca de</button>
+</nav>
+
+<form class="content" id="form" onsubmit="return false">
+
+  <!-- GENERAL -->
+  <section class="pane active" data-pane="general">
+    <div class="group">Trato</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-address">¿Cómo quieres que te llame?</label><p>Como «profe», «profe Diana» o tu nombre. También puedes decirle «llámame profe». Vacío = te tutea sin nombre.</p></div>
+      <input class="inp narrow" type="text" id="f-address" data-key="address_name" placeholder="profe" maxlength="30">
+    </div>
+    <div class="group">Apariencia</div>
+    <div class="field stack">
+      <div class="ft"><label>Tema de color</label><p>Color del reactor y de toda la interfaz.</p></div>
+      <div class="swatches" id="swatches"></div>
+    </div>
+    <div class="group">Inicio</div>
+    <div class="field">
+      <div class="ft"><label for="f-autostart">Iniciar con Windows</label><p id="autostart-help">Jarvis arranca en silencio al iniciar sesión, sin ventanas de consola.</p></div>
+      <label class="switch"><input type="checkbox" id="f-autostart" data-key="autostart"><span></span></label>
+    </div>
+    <div class="group">Archivos</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-output">Carpeta de Jarvis</label><p>Documentos STEAM y capturas de pantalla.</p></div>
+      <div class="row">
+        <input class="inp" type="text" id="f-output" data-key="output_dir">
+        <button class="btn btn-ghost sq" type="button" id="btn-open-folder" title="Abrir carpeta"><svg class="i"><use href="#i-folder"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HUD -->
+  <section class="pane" data-pane="hud">
+    <div class="group">Ventana flotante</div>
+    <div class="field stack">
+      <div class="ft"><label>Tamaño al iniciar</label><p>Puedes cambiarlo en cualquier momento con los botones del HUD o con doble clic en el reactor.</p></div>
+      <div class="seg">
+        <label><input type="radio" name="hud_start_size" value="orbe" data-key="hud_start_size"><span>Orbe</span></label>
+        <label><input type="radio" name="hud_start_size" value="compacto" data-key="hud_start_size"><span>Compacto</span></label>
+        <label><input type="radio" name="hud_start_size" value="expandido" data-key="hud_start_size"><span>Expandido</span></label>
+      </div>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-position">Posición en pantalla</label><p>Si lo arrastras a otro sitio, Jarvis recuerda ese lugar.</p></div>
+      <select class="inp" id="f-position" data-key="hud_position"></select>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-opacity">Opacidad del fondo</label><p>Más bajo = más transparente. Sin efecto con fondo sólido.</p></div>
+      <div class="range"><input type="range" id="f-opacity" min="30" max="100" step="5" data-key="hud_opacity" data-unit="%"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-dim">Atenuar en reposo</label><p>Se vuelve casi transparente cuando no lo usas; reaparece al pasar el ratón o al hablar.</p></div>
+      <label class="switch"><input type="checkbox" id="f-dim" data-key="hud_dim_idle"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-ontop">Siempre visible</label><p>Se mantiene encima de las demás ventanas.</p></div>
+      <label class="switch"><input type="checkbox" id="f-ontop" data-key="hud_on_top"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-taskbar">Ocultar de la barra de tareas</label><p>Queda solo el icono junto al reloj. Se aplica al reiniciar Jarvis.</p></div>
+      <label class="switch"><input type="checkbox" id="f-taskbar" data-key="hud_hide_taskbar"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-transparent">Fondo transparente</label><p>Solo donde funciona bien (Linux, o Windows con pywebview 5). En Windows con pywebview 6 el HUD usa siempre fondo sólido, porque la transparencia impedía hacer clic en él. Se aplica al reiniciar Jarvis.</p></div>
+      <label class="switch"><input type="checkbox" id="f-transparent" data-key="hud_transparent"><span></span></label>
+    </div>
+    <div class="group">Modo sigilo</div>
+    <div class="field">
+      <div class="ft"><label for="f-hidden">Arrancar oculto</label><p>Al encender el PC, Jarvis se inicia invisible pero escuchando. Di «mostrar panel» o pulsa Ctrl+Alt+J para verlo. Di «modo sigilo» para esconderlo de nuevo.</p></div>
+      <label class="switch"><input type="checkbox" id="f-hidden" data-key="hud_start_hidden"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-announce">Confirmar por voz al iniciar</label><p>Jarvis dice en voz alta que el núcleo se cargó. Útil cuando arranca oculto.</p></div>
+      <label class="switch"><input type="checkbox" id="f-announce" data-key="startup_announce"><span></span></label>
+    </div>
+    <div class="group">Atajos de teclado</div>
+    <ul class="kbd-list">
+      <li><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>J</kbd><span>Mostrar u ocultar el HUD</span></li>
+      <li><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Espacio</kbd><span>Hablar sin decir «Jarvis»</span></li>
+      <li><kbd>Doble clic</kbd><span>en el reactor: cambiar de tamaño</span></li>
+    </ul>
+  </section>
+
+  <!-- VOZ -->
+  <section class="pane" data-pane="voz">
+    <div class="group">Síntesis de voz</div>
+    <div class="field">
+      <div class="ft"><label for="f-tts-enabled">Respuestas habladas</label><p>Si lo desactivas, Jarvis solo responde por texto.</p></div>
+      <label class="switch"><input type="checkbox" id="f-tts-enabled" data-key="tts_enabled"><span></span></label>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label>Motor de voz</label><p><b>Gemini</b>: la voz más natural, con entonación de persona; usa tu clave de Gemini. <b>Edge</b>: voces excelentes, <b>necesita internet</b>. <b>Piper</b>: funciona <b>sin internet</b>. Si Gemini falla (sin cuota o sin clave), Jarvis usa Edge automáticamente, y si no hay internet, Piper.</p></div>
+      <div class="seg">
+        <label><input type="radio" name="tts_backend" value="gemini" data-key="tts_backend"><span>Gemini (muy natural)</span></label>
+        <label><input type="radio" name="tts_backend" value="edge" data-key="tts_backend"><span>Edge (online)</span></label>
+        <label><input type="radio" name="tts_backend" value="piper" data-key="tts_backend"><span>Piper (offline)</span></label>
+      </div>
+    </div>
+    <div class="field stack" data-ttsbk="gemini" hidden>
+      <div class="ft"><label for="f-gvoice">Voz (Gemini)</label><p class="status" id="gemini-tts-status"></p></div>
+      <select class="inp" id="f-gvoice" data-key="gemini_tts_voice" style="max-width:340px"></select>
+    </div>
+    <div class="field stack" data-ttsbk="gemini" hidden>
+      <div class="ft"><label for="f-gmodel">Calidad</label><p>La rápida responde antes; la de máxima calidad suena un poco mejor pero tarda más en empezar a hablar.</p></div>
+      <select class="inp" id="f-gmodel" data-key="gemini_tts_model" style="max-width:340px"></select>
+    </div>
+    <div class="field stack" data-ttsbk="gemini" hidden>
+      <div class="ft"><label for="f-gstyle">Forma de hablar</label><p>Describe el tono con tus palabras: «cálido y tranquilo», «enérgico y alegre», «pausado, como un profesor». La velocidad y el tono de abajo solo aplican a Edge y Piper.</p></div>
+      <input class="inp" type="text" id="f-gstyle" data-key="gemini_tts_style" maxlength="200" placeholder="natural, cálido y conversacional">
+    </div>
+    <div class="field stack" data-ttsbk="edge">
+      <div class="ft"><label for="f-voice">Voz (Edge)</label><p>Voces neuronales de Microsoft Edge. Pulsa ↻ para cargar el catálogo completo en español.</p></div>
+      <div class="row">
+        <select class="inp" id="f-voice" data-key="tts_voice"></select>
+        <button class="btn btn-ghost sq" type="button" id="btn-load-voices" title="Cargar todas las voces"><svg class="i"><use href="#i-refresh"/></svg></button>
+      </div>
+    </div>
+    <div class="field stack" data-ttsbk="piper" hidden>
+      <div class="ft"><label>Voz (Piper)</label><p class="status" id="piper-status"></p></div>
+      <input class="inp" type="text" id="f-piper-voice" data-key="piper_voice" placeholder="Automático: recursos\piper\*.onnx">
+      <p class="note" id="piper-help">Si aún no tienes voz de Piper, ejecuta <code>descargar_voz.py</code> una vez (con internet) y quedará guardada para siempre.</p>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-rate">Velocidad</label></div>
+      <div class="range"><input type="range" id="f-rate" min="-50" max="50" step="5" data-key="tts_rate" data-unit="%" data-signed="1"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-volume">Volumen de la voz</label></div>
+      <div class="range"><input type="range" id="f-volume" min="-50" max="50" step="5" data-key="tts_volume" data-unit="%" data-signed="1"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-pitch">Tono</label></div>
+      <div class="range"><input type="range" id="f-pitch" min="-50" max="50" step="5" data-key="tts_pitch" data-unit="Hz" data-signed="1"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label>Probar</label><p>Escucha la voz con estos valores antes de guardar.</p></div>
+      <button class="btn btn-ghost" type="button" id="btn-preview"><svg class="i"><use href="#i-play"/></svg>Probar voz</button>
+    </div>
+    <p class="note" data-ttsbk="gemini" hidden>Con la voz de Gemini, el texto de cada respuesta se envía a Google con tu clave (igual que las preguntas a la IA). Las frases cortas que se repiten («¿Sí?», «Hecho») se guardan en tu equipo para que suenen al instante y no gasten cuota.</p>
+    <p class="note" data-ttsbk="edge">Edge-TTS necesita internet: el texto de cada respuesta se envía al servicio de voz de Microsoft. Si te quedas sin conexión, cambia a Piper.</p>
+  </section>
+
+  <!-- ESCUCHA -->
+  <section class="pane" data-pane="escucha">
+    <div class="group">Cómo conversas con Jarvis</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-listen-mode">Modo de conversación</label><p><b>En vivo</b>: después de «Jarvis», tu voz va directo a la IA de voz (Gemini Live, u otra que elijas abajo), que la oye tal cual (acentos, ruido, pausas), sabe solo cuándo terminaste, responde con voz natural y puedes interrumpirlo o seguir hablando sin repetir «Jarvis». Es como hablar con una persona. <b>Clásico</b>: reconoce la frase, la pasa a texto y luego responde. En los dos, lo que se habla en el salón sin decir «Jarvis» nunca sale de tu equipo.</p><p class="status" id="live-status"></p></div>
+      <div class="row wrap">
+        <select class="inp" id="f-listen-mode" data-key="listen_mode" style="max-width:340px">
+          <option value="auto">Automático (recomendado)</option>
+          <option value="vivo">Siempre en vivo</option>
+          <option value="clasico">Clásico</option>
+        </select>
+        <button class="btn btn-ghost" type="button" id="btn-live-test">Probar conexión en vivo</button>
+      </div>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-live-provider">Proveedor de voz en vivo</label><p><b>Gemini Live</b>: gratis con tu clave de Gemini (con límites diarios). <b>OpenAI Realtime</b>: la voz en vivo de ChatGPT, de pago, con la clave de ChatGPT de la sección IA. <b>Deepgram</b>: regala 200 dólares de crédito al registrarte en deepgram.com, sin tarjeta.</p></div>
+      <select class="inp" id="f-live-provider" data-key="live_provider" style="max-width:340px">
+        <option value="gemini">Gemini Live (gratis)</option>
+        <option value="openai">OpenAI Realtime (de pago)</option>
+        <option value="deepgram">Deepgram (con crédito)</option>
+      </select>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-live-fallback">Si falla, usar otro</label><p>Si el proveedor elegido no responde o se le acaba la cuota, Jarvis prueba los otros que tengan clave y, si ninguno puede, usa el modo clásico.</p></div>
+      <label class="switch"><input type="checkbox" id="f-live-fallback" data-key="live_fallback"><span></span></label>
+    </div>
+    <div data-livep="openai" hidden>
+      <div class="field stack">
+        <div class="ft"><label for="f-oa-voice">Voz (OpenAI)</label><p class="status" id="oa-live-status"></p></div>
+        <div class="row wrap">
+          <select class="inp" id="f-oa-voice" data-key="openai_live_voice" style="max-width:240px"></select>
+          <input class="inp" type="text" id="f-oa-model" data-key="openai_live_model" placeholder="gpt-realtime" style="max-width:200px" title="Modelo">
+        </div>
+      </div>
+    </div>
+    <div data-livep="deepgram" hidden>
+      <div class="field stack">
+        <div class="ft"><label for="f-dg-key">Clave de API de Deepgram</label><p>Créala en <code>console.deepgram.com</code> (API Keys). Se guarda solo en tu equipo.</p></div>
+        <div class="row">
+          <input class="inp" type="password" id="f-dg-key" data-key="deepgram_api_key" data-secret data-hint="pega aquí tu clave de Deepgram" autocomplete="off">
+          <button class="btn btn-ghost sq" type="button" data-clear="deepgram_api_key" title="Borrar clave guardada"><svg class="i"><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+      <div class="field stack">
+        <div class="ft"><label for="f-dg-voice">Voz (Deepgram, en español)</label></div>
+        <div class="row wrap">
+          <select class="inp" id="f-dg-voice" data-key="deepgram_voice" style="max-width:240px"></select>
+          <input class="inp" type="text" id="f-dg-think" data-key="deepgram_think_model" placeholder="gpt-4o-mini" style="max-width:200px" title="Modelo que piensa las respuestas">
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-live-idle">Terminar la conversación tras</label><p>Segundos de silencio para dejar de escuchar y volver a esperar «Jarvis». También termina si te despides («gracias, eso es todo»).</p></div>
+      <div class="range"><input type="range" id="f-live-idle" min="5" max="120" step="5" data-key="live_idle" data-unit=" s"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-live-barge">Fuerza de voz para interrumpirlo</label><p>Mientras Jarvis habla en vivo, no se le manda su propia voz (la que sale por los parlantes). Para interrumpirlo, háblale con al menos este volumen. Con audífonos puedes bajarlo; si se interrumpe solo, súbelo.</p></div>
+      <div class="range"><input type="range" id="f-live-barge" min="5" max="80" step="5" data-key="live_barge_level" data-unit="%"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-live-search">Buscar en Google cuando haga falta</label><p>En vivo puede consultar datos actuales (noticias, clima, resultados) para responderte.</p></div>
+      <label class="switch"><input type="checkbox" id="f-live-search" data-key="live_search"><span></span></label>
+    </div>
+    <p class="note">Con Gemini Live, la voz es la que elegiste en <b>Voz › Gemini</b>. Hablar en vivo usa la clave del proveedor por minutos de audio, solo mientras la conversación está abierta.</p>
+
+    <div class="group">Micrófono</div>
+    <div class="field">
+      <div class="ft"><label for="f-mic-enabled">Escucha activa</label><p>Reconocimiento de voz, siempre en tu equipo (sin internet).</p></div>
+      <label class="switch"><input type="checkbox" id="f-mic-enabled" data-key="mic_enabled"><span></span></label>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label>Motor de reconocimiento</label><p><b>Vosk</b>: ligero, arranca al instante. <b>Whisper</b>: bastante más preciso (acentos, ruido), pero usa más memoria y procesador. Los dos funcionan sin internet.</p></div>
+      <div class="seg">
+        <label><input type="radio" name="stt_backend" value="vosk" data-key="stt_backend"><span>Vosk (ligero)</span></label>
+        <label><input type="radio" name="stt_backend" value="whisper" data-key="stt_backend"><span>Whisper (preciso)</span></label>
+      </div>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-stt-refine">Entender mejor lo que le dices</label><p>El motor de arriba escucha siempre en tu equipo, pero solo para saber si le hablas a Jarvis. Cuando la frase es para Jarvis, ese mismo audio se vuelve a transcribir con un reconocedor más preciso. <b>Gemini</b> usa tu clave de Gemini y entiende muy bien acentos y nombres; solo se envían las frases dirigidas a Jarvis, nunca lo que se habla en el ambiente. <b>Whisper</b> lo hace en tu equipo, sin internet, algo más lento.</p><p class="status" id="refine-status"></p></div>
+      <select class="inp" id="f-stt-refine" data-key="stt_refine" style="max-width:340px">
+        <option value="auto">Automático (recomendado)</option>
+        <option value="gemini">Gemini (con tu clave)</option>
+        <option value="whisper">Whisper (en tu equipo)</option>
+        <option value="off">Desactivado</option>
+      </select>
+    </div>
+    <div class="field" data-stt="whisper" hidden>
+      <div class="ft"><label for="f-whisper-model">Tamaño del modelo Whisper</label><p class="status" id="whisper-status"></p></div>
+      <select class="inp" id="f-whisper-model" data-key="whisper_model" style="max-width:220px"></select>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-mic">Dispositivo de entrada</label></div>
+      <div class="row">
+        <select class="inp" id="f-mic" data-key="mic_device" data-type="number"></select>
+        <button class="btn btn-ghost sq" type="button" id="btn-load-mics" title="Actualizar lista"><svg class="i"><use href="#i-refresh"/></svg></button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-barge">Interrumpirlo mientras habla</label><p>Di <b>«Jarvis, para»</b> (o «cállate», «basta») para que se calle, o <b>«Jarvis, …»</b> con otra pregunta y la atiende sin esperar a que termine. Con parlantes muy fuertes puede oírse a sí mismo: si se corta solo, baja el volumen, usa audífonos o desactívalo.</p></div>
+      <label class="switch"><input type="checkbox" id="f-barge" data-key="barge_in"><span></span></label>
+    </div>
+    <div class="group">Palabra de activación</div>
+    <div class="field">
+      <div class="ft"><label for="f-wake-enabled">Exigir palabra de activación</label><p>Evita que Jarvis responda a conversaciones de fondo.</p></div>
+      <label class="switch"><input type="checkbox" id="f-wake-enabled" data-key="wake_word_enabled"><span></span></label>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-wake-words">Palabras que lo activan</label><p>Separadas por comas. Si Vosk transcribe «Jarvis» de otra forma (míralo en el Registro del HUD), añádela aquí.</p></div>
+      <input class="inp" type="text" id="f-wake-words" data-key="wake_words">
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-wake-window">Tiempo de espera</label><p>Segundos para dar la orden tras decir solo «Jarvis».</p></div>
+      <div class="range"><input type="range" id="f-wake-window" min="3" max="30" step="1" data-key="wake_window" data-unit=" s"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-followup">Seguir la conversación</label><p>Después de responderte, sigue escuchando estos segundos: puedes decir «ahora ciérralo» o «súbele el volumen» sin repetir «Jarvis» (hasta 3 órdenes seguidas). En 0, siempre hay que decir «Jarvis».</p></div>
+      <div class="range"><input type="range" id="f-followup" min="0" max="20" step="1" data-key="followup_listen" data-unit=" s"><output></output></div>
+    </div>
+
+    <div class="group">Ignorar el ruido del ambiente</div>
+    <div class="field">
+      <div class="ft"><label for="f-sensitivity">Sensibilidad del micrófono</label><p><b>Déjalo en 0</b> si notas que Jarvis no te oye bien. Súbelo solo si quieres que ignore sonidos lejanos o flojos (otras personas en el salón); si sube mucho, puede dejar de oírte a ti.</p></div>
+      <div class="range"><input type="range" id="f-sensitivity" min="0" max="60" step="1" data-key="mic_sensitivity" data-unit="%"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-hotkey">Solo escuchar al pulsar un atajo</label><p>El micrófono queda en silencio hasta que pulsas <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Espacio</kbd>. Garantiza que Jarvis no procese ninguna conversación del ambiente. Ignora la palabra «Jarvis» mientras está activo.</p></div>
+      <label class="switch"><input type="checkbox" id="f-hotkey" data-key="require_hotkey"><span></span></label>
+    </div>
+  </section>
+
+  <!-- IA -->
+  <section class="pane" data-pane="ia">
+    <div class="group">Conexión</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-provider">Proveedor de IA</label><p>Ollama funciona sin internet en tu equipo. Los de la nube necesitan internet y una clave de API de esa empresa; lo que dices se envía a ella.</p></div>
+      <select class="inp" id="f-provider" data-key="ai_provider">
+        <optgroup label="En tu equipo">
+          {% for pid, p in providers.items() if p.group == "local" %}<option value="{{ pid }}">{{ p.label }}</option>{% endfor %}
+        </optgroup>
+        <optgroup label="En la nube (con clave de API)">
+          {% for pid, p in providers.items() if p.group == "cloud" %}<option value="{{ pid }}">{{ p.label }}</option>{% endfor %}
+        </optgroup>
+      </select>
+    </div>
+    {% for pid, p in providers.items() if p.group == "cloud" %}
+    <div data-provider="{{ pid }}" hidden>
+      <div class="field stack">
+        <div class="ft"><label for="f-{{ pid }}-key">Clave de API de {{ p.short }}</label><p>{{ p.note }} Consíguela en <a href="#" data-open="{{ p.key_url }}"><code>{{ p.key_url.split("//")[1] }}</code></a>. Se guarda solo en tu equipo.</p></div>
+        <div class="row">
+          <input class="inp" type="password" id="f-{{ pid }}-key" data-key="{{ pid }}_api_key" data-secret data-hint="{{ p.key_hint or 'pega aquí tu clave' }}" autocomplete="off">
+          <button class="btn btn-ghost sq" type="button" data-clear="{{ pid }}_api_key" title="Borrar clave guardada"><svg class="i"><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+      <div class="field stack">
+        <div class="ft"><label for="f-{{ pid }}-model">Modelo</label><p>{% if p.model %}Recomendado: <code>{{ p.model }}</code>. {% endif %}Pulsa «Probar» para ver los de tu cuenta. Si el elegido deja de funcionar, Jarvis cambia solo a otro disponible.</p></div>
+        <input class="inp" type="text" id="f-{{ pid }}-model" data-key="{{ pid }}_model" data-model list="models-list" placeholder="{{ p.model or 'se elige automáticamente' }}">
+      </div>
+    </div>
+    {% endfor %}
+    <div data-provider="ollama">
+      <div class="field stack">
+        <div class="ft"><label for="f-ollama-host">Dirección de Ollama</label></div>
+        <input class="inp" type="text" id="f-ollama-host" data-key="ollama_host" placeholder="http://127.0.0.1:11434">
+      </div>
+      <div class="field stack">
+        <div class="ft"><label for="f-ollama-model">Modelo</label><p>Elige uno instalado o escribe otro (luego ejecuta <code>ollama pull nombre</code>).</p></div>
+        <input class="inp" type="text" id="f-ollama-model" data-key="ollama_model" data-model list="models-list" placeholder="llama3.2">
+      </div>
+    </div>
+    <div data-provider="openai" hidden>
+      <div class="field stack">
+        <div class="ft"><label for="f-openai-url">URL base de la API</label><p>LM Studio: <code>http://127.0.0.1:1234/v1</code>. Sirve para cualquier servicio compatible con OpenAI.</p></div>
+        <input class="inp" type="text" id="f-openai-url" data-key="openai_base_url">
+      </div>
+      <div class="field stack">
+        <div class="ft"><label for="f-openai-key">Clave de API</label><p>Solo si el servicio la pide. Se guarda en tu equipo, en config.json.</p></div>
+        <div class="row">
+          <input class="inp" type="password" id="f-openai-key" data-key="openai_api_key" data-secret data-hint="sk-… (opcional)" autocomplete="off">
+          <button class="btn btn-ghost sq" type="button" data-clear="openai_api_key" title="Borrar clave guardada"><svg class="i"><use href="#i-trash"/></svg></button>
+        </div>
+      </div>
+      <div class="field stack">
+        <div class="ft"><label for="f-openai-model">Modelo</label></div>
+        <input class="inp" type="text" id="f-openai-model" data-key="openai_model" data-model list="models-list" placeholder="nombre del modelo">
+      </div>
+    </div>
+    <datalist id="models-list"></datalist>
+    <div class="field">
+      <div class="ft"><label>Probar conexión</label><p class="status" id="ai-status">Sin comprobar.</p></div>
+      <button class="btn btn-ghost" type="button" id="btn-test-ai"><svg class="i"><use href="#i-plug"/></svg>Probar</button>
+    </div>
+    <div class="group">Copiloto de pantalla</div>
+    <div class="field">
+      <div class="ft"><label for="f-copilot">Copiloto</label><p>Mientras trabajas, mira tu pantalla cada pocos minutos y te deja una sugerencia en el HUD <b>solo si tiene algo útil</b>. No mira si estás ausente, si la pantalla no cambió o si la ventana parece privada (contraseñas, banco, pagos). Las capturas se envían a tu proveedor de IA. Mientras está activo verás un punto naranja en el HUD. Por voz: «activa el copiloto» / «desactiva el copiloto».</p></div>
+      <label class="switch"><input type="checkbox" id="f-copilot" data-key="copilot_enabled"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-copilot-int">Cada cuántos minutos</label><p>Más tiempo = menos interrupciones y menos consumo de cuota.</p></div>
+      <div class="range"><input type="range" id="f-copilot-int" min="1" max="30" step="1" data-key="copilot_interval" data-unit=" min"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-copilot-speak">Decir las sugerencias en voz alta</label><p>Si está apagado, solo aparecen escritas en el HUD (no te interrumpe).</p></div>
+      <label class="switch"><input type="checkbox" id="f-copilot-speak" data-key="copilot_speak"><span></span></label>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-copilot-ctx">¿En qué trabajas?</label><p>Opcional. Ayuda a que las sugerencias sean útiles. Ej.: «Soy docente; preparo guías y presentaciones de matemáticas para bachillerato».</p></div>
+      <textarea class="inp" id="f-copilot-ctx" rows="2" data-key="copilot_context"></textarea>
+    </div>
+    <div class="group">Comportamiento</div>
+    <div class="field">
+      <div class="ft"><label for="f-temp">Creatividad (temperatura)</label><p>Más bajo = respuestas más precisas y estables.</p></div>
+      <div class="range"><input type="range" id="f-temp" min="0" max="2" step="0.1" data-key="ai_temperature"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-history">Memoria de conversación</label><p>Turnos anteriores que recuerda (0 = sin memoria).</p></div>
+      <div class="range"><input type="range" id="f-history" min="0" max="30" step="1" data-key="history_turns"><output></output></div>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-prompt">Personalidad</label><p>Instrucciones de sistema que definen cómo habla Jarvis.</p></div>
+      <textarea class="inp" id="f-prompt" rows="5" data-key="system_prompt"></textarea>
+      <button class="text-btn" type="button" id="btn-reset-prompt"><svg class="i"><use href="#i-refresh"/></svg>Restaurar personalidad original</button>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-steam-ai">Redactar documentos STEAM con IA</label><p>Si está apagado, usa una plantilla fija.</p></div>
+      <label class="switch"><input type="checkbox" id="f-steam-ai" data-key="steam_use_ai"><span></span></label>
+    </div>
+
+    <div class="group">Si se cae el internet</div>
+    <div class="field">
+      <div class="ft"><label for="f-offline">Seguir funcionando sin internet</label><p>Si se va la conexión, Jarvis lo nota solo y pasa a lo que hay en tu equipo: la IA de <b>Ollama</b>, la voz <b>Piper</b> y el reconocimiento local. Cuando vuelve el internet, regresa a lo de siempre y te avisa.</p><p class="status" id="offline-status"></p></div>
+      <label class="switch"><input type="checkbox" id="f-offline" data-key="offline_auto"><span></span></label>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-offline-model">Modelo de Ollama para ese caso</label><p>Vacío = el que tengas instalado. Con 16 GB de RAM va bien <code>llama3.2</code> o <code>qwen3:4b</code>; se instala una sola vez con internet: <code>ollama pull llama3.2</code>.</p></div>
+      <input class="inp" type="text" id="f-offline-model" data-key="offline_model" placeholder="Automático" style="max-width:340px">
+    </div>
+  </section>
+
+  <!-- CONTROL DEL PC -->
+  <section class="pane" data-pane="pc">
+    <div class="group">Interpretación de órdenes</div>
+    <div class="field">
+      <div class="ft"><label for="f-router">Entender órdenes libres con IA</label><p>Además de las órdenes directas («abre Spotify»), la IA interpreta frases como «quiero escuchar algo de salsa» o «tengo mucha luz en la pantalla» y elige la acción adecuada.</p></div>
+      <label class="switch"><input type="checkbox" id="f-router" data-key="ai_router"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label>Aplicaciones encontradas</label><p class="status" id="apps-status">—</p></div>
+      <button class="btn btn-ghost" type="button" id="btn-reindex"><svg class="i"><use href="#i-refresh"/></svg>Volver a buscar</button>
+    </div>
+    <div class="group">Atajos personalizados</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-custom">Tus propios nombres</label><p>Uno por línea con el formato <code>nombre = destino</code>. El destino puede ser un programa, una carpeta, un archivo o una dirección web. Luego di «abre <i>nombre</i>».</p></div>
+      <textarea class="inp mono" id="f-custom" rows="6" data-key="custom_commands" placeholder="mi proyecto = C:\Users\yo\Documents\Proyecto&#10;notas de clase = https://docs.google.com/…&#10;juego = C:\Juegos\juego.exe"></textarea>
+    </div>
+    <div class="group">Talleres del aula</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-talleres">Carpeta de talleres HTML</label><p>Dónde guardas tus formularios o actividades en HTML. Luego di «abre el taller <i>nombre</i>». Déjala vacía para usar <code>Documentos\Jarvis\Talleres</code>.</p></div>
+      <div class="row">
+        <input class="inp" type="text" id="f-talleres" data-key="talleres_dir" placeholder="Automático: Documentos\Jarvis\Talleres">
+      </div>
+    </div>
+    <div class="group">Habilidades disponibles</div>
+    <p class="note">Las marcadas con ⚠ piden confirmación antes de ejecutarse: responde «confirmar» o «cancelar».</p>
+    <ul class="skills" id="skills-list"></ul>
+  </section>
+
+  <!-- INTEGRACIONES -->
+  <section class="pane" data-pane="integra">
+    <div class="group">Visión de pantalla</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-vision-model">Modelo de visión (Ollama)</label><p>Para «¿qué hay en la pantalla?». Descárgalo una vez: en una terminal <code>ollama pull moondream</code> (ligero) o <code>ollama pull llava</code> (más detallado).</p></div>
+      <input class="inp" type="text" id="f-vision-model" data-key="vision_model" placeholder="moondream">
+    </div>
+
+    <div class="group">Agenda de contactos (WhatsApp)</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-contacts">Contactos</label><p>Uno por línea: <code>Nombre = +573001112233</code> (con código de país). Luego di «manda un whatsapp a <i>nombre</i> que…». Requiere WhatsApp Web con la sesión iniciada.</p></div>
+      <textarea class="inp mono" id="f-contacts" rows="5" data-key="contacts" placeholder="Juan = +573001112233&#10;Mamá = +573009998877"></textarea>
+    </div>
+
+    <div class="group">Telegram</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-tg-token">Token del bot</label><p>Créalo con <code>@BotFather</code> en Telegram. Escribe al bot una vez y usa el chat id (de <code>@userinfobot</code>).</p></div>
+      <input class="inp" type="password" id="f-tg-token" data-key="telegram_token" autocomplete="off">
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-tg-chat">Chat id destino</label><p>El número de tu chat con el bot. Si lo dejas vacío, escríbele «hola» al bot y Jarvis te dirá tu chat id para pegarlo aquí.</p></div>
+      <div class="row">
+        <input class="inp narrow" type="text" id="f-tg-chat" data-key="telegram_chat">
+        <button class="btn btn-ghost" type="button" id="btn-tg-test"><svg class="i"><use href="#i-plug"/></svg>Probar</button>
+      </div>
+      <p class="status" id="tg-status"></p>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-tg-remote">Controlar Jarvis desde el celular</label><p>Escríbele al bot como le hablarías: «¿qué tengo hoy?», «abre la presentación», «recuérdame a las 3…». Solo obedece a tu chat. Por seguridad, apagar, reiniciar o borrar no se hacen desde el celular.</p></div>
+      <label class="switch"><input type="checkbox" id="f-tg-remote" data-key="telegram_remote"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-tg-alerts">Enviarme los avisos al celular</label><p>Recordatorios, avisos del calendario, temporizadores y el reporte de la mañana también te llegan por Telegram.</p></div>
+      <label class="switch"><input type="checkbox" id="f-tg-alerts" data-key="telegram_alerts"><span></span></label>
+    </div>
+
+    <div class="group">Clima y noticias</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-weather-city">Tu ciudad</label><p>Para el clima. Di «¿cómo está el clima?» o «¿va a llover mañana?». Ejemplos: Bogotá, Medellín, Cali, Bucaramanga.</p></div>
+      <div class="row">
+        <input class="inp narrow" type="text" id="f-weather-city" data-key="weather_city" placeholder="Bogotá">
+        <button class="btn btn-ghost" type="button" id="btn-weather-test"><svg class="i"><use href="#i-play"/></svg>Probar clima</button>
+      </div>
+      <p class="status" id="weather-status"></p>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-morning-weather">Clima en el reporte de la mañana</label></div>
+      <label class="switch"><input type="checkbox" id="f-morning-weather" data-key="morning_weather"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-morning-news">Noticias en el reporte de la mañana</label><p>Jarvis resume los titulares del día. Di «noticias» o «noticias de educación» cuando quieras.</p></div>
+      <label class="switch"><input type="checkbox" id="f-morning-news" data-key="morning_news"><span></span></label>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-news-feeds">Fuentes de noticias (opcional)</label><p>Una dirección RSS por línea. Vacío = Google Noticias Colombia y BBC Mundo.</p></div>
+      <textarea class="inp mono" id="f-news-feeds" rows="2" data-key="news_feeds" placeholder="https://www.ejemplo.com/rss"></textarea>
+    </div>
+
+    <div class="group">Alerta de sismos</div>
+    <div class="field">
+      <div class="ft"><label for="f-quake">Avisarme de los sismos</label><p>Con datos del servicio sismológico de Estados Unidos (USGS), gratis. Usa tu ciudad (arriba) para avisarte según qué tan cerca te queda; los lejanos y pequeños no te molestan. Suena un tono y Jarvis te lo dice; los fuertes y cercanos, con tono de alerta.</p><p class="status" id="quake-status"></p></div>
+      <label class="switch"><input type="checkbox" id="f-quake" data-key="quake_alerts"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-quake-mag">Magnitud mínima para avisar</label><p>Los sismos más pequeños que esto no se avisan (salvo que sean muy fuertes y cercanos).</p></div>
+      <div class="range"><input type="range" id="f-quake-mag" min="3" max="7" step="0.5" data-key="quake_min_mag" data-unit="" data-float="1"><output></output></div>
+    </div>
+    <div class="field stack">
+      <div class="row"><button class="btn btn-ghost" type="button" id="btn-quake-test"><svg class="i"><use href="#i-plug"/></svg>Comprobar</button></div>
+    </div>
+
+    <div class="group">Correo por voz (Gmail)</div>
+    <p class="note">Jarvis redacta el correo, te lo lee y solo lo envía si confirmas. Di «escríbele un correo a la coordinadora diciendo que mañana llego a las 7». Necesita una <b>contraseña de aplicación</b> de tu cuenta de Google (no tu clave normal): se crea en la seguridad de tu cuenta, en «Contraseñas de aplicaciones».</p>
+    <div class="field stack">
+      <div class="ft"><label for="f-email-addr">Tu dirección de Gmail</label></div>
+      <input class="inp" type="text" id="f-email-addr" data-key="email_address" placeholder="tucorreo@gmail.com" autocomplete="off">
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-email-pass">Contraseña de aplicación</label></div>
+      <div class="row">
+        <input class="inp" type="password" id="f-email-pass" data-key="email_app_password" data-secret data-hint="16 letras, de tu cuenta de Google" autocomplete="off">
+        <button class="btn btn-ghost sq" type="button" data-clear="email_app_password" title="Borrar la contraseña guardada"><svg class="i"><use href="#i-trash"/></svg></button>
+        <button class="btn btn-ghost" type="button" id="btn-email-test"><svg class="i"><use href="#i-plug"/></svg>Probar</button>
+      </div>
+      <p class="status" id="email-status"></p>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-email-name">Con qué nombre firmas</label></div>
+      <input class="inp" type="text" id="f-email-name" data-key="email_sender_name" placeholder="Diana Pérez">
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-email-book">Agenda de correos</label><p>Uno por línea: <code>Coordinadora = ana@colegio.edu.co</code>. Luego di «escríbele a la coordinadora…».</p></div>
+      <textarea class="inp mono" id="f-email-book" rows="3" data-key="email_book" placeholder="Coordinadora = ana@colegio.edu.co&#10;Rector = rector@colegio.edu.co"></textarea>
+    </div>
+
+    <div class="group">Spotify (reproducir por nombre)</div>
+    <p class="note">Sin configurar, «reproduce X en Spotify» abre la búsqueda. Para que reproduzca solo, crea una app en <code>developer.spotify.com</code>, añade la URL de redirección <code>http://127.0.0.1:8888/callback</code> y pega aquí tus credenciales (necesita Spotify Premium).</p>
+    <div class="field stack">
+      <div class="ft"><label for="f-sp-id">Client ID</label></div>
+      <input class="inp" type="text" id="f-sp-id" data-key="spotify_client_id" autocomplete="off">
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-sp-secret">Client Secret</label></div>
+      <input class="inp" type="password" id="f-sp-secret" data-key="spotify_client_secret" autocomplete="off">
+    </div>
+  </section>
+
+  <!-- RUTINAS -->
+  <section class="pane" data-pane="memoria">
+    <div class="group">Tus notas y pendientes</div>
+    <p class="pane-intro">Dile a Jarvis «recuerda que la reunión de padres es el jueves a las 3», «anota que debo comprar marcadores» o «¿qué tengo pendiente?». Todo se guarda solo en tu equipo.</p>
+    <div class="field stack">
+      <div class="row">
+        <input class="inp" type="text" id="note-new" placeholder="Escribe una nota… (ej.: el viernes a las 2 entregar planillas)">
+        <button class="btn btn-ghost" type="button" id="btn-note-add">Añadir</button>
+      </div>
+    </div>
+    <ul class="notes" id="notes-list"></ul>
+    <button class="text-btn" type="button" id="btn-notes-clear"><svg class="i"><use href="#i-trash"/></svg>Borrar las notas ya hechas</button>
+    <div class="group">Lo que Jarvis ha aprendido de ti</div>
+    <p class="pane-intro">Cuando le cuentas algo tuyo («trabajo en el San José», «prefiero respuestas cortas»), lo recuerda solo y lo tiene en cuenta. Dile «olvida que…» para borrar algo, o quítalo aquí.</p>
+    <ul class="notes" id="profile-list"></ul>
+    <button class="text-btn" type="button" id="btn-profile-clear"><svg class="i"><use href="#i-trash"/></svg>Borrar todo lo aprendido</button>
+    <div class="group">Calendario (Google u Outlook)</div>
+    <p class="pane-intro">Jarvis lee tu calendario para responder «¿qué tengo hoy?» o «¿cuál es mi próxima clase?» y avisarte antes de cada evento. Solo lee; no cambia nada en tu calendario.</p>
+    <ol class="steps">
+      <li><b>Google Calendar:</b> en calendar.google.com, pasa el ratón sobre tu calendario (lista de la izquierda) › ⋮ › <i>Configuración y uso compartido</i> › baja hasta <i>Dirección secreta en formato iCal</i> y cópiala.</li>
+      <li><b>Outlook:</b> en outlook.live.com › ⚙ › <i>Calendario</i> › <i>Calendarios compartidos</i> › <i>Publicar un calendario</i>, elige «Puede ver todos los detalles», pulsa <i>Publicar</i> y copia el enlace ICS.</li>
+    </ol>
+    <div class="field stack">
+      <div class="ft"><label for="f-cal">Enlaces de tus calendarios</label><p>Uno por línea (puedes juntar el personal y el del colegio). Es un enlace <b>secreto</b>: quien lo tenga puede ver tus eventos. Jarvis lo guarda solo en tu equipo y nunca lo muestra.</p><p class="status" id="cal-status"></p></div>
+      <div class="row">
+        <textarea class="inp" id="f-cal" rows="2" data-key="calendar_urls" data-secret data-hint="https://calendar.google.com/calendar/ical/…/basic.ics" autocomplete="off"></textarea>
+        <button class="btn btn-ghost sq" type="button" data-clear="calendar_urls" title="Quitar los calendarios guardados"><svg class="i"><use href="#i-trash"/></svg></button>
+      </div>
+      <button class="btn btn-ghost" type="button" id="btn-cal-test"><svg class="i"><use href="#i-plug"/></svg>Probar</button>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-cal-notice">Avisar antes de cada evento</label><p>0 = sin avisos del calendario.</p></div>
+      <div class="range"><input type="range" id="f-cal-notice" min="0" max="60" step="5" data-key="calendar_notice_min" data-unit=" min"><output></output></div>
+    </div>
+    <div class="group">Avisos de tus notas</div>
+    <div class="field">
+      <div class="ft"><label for="f-notes-notice">Avisar antes</label><p>En las notas con hora, Jarvis avisa este tiempo antes y otra vez a la hora (0 = solo a la hora).</p></div>
+      <div class="range"><input type="range" id="f-notes-notice" min="0" max="120" step="5" data-key="notes_notice_min" data-unit=" min"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-notes-ai">Que la IA conozca tus notas</label><p>Así puedes preguntar con naturalidad: «¿a qué hora era lo de los padres?». Tus pendientes se envían a tu proveedor de IA junto con cada pregunta.</p></div>
+      <label class="switch"><input type="checkbox" id="f-notes-ai" data-key="notes_ai_context"><span></span></label>
+    </div>
+  </section>
+
+  <section class="pane" data-pane="rutinas">
+    <div class="group">Mis rutinas</div>
+    <p class="pane-intro">Una rutina lanza varias órdenes seguidas con una sola frase, por ejemplo «Jarvis, modo clase». Cada paso es una orden normal de Jarvis, una por línea. Además puedes usar <code>esperar 5</code> (pausa de 5 segundos) y <code>decir …</code> (Jarvis lo dice en voz alta). Las acciones delicadas, como apagar o cerrar todo, nunca se ejecutan desde una rutina.</p>
+    <ul class="routines" id="rt-list"></ul>
+    <div class="row-btns">
+      <button class="btn btn-ghost" type="button" id="rt-new">+ Nueva rutina</button>
+      <button class="text-btn" type="button" id="rt-defaults"><svg class="i"><use href="#i-refresh"/></svg>Recuperar las rutinas de ejemplo</button>
+    </div>
+    <div class="rt-editor" id="rt-editor" hidden>
+      <div class="field stack">
+        <div class="ft"><label for="rt-name">Nombre</label></div>
+        <input class="inp" type="text" id="rt-name" placeholder="Ej.: Modo examen">
+      </div>
+      <div class="field stack">
+        <div class="ft"><label for="rt-phrases">Frases que la lanzan</label><p>Separadas por comas. El nombre siempre sirve.</p></div>
+        <input class="inp" type="text" id="rt-phrases" placeholder="Ej.: modo examen, empieza el examen">
+      </div>
+      <div class="field stack">
+        <div class="ft"><label for="rt-steps">Pasos (una orden por línea)</label><p>Ejemplos: <code>activa el videobeam</code> · <code>volumen al 40</code> · <code>silencia las notificaciones</code> · <code>abre powerpoint</code> · <code>usa el curso 7A</code> · <code>activa el semáforo de ruido</code> · <code>pon un temporizador de 45 minutos para el examen</code> · <code>esperar 3</code> · <code>decir ¡Mucho éxito!</code></p></div>
+        <textarea class="inp" id="rt-steps" rows="7"></textarea>
+      </div>
+      <div class="row-btns">
+        <button class="btn btn-primary" type="button" id="rt-save">Guardar rutina</button>
+        <button class="btn btn-ghost" type="button" id="rt-run"><svg class="i"><use href="#i-play"/></svg>Probar</button>
+        <button class="btn btn-danger" type="button" id="rt-del">Eliminar</button>
+      </div>
+      <p class="status" id="rt-status"></p>
+    </div>
+    <div class="group">Reporte matutino</div>
+    <div class="field">
+      <div class="ft"><label for="f-morning">Reporte diario</label><p>Jarvis te saluda con la fecha, la hora y el estado de la IA.</p></div>
+      <label class="switch"><input type="checkbox" id="f-morning" data-key="morning_enabled"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-morning-time">Hora</label></div>
+      <input class="inp narrow" type="time" id="f-morning-time" data-key="morning_time">
+    </div>
+    <div class="group">Alarmas y recordatorios</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-alarm">Sonido de alarma</label><p>Suena antes de que Jarvis lea el recordatorio. Déjalo vacío para usar <code>recursos\sirena.mp3</code> si existe. Acepta MP3, WAV u OGG.</p><p class="status" id="alarm-status"></p></div>
+      <div class="row">
+        <input class="inp" type="text" id="f-alarm" data-key="alarm_sound" placeholder="Automático: recursos\sirena.mp3">
+        <button class="btn btn-ghost" type="button" id="btn-test-alarm"><svg class="i"><use href="#i-play"/></svg>Probar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACERCA -->
+  <section class="pane" data-pane="acerca">
+    <div class="group">Todo lo que sé hacer</div>
+    <p class="note">Habla empezando por «Jarvis», o escribe en la barra del HUD. Estos son ejemplos; entiendo muchas variantes.</p>
+    <div class="caps" id="caps"></div>
+    <div class="group">Sistema</div>
+    <dl class="about" id="about"></dl>
+    <div class="group">Copias de seguridad</div>
+    <p class="note">Guarda en un solo archivo tus ajustes, notas, cursos con sus listas y asistencia, rutinas y la memoria de la conversación. Sirve si se daña el equipo o para pasar Jarvis a otro computador: instalas Jarvis allá y restauras la copia.</p>
+    <div class="field">
+      <div class="ft"><label for="f-backup-auto">Copia automática cada semana</label><p>Se guardan las 8 últimas; las que haces tú nunca se borran solas.</p></div>
+      <label class="switch"><input type="checkbox" id="f-backup-auto" data-key="backup_auto"><span></span></label>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-backup-dir">Carpeta de las copias</label><p>Vacío = <code>Documentos\Jarvis\Respaldos</code>. Si eliges una carpeta de OneDrive o Google Drive, las copias quedan también en la nube.</p></div>
+      <input class="inp" type="text" id="f-backup-dir" data-key="backup_dir" placeholder="Automática: Documentos\Jarvis\Respaldos">
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-backup-secrets">Incluir mis claves de API</label><p>Apagado (recomendado): la copia se puede llevar en una USB sin riesgo y al restaurarla vuelves a pegar las claves. Encendido: quien tenga el archivo tiene tus claves; no lo compartas.</p></div>
+      <label class="switch"><input type="checkbox" id="f-backup-secrets" data-key="backup_secrets"><span></span></label>
+    </div>
+    <div class="field stack">
+      <div class="row wrap">
+        <button class="btn btn-primary" type="button" id="btn-backup-now">Hacer copia ahora</button>
+        <button class="btn btn-ghost" type="button" id="btn-backup-folder">Abrir la carpeta</button>
+        <label class="btn btn-ghost" for="f-backup-file" style="cursor:pointer">Restaurar desde un archivo…</label>
+        <input type="file" id="f-backup-file" accept=".zip" hidden>
+      </div>
+      <p class="status" id="backup-status"></p>
+      <div class="bak-list" id="backup-list"></div>
+    </div>
+
+    <div class="group">Actualizaciones</div>
+    <div class="field stack">
+      <div class="ft"><label for="f-update-repo">Repositorio de GitHub</label><p>Donde se publican las versiones de Jarvis, como <code>usuario/jarvis</code>. Jarvis instala la última «Release» que tenga un .zip. Tus ajustes, notas, cursos y rutinas no se tocan, y antes de instalar se guarda una copia de lo que se reemplaza.</p></div>
+      <input class="inp" type="text" id="f-update-repo" data-key="update_repo" placeholder="usuario/jarvis" style="max-width:340px" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-update-auto">Avisarme si hay una versión nueva</label><p>Lo mira una vez al día y solo avisa en el HUD; nunca se instala ni se reinicia solo.</p></div>
+      <label class="switch"><input type="checkbox" id="f-update-auto" data-key="update_auto"><span></span></label>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-github-key">Clave de GitHub (solo si el repositorio es privado)</label><p>Un «fine-grained token» con permiso de solo lectura de <i>Contents</i> en ese repositorio. Se guarda solo en tu equipo.</p></div>
+      <div class="row">
+        <input class="inp" type="password" id="f-github-key" data-key="github_api_key" data-secret data-hint="vacío si el repositorio es público" autocomplete="off">
+        <button class="btn btn-ghost sq" type="button" data-clear="github_api_key" title="Borrar clave guardada"><svg class="i"><use href="#i-trash"/></svg></button>
+      </div>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label>Versión</label><p class="status" id="update-status"></p></div>
+      <div class="upd-notes" id="update-notes" hidden></div>
+      <div class="upd-bar" id="update-bar" hidden><i></i></div>
+      <div class="row wrap">
+        <button class="btn btn-ghost" type="button" id="btn-update-check"><svg class="i"><use href="#i-refresh"/></svg>Buscar actualización</button>
+        <button class="btn btn-primary" type="button" id="btn-update-apply" hidden>Actualizar ahora</button>
+        <button class="btn btn-ghost" type="button" id="btn-update-rollback" hidden>Deshacer la última actualización</button>
+      </div>
+    </div>
+    <div class="group">Apagar</div>
+    <div class="field">
+      <div class="ft"><label>Salir de Jarvis</label><p>Cierra el HUD, la escucha y el icono de la bandeja.</p></div>
+      <button class="btn btn-danger" type="button" id="btn-quit"><svg class="i"><use href="#i-power"/></svg>Salir</button>
+    </div>
+  </section>
+</form>
+
+<footer class="page-foot">
+  <span id="dirty"></span>
+  <button class="btn btn-ghost" type="button" id="btn-close">Cerrar</button>
+  <button class="btn btn-primary" type="button" id="btn-save">Guardar cambios</button>
+</footer>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+</body>
+</html>
