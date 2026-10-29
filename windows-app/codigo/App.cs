@@ -47,7 +47,7 @@ namespace Jarvis
     }
 
     // El asistente: une la escucha, la voz, el motor de órdenes, la IA, el panel y la bandeja.
-    public sealed class JarvisApp : IHost
+    public sealed partial class JarvisApp : IHost
     {
         readonly Application _app;
         readonly EventWaitHandle _showSignal;
@@ -140,6 +140,11 @@ namespace Jarvis
                 else msg += " Pulse " + _s.Hotkey + " para escribirme.";
                 Respond(msg, show: true);
             }
+            // Rutinas «al iniciar» (después del saludo, para no pisarlo).
+            Task.Delay(TimeSpan.FromSeconds(_s.GreetOnStart ? 6 : 2)).ContinueWith(_ => UI.BeginInvoke(new Action(() =>
+            {
+                try { _engine.Routines.OnStartup(); } catch (Exception e) { Log.Write("Rutinas al iniciar: " + e.Message); }
+            })));
             if (!_listener.Running && _s.VoiceInput)
             {
                 Notify(_s.Name, "No puedo escuchar: " + _listener.Status + ". Puede escribirme con " + _s.Hotkey + ", o abrir «Diagnóstico de voz» en el menú de la bandeja.");
@@ -529,6 +534,7 @@ namespace Jarvis
                 _speaker.Speak(phrase);
             };
             _settingsWin.RunDiagnostics = ShowVoiceDiagnostics;
+            _settingsWin.RunFullCheck = ShowSystemCheck;
             _settingsWin.Saved += ns =>
             {
                 _s = ns;
@@ -759,6 +765,7 @@ namespace Jarvis
                 UpdateListenItem();
                 Notify(_s.Name, _listener.Running ? "Escuchando de nuevo." : "No puedo escuchar: " + _listener.Status);
             });
+            menu.Items.Add("Prueba completa", null, (o, e) => ShowSystemCheck());
             menu.Items.Add("Diagnóstico de voz", null, (o, e) => ShowVoiceDiagnostics());
             menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
             menu.Items.Add("Ajustes…", null, (o, e) => OpenSettings());

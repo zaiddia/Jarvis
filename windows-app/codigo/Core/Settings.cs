@@ -15,6 +15,8 @@ namespace Jarvis.Core
     {
         public string Phrase { get; set; } = "";
         public List<string> Steps { get; set; } = new List<string>();
+        // Cuándo se lanza sola: «07:30», «07:30 lun-vie», «al iniciar», «al volver»; vacío = solo con la frase.
+        public string When { get; set; } = "";
     }
 
     // Ajustes de JARVIS. Se guardan en %APPDATA%\JARVIS\ajustes.json.

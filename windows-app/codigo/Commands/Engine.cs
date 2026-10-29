@@ -25,6 +25,7 @@ namespace Jarvis.Commands
         IntPtr TargetWindow { get; }  // la última ventana activa que no es de JARVIS
         void ShowVoiceDiagnostics();  // revisar micrófono y reconocimiento de voz
         void ReloadSettings();        // volver a leer ajustes.json (tras restaurar una copia)
+        void ShowSystemCheck();       // «prueba completa»: micrófono, voz, IA, internet e integraciones
     }
 
     public sealed class Reply
@@ -65,6 +66,7 @@ namespace Jarvis.Commands
         public readonly SocialModule Social;
         public readonly YouTubeModule YouTube;
         public readonly IntegrationsModule Integrations;
+        public readonly RoutinesModule Routines;
 
         // Una pregunta pendiente («¿Seguro que quiere apagar?»).
         string _question;
@@ -93,9 +95,11 @@ namespace Jarvis.Commands
             Social = new SocialModule(this);
             YouTube = new YouTubeModule(this);
             Integrations = new IntegrationsModule(this);
+            Routines = new RoutinesModule(this);
 
             // El orden importa: lo más concreto primero.
             Add("Talk.Control", Sync(Talk.Control));
+            Add("Rutinas", Sync(Routines.Try));      // «qué rutinas tengo», «borra la rutina…»
             Add("Vision", Sync(Vision.Try));
             Add("Time", Sync(Time.Try));
             Add("Integrations", Sync(Integrations.Try));  // pomodoro, copias de seguridad
@@ -242,6 +246,14 @@ namespace Jarvis.Commands
             var p = S.Protocols.FirstOrDefault(x => Text.Squash(x.Phrase) != "" &&
                     (Text.Squash(x.Phrase) == sq || Text.Squash(x.Phrase) == bare || Text.Squash(x.Phrase) == "protocolo " + bare));
             if (p == null) return null;
+            string r = await RunRoutine(p);
+            LastHandler = "Rutinas";
+            return r;
+        }
+
+        // Lanza los pasos de una rutina (con su frase o sola, a su hora). Devuelve lo que hay que decir.
+        public async Task<string> RunRoutine(Protocol p)
+        {
             var said = new List<string>();
             foreach (string raw in p.Steps)
             {
@@ -262,7 +274,7 @@ namespace Jarvis.Commands
                 if (o == null) Log.Write("Protocolo «" + p.Phrase + "»: no entendí el paso «" + step + "»");
                 else if (o != "" && o != Quiet && p.Steps.Count <= 3) said.Add(o);
             }
-            return said.Count > 0 ? string.Join(" ", said.Select(x => x.TrimEnd('.') + ".")) : "Protocolo " + p.Phrase + " completado" + Sir + ".";
+            return said.Count > 0 ? string.Join(" ", said.Select(x => x.TrimEnd('.') + ".")) : "Rutina «" + p.Phrase + "» completada" + Sir + ".";
         }
 
         async Task<string> RunOne(string text)
@@ -329,6 +341,7 @@ namespace Jarvis.Commands
             Agenda.Tick();
             Watch.Tick();
             Integrations.Tick();
+            Routines.Tick();
         }
     }
 }

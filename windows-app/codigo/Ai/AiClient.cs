@@ -38,6 +38,8 @@ namespace Jarvis.Ai
         bool Gemini => S.AiProvider == "gemini";
         const string GeminiUrl = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
         public void Forget() => _history.Clear();
+        // ¿La última pregunta tuvo respuesta de verdad? (no un mensaje de error). Lo usa la prueba completa.
+        public bool LastOk { get; private set; }
         public string ProviderLabel => (S.AiProvider == "anthropic" ? "Claude" : Gemini ? "Gemini" : LocalAi.IsOllama(S) ? "Ollama" : S.ApiUrl.Trim() != "" ? "servidor propio" : "OpenAI") + " (" + S.EffectiveModel + ")";
 
         // ---------------------------------------------------------------- herramientas
@@ -57,19 +59,24 @@ namespace Jarvis.Ai
         static readonly (string name, string desc, JsonObject schema)[] Tools =
         {
             ("ejecutar_orden",
-             "Ejecuta en el equipo del usuario una orden del asistente, escrita en español sencillo como la diría el usuario. Ejemplos: " +
-             "«abre Spotify», «cierra el Bloc de notas», «sube el volumen», «pon el volumen al 30», «pausa la música», «siguiente canción», " +
-             "«pon un temporizador de 10 minutos», «recuérdame mañana a las 9 llamar al banco», «el tiempo en Madrid», «busca recetas de lasaña en YouTube», " +
-             "«abre la configuración del wifi», «toma nota comprar pilas», «añade leche a la lista de la compra», «bloquea el equipo», «haz una captura», " +
-             "«baja el volumen de Spotify», «activa el modo oscuro», «sube el brillo», «cuántos pesos son 100 dólares», «noticias de tecnología», " +
-             "«¿qué tengo hoy?», «¿qué suena?», «pon esta ventana siempre encima», «genera una contraseña», " +
-             "«pon un video de Karol G» (lo reproduce en YouTube), «pon la emisora La Mega», «enciende la luz de la sala», «apaga todas las luces», " +
-             "«mándame al celular que compre pan», «precio del bitcoin», «el tiempo del fin de semana», «inicia un pomodoro», «haz una copia de seguridad». " +
-             "Devuelve lo que contestó el asistente.",
-             Schema(("orden", "La orden en español"))),
+             "Ejecuta en el equipo del usuario una orden del asistente, escrita en español sencillo como la diría el usuario " +
+             "(mira el catálogo de habilidades en tus instrucciones y usa órdenes parecidas a sus ejemplos). Devuelve lo que contestó el asistente; " +
+             "si no la entendió, devuelve órdenes parecidas que sí entiende para que lo intentes con una de ellas.",
+             Schema(("orden", "La orden en español, corta y concreta"))),
             ("recordar",
-             "Guarda de forma permanente un dato sobre el usuario que quiera que recuerdes (gustos, nombres, fechas, dónde dejó algo).",
-             Schema(("dato", "El dato, en una frase"))),
+             "Guarda de forma permanente un dato sobre el usuario: nombres de su gente, gustos, fechas, rutinas, dónde dejó algo. " +
+             "Úsala sin preguntar cuando el usuario cuente algo estable de su vida. Escribe el dato en primera persona del usuario («Mi hermana se llama Ana»). " +
+             "Un dato nuevo sobre lo mismo sustituye al anterior.",
+             Schema(("dato", "El dato, en una frase en primera persona"))),
+            ("olvidar",
+             "Borra de la memoria los datos sobre algo, cuando el usuario pida que lo olvides o te diga que ya no es así.",
+             Schema(("tema", "De qué trata lo que hay que olvidar, en pocas palabras"))),
+            ("crear_rutina",
+             "Crea o cambia una rutina: una frase que lanza varias órdenes seguidas y que, si se quiere, se lanza sola a una hora o al encender el equipo. " +
+             "Ejemplo: frase «buenos días», cuando «07:30 lun-vie», pasos «dime el tiempo; qué tengo hoy; noticias».",
+             Schema(("frase", "La frase que la lanza (por ejemplo «modo trabajo» o «buenos días»)"),
+                    ("cuando", "Cuándo se lanza sola: «07:30», «07:30 lun-vie», «21:00 sab,dom», «al iniciar» (al encender el equipo), «al volver» (al volver tras un rato fuera) o vacío si solo se lanza con la frase"),
+                    ("pasos", "Las órdenes separadas por punto y coma, como las diría el usuario; «di …» para decir algo"))),
             ("leer_portapapeles",
              "Devuelve el texto que el usuario tiene copiado en el portapapeles. Úsala cuando hable de «esto que he copiado» o «el texto copiado».",
              new JsonObject { ["type"] = "object", ["properties"] = new JsonObject() }),
@@ -86,17 +93,32 @@ namespace Jarvis.Ai
                         string order = input?["orden"]?.GetValue<string>() ?? "";
                         if (order.Trim() == "") return "Falta la orden.";
                         var r = await _engine.HandleAsync(order);
-                        if (r == null) return "El asistente no sabe hacer «" + order + "» por sí mismo.";
+                        if (r == null)
+                        {
+                            var near = Skills.Closest(order);
+                            return "El asistente no entendió «" + order + "»." + (near.Count > 0 ? " Órdenes parecidas que sí entiende: " + string.Join(", ", near.Select(x => "«" + x + "»")) + "." : "") +
+                                   " Si ninguna sirve, díselo al usuario con naturalidad.";
+                        }
                         return r.Say == "" ? "Hecho." : r.Say;
                     }
                     case "recordar":
                     {
                         string fact = input?["dato"]?.GetValue<string>() ?? "";
                         if (fact.Trim() == "") return "Falta el dato.";
-                        var f = InfoModule.Facts;
-                        f.Add(fact.Trim());
-                        Store.Set("memoria", f.TakeLast(200).ToList());
-                        return "Guardado.";
+                        return Memory.Add(fact) ? "Guardado (sustituye a lo que había sobre eso)." : "Guardado.";
+                    }
+                    case "olvidar":
+                    {
+                        string what = input?["tema"]?.GetValue<string>() ?? "";
+                        int n = Memory.Forget(what);
+                        return n > 0 ? "Olvidados " + n + " datos." : "No había nada sobre eso en la memoria.";
+                    }
+                    case "crear_rutina":
+                    {
+                        string phrase = input?["frase"]?.GetValue<string>() ?? "";
+                        string when = input?["cuando"]?.GetValue<string>() ?? "";
+                        string steps = input?["pasos"]?.GetValue<string>() ?? "";
+                        return _engine.Routines.Create(phrase, when, steps);
                     }
                     case "leer_portapapeles":
                     {
@@ -114,7 +136,7 @@ namespace Jarvis.Ai
 
         // ---------------------------------------------------------------- instrucciones
 
-        string SystemPrompt(string windowTitle)
+        string SystemPrompt(string windowTitle, string question = "")
         {
             var s = S;
             var es = CultureInfo.GetCultureInfo("es-ES");
@@ -129,17 +151,24 @@ namespace Jarvis.Ai
             if (s.Treatment.Trim() != "") sb.Append("Trata al usuario de usted y llámale «" + s.Treatment.Trim() + "» de vez en cuando, sin abusar. ");
             sb.Append("El texto del usuario viene del reconocimiento de voz y puede traer errores (palabras mal oídas, sin signos): interpreta la intención más probable en lugar de pedir que lo repita; " +
                       "solo pregunta si de verdad hay dos opciones muy distintas. ");
-            sb.Append("Si te piden hacer algo en el equipo (abrir, cerrar, volumen, música, temporizadores, recordatorios, búsquedas, notas, ventanas…) usa la herramienta ejecutar_orden con una orden corta y clara; " +
-                      "puedes llamarla varias veces. Ejemplos: «ponme algo de música» → ejecutar_orden(«reproduce»); «está muy alto» → ejecutar_orden(«baja el volumen»); " +
-                      "«quiero ver videos de gatos» → ejecutar_orden(«busca videos de gatos en youtube»); «avísame en un rato que saque la ropa» → ejecutar_orden(«recuérdame en 30 minutos sacar la ropa»). ");
+            sb.Append("Si te piden hacer algo en el equipo, o lo que dicen lo implica, usa la herramienta ejecutar_orden con una orden corta y clara, parecida a los ejemplos del catálogo; " +
+                      "puedes llamarla varias veces. Interpreta la intención: «está muy oscuro aquí» → ejecutar_orden(«sube el brillo»); «esto suena muy alto» → ejecutar_orden(«baja el volumen»); " +
+                      "«ponme algo para animarme» → ejecutar_orden(«pon salsa»); «quiero ver videos de gatos» → ejecutar_orden(«pon un video de gatos»); " +
+                      "«avísame en un rato que saque la ropa» → ejecutar_orden(«recuérdame en 30 minutos sacar la ropa»); «me voy a trabajar» → ofrece su rutina si la tiene. ");
+            sb.Append("\nCATÁLOGO DE HABILIDADES (órdenes que el asistente entiende):\n" + Skills.Catalog());
+            sb.Append("Cuando el usuario cuente algo estable de su vida (nombres de su familia o mascotas, gustos, alergias, trabajo, fechas importantes, dónde guarda algo), " +
+                      "guárdalo con la herramienta recordar sin preguntar y sin anunciarlo con solemnidad; usa lo que recuerdas para personalizar tus respuestas. " +
+                      "Si pide una rutina («cada mañana dime el tiempo y mi agenda»), créala con crear_rutina. ");
             sb.Append("Después de usar una herramienta, confirma en una frase corta y natural lo que hiciste (por ejemplo «Listo, ya está sonando»). ");
             sb.Append("Nunca digas que no puedes controlar el equipo sin probar antes la herramienta. Si algo falla, dilo con naturalidad y sugiere qué hacer. ");
             sb.Append("Si el usuario solo conversa, conversa: responde con interés y, si viene al caso, haz una pregunta breve para seguir la charla. ");
             sb.Append("\nAhora es " + DateTime.Now.ToString("dddd d 'de' MMMM 'de' yyyy, HH:mm", es) + ". ");
             if (s.City.Trim() != "") sb.Append("El usuario vive en " + s.City.Trim() + ". ");
             if (s.SendContext && windowTitle != "") sb.Append("La ventana que tiene delante se titula «" + windowTitle + "». ");
-            var facts = InfoModule.Facts;
-            if (facts.Count > 0) sb.Append("\nDatos que el usuario te pidió recordar: " + string.Join("; ", facts.TakeLast(40)) + ".");
+            var facts = Memory.Relevant(question);
+            if (facts.Count > 0) sb.Append("\nLo que sabes del usuario (te lo contó él): " + string.Join("; ", facts) + ".");
+            var routines = _engine.Routines.Describe();
+            if (routines != "") sb.Append("\nSus rutinas: " + routines + ".");
             return sb.ToString();
         }
 
@@ -147,6 +176,7 @@ namespace Jarvis.Ai
 
         public async Task<string> AskAsync(string question, string windowTitle, Action<string> onSentence, CancellationToken ct, byte[] screenJpeg = null)
         {
+            LastOk = false;
             if (!Ready) return "Para eso necesito una clave de IA. Póngala en mis ajustes, en la pestaña Inteligencia.";
             if ((DateTime.Now - _lastAt).TotalMinutes > 15) _history.Clear();
             _lastAt = DateTime.Now;
@@ -190,6 +220,7 @@ namespace Jarvis.Ai
             _history.Add(("user", screenJpeg != null ? "[Mirando la pantalla] " + question : question));
             _history.Add(("assistant", answer == "" ? "Hecho." : answer));
             while (_history.Count > 16) _history.RemoveAt(0);
+            LastOk = true;
             return answer;
         }
 
@@ -257,7 +288,7 @@ namespace Jarvis.Ai
                 {
                     ["model"] = s.EffectiveModel,
                     ["max_tokens"] = 1024,
-                    ["system"] = SystemPrompt(window),
+                    ["system"] = SystemPrompt(window, question),
                     ["messages"] = messages.DeepClone(),
                     ["tools"] = tools.DeepClone(),
                     ["stream"] = true,
@@ -359,7 +390,7 @@ namespace Jarvis.Ai
         async Task<string> AskOpenAi(string question, string window, SentenceSplitter split, CancellationToken ct, byte[] image)
         {
             var s = S;
-            var messages = new JsonArray { new JsonObject { ["role"] = "system", ["content"] = SystemPrompt(window) } };
+            var messages = new JsonArray { new JsonObject { ["role"] = "system", ["content"] = SystemPrompt(window, question) } };
             foreach (var (role, text) in _history) messages.Add(new JsonObject { ["role"] = role, ["content"] = text });
             if (image == null) messages.Add(new JsonObject { ["role"] = "user", ["content"] = question });
             else
@@ -387,6 +418,7 @@ namespace Jarvis.Ai
             if (Local && model.StartsWith("qwen3", StringComparison.OrdinalIgnoreCase))
                 messages[0]["content"] = messages[0]["content"].GetValue<string>() + "\n/no_think";
             var think = new ThinkFilter();
+            var orders = new OrderFilter();
             bool useTools = true;
             var full = new StringBuilder();
             for (int turn = 0; turn < 5; turn++)
@@ -419,7 +451,9 @@ namespace Jarvis.Ai
                     }
                     if ((int)res.StatusCode == 400 && useTools && !official && !Gemini && err.Contains("tool"))
                     {
+                        // Sin herramientas, la IA puede pedir órdenes con líneas «ORDEN: …» (las ejecuta JARVIS y no se leen en voz alta).
                         useTools = false;
+                        messages[0]["content"] = messages[0]["content"].GetValue<string>() + "\n" + OrderFilter.Instructions;
                         turn--;
                         continue;
                     }
@@ -453,6 +487,7 @@ namespace Jarvis.Ai
                     var delta = choice["delta"];
                     string piece = delta?["content"]?.GetValueKind() == JsonValueKind.String ? delta["content"].GetValue<string>() : "";
                     piece = think.Feed(piece);   // sin el «<think>…</think>» de los modelos que razonan
+                    if (!useTools) piece = orders.Feed(piece);
                     if (piece != "")
                     {
                         text.Append(piece);
@@ -480,6 +515,27 @@ namespace Jarvis.Ai
                                     }
                         }
                     if (choice["finish_reason"]?.GetValueKind() == JsonValueKind.String) finish = choice["finish_reason"].GetValue<string>();
+                }
+                if (!useTools)
+                {
+                    string rest = orders.Flush();
+                    if (rest != "") { text.Append(rest); full.Append(rest); split.Add(rest); }
+                    var asked = orders.Take();
+                    if (asked.Count > 0 && turn < 4)
+                    {
+                        var done = new List<string>();
+                        foreach (var o in asked)
+                        {
+                            string output = await RunTool("ejecutar_orden", new JsonObject { ["orden"] = o });
+                            Log.Write("Orden de la IA (sin herramientas) «" + o + "» → " + Text.Preview(output, 120));
+                            done.Add("«" + o + "»: " + output);
+                        }
+                        messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = text.Length > 0 ? text.ToString() : "(órdenes enviadas)" });
+                        messages.Add(new JsonObject { ["role"] = "user", ["content"] = "[Resultado de las órdenes, no lo dijo el usuario] " + string.Join(" | ", done) +
+                                                                                      ". Confirma al usuario en una frase corta lo que hiciste (sin repetir lo que ya dijiste)." });
+                        if (full.Length > 0 && !char.IsWhiteSpace(full[^1])) { full.Append(' '); split.Add(" "); }
+                        continue;
+                    }
                 }
                 if (calls.Count == 0) return full.ToString();
 
@@ -531,6 +587,77 @@ namespace Jarvis.Ai
                 _history.Clear();
                 _history.AddRange(saved);
             }
+        }
+    }
+
+    // Para modelos sin herramientas: aparta las líneas «ORDEN: …» del texto (no se leen en voz alta) y las guarda para ejecutarlas.
+    public sealed class OrderFilter
+    {
+        public const string Instructions =
+            "No tienes herramientas en esta conversación. Si hay que hacer algo en el equipo, escribe una línea que empiece exactamente por «ORDEN:» " +
+            "seguida de la orden (una orden por línea, como las del catálogo), por ejemplo:\nORDEN: sube el brillo\nEsas líneas no se le leen al usuario; " +
+            "después recibirás el resultado y lo confirmarás en una frase.";
+        const string Prefix = "ORDEN:";
+        readonly StringBuilder _line = new StringBuilder();   // principio de la línea actual, mientras pueda ser una orden
+        readonly List<string> _found = new List<string>();
+        bool _lineStart = true, _inOrder;
+
+        public string Feed(string chunk)
+        {
+            var o = new StringBuilder();
+            foreach (char ch in chunk ?? "")
+            {
+                if (_inOrder)
+                {
+                    if (ch == '\n') { Close(); continue; }
+                    _line.Append(ch);
+                    continue;
+                }
+                if (_lineStart)
+                {
+                    if (_line.Length == 0 && (ch == ' ' || ch == '\t' || ch == '*' || ch == '-')) { _line.Append(ch); continue; }
+                    _line.Append(ch);
+                    string t = _line.ToString().TrimStart(' ', '\t', '*', '-');
+                    if (t.Length <= Prefix.Length && Prefix.StartsWith(t, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (t.Length == Prefix.Length) { _inOrder = true; _line.Clear(); }
+                        continue;
+                    }
+                    o.Append(_line);
+                    _line.Clear();
+                    _lineStart = ch == '\n';
+                    continue;
+                }
+                o.Append(ch);
+                if (ch == '\n') _lineStart = true;
+            }
+            return o.ToString();
+        }
+
+        void Close()
+        {
+            string order = _line.ToString().Trim(' ', '«', '»', '"', '*', '.');
+            if (order != "") _found.Add(order);
+            _line.Clear();
+            _inOrder = false;
+            _lineStart = true;
+        }
+
+        // Al acabar la respuesta: lo que quedó a medias.
+        public string Flush()
+        {
+            if (_inOrder) { Close(); return ""; }
+            string rest = _line.ToString();
+            _line.Clear();
+            _lineStart = true;
+            return rest;
+        }
+
+        public List<string> Take()
+        {
+            var l = new List<string>(_found);
+            _found.Clear();
+            return l;
         }
     }
 

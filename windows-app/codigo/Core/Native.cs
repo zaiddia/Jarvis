@@ -29,6 +29,16 @@ namespace Jarvis.Core
         [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll")] public static extern bool IsHungAppWindow(IntPtr hWnd);
 
+        // ---- inactividad (solo cuánto hace de la última tecla o movimiento de ratón; no qué se hizo)
+        [StructLayout(LayoutKind.Sequential)] struct LASTINPUTINFO { public uint cbSize; public uint dwTime; }
+        [DllImport("user32.dll")] static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+        public static double IdleSeconds()
+        {
+            var li = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };
+            if (!GetLastInputInfo(ref li)) return 0;
+            return unchecked((uint)Environment.TickCount - li.dwTime) / 1000.0;
+        }
+
         public const int SW_MINIMIZE = 6, SW_MAXIMIZE = 3, SW_RESTORE = 9;
         public const uint WM_CLOSE = 0x0010, WM_SYSCOMMAND = 0x0112, WM_HOTKEY = 0x0312;
         public const int SC_MONITORPOWER = 0xF170;

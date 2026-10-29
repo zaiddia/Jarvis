@@ -32,12 +32,12 @@
 
   <!-- Windows: todo el código de JARVIS menos el arranque (App.cs tiene su propio Main). -->
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-    <Compile Include="..\codigo\**\*.cs" Exclude="..\codigo\App.cs;..\codigo\obj\**;..\codigo\bin\**" />
+    <Compile Include="..\codigo\**\*.cs" Exclude="..\codigo\App.cs;..\codigo\App.*.cs;..\codigo\obj\**;..\codigo\bin\**" />
     <PackageReference Include="System.Speech" Version="8.0.0" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
     <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
   <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-    <Compile Include="../codigo/Core/Text.cs;../codigo/Commands/Calc.cs" />
+    <Compile Include="../codigo/Core/Text.cs;../codigo/Commands/Calc.cs;../codigo/Commands/Skills.cs" />
   </ItemGroup>
 </Project>

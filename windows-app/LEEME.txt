@@ -1,4 +1,4 @@
-J.A.R.V.I.S. 3.9.0 — programa para Windows
+J.A.R.V.I.S. 4.0.0 — programa para Windows
 ==========================================
 
 Es el mismo asistente del mod de Windhawk, rehecho como programa propio en C# (.NET 8):
@@ -70,6 +70,22 @@ AGENDA (Ajustes › Agenda)
 AVISOS
   Batería baja, disco casi lleno y programas que dejan de responder. Durante una llamada
   (otra app usa el micrófono) contesta solo en el panel, sin hablar.
+
+NOVEDADES 4.0.0
+  - PRUEBA COMPLETA: diga «prueba completa» o «revisa todo» (o menú de la bandeja › Prueba completa).
+    Revisa micrófono, reconocimiento, voz, IA, internet, integraciones y el mod de Windhawk; marca cada
+    cosa en verde, ámbar o rojo, con un botón «Arreglar». «Copiar informe» le deja el resultado para enviarlo.
+  - LA IA ELIGE LA HABILIDAD: recibe el catálogo de todo lo que sabe hacer JARVIS y traduce lo que dice
+    («está muy oscuro aquí» → sube el brillo). Si una orden no se entiende, le propone las parecidas.
+    Con modelos de Ollama sin herramientas, también puede dar órdenes (líneas «ORDEN:»).
+  - MEMORIA: aprende lo que le cuenta sin decir «recuerda»: «mi hermana se llama Ana», «me gusta el
+    vallenato», «tengo dos gatos», «vivo en Cali». Un dato nuevo corrige al viejo. «¿Cómo se llama mi
+    hermana?», «¿qué sabes de mí?», «olvida lo de…». Se ve y se edita en Ajustes › Memoria.
+  - RUTINAS: los protocolos ahora se lanzan solos si se les pone cuándo, en Ajustes › Rutinas:
+      buenos días [07:30 lun-vie]: di Buenos días; qué tiempo hace; qué tengo hoy; noticias
+      bienvenida [al volver]: di Bienvenido de nuevo; qué alarmas tengo
+    [al iniciar] = al encender el equipo; [al volver] = al volver tras 10 minutos sin usarlo.
+    Con IA, se piden hablando: «cada mañana a las 7 dime el tiempo y mi agenda». «¿Qué rutinas tengo?»
 
 NOVEDADES 3.9.0 (compilado y probado automáticamente)
   - Se compila solo en GitHub: en https://github.com/zaiddia/Jarvis/releases está el zip ya

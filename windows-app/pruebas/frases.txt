@@ -219,3 +219,44 @@ escríbeme un mensaje de cumpleaños para mi mamá => IA
 qué opinas de la inteligencia artificial => IA
 ayúdame a redactar un correo para mi jefe => IA
 cuál es la capital de Australia y cuántos habitantes tiene => IA
+
+# ================================================================ memoria (en orden: cada línea usa lo que guardó la anterior)
+mi hermana se llama Ana => Info
+¿cómo se llama mi hermana? => Info :: su hermana se llama Ana
+mi hermana se llama Laura => Info :: lo corrijo
+¿cómo se llama mi hermana? => Info :: Laura
+me gusta el vallenato => Info
+¿qué música me gusta? => Info :: vallenato
+mi perro se llama Rocky => Info
+tengo dos gatos => Info
+recuerda que las llaves están en el cajón => Info
+¿dónde dejé las llaves? => Info :: cajon
+recuerda que las llaves están en la mesa => Info :: corregido
+¿dónde están las llaves? => Info :: mesa
+qué sabes de mí => Info :: recuerdo
+olvida lo de las llaves => Info :: olvidado
+¿cómo se llama mi abuela? => Info :: no me lo ha dicho
+me gusta esto => !Info
+me gusta que pongas música => !Info
+
+# ================================================================ rutinas: cómo se entiende «cuándo»
+@ 07:30 -> 07:30
+@ 7:30 de lunes a viernes -> 07:30 lun-vie
+@ 7 de la mañana entre semana -> 07:00 lun-vie
+@ 9 pm -> 21:00
+@ 8:15 los fines de semana -> 08:15 sab,dom
+@ 6 de la tarde los martes y jueves -> 18:00 mar,jue
+@ 10:00 todos los días -> 10:00
+@ al iniciar -> al iniciar
+@ al encender el equipo -> al iniciar
+@ al volver -> al volver
+@ cuando regrese -> al volver
+@ 12 de la noche -> 00:00
+@ 25:00 -> (no entendido)
+
+# ================================================================ rutinas y prueba completa
+qué rutinas tengo => Rutinas
+mis rutinas => Rutinas
+prueba completa => Talk.Control
+revisa todo => Talk.Control
+haz una prueba completa => Talk.Control

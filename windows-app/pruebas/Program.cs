@@ -18,6 +18,9 @@ namespace Jarvis.Pruebas
     //   frase => Módulo      qué parte de JARVIS la atiende (IA = ninguna: se la pasa a la IA). Solo en Windows.
     //   frase ~> resto       quita el nombre de llamada («oye Jarvis pon música ~> pon música»). Solo en Windows.
     //   frase ++ a | b       se parte en varias órdenes seguidas. Solo en Windows.
+    //   frase => Módulo :: texto   además, la respuesta debe contener ese texto. Solo en Windows.
+    //   @ cuándo -> horario  cómo entiende el horario de una rutina («@ 7:30 de lunes a viernes -> 07:30 lun-vie»). Solo en Windows.
+    //   Módulo «!IA» = cualquiera menos la IA. Además, cada ejemplo del catálogo de habilidades se prueba solo.
     // Varias respuestas válidas se separan con «|». Devuelve 1 si alguna falla (así GitHub marca el error).
     public static class Program
     {
@@ -44,6 +47,16 @@ namespace Jarvis.Pruebas
                 if (line == "" || line.StartsWith("#")) continue;
                 try
                 {
+                    if (line.StartsWith("@ ") && Split(line, "->", out var wa, out var wb))
+                    {
+#if COMPLETO
+                        string got = RoutinesModule.Parse(wa.Substring(2)).ToString();
+                        Check(n, wa, got == "" ? "(no entendido)" : got, wb);
+#else
+                        _skip++;
+#endif
+                        continue;
+                    }
                     if (Split(line, "=>", out var a, out var b))
                     {
 #if COMPLETO
@@ -89,6 +102,11 @@ namespace Jarvis.Pruebas
                 }
             }
 
+#if COMPLETO
+            // Cada ejemplo del catálogo que recibe la IA tiene que entenderlo alguna parte de JARVIS.
+            foreach (var ex in Skills.Tested)
+                await Route(engine, 0, ex, "!IA", "catálogo");
+#endif
             Console.WriteLine();
             Console.WriteLine($"Correctas: {_ok}   Fallidas: {_fail}" + (_skip > 0 ? $"   Solo en Windows: {_skip}" : ""));
             if (Failures.Count > 0)
@@ -137,16 +155,19 @@ namespace Jarvis.Pruebas
             Report(n, good, input, got + note, expected);
         }
 
-        static void Report(int n, bool good, string input, string got, string expected)
+        static void Report(int n, bool good, string input, string got, string expected, string where = null)
         {
             if (good) { _ok++; return; }
             _fail++;
-            Failures.Add($"  línea {n}: «{input}»\n      esperaba: {expected}\n      obtuve:   {got}");
+            Failures.Add($"  {where ?? "línea " + n}: «{input}»\n      esperaba: {expected}\n      obtuve:   {got}");
         }
 
 #if COMPLETO
-        static async Task Route(Engine engine, int n, string phrase, string expected)
+        static async Task Route(Engine engine, int n, string phrase, string expected, string where = null)
         {
+            string mustSay = null;
+            int k = expected.IndexOf(" :: ", StringComparison.Ordinal);
+            if (k >= 0) { mustSay = expected.Substring(k + 4).Trim(); expected = expected.Substring(0, k).Trim(); }
             var task = engine.HandleAsync(phrase);
             if (await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(40))) != task)
             {
@@ -156,9 +177,10 @@ namespace Jarvis.Pruebas
             var reply = await task;
             string who = reply == null ? "IA" : (engine.LastHandler == "" ? "Motor" : engine.LastHandler);
             var options = expected.Split('|').Select(x => x.Trim()).ToList();
-            bool good = options.Any(o => o == who || (o.EndsWith("*") && who.StartsWith(o.TrimEnd('*'))));
-            string said = reply == null ? "" : " — «" + Text.Preview(reply.Say, 70) + "»";
-            Report(n, good, phrase, who + said, expected);
+            bool good = options.Any(o => o == who || (o.StartsWith("!") && who != o.Substring(1)) || (o.EndsWith("*") && who.StartsWith(o.TrimEnd('*'))));
+            if (good && mustSay != null) good = reply != null && Text.Squash(reply.Say).Contains(Text.Squash(mustSay));
+            string said = reply == null ? "" : " — «" + Text.Preview(reply.Say, 90) + "»";
+            Report(n, good, phrase, who + said, expected + (mustSay != null ? " :: " + mustSay : ""), where);
         }
 
         // Una «aplicación» de mentira: el motor cree que hay ventana, bandeja y voz, pero no hace nada.
@@ -180,6 +202,7 @@ namespace Jarvis.Pruebas
             public IntPtr TargetWindow => IntPtr.Zero;
             public void ShowVoiceDiagnostics() { }
             public void ReloadSettings() { }
+            public void ShowSystemCheck() { }
         }
 #endif
     }

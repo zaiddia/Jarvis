@@ -21,6 +21,7 @@ namespace Jarvis.Ui
         public Func<Settings, System.Threading.Tasks.Task<string>> TestAi;
         public Action<Settings, string> TestVoice;
         public Action RunDiagnostics;
+        public Action RunFullCheck;
 
         static Settings Clone(Settings s) => JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(s));
 
@@ -76,7 +77,8 @@ namespace Jarvis.Ui
             tabs.Items.Add(Tab("Agenda", Agenda()));
             tabs.Items.Add(Tab("Integraciones", Integrations()));
             tabs.Items.Add(Tab("Aspecto", Look()));
-            tabs.Items.Add(Tab("Protocolos", Protocols()));
+            tabs.Items.Add(Tab("Rutinas", Protocols()));
+            tabs.Items.Add(Tab("Memoria", MemoryTab()));
             tabs.Items.Add(Tab("Acerca de", About()));
             dock.Children.Add(tabs);
             Content = dock;
@@ -539,10 +541,13 @@ namespace Jarvis.Ui
             {
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 0, 0, 8),
-                Text = "Un protocolo es una frase suya que lanza varias órdenes. Escriba uno por línea: la frase, dos puntos y los pasos separados por punto y coma. " +
-                       "Un paso puede ser cualquier orden, «di …» para decir algo o «espera 5» para esperar segundos.\n\nEjemplo:\n" +
-                       "protocolo trabajo: abre Outlook; abre Teams; pon el volumen al 30; di Buenos días, a trabajar\n" +
-                       "modo cine: cierra el navegador; abre Netflix; pon el volumen al 70",
+                Text = "Una rutina es una frase suya que lanza varias órdenes. Escriba una por línea: la frase, dos puntos y los pasos separados por punto y coma. " +
+                       "Un paso puede ser cualquier orden, «di …» para decir algo o «espera 5» para esperar segundos.\n" +
+                       "Para que se lance sola, ponga entre corchetes cuándo: [07:30], [07:30 lun-vie], [21:00 sab,dom], [al iniciar] (al encender el equipo) " +
+                       "o [al volver] (cuando vuelve al equipo tras 10 minutos o más sin usarlo). Con IA conectada, también puede pedírsela hablando.\n\nEjemplos:\n" +
+                       "buenos días [07:30 lun-vie]: di Buenos días; qué tiempo hace; qué tengo hoy; noticias\n" +
+                       "modo trabajo: abre Outlook; abre Teams; pon el volumen al 30; di A trabajar\n" +
+                       "bienvenida [al volver]: di Bienvenido de nuevo; qué alarmas tengo",
             });
             var box = new TextBox
             {
@@ -552,7 +557,7 @@ namespace Jarvis.Ui
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
                 MinHeight = 260,
                 FontFamily = new FontFamily("Cascadia Mono, Consolas"),
-                Text = string.Join(Environment.NewLine, _s.Protocols.Select(x => x.Phrase + ": " + string.Join("; ", x.Steps))),
+                Text = string.Join(Environment.NewLine, _s.Protocols.Select(x => x.Phrase + (string.IsNullOrWhiteSpace(x.When) ? "" : " [" + x.When + "]") + ": " + string.Join("; ", x.Steps))),
             };
             _commit.Add(() =>
             {
@@ -562,11 +567,51 @@ namespace Jarvis.Ui
                     string line = raw.Trim();
                     int k = line.IndexOf(':');
                     if (k <= 0) continue;
+                    // «frase [cuándo]: pasos» (los dos puntos de la hora van dentro de los corchetes)
+                    int open = line.IndexOf('['), close = line.IndexOf(']');
+                    string when = "";
+                    string head;
+                    if (open >= 0 && close > open && open < line.IndexOf(':', close))
+                    {
+                        when = line.Substring(open + 1, close - open - 1).Trim();
+                        head = line.Substring(0, open).Trim();
+                        k = line.IndexOf(':', close);
+                    }
+                    else head = line.Substring(0, k).Trim();
                     var steps = line.Substring(k + 1).Split(';').Select(x => x.Trim()).Where(x => x != "").ToList();
-                    if (steps.Count == 0) continue;
-                    list.Add(new Protocol { Phrase = line.Substring(0, k).Trim(), Steps = steps });
+                    if (steps.Count == 0 || head == "") continue;
+                    var sc = Jarvis.Commands.RoutinesModule.Parse(when);
+                    list.Add(new Protocol { Phrase = head, Steps = steps, When = sc.Valid ? sc.ToString() : "" });
                 }
                 _s.Protocols = list;
+            });
+            p.Children.Add(box);
+            return p;
+        }
+
+        UIElement MemoryTab()
+        {
+            var p = new StackPanel();
+            p.Children.Add(new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 8),
+                Text = "Lo que " + _s.Name + " sabe de usted, un dato por línea. Lo aprende cuando se lo cuenta («mi hermana se llama Ana», «me gusta el vallenato», " +
+                       "«las llaves están en el cajón») o cuando dice «recuerda que…». Puede corregir o borrar líneas aquí. Se guarda solo en este equipo.",
+            });
+            var box = new TextBox
+            {
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                MinHeight = 300,
+                Text = string.Join(Environment.NewLine, Jarvis.Commands.Memory.All()),
+            };
+            string before = box.Text;
+            _commit.Add(() =>
+            {
+                if (box.Text == before) return;
+                Jarvis.Commands.Memory.Save(box.Text.Split('\n').Select(x => x.Trim()).Where(x => x != ""));
             });
             p.Children.Add(box);
             return p;
@@ -586,6 +631,7 @@ namespace Jarvis.Ui
                 b.Click += (o, e) => { try { a(); } catch (Exception ex) { MessageBox.Show(ex.Message, "JARVIS"); } };
                 return b;
             }
+            if (RunFullCheck != null) row.Children.Add(B("Prueba completa", () => RunFullCheck()));
             row.Children.Add(B("Carpeta de ajustes y datos", () => Process.Start(new ProcessStartInfo(Settings.Folder) { UseShellExecute = true })));
             row.Children.Add(B("Ver el registro", () => Process.Start(new ProcessStartInfo(Path.Combine(Settings.Folder, "jarvis.log")) { UseShellExecute = true })));
             row.Children.Add(B("Carpeta de voces", () =>

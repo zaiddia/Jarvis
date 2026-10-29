@@ -89,7 +89,10 @@ namespace Jarvis.Commands
                     "• YouTube y radio: «pon un video de Karol G», «pon la emisora La Mega»\n" +
                     "• Casa (Home Assistant): «enciende la luz de la sala», «apaga todas las luces»\n" +
                     "• Celular (ntfy): «mándame al celular la lista de la compra»  · «precio del bitcoin», «pomodoro»\n" +
-                    "• Con IA (Ollama, Gemini, Claude…): cualquier pregunta y mirar la pantalla");
+                    "• Memoria: cuénteme «mi hermana se llama Ana» o «me gusta el vallenato» y lo recordaré · «¿qué sabes de mí?»\n" +
+                    "• Rutinas: varias órdenes con una frase o solas a una hora (Ajustes › Rutinas) · «¿qué rutinas tengo?»\n" +
+                    "• Si algo falla: «prueba completa» revisa micrófono, voz, IA e internet\n" +
+                    "• Con IA (Ollama, Gemini, Claude…): cualquier pregunta, mirar la pantalla y crear rutinas hablando");
                 return "Un montón de cosas" + Sir + ": abrir programas, controlar la música y el volumen, recordatorios y alarmas, el tiempo, su agenda, " +
                        "noticias, cuentas, ventanas, y conversar. Le dejo la lista en el panel. Pídamelo como le salga, con sus palabras.";
             }
@@ -97,6 +100,13 @@ namespace Jarvis.Commands
                 return SwitchPersona("viernes");
             if (c.Contains("cambia a jarvis") || c.Contains("vuelve jarvis") || c.Contains("quiero a jarvis") || c.Join(0) == "a jarvis" || c.Contains("modo jarvis"))
                 return SwitchPersona("jarvis");
+            if (Text.IsOneOf(s, "prueba completa", "haz una prueba completa", "haz la prueba completa", "revisa todo", "revisalo todo", "diagnostico completo",
+                             "haz un diagnostico", "diagnosticate", "autodiagnostico", "chequeo completo", "revisa el sistema", "revisa tus sistemas", "comprueba todo",
+                             "como estan tus sistemas", "estado de tus sistemas", "revisa que todo funcione", "prueba todo"))
+            {
+                E.Host.ShowSystemCheck();
+                return Pick("Hago una prueba completa de mis sistemas" + Sir + ".", "Revisando todos los sistemas.", "Comprobando todo, un momento.");
+            }
             if (Text.IsOneOf(s, "diagnostico de voz", "diagnostico del microfono", "prueba el microfono", "revisa el microfono", "no me oyes bien",
                              "por que no me oyes", "por que no me entiendes", "revisa la escucha", "prueba la escucha"))
             {

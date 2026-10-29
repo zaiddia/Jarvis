@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace Jarvis.Commands
         {
             string calc = Calc.Answer(c.Orig, Sir);
             if (calc != null) return calc;
-            return Convert(c) ?? Memory(c) ?? Notes(c) ?? Lists(c);
+            return Convert(c) ?? Memory_(c) ?? Notes(c) ?? Lists(c);
         }
 
         // ---------------------------------------------------------------- conversiones
@@ -125,45 +126,114 @@ namespace Jarvis.Commands
 
         // ---------------------------------------------------------------- memoria: «recuerda que mi coche es azul»
 
-        public static List<string> Facts => Store.Get("memoria", new List<string>());
+        public static List<string> Facts => Memory.All();
 
-        string Memory(Cmd c)
+        // Gente y cosas de la vida del usuario: «mi hermana se llama…», «mi cumpleaños es…».
+        static readonly string[] Personal =
+        {
+            "esposa", "esposo", "mujer", "marido", "novia", "novio", "pareja", "hijo", "hija", "hijos", "hijas", "hermano", "hermana", "hermanos", "hermanas",
+            "mama", "papa", "madre", "padre", "padres", "abuela", "abuelo", "abuelos", "tio", "tia", "primo", "prima", "sobrino", "sobrina", "suegra", "suegro",
+            "cunado", "cunada", "amigo", "amiga", "mejor", "jefe", "jefa", "perro", "perra", "gato", "gata", "mascota", "mascotas", "cumpleanos", "aniversario",
+            "color", "comida", "plato", "equipo", "cancion", "grupo", "banda", "artista", "cantante", "pelicula", "serie", "libro", "deporte", "bebida", "nombre",
+            "apellido", "carro", "moto", "profesion", "trabajo", "empresa", "universidad", "colegio", "barrio", "ciudad", "signo", "musica", "genero",
+        };
+
+        static readonly Regex MyThing = new Regex(@"^(mi|mis) (?<n>[a-z]+)( [a-z]+){0,2} (se llama|se llaman|es|son|cumple|cumplen|nacio|vive|viven|trabaja)( .+)?$", RegexOptions.Compiled);
+        static readonly Regex Likes = new Regex(@"^(no )?(me gusta|me gustan|me encanta|me encantan|me fascina|me fascinan|odio|prefiero) (?<w>.+)$", RegexOptions.Compiled);
+        static readonly Regex AboutMe = new Regex(@"^(soy (alergico|alergica|vegetariano|vegetariana|vegano|vegana|hincha|fan|diabetico|diabetica|intolerante|celiaco|celiaca|de) .+|(trabajo|estudio) (en|como|de) .+|vivo en .+|me llamo [a-z]+( [a-z]+)?|tengo (un|una|dos|tres|cuatro) (perro|perra|perros|gato|gata|gatos|hijo|hija|hijos|hijas|hermano|hermana|hermanos|hermanas|mascota|mascotas|nieto|nieta|nietos)( .+)?)$", RegexOptions.Compiled);
+        static readonly string[] Deictic = { "esto", "eso", "esta", "este", "aqui", "asi", "ahora", "cuando", "como", "que pongas", "lo que" };
+
+        // Lo que cuenta de sí mismo sin decir «recuerda que…». Devuelve el dato tal como se guarda, o null.
+        static string Personal_Fact(Cmd c)
+        {
+            if (c.Orig.Contains("?") || c.Orig.Contains("¿")) return null;
+            string sq = Text.Squash(c.Orig);
+            // sin el nombre ni muletillas al principio («oye, mi hermana…»)
+            foreach (var lead in new[] { "oye ", "bueno ", "pues ", "mira ", "fijate que ", "sabias que ", "te cuento que ", "para que sepas " })
+                if (sq.StartsWith(lead)) sq = sq.Substring(lead.Length);
+            if (sq.Split(' ').Length < 3 || sq.Split(' ').Length > 18) return null;
+            bool hit = false;
+            var m = MyThing.Match(sq);
+            if (m.Success && Personal.Contains(m.Groups["n"].Value)) hit = true;
+            var l = Likes.Match(sq);
+            if (!hit && l.Success)
+            {
+                string w = " " + l.Groups["w"].Value + " ";
+                hit = !Deictic.Any(d => w.Contains(" " + d + " ")) && !w.StartsWith(" que ") && l.Groups["w"].Value.Split(' ').Length <= 8;
+            }
+            if (!hit && AboutMe.IsMatch(sq)) hit = true;
+            if (!hit) return null;
+            // El texto original (con mayúsculas y tildes), sin muletillas al principio.
+            string orig = c.Orig.Trim().TrimEnd('.', '!', ' ');
+            int cut = Text.FoldText(orig).IndexOf(sq.Split(' ')[0] + " " + sq.Split(' ')[1], StringComparison.Ordinal);
+            return cut > 0 ? orig.Substring(cut) : orig;
+        }
+
+        string Memory_(Cmd c)
         {
             if ((c.W(0) == "recuerda" || c.W(0) == "memoriza" || c.W(0) == "apunta" && c.W(1) == "que" || c.W(0) == "guarda" && c.W(1) == "que") && c.W(1) == "que" && c.Size > 2)
             {
                 string fact = c.OrigFrom(2).Trim(' ', '.');
-                var f = Facts;
-                f.Add(Text.Capitalize(fact));
-                Store.Set("memoria", f.TakeLast(200).ToList());
-                return TalkModule.Pick("Lo recordaré" + Sir + ".", "Anotado en mi memoria.", "Entendido, no lo olvidaré.");
+                bool fixedOld = Memory.Add(fact);
+                return fixedOld ? "Corregido: ahora recuerdo que " + Memory.ToSecondPerson(fact).TrimEnd('.') + "."
+                                : TalkModule.Pick("Lo recordaré" + Sir + ".", "Anotado en mi memoria.", "Entendido, no lo olvidaré.");
             }
-            if (c.Contains("que recuerdas") || c.Contains("que sabes de mi") || c.Contains("que tienes en la memoria") || c.Contains("que te he dicho"))
+            if (c.Contains("que recuerdas") || c.Contains("que sabes de mi") || c.Contains("que tienes en la memoria") || c.Contains("que te he dicho") || c.Contains("que sabes sobre mi"))
             {
                 var f = Facts;
-                if (f.Count == 0) return "Aún no me ha pedido recordar nada. Diga «recuerda que…» y lo guardo.";
-                return "Recuerdo esto: " + string.Join(". ", f.TakeLast(8)) + ".";
+                if (f.Count == 0) return "Aún no me ha contado nada de usted. Dígame, por ejemplo, «mi hermana se llama Ana» o «me gusta el vallenato», y lo recordaré.";
+                E.Host.Show("Lo que recuerdo:\n• " + string.Join("\n• ", f.TakeLast(30)));
+                return "Recuerdo " + Text.Plural(f.Count, "cosa", "cosas") + ". Por ejemplo: " + string.Join(". ", f.TakeLast(4).Select(Memory.ToSecondPerson)) + ". Le dejo la lista en el panel.";
             }
             if ((c.W(0) == "olvida" || c.W(0) == "borra") && (c.Has("memoria") || c.Contains("todo lo que") || c.Has("recuerdas")))
             {
-                Store.Set("memoria", new List<string>());
-                return "Memoria borrada" + Sir + ".";
+                if (Facts.Count == 0) return "No tengo nada en la memoria" + Sir + ".";
+                E.Ask("¿Borro todo lo que sé de usted" + Sir + "? Son " + Text.Plural(Facts.Count, "dato", "datos") + ".", yes =>
+                {
+                    if (!yes) return "No borro nada.";
+                    Memory.Clear();
+                    return "Memoria borrada" + Sir + ".";
+                });
+                return "¿Borro todo lo que sé de usted" + Sir + "? Son " + Text.Plural(Facts.Count, "dato", "datos") + ".";
             }
-            if (c.W(0) == "olvida" && c.W(1) == "que" && c.Size > 2)
+            if ((c.W(0) == "olvida" || c.W(0) == "borra") && (c.W(1) == "que" || c.W(1) == "lo") && c.Size > 2)
             {
-                string what = Text.Squash(c.OrigFrom(2));
-                var f = Facts;
-                int n = f.RemoveAll(x => Text.Squash(x).Contains(what) || what.Contains(Text.Squash(x)));
-                Store.Set("memoria", f);
+                int k = c.W(1) == "lo" && c.W(2) == "de" ? 3 : 2;
+                int n = Memory.Forget(c.OrigFrom(k));
                 return n > 0 ? "Olvidado." : "No tenía eso en la memoria.";
             }
-            // Preguntas que la memoria contesta: «¿dónde dejé las llaves?»
-            if (c.HasAny("donde", "cual", "cuando", "que", "quien", "como") && c.Size >= 3)
+            // Lo cuenta sin más: «mi hermana se llama Ana», «me gusta el vallenato», «vivo en Cali».
+            string personal = Personal_Fact(c);
+            if (personal != null)
             {
-                var keys = c.T.Select(t => t.W).Where(w => w.Length > 3 && !Text.IsOneOf(w, "donde", "cual", "cuando", "como", "quien", "esta", "estan", "deje", "tengo", "dije")).ToList();
-                if (keys.Count > 0)
+                bool fixedOld = Memory.Add(personal);
+                string sq = Text.Squash(personal);
+                if (sq.StartsWith("vivo en ") && E.S.City.Trim() == "")
                 {
-                    var hit = Facts.LastOrDefault(f => keys.All(k => Text.Squash(f).Contains(k)) && (c.Contains("deje") || c.Contains("mi ") || c.All.Contains(" mi ") || c.Has("mis")));
-                    if (hit != null) return "Me dijo: " + hit + ".";
+                    E.S.City = personal.Substring(personal.IndexOf(' ', 5) + 1).Trim(' ', '.');
+                    E.Host.ApplySettings();
+                    return "Anotado: vive en " + E.S.City + ". Ya le daré el tiempo de allí sin que me lo diga.";
+                }
+                if (fixedOld) return "Entendido, lo corrijo: " + Memory.ToSecondPerson(personal).TrimEnd('.') + ".";
+                return TalkModule.Pick("Lo tendré en cuenta" + Sir + ".", "Anotado, no lo olvidaré.", "Qué bien saberlo. Lo recordaré.", "Guardado en mi memoria.");
+            }
+            // Preguntas que la memoria contesta: «¿dónde dejé las llaves?», «¿cómo se llama mi hermana?», «¿qué música me gusta?»
+            if (c.HasAny("donde", "cual", "cuando", "que", "quien", "como", "cuales") && c.Size >= 3)
+            {
+                bool mine = c.Has("deje") || c.Has("puse") || c.Has("mi") || c.Has("mis") || Text.Squash(c.Orig).Contains(" me gusta") || Text.Squash(c.Orig).Contains(" me encanta");
+                if (mine)
+                {
+                    string hit = Memory.Find(c.Orig);
+                    if (hit == null && (c.Contains("me gusta") || c.Contains("me encanta") || Text.Squash(c.Orig).Contains(" me gusta")))
+                    {
+                        var likes = Facts.Where(f => Text.Squash(f).Contains("gusta") || Text.Squash(f).Contains("encanta")).TakeLast(4).ToList();
+                        if (likes.Count > 0) return "Me ha dicho que " + string.Join("; ", likes.Select(x => Memory.ToSecondPerson(x).TrimEnd('.').ToLowerInvariant())) + ".";
+                    }
+                    if (hit != null) return Memory.ToSecondPerson(hit).TrimEnd('.') + ".";
+                    // «¿cómo se llama mi hermana?» sin el dato: decirle cómo enseñárselo (si no hay IA, nadie más lo contestaría).
+                    int mi = c.Find("mi");
+                    if (mi >= 0 && c.Contains("como se llama") && Personal.Contains(c.W(mi + 1)))
+                        return "No me lo ha dicho" + Sir + ". Dígame «mi " + c.W(mi + 1) + " se llama…» y lo recordaré.";
                 }
             }
             return null;
