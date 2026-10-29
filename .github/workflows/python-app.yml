@@ -1,0 +1,88 @@
+# JARVIS de Python: en cada cambio, instala todo en un Windows limpio, revisa el código, pasa las pruebas
+# de comprensión y, si se subió VERSION en jarvis.py y todo pasa, publica la Release vX.Y (la que usa actualizar.py).
+name: JARVIS (Python)
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['windows-app/**', '.github/workflows/windows-app.yml', '.gitattributes']
+  pull_request:
+    paths-ignore: ['windows-app/**', '.github/workflows/windows-app.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: python-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probar:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias (como instalar.bat)
+        run: |
+          python -m pip install --upgrade pip
+          # Una por una, como el instalador: si alguna opcional falla, las demás siguen.
+          $fallos = @()
+          Get-Content requirements.txt | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') } | ForEach-Object {
+            python -m pip install $_ 2>&1 | Out-Null
+            if ($LASTEXITCODE -ne 0) { $fallos += $_; Write-Host "::warning::No se instaló $_" }
+          }
+          python -m pip install pytest pyflakes
+          if ($fallos.Count -gt 0) { Write-Host "Sin instalar: $($fallos -join ', ')" }
+
+      - name: Revisar el código
+        run: |
+          python -m compileall -q -x "(\.venv|windows-app|publicar)" .
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          # Nombres sin definir o errores reales (no avisos de estilo).
+          $out = python -m pyflakes (Get-ChildItem *.py, tests\*.py | ForEach-Object FullName) 2>&1 |
+                 Select-String -Pattern "undefined name|syntax error|invalid syntax|unexpected indent|referenced before assignment"
+          if ($out) { $out | ForEach-Object { Write-Host "::error::$_" }; exit 1 }
+
+      - name: Pruebas de comprensión
+        run: python -m pytest -q tests
+
+      - name: Versión
+        id: ver
+        run: |
+          $v = (Select-String -Path jarvis.py -Pattern '^VERSION\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Jarvis $v"
+
+      - name: Publicar la Release (solo si VERSION es nueva)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $tag = "v$v"
+          gh release view $tag 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) { Write-Host "La Release $tag ya existe: no la toco."; exit 0 }
+          python empaquetar_version.py
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $zip = "publicar/jarvis_project_v$v.zip"
+          # Notas: la sección «(v$v)» del README.
+          $readme = Get-Content README.md -Raw -Encoding utf8
+          $m = [regex]::Match($readme, "(?ms)^## [^\n]*\(v$([regex]::Escape($v))\)\s*\n(.*?)(?=^## )")
+          $notes = if ($m.Success) { $m.Groups[1].Value.Trim() } else { "Jarvis $v." }
+          $notes += "`n`n---`nPublicada automáticamente tras pasar todas las pruebas (commit ${{ github.sha }}). " +
+                    "Para instalarla: Ajustes › Acerca de › Actualizar, o di «Jarvis, actualízate»."
+          Set-Content -Path notas.md -Value $notes -Encoding utf8
+          gh release create $tag $zip --target ${{ github.sha }} --title "Jarvis $v" --notes-file notas.md --latest

@@ -614,6 +614,10 @@
         <input class="inp" type="text" id="rt-phrases" placeholder="Ej.: modo examen, empieza el examen">
       </div>
       <div class="field stack">
+        <div class="ft"><label for="rt-when">Lanzarla sola (opcional)</label><p>Vacío = solo cuando digas su frase. Ejemplos: <code>07:30</code> (todos los días) · <code>07:30 lun-vie</code> · <code>21:00 sab,dom</code> · <code>al iniciar</code> (al encender el equipo) · <code>al volver</code> (cuando vuelves al equipo tras 10 minutos o más sin usarlo).</p></div>
+        <input class="inp" type="text" id="rt-when" placeholder="Ej.: 07:30 lun-vie" style="max-width:260px">
+      </div>
+      <div class="field stack">
         <div class="ft"><label for="rt-steps">Pasos (una orden por línea)</label><p>Ejemplos: <code>activa el videobeam</code> · <code>volumen al 40</code> · <code>silencia las notificaciones</code> · <code>abre powerpoint</code> · <code>usa el curso 7A</code> · <code>activa el semáforo de ruido</code> · <code>pon un temporizador de 45 minutos para el examen</code> · <code>esperar 3</code> · <code>decir ¡Mucho éxito!</code></p></div>
         <textarea class="inp" id="rt-steps" rows="7"></textarea>
       </div>
@@ -645,6 +649,14 @@
 
   <!-- ACERCA -->
   <section class="pane" data-pane="acerca">
+    <div class="group">Prueba completa</div>
+    <p class="pane-intro">Revisa el micrófono, el reconocimiento de voz, la voz, internet, la IA, las integraciones y si hay versión nueva, y te dice qué falla y cómo arreglarlo. También: di «Jarvis, prueba completa» o escribe <code>/prueba</code> en Telegram.</p>
+    <div class="row-btns">
+      <button class="btn btn-primary" type="button" id="btn-check">Hacer la prueba completa</button>
+      <button class="btn btn-ghost" type="button" id="btn-check-copy" hidden>Copiar el informe</button>
+    </div>
+    <p class="status" id="check-status"></p>
+    <ul class="chk-list" id="check-list"></ul>
     <div class="group">Todo lo que sé hacer</div>
     <p class="note">Habla empezando por «Jarvis», o escribe en la barra del HUD. Estos son ejemplos; entiendo muchas variantes.</p>
     <div class="caps" id="caps"></div>

@@ -23,6 +23,7 @@ import time
 import uuid
 import array
 import queue
+import random
 import socket
 import asyncio
 import tempfile
@@ -39,7 +40,7 @@ from collections import deque
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "6.7"
+VERSION = "6.8"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -2073,7 +2074,11 @@ CAPABILITIES = [
     ("Web y búsquedas", ["busca recetas de arepas", "pon Despacito en YouTube", "abre youtube"]),
     ("Visión de pantalla", ["¿qué hay en la pantalla?", "describe la pantalla", "qué ves"]),
     ("Rutinas", ["modo clase", "fin de clase", "modo planeación", "¿qué rutinas tengo?",
-                 "silencia las notificaciones", "activa las notificaciones"]),
+                 "silencia las notificaciones", "activa las notificaciones",
+                 "crea una rutina buenos días a las 7 de lunes a viernes que diga el clima y mis pendientes"]),
+    ("Prueba completa", ["prueba completa", "revisa todo", "(en Telegram) /prueba"]),
+    ("Lo que sabe de ti", ["mi hermana se llama Ana", "me gusta el vallenato", "¿cómo se llama mi hermana?",
+                           "¿qué sabes de mí?", "olvida que me gusta el vallenato"]),
     ("Calendario", ["¿qué tengo hoy?", "¿cuál es mi próxima clase?", "¿qué sigue?", "¿qué tengo esta semana?",
                     "actualiza el calendario"]),
     ("Memoria", ["recuerda que la reunión de padres es el jueves a las 3", "anota que debo comprar marcadores",
@@ -2104,7 +2109,7 @@ CAPABILITIES = [
     ("Mensajería", ["manda un whatsapp a Juan que llego tarde", "manda un telegram diciendo reunión a las 3"]),
     ("Pantalla y archivos", ["toma una captura de pantalla", "busca el archivo informe", "brillo al 70"]),
     ("Modo sigilo", ["modo sigilo", "mostrar panel"]),
-    ("Sistema (piden confirmación)", ["bloquea el equipo", "apaga el equipo", "vacía la papelera"]),
+    ("Sistema (piden confirmación)", ["bloquea el equipo", "apaga el equipo", "vacía la papelera", "actualízate"]),
     ("Inteligencia artificial", ["cualquier pregunta: ¿cuál es la capital de Francia?", "escríbeme un poema"]),
 ]
 
@@ -2118,7 +2123,11 @@ Responde SIEMPRE con un único objeto JSON con este formato:
 {{"accion": "nombre_de_la_accion o chat", "args": {{...}}, "respuesta": "texto"}}
 - Si el usuario pide hacer algo en el PC que corresponde a una acción, pon su nombre en "accion" y sus datos en "args".
 - Si es una pregunta o una conversación, usa "accion": "chat" y escribe tu respuesta en "respuesta".
-- No inventes acciones que no estén en la lista."""
+- No inventes acciones que no estén en la lista.
+- Interpreta la intención aunque no la digan como orden: «está muy oscuro aquí» → subir el brillo
+  (brillo con nivel 80); «hay demasiada luz en la pantalla» → bajar el brillo; «esto suena muy duro» → bajar el
+  volumen; «quiero escuchar algo alegre» → poner música alegre en YouTube; «no oigo nada» → subir el volumen.
+- Si la frase es una pregunta o una conversación (no pide hacer nada), es "chat"."""
 
 
 def _extract_json(text):
@@ -2133,7 +2142,7 @@ def _extract_json(text):
 
 def ask_ai(prompt, route=False):
     """Devuelve ('chat', respuesta) o ('skill', nombre, args)."""
-    system = settings["system_prompt"] + ACTION_RULE + VOICE_RULE + f" Hoy es {fecha_hablada(datetime.date.today())}." + _notes_ctx() + _user_ctx()
+    system = settings["system_prompt"] + ACTION_RULE + VOICE_RULE + f" Hoy es {fecha_hablada(datetime.date.today())}." + _notes_ctx() + _user_ctx(prompt)
     if route:
         # Seguridad: la IA solo ve acciones NO destructivas. Apagar, reiniciar, vaciar la
         # papelera, etc. nunca se activan por interpretación: solo con la orden directa exacta.
@@ -2211,7 +2220,7 @@ def answer_question_streaming(prompt):
     if cfg["kind"] == "ollama" and (ollama is None or not cfg["model"]):
         reply(ask_ai(prompt, route=False)[1])
         return
-    system = settings["system_prompt"] + ACTION_RULE + VOICE_RULE + f" Hoy es {fecha_hablada(datetime.date.today())}." + _notes_ctx() + _user_ctx()
+    system = settings["system_prompt"] + ACTION_RULE + VOICE_RULE + f" Hoy es {fecha_hablada(datetime.date.today())}." + _notes_ctx() + _user_ctx(prompt)
     user_msg = {"role": "user", "content": prompt}
     keep = settings["history_turns"] * 2
     history = chat_history[-keep:] if keep else []
@@ -2798,14 +2807,14 @@ def rollback_update():
     return {"ok": True, "version": res["version"]}
 
 
-_UPD_RE = re.compile(r"\b(?:busca|buscar|buscame|hay|revisa|comprueba|mira si hay|tienes)\b.*\bactualizacion(?:es)?\b"
-                     r"|\bactualizate\b|\bactualiza (?:a )?jarvis\b|\b(?:version nueva|nueva version) de jarvis\b"
+_UPD_RE = re.compile(r"\b(?:busca|buscar|buscame|hay|revisa|comprueba|mira si hay|tienes|instala|instalar|descarga|descargar)\b.*\bactualizacion(?:es)?\b"
+                     r"|\binstala(?:r)? (?:la )?(?:nueva version|version nueva)\b|\bponte al dia\b|\bactualizate\b|\bactualiza (?:a )?jarvis\b|\b(?:version nueva|nueva version) de jarvis\b"
                      r"|\bque version (?:eres|tienes)\b|\ben que version (?:estas|vas)\b")
 
 
 def update_voice(text, t):
-    """«Jarvis, ¿hay actualizaciones?», «actualízate», «¿qué versión eres?». Solo consulta:
-    instalar se hace con el botón (así nunca se reinicia en mitad de una clase)."""
+    """«Jarvis, ¿hay actualizaciones?», «¿qué versión eres?» consultan; «actualízate» o «instala la actualización»
+    instalan, pero siempre preguntando antes (así nunca se reinicia en mitad de una clase sin querer)."""
     if not _UPD_RE.search(t):
         return False
     if re.search(r"\bque version\b|\ben que version\b", t):
@@ -2816,9 +2825,14 @@ def update_voice(text, t):
     except actualizar.UpdateError as e:
         reply(f"No pude buscar actualizaciones: {e}", "ACTUALIZACIÓN")
         return True
-    if info["newer"]:
-        reply(f"Hay una versión nueva: la {info['version']}; tienes la {VERSION}. Para instalarla abre "
-              "Ajustes, sección Acerca de, y pulsa Actualizar.", "ACTUALIZACIÓN")
+    install = bool(re.search(r"\b(?:actualizate|actualizarte|actualiza (?:a )?jarvis|instala(?:r)? (?:la )?(?:actualizacion|nueva version|version nueva)|"
+                             r"descarga(?:r)? (?:la )?actualizacion|ponte al dia)\b", t))
+    if info["newer"] and install:
+        upd["info"] = info
+        run_skill("instalar_actualizacion", {})       # pide confirmación (y desde el celular no se hace)
+    elif info["newer"]:
+        reply(f"Hay una versión nueva: la {info['version']}; tienes la {VERSION}. Di «actualízate» para "
+              "instalarla, o pulsa Actualizar en Ajustes, sección Acerca de.", "ACTUALIZACIÓN")
     else:
         reply(f"Estás al día: tienes la versión {VERSION}, la última publicada.", "ACTUALIZACIÓN")
     return True
@@ -3831,8 +3845,9 @@ def alert(text, origin="JARVIS"):
 _TG_HELP = ("Soy Jarvis, en tu computador. Escríbeme como me hablarías, por ejemplo:\n"
             "• ¿qué tengo hoy?\n• abre la presentación de ciencias\n• recuérdame a las 3 llamar a la coordinadora\n"
             "• volumen al 30\n• ¿cómo está el clima?\n• noticias\n\n"
-            "/captura – foto de la pantalla\n/estado – cómo está el PC\n/ayuda – esta ayuda\n\n"
-            "Por seguridad, apagar, reiniciar, cerrar sesión o borrar no se hacen desde aquí.")
+            "/captura – foto de la pantalla\n/estado – cómo está el PC\n/prueba – prueba completa de Jarvis\n/ayuda – esta ayuda\n\n"
+            "Por seguridad, desde aquí no apago ni reinicio el equipo, no cierro programas, no escribo en ventanas "
+            "y no borro datos.")
 
 
 def telegram_run(text):
@@ -3846,6 +3861,9 @@ def telegram_run(text):
         return "Por seguridad, eso (apagar, reiniciar, cerrar sesión, borrar…) no lo hago desde Telegram."
     if re.search(DICTATION_START_RE, t):
         return "El dictado solo funciona hablando frente al computador."
+    if _REMOTE_DELETE_RE.search(t):
+        log_terminal(f"Desde el celular no se borran datos: {text}", "AVISO")
+        return "Por seguridad, desde el celular no borro ni restauro datos (notas, memoria, rutinas, copias). Hazlo en el equipo."
     _tl.capture, _tl.remote = [], True
     try:
         process_command(text)
@@ -3907,6 +3925,9 @@ def _tg_handle(msg):
             out = f"No pude enviar la captura: {e}"
     elif low in ("estado", "status"):
         out = telegram_run("estado del sistema")
+    elif low in ("prueba", "prueba completa", "diagnostico"):
+        telegram_send("Haciendo la prueba completa… (tarda unos segundos)")
+        out = check_report(run_system_check(speak_it=False))
     else:
         out = telegram_run(text)
     if out:
@@ -4010,8 +4031,8 @@ def tono_sismo_alerta():
 # =============================================================================
 # CÓMO TE TRATA + MEMORIA QUE APRENDE SOLA (perfil). Lógica de perfil en perfil.py.
 # =============================================================================
-def _user_ctx():
-    ctx = perfil.context_for_ai()
+def _user_ctx(question=""):
+    ctx = perfil.context_for_ai(question=question)
     name = settings["address_name"].strip()
     if name:
         ctx += f" Cuando te dirijas al usuario, llámalo «{name}»."
@@ -4036,6 +4057,14 @@ def profile_voice(text, t):
             apply_settings({"address_name": name})
             reply(f"Listo, te diré {name} de ahora en adelante.", "MEMORIA")
             return True
+    # «¿qué sabes de mí?» y preguntas que contesta la memoria: «¿cómo se llama mi hermana?», «¿qué música me gusta?»
+    if re.search(r"\bque (?:sabes|recuerdas|has aprendido) (?:de|sobre) mi\b|\bque te he contado\b|\bque sabes de mi vida\b", t):
+        reply(perfil.summary(), "MEMORIA")
+        return True
+    ans = perfil.answer(text)
+    if ans:
+        reply(ans, "MEMORIA")
+        return True
     forgotten = perfil.forget(text)
     if forgotten:
         reply(f"Listo, lo olvidé: {forgotten}.", "MEMORIA")
@@ -4043,9 +4072,12 @@ def profile_voice(text, t):
         return True
     fact = perfil.detect(text)
     if fact:
-        perfil.add(fact)
+        f = perfil.add(fact)
         _profile_changed()
-        reply("Lo tendré en cuenta.", "MEMORIA")
+        if f and f.get("corrige"):
+            reply(f"Entendido, lo corrijo: {perfil.to_second_person(f['texto']).rstrip('.')}.", "MEMORIA")
+        else:
+            reply(random.choice(["Lo tendré en cuenta.", "Anotado, no lo olvidaré.", "Qué bien saberlo. Lo recordaré."]), "MEMORIA")
         return True
     return False
 
@@ -4440,20 +4472,120 @@ def run_routine(r):
     threading.Thread(target=work, daemon=True, name="rutina").start()
 
 
+# Rutinas que se lanzan solas (6.8): a su hora, al iniciar Jarvis o al volver al equipo.
+_RT_DONE = os.path.join(CONFIG_DIR, "rutinas_hechas.json")
+
+
+def _rt_done():
+    try:
+        with open(_RT_DONE, encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _rt_mark(nombre):
+    d = _rt_done()
+    d[nombre] = datetime.date.today().isoformat()
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(_RT_DONE, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False)
+    except OSError:
+        pass
+
+
+def _routine_auto(r, why):
+    log_terminal(f"Rutina «{r['nombre']}» ({why}).", "RUTINA")
+    run_routine(r)
+
+
+def _routines_worker():
+    """Cada 20 s: ¿toca alguna rutina por su hora? ¿Acabas de volver al equipo?"""
+    idle_max, last_return = 0.0, 0.0
+    while True:
+        try:
+            for r in rutinas.due(datetime.datetime.now(), _rt_done()):
+                if routine_state["running"]:
+                    break                              # la siguiente vuelta la lanza (tiene 10 minutos)
+                _rt_mark(r["nombre"])
+                _routine_auto(r, "a su hora")
+            if rutinas.with_kind("volver"):
+                idle = _idle_seconds()
+                idle_max = max(idle_max, idle)
+                if idle < 25:
+                    if idle_max >= 600 and time.time() - last_return > 3600 and not routine_state["running"]:
+                        last_return = time.time()
+                        for r in rutinas.with_kind("volver")[:1]:
+                            _routine_auto(r, "al volver")
+                    idle_max = 0.0
+        except Exception as e:
+            log_terminal(f"Rutinas automáticas: {e}", "AVISO")
+        time.sleep(20)
+
+
+def _routines_at_start():
+    for r in rutinas.with_kind("inicio")[:1]:
+        _routine_auto(r, "al iniciar")
+
+
+@skills.skill("crear_rutina", "Crea o cambia una rutina: varias órdenes de Jarvis seguidas, que se lanzan con su nombre "
+              "y, si se indica, solas a una hora o al encender el equipo",
+              args="nombre, pasos (órdenes separadas por punto y coma; «decir …» para hablar), "
+                   "cuando (opcional: «07:30», «07:30 lun-vie», «al iniciar», «al volver»)",
+              windows_only=False)
+def crear_rutina(nombre, pasos, cuando=""):
+    pasos = str(pasos or "").replace(";", "\n")
+    try:
+        r = rutinas.upsert(nombre, nombre, pasos, None, cuando)
+    except ValueError as e:
+        raise skills.SkillError(str(e))
+    socketio.emit("rutinas_updated", rutinas.routines)
+    cuando_txt = rutinas.when_spoken(r["cuando"])
+    return (f"Rutina «{r['nombre']}» creada, con {len(r['pasos'])} pasos" +
+            (f". Se lanzará sola {cuando_txt}." if cuando_txt else f". Dime «{r['nombre']}» para lanzarla."))
+
+
+def _upd_confirm(args):
+    info = upd.get("info") or {}
+    v = info.get("version", "nueva")
+    return f"¿Instalo la versión {v}? Me reiniciaré en cuanto termine (tarda uno o dos minutos)."
+
+
+@skills.skill("instalar_actualizacion", "Descarga e instala la versión nueva de Jarvis y lo reinicia",
+              dangerous=True, confirm=_upd_confirm, windows_only=False)
+def instalar_actualizacion():
+    if upd["busy"]:
+        return "Ya me estoy actualizando."
+    threading.Thread(target=install_update, daemon=True, name="actualizar").start()
+    return "Descargando la actualización. Me reinicio en cuanto termine; ves el avance en Ajustes, sección Acerca de."
+
+
 def routine_voice(text, t):
     """«modo clase», «activa la rutina fin de clase», «¿qué rutinas tengo?». True si era para esto."""
     if re.search(r"\b(?:que|cuales) rutinas\b|\bmis rutinas\b|\blista de rutinas\b", t):
         if not rutinas.routines:
             reply("No tienes rutinas. Créalas en Ajustes, sección Rutinas.", "RUTINA")
         else:
-            nombres = [r["nombre"] for r in rutinas.routines]
+            nombres = [r["nombre"] + (f" ({rutinas.when_spoken(r['cuando'])})" if r.get("cuando") else "")
+                       for r in rutinas.routines]
             reply(f"Tienes {len(nombres)} rutinas: {', '.join(nombres[:-1]) + ' y ' + nombres[-1] if len(nombres) > 1 else nombres[0]}. "
                   "Dime su nombre para lanzarla.", "RUTINA")
         return True
     if re.search(r"\b(?:crea|creame|haz|nueva|agrega|edita|cambia)\b.*\brutina\b", t):
+        # Con la IA conectada, la crea ella a partir de lo que dices («crea una rutina buenos días a las 7…»).
+        if settings["ai_router"] and state.get("ai") == "ok" and not getattr(_tl, "remote", False):
+            result = ask_ai(text, route=True)
+            if result[0] == "skill":
+                run_skill(result[1], result[2])
+            else:
+                reply(result[1], "RUTINA")
+            return True
         open_settings_window()
-        reply("Las rutinas se crean en Ajustes, sección Rutinas: un nombre, las frases para lanzarla "
-              "y una orden por línea. Te abro los ajustes.", "RUTINA")
+        reply("Las rutinas se crean en Ajustes, sección Rutinas: un nombre, las frases para lanzarla, "
+              "una orden por línea y, si quieres, cuándo se lanza sola (por ejemplo 07:30 lun-vie, al iniciar "
+              "o al volver). Te abro los ajustes.", "RUTINA")
         return True
     r = rutinas.find(t)
     if r:
@@ -5450,10 +5582,39 @@ def handle_dictation(text):
         log_terminal(f"Error de dictado: {e}", "ERROR")
 
 
+# Desde el celular no se ve qué hay abierto ni quién está delante del equipo: además de las acciones
+# delicadas (apagar, reiniciar…), no se cierran programas ni se escribe en ventanas, ni se crean rutinas.
+REMOTE_BLOCKED = {
+    "cerrar_app": "Desde el celular no cierro programas: podría perderse trabajo sin guardar.",
+    "escribir": "Desde el celular no escribo en la ventana del equipo: no sé qué hay abierto.",
+    "crear_rutina": "Las rutinas se crean desde el equipo: podrían lanzar órdenes sin nadie delante.",
+    "instalar_actualizacion": "Las actualizaciones se instalan desde el equipo: me reinicio y desde aquí no verías si algo falla.",
+}
+_REMOTE_DELETE_RE = re.compile(r"\b(?:borra|borrar|elimina|eliminar|olvida|olvidate|vacia|vaciar|limpia|tacha|restaura|restaurar)\b.*"
+                               r"\b(?:nota|notas|memoria|pendientes|rutina|rutinas|historial|conversacion|todo|curso|cursos|"
+                               r"asistencia|copia|copias|respaldo|lista|listas)\b")
+
+
+def remote_blocked(name, args=None):
+    """El motivo si esta acción no se hace desde el celular; None si se puede."""
+    sk = skills.REGISTRY.get(name)
+    if sk is not None and sk.dangerous:
+        return "Por seguridad, eso (apagar, reiniciar, cerrar sesión, borrar…) no lo hago desde el celular."
+    if name == "ventana" and normalize((args or {}).get("accion", "")).startswith("cerr"):
+        return REMOTE_BLOCKED["cerrar_app"]
+    return REMOTE_BLOCKED.get(name)
+
+
 def run_skill(name, args, confirmed=False):
     sk = skills.REGISTRY.get(name)
     if not sk:
         return False
+    if getattr(_tl, "remote", False):
+        why = remote_blocked(name, args)
+        if why:
+            log_terminal(f"Desde el celular no: {name} {json.dumps(args or {}, ensure_ascii=False)}", "AVISO")
+            reply(why + " Hazlo en el equipo o pídemelo de viva voz.", "TELEGRAM")
+            return True
     if sk.dangerous and not confirmed:
         pending.update(skill=name, args=args, expires=time.time() + 25)
         reply(sk.confirm_text(args) + " Di «confirmar» o «cancelar».", "PC")
@@ -5509,10 +5670,201 @@ def _run_skill_guarded(name, sk, args):
         _deliver_skill(name, args, box)
 
 
+# =============================================================================
+# PRUEBA COMPLETA (6.8): revisa todo lo que necesita Jarvis y dice qué falla y cómo arreglarlo
+# =============================================================================
+_CHECK_RE = re.compile(r"\b(?:prueba completa|haz (?:una|la) prueba completa|revisa(?:lo)? todo|diagnostico completo|"
+                       r"haz un diagnostico|diagnosticate|autodiagnostico|chequeo completo|revisa (?:el sistema|tus sistemas)|"
+                       r"comprueba todo|como estan tus sistemas|estado de tus sistemas|revisa que todo funcione|prueba todo)\b")
+check_state = {"busy": False, "items": [], "at": ""}
+
+
+def system_check():
+    """Lista de comprobaciones: {"grupo", "estado": ok|aviso|fallo|info, "texto", "arreglo"}."""
+    out = []
+
+    def add(grupo, estado, texto, arreglo=""):
+        out.append({"grupo": grupo, "estado": estado, "texto": texto, "arreglo": arreglo})
+
+    def ok(grupo, cond, bien, mal, arreglo="", aviso=False):
+        add(grupo, "ok" if cond else ("aviso" if aviso else "fallo"), bien if cond else mal, "" if cond else arreglo)
+
+    # --- micrófono y escucha
+    G = "Micrófono y escucha"
+    mics = []
+    try:
+        mics = list_mics()
+    except Exception:
+        pass
+    ok(G, pyaudio is not None, "Hay librería de micrófono (sounddevice o PyAudio).",
+       "Falta sounddevice: solo funcionan las órdenes escritas. Vuelve a ejecutar instalar.bat.")
+    ok(G, bool(mics), f"Micrófonos encontrados: {len(mics)}.", "No encuentro ningún micrófono conectado.", "ms-settings:sound")
+    mic = state.get("mic", "off")
+    ok(G, mic == "on", "El micrófono está escuchando.",
+       "El micrófono está en pausa (bandeja › reanudar, o el botón del HUD)." if mic == "off" else
+       "El micrófono dio error al abrirse: ¿lo usa otra aplicación? ¿Windows le da permiso?", "ms-settings:privacy-microphone",
+       aviso=(mic == "off"))
+    model = get_resource_path("model_es")
+    ok(G, os.path.isdir(model) or settings.get("stt_backend") == "whisper", "El modelo de voz de Vosk está instalado.",
+       "Falta el modelo de voz (model_es): ejecuta descargar_modelo.py o instalar.bat.")
+    ok(G, bool(settings.get("wake_word_enabled", True)), "Responde a «" + ", ".join(get_wake_words()[:3]) + "».",
+       "La palabra de activación está apagada: tienes que usar Ctrl+Alt+Espacio para hablarle.", aviso=True)
+
+    # --- voz
+    G = "Voz"
+    ok(G, audio_ready, "El audio de salida funciona.", "No pude iniciar el audio de salida (pygame): no podré hablar.")
+    backend = settings["tts_backend"]
+    add(G, "info", {"edge": "Hablo con la voz de Microsoft (Edge, necesita internet).",
+                    "piper": "Hablo con Piper (sin internet).",
+                    "gemini": "Hablo con la voz de Gemini (necesita internet y tu clave)."}.get(backend, backend))
+    piper_ok = bool(find_piper_voice())
+    ok(G, piper_ok, "Piper está instalado: sin internet también puedo hablar.",
+       "Piper no está instalado: sin internet no podré hablar (python descargar_voz.py).", aviso=True)
+
+    # --- internet
+    G = "Internet"
+    t0 = time.time()
+    online = _internet_ok()
+    ok(G, online, f"Conectado ({(time.time() - t0) * 1000:.0f} ms).",
+       "Sin internet: uso la IA local y Piper si están instalados.", "ms-settings:network", aviso=True)
+
+    # --- inteligencia artificial
+    G = "Inteligencia artificial"
+    try:
+        r = ai_test()
+        ok(G, r.get("test_ok"), f"{_ai_cfg()['label']}: {r.get('test_msg', '')}",
+           f"{_ai_cfg()['label']}: {r.get('test_msg', 'no responde')}", "ajustes:ia")
+    except Exception as e:
+        add(G, "fallo", f"La IA no responde: {getattr(e, 'why', e)}", "ajustes:ia")
+    lm = ""
+    try:
+        lm = local_ai_model()
+    except Exception:
+        pass
+    ok(G, bool(lm), f"IA local lista para cuando no haya internet ({lm}).",
+       "Sin IA local: si se cae el internet solo funcionarán las órdenes (instala Ollama y «ollama pull llama3.2»).", aviso=True)
+
+    # --- integraciones (solo las configuradas)
+    G = "Integraciones"
+    if settings["telegram_remote"]:
+        ok(G, tg["ok"], "Telegram conectado: puedes darme órdenes desde el celular.",
+           f"Telegram no conecta: {tg['error'] or 'revisa el token y el chat id'}.", "ajustes:integraciones")
+    if _cal_urls():
+        ok(G, not cal_state.get("missing_lib"), "Calendario conectado.",
+           "Falta la librería del calendario (icalendar): vuelve a ejecutar instalar.bat.")
+    if not settings["telegram_remote"] and not _cal_urls():
+        add(G, "info", "Ni Telegram ni calendario configurados (son opcionales).")
+
+    # --- versión
+    G = "Versión"
+    try:
+        info = check_updates()
+        ok(G, not info.get("newer"), f"Tienes la versión más reciente ({VERSION}).",
+           f"Hay una versión nueva: la {info.get('version')} (tienes la {VERSION}). Di «actualízate».", "actualizar", aviso=True)
+    except Exception as e:
+        add(G, "info", f"Versión {VERSION}. No pude consultar si hay una nueva: {e}")
+
+    # --- equipo
+    G = "Equipo"
+    ok(G, "onedrive" not in APP_DIR.lower(), "Jarvis no está dentro de OneDrive.",
+       "Jarvis está dentro de OneDrive: la sincronización lo vuelve lento. Muévelo a C:\\Jarvis.", aviso=True)
+    if autostart_supported():
+        add(G, "info", "Arranca con Windows." if autostart_enabled() else "No arranca con Windows (Ajustes › General).")
+    add(G, "info", f"Jarvis {VERSION} · Python {platform.python_version()} · registro en {LOG_PATH}")
+    return out
+
+
+def check_summary(items):
+    bad = [i for i in items if i["estado"] == "fallo"]
+    warn = [i for i in items if i["estado"] == "aviso"]
+    if not bad and not warn:
+        return "Prueba completa: todo en orden."
+    if bad:
+        return (f"Encontré {'un problema' if len(bad) == 1 else f'{len(bad)} problemas'}. {bad[0]['texto']}"
+                + (" Los demás están en Ajustes, sección Acerca de." if len(bad) > 1 else ""))
+    return f"Todo funciona, con {'un aviso' if len(warn) == 1 else f'{len(warn)} avisos'}: {warn[0]['texto']}"
+
+
+def check_report(items):
+    marks = {"ok": "✅", "aviso": "⚠️", "fallo": "❌", "info": "•"}
+    lines, g = [f"Prueba completa de Jarvis {VERSION} — {datetime.datetime.now():%Y-%m-%d %H:%M}"], ""
+    for i in items:
+        if i["grupo"] != g:
+            g = i["grupo"]
+            lines.append(f"\n{g}")
+        lines.append(f"{marks.get(i['estado'], '•')} {i['texto']}")
+    return "\n".join(lines)
+
+
+def run_system_check(speak_it=True):
+    if check_state["busy"]:
+        return check_state["items"]
+    check_state["busy"] = True
+    try:
+        items = system_check()
+        check_state.update(items=items, at=datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+        for i in items:
+            if i["estado"] in ("fallo", "aviso"):
+                log_terminal(i["texto"], "PRUEBA")
+        socketio.emit("system_check", {"items": items, "at": check_state["at"]})
+        if speak_it:
+            reply(check_summary(items), "PRUEBA")
+        return items
+    finally:
+        check_state["busy"] = False
+
+
+def show_system_check():
+    reply("Hago una prueba completa de mis sistemas. Tarda unos segundos.", "PRUEBA")
+    threading.Thread(target=run_system_check, daemon=True, name="prueba-completa").start()
+
+
+# Peticiones con forma de pregunta: «¿puedes subir el volumen?», «¿me abres la calculadora?», «¿me pones música?».
+# Antes, por el signo de interrogación, iban a la IA como pregunta: contestaba, pero no hacía nada.
+_POLITE_RE = re.compile(r"^(?:(?:oye|jarvis|porfa|por favor|bueno|y)\s+)*(?:(?:me|le|nos)\s+)?"
+                        r"(?:puedes|podrias|podria|puede|quieres|quisieras|seria posible|es posible|me haces el favor de|"
+                        r"hazme el favor de|me ayudas a|te pido que|ayudame a)\s+(?:(?:me|le|nos)\s+)?(\w+)\s*(.*)$")
+_ME_VERB_RE = re.compile(r"^(?:(?:oye|jarvis|porfa|y)\s+)*(?:me|le|nos)\s+(\w+)\b\s*(.*)$")
+_TU_TO_IMP = {"pones": "pon", "abres": "abre", "subes": "sube", "bajas": "baja", "cierras": "cierra", "buscas": "busca",
+              "pausas": "pausa", "quitas": "quita", "silencias": "silencia", "apagas": "apaga", "enciendes": "enciende",
+              "prendes": "prende", "minimizas": "minimiza", "maximizas": "maximiza", "lees": "lee", "dices": "dime",
+              "cuentas": "cuentame", "muestras": "muestrame", "ensenas": "ensename", "reproduces": "reproduce",
+              "activas": "activa", "desactivas": "desactiva", "cambias": "cambia", "recuerdas": "recuerdame",
+              "avisas": "avisame", "tomas": "toma", "haces": "haz", "mandas": "manda", "envias": "envia",
+              "escribes": "escribe", "calculas": "calcula", "traduces": "traduce", "pasas": "pasa", "das": "dame"}
+_INF_TO_IMP = {"poner": "pon", "ponerme": "pon", "abrir": "abre", "abrirme": "abre", "subir": "sube", "subirle": "sube",
+               "bajar": "baja", "bajarle": "baja", "cerrar": "cierra", "buscar": "busca", "buscarme": "busca",
+               "pausar": "pausa", "quitar": "quita", "silenciar": "silencia", "apagar": "apaga", "encender": "enciende",
+               "prender": "prende", "minimizar": "minimiza", "maximizar": "maximiza", "leer": "lee", "leerme": "lee",
+               "decir": "dime", "decirme": "dime", "contar": "cuentame", "contarme": "cuentame", "mostrar": "muestra",
+               "mostrarme": "muestrame", "ensenarme": "ensename", "reproducir": "reproduce", "activar": "activa",
+               "desactivar": "desactiva", "cambiar": "cambia", "tomar": "toma", "hacer": "haz", "hacerme": "haz",
+               "mandar": "manda", "enviar": "envia", "escribir": "escribe", "recordarme": "recuerdame",
+               "avisarme": "avisame", "calcular": "calcula", "traducir": "traduce", "pasar": "pasa", "dar": "dame",
+               "darme": "dame", "llevarme": "llevame", "cancelar": "cancela", "iniciar": "inicia", "crear": "crea"}
+
+
+def polite_to_order(t):
+    """«puedes subir el volumen» → «sube el volumen». None si no es una petición con forma de pregunta."""
+    t = t.strip()
+    m = _POLITE_RE.match(t)
+    if m and m.group(1) in _INF_TO_IMP:
+        return (_INF_TO_IMP[m.group(1)] + " " + m.group(2)).strip()
+    m = _ME_VERB_RE.match(t)
+    if m and m.group(1) in _TU_TO_IMP:
+        return (_TU_TO_IMP[m.group(1)] + " " + m.group(2)).strip()
+    return None
+
+
 def process_command(text):
     t = normalize(text)
     if not t:
         return
+    if not getattr(_tl, "polite", False):
+        order = polite_to_order(t)
+        if order and order != t:
+            log_terminal(f"Petición «{text.strip()}» → orden «{order}»", "COMPRENSIÓN")
+            text, t = order, order
 
     if followup["skill"]:
         name, args, need = followup["skill"], followup["args"], followup["need"]
@@ -5539,6 +5891,12 @@ def process_command(text):
             return
 
     if _email_confirm_pending(t):                      # «sí, envíalo» / «no» de un correo pendiente
+        return
+    if _CHECK_RE.search(t):                            # «prueba completa», «revisa todo»
+        if getattr(_tl, "remote", False):
+            reply(check_report(run_system_check(speak_it=False)), "PRUEBA")
+        else:
+            show_system_check()
         return
     if _rest_voice(text, t):                           # «Jarvis, descansa» / «despierta»
         return
@@ -6832,7 +7190,7 @@ def handle_rutinas_get(data=None):
 def handle_rutinas_save(data):
     d = data or {}
     try:
-        rutinas.upsert(d.get("nombre"), d.get("frases"), d.get("pasos"), d.get("old"))
+        rutinas.upsert(d.get("nombre"), d.get("frases"), d.get("pasos"), d.get("old"), d.get("cuando", ""))
     except ValueError as e:
         return {"ok": False, "error": str(e), "rutinas": rutinas.routines}
     return {"ok": True, "rutinas": rutinas.routines}
@@ -7220,6 +7578,12 @@ def handle_live_test(data=None):
     return live_test()
 
 
+@socketio.on("system_check")
+def handle_system_check(data=None):
+    items = run_system_check(speak_it=False)
+    return {"items": items, "at": check_state["at"], "report": check_report(items)}
+
+
 @socketio.on("update_check")
 def handle_update_check(data=None):
     try:
@@ -7318,6 +7682,19 @@ def handle_open_url(data):
     url = str((data or {}).get("url", ""))
     if url in {p.get("key_url") for p in PROVIDERS.values()}:
         webbrowser.open(url)
+
+
+@socketio.on("open_fix")
+def handle_open_fix(data):
+    """Botón «Arreglar» de la prueba completa: solo abre ajustes de Windows (ms-settings:)."""
+    url = str((data or {}).get("url", ""))
+    if re.fullmatch(r"ms-settings:[a-z0-9-]+", url) and IS_WIN:
+        try:
+            os.startfile(url)
+        except OSError as e:
+            return {"ok": False, "error": str(e)}
+        return {"ok": True}
+    return {"ok": False, "error": "No permitido."}
 
 
 @socketio.on("list_voices")
@@ -7638,12 +8015,14 @@ def main():
         set_state(copilot=settings["copilot_enabled"])
         for target in (_command_worker, _voice_worker, schedule_worker, audio_loop, _ai_monitor,
                        hotkey_loop, _timers_worker, _copilot_worker, _notes_worker, _cal_worker,
-                       _net_worker, _update_worker, _backup_worker, _telegram_worker, _quake_worker):
+                       _net_worker, _update_worker, _backup_worker, _telegram_worker, _quake_worker,
+                       _routines_worker):
             threading.Thread(target=target, daemon=True).start()
         threading.Thread(target=check_ai, args=(True,), daemon=True).start()
         threading.Thread(target=warm_ai, daemon=True).start()
         announce_startup(start_hidden)      # confirma por voz que el núcleo se cargó
         threading.Timer(4.0, notes_today_summary).start()   # 📌 pendientes de hoy en el HUD
+        threading.Timer(9.0, _routines_at_start).start()    # rutina «al iniciar», tras el saludo
 
     threading.Thread(target=_start_services, daemon=True, name="servicios").start()
     start_tray()

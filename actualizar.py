@@ -98,14 +98,17 @@ def latest(repo, current, token=""):
         a = assets[0]
         url = a["url"] if token else a.get("browser_download_url") or a["url"]
         name, size, binary = a["name"], int(a.get("size") or 0), bool(token)
+        digest = str(a.get("digest") or "")           # «sha256:…»: GitHub lo calcula para cada archivo publicado
+        sha256 = digest[7:].lower() if digest.lower().startswith("sha256:") else ""
     elif d.get("zipball_url"):
         url, name, size, binary = d["zipball_url"], f"{repo.split('/')[1]}-{tag}.zip", 0, False
+        sha256 = ""
     else:
         raise UpdateError("La última versión del repositorio no tiene un archivo .zip.")
     notes = re.sub(r"\r", "", str(d.get("body") or "")).strip()
     return {"repo": repo, "version": tag.lstrip("vV") or "?", "tag": tag, "current": current,
             "newer": parse_version(tag) > parse_version(current), "notes": notes[:1500],
-            "url": url, "binary": binary, "name": name, "size": size,
+            "url": url, "binary": binary, "name": name, "size": size, "sha256": sha256,
             "date": str(d.get("published_at") or "")[:10], "page": d.get("html_url", "")}
 
 
@@ -130,7 +133,27 @@ def download(info, dest, token="", progress=None):
         raise UpdateError(f"No se pudo descargar la actualización (error {e.code}).")
     except (urllib.error.URLError, TimeoutError) as e:
         raise UpdateError(f"Se cortó la descarga: {getattr(e, 'reason', e)}. Revisa tu internet.")
+    verify(dest, info)
     return dest
+
+
+def sha256_of(path):
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def verify(path, info):
+    """Que el archivo descargado sea exactamente el publicado: mismo tamaño y misma huella SHA-256."""
+    size = int(info.get("size") or 0)
+    if size and os.path.getsize(path) != size:
+        raise UpdateError(f"La descarga quedó incompleta ({os.path.getsize(path)} de {size} bytes). Prueba otra vez.")
+    want = str(info.get("sha256") or "").lower()
+    if want and sha256_of(path) != want:
+        raise UpdateError("La huella del archivo descargado no coincide con la publicada en GitHub; no lo instalo.")
 
 
 def _skip(rel):

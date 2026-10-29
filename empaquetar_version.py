@@ -14,7 +14,7 @@ import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKIP_DIRS = {".venv", "venv", ".git", "dist", "build", "__pycache__", "model_es", "publicar",
-             "_respaldo_actualizacion", "piper_voices"}
+             "_respaldo_actualizacion", "piper_voices", "tests", "windows-app"}
 SKIP_FILES = {".env", "config.json"}
 SKIP_EXT = (".pyc", ".log", ".nuevo", ".onnx", ".onnx.json", ".spec")
 

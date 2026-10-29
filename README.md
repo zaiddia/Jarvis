@@ -1,4 +1,4 @@
-# Jarvis 6.7 — Asistente virtual para Windows
+# Jarvis 6.8 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -151,6 +151,40 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## Prueba completa, rutinas solas, memoria de tu gente y más (v6.8)
+
+**Prueba completa.** Di **«Jarvis, prueba completa»** (o «revisa todo»), pulsa *Ajustes › Acerca de › Hacer la
+prueba completa* o escribe **/prueba** en Telegram. Revisa el micrófono, el modelo de voz, la voz, internet, la IA
+(y la IA local para cuando no hay internet), Telegram, el calendario y si hay versión nueva. Cada cosa sale en verde,
+ámbar o rojo, con un botón para arreglarla, y **Copiar el informe** te lo deja listo para pegarlo donde pidas ayuda.
+
+**Rutinas que se lanzan solas.** En *Ajustes › Rutinas*, el campo nuevo **«Lanzarla sola»**:
+`07:30` (todos los días), `07:30 lun-vie`, `21:00 sab,dom`, **`al iniciar`** (al encender el equipo) o
+**`al volver`** (cuando vuelves al equipo tras 10 minutos o más sin usarlo). Con la IA conectada también se piden
+hablando: «crea una rutina buenos días a las 7 de lunes a viernes que diga el clima y mis pendientes».
+
+**Te entiende las peticiones con forma de pregunta.** «¿Puedes subir el volumen?», «¿me abres la calculadora?» o
+«¿me pones un temporizador de 5 minutos?» antes se tomaban como preguntas: la IA contestaba, pero no se hacía nada.
+Ahora se hacen. Y la IA interpreta mejor lo que no se dice como orden («está muy oscuro aquí» sube el brillo).
+
+**La memoria aprende tu gente y tus gustos.** «Mi hermana se llama Ana», «mi perro se llama Rocky», «me gusta el
+vallenato», «tengo dos gatos», «mi color favorito es el azul»… Un dato nuevo sobre lo mismo corrige al viejo
+(«mi hermana se llama Laura» → «Entendido, lo corrijo»). Pregúntale «¿cómo se llama mi hermana?», «¿qué música me
+gusta?» o «¿qué sabes de mí?». Ahora recuerda hasta 200 cosas y a la IA le pasa las que vienen al caso.
+
+**Desde el celular, más seguro.** Además de apagar o reiniciar, por Telegram tampoco cierra programas, ni escribe en
+ventanas, ni borra notas, memoria o rutinas, ni instala actualizaciones (aunque la IA lo eligiera).
+
+**«Actualízate».** Por voz instala la versión nueva, siempre preguntando antes. Y antes de instalar comprueba que el
+archivo descargado es exactamente el publicado (tamaño y huella SHA-256).
+
+**Para quien mantiene Jarvis.** El repositorio tiene ahora pruebas automáticas (`tests/`, con las frases de
+`tests/frases.txt`) y GitHub las pasa en cada cambio en Windows. Al subir `VERSION` en `jarvis.py`, si todas pasan,
+GitHub empaqueta y publica la Release `vX.Y` sola (ya no hace falta `empaquetar_version.py` a mano).
+Para ejecutarlas en tu equipo: `pip install pytest` y `python -m pytest tests`.
+
+
 
 ## Manejar el navegador por voz (v6.7)
 

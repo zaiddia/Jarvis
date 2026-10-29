@@ -616,6 +616,63 @@
     });
   });
 
+  /* Prueba completa */
+  let checkReport = "";
+  function renderCheck(res) {
+    const ul = $("#check-list");
+    ul.innerHTML = "";
+    if (!res || !res.items) return;
+    let group = "";
+    const marks = { ok: "✓", aviso: "!", fallo: "✗", info: "•" };
+    res.items.forEach((it) => {
+      if (it.grupo !== group) {
+        group = it.grupo;
+        const h = document.createElement("li"); h.className = "chk-group"; h.textContent = group; ul.appendChild(h);
+      }
+      const li = document.createElement("li");
+      li.className = "chk-" + it.estado;
+      const m = document.createElement("b"); m.textContent = marks[it.estado] || "•";
+      const t = document.createElement("span"); t.textContent = it.texto;
+      li.append(m, t);
+      if (it.arreglo && /^ms-settings:/.test(it.arreglo)) {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "text-btn"; b.textContent = "Arreglar";
+        b.addEventListener("click", () => socket.emit("open_fix", { url: it.arreglo }));
+        li.appendChild(b);
+      } else if (it.arreglo && it.arreglo.startsWith("ajustes:")) {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "text-btn"; b.textContent = "Ir al ajuste";
+        const tab = { ia: "ia", integraciones: "integra" }[it.arreglo.split(":")[1]];
+        b.addEventListener("click", () => { const el = document.querySelector(`.tab[data-tab="${tab}"]`); if (el) el.click(); });
+        li.appendChild(b);
+      } else if (it.arreglo === "actualizar") {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "text-btn"; b.textContent = "Buscar actualización";
+        b.addEventListener("click", () => $("#btn-update-check").click());
+        li.appendChild(b);
+      }
+      ul.appendChild(li);
+    });
+    const bad = res.items.filter((i) => i.estado === "fallo").length, warn = res.items.filter((i) => i.estado === "aviso").length;
+    const st = $("#check-status");
+    st.className = "status " + (bad ? "err" : "ok");
+    st.textContent = (bad || warn ? `${bad} problema${bad === 1 ? "" : "s"} y ${warn} aviso${warn === 1 ? "" : "s"}` : "Todo en orden") + (res.at ? ` · ${res.at}` : "");
+    checkReport = res.report || "";
+    $("#btn-check-copy").hidden = !checkReport;
+  }
+  $("#btn-check").addEventListener("click", () => {
+    const btn = $("#btn-check");
+    btn.disabled = true;
+    $("#check-status").className = "status";
+    $("#check-status").textContent = "Comprobando… (tarda unos segundos)";
+    socket.emit("system_check", {}, (res) => { btn.disabled = false; renderCheck(res); });
+  });
+  $("#btn-check-copy").addEventListener("click", () => {
+    navigator.clipboard.writeText(checkReport).then(() => toast("Informe copiado.", "ok"), () => toast("No pude copiarlo.", "err"));
+  });
+  socket.on("system_check", (res) => { if (res && res.items) renderCheck(Object.assign({ report: checkReport }, res)); });
+  socket.on("rutinas_updated", (list) => renderRoutines(list));
+
   /* Rutinas */
   let rts = [], rtSel = null;
   function renderRoutines(list) {
@@ -630,7 +687,7 @@
       body.className = "r-body";
       const n = document.createElement("span"); n.className = "r-name"; n.textContent = r.nombre;
       const m = document.createElement("span"); m.className = "r-meta";
-      m.textContent = `«${r.frases.slice(0, 3).join("», «")}» · ${r.pasos.length} pasos`;
+      m.textContent = `«${r.frases.slice(0, 3).join("», «")}» · ${r.pasos.length} pasos` + (r.cuando ? ` · ⏰ ${r.cuando}` : "");
       body.append(n, m);
       const play = document.createElement("button");
       play.type = "button"; play.className = "r-play"; play.title = "Ejecutar ahora";
@@ -643,11 +700,12 @@
   }
   function editRoutine(nombre) {
     rtSel = nombre;
-    const r = rts.find((x) => x.nombre === nombre) || { nombre: "", frases: [], pasos: [] };
+    const r = rts.find((x) => x.nombre === nombre) || { nombre: "", frases: [], pasos: [], cuando: "" };
     $("#rt-editor").hidden = false;
     $("#rt-name").value = r.nombre;
     $("#rt-phrases").value = r.frases.filter((f) => f !== r.nombre).join(", ");
     $("#rt-steps").value = r.pasos.join("\n");
+    $("#rt-when").value = r.cuando || "";
     $("#rt-del").hidden = !nombre;
     $("#rt-run").hidden = !nombre;
     $("#rt-status").textContent = "";
@@ -663,14 +721,15 @@
   $("#rt-defaults").addEventListener("click", () => socket.emit("rutinas_defaults", {}, (r) => { renderRoutines(r.rutinas); toast("Rutinas de ejemplo recuperadas.", "ok"); }));
   $("#rt-save").addEventListener("click", () => {
     const nombre = $("#rt-name").value.trim();
-    socket.emit("rutinas_save", { nombre, frases: $("#rt-phrases").value, pasos: $("#rt-steps").value, old: rtSel || null }, (r) => {
+    socket.emit("rutinas_save", { nombre, frases: $("#rt-phrases").value, pasos: $("#rt-steps").value, cuando: $("#rt-when").value, old: rtSel || null }, (r) => {
       const st = $("#rt-status");
       if (!r || r.ok === false) { st.className = "status err"; st.textContent = (r && r.error) || "No se pudo guardar."; return; }
       rtSel = nombre;
       renderRoutines(r.rutinas);
       editRoutine(nombre);
       st.className = "status ok";
-      st.textContent = `Guardada. Di «Jarvis, ${nombre.toLowerCase()}» para lanzarla.`;
+      const saved = (r.rutinas || []).find((x) => x.nombre === nombre);
+      st.textContent = `Guardada. Di «Jarvis, ${nombre.toLowerCase()}» para lanzarla` + (saved && saved.cuando ? `; además se lanzará sola (${saved.cuando}).` : ".");
     });
   });
   $("#rt-run").addEventListener("click", () => { if (rtSel) runRoutine(rtSel); });

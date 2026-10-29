@@ -1,0 +1,112 @@
+# Pruebas de comprensión de Jarvis (Python). Cada línea: «frase => quién la atiende».
+#   skill:NOMBRE   una acción del PC (skills.py)        rutina:NOMBRE   lanza esa rutina
+#   IA             pregunta para la IA                  IA:orden        la IA elige una acción (enrutador)
+#   MEMORIA, NOTAS, TIMER, MATE, CLIMA, RUTINA, ACTUALIZACIÓN…          el módulo que responde con ese origen
+#   temporizador, recordatorio, confirmar:NOMBRE, bloqueado, prueba completa, describe_screen…
+#   «:: texto» = además, lo que dijo (o los datos de la acción) contiene ese texto
+#   «cel: » delante = la orden llega por Telegram, desde el celular
+# Varias respuestas válidas con «|»; «!IA» = cualquiera menos la IA. Se ejecutan en orden.
+# Si Jarvis no entiende algo, añade aquí la frase con lo que debía hacer: la compilación lo marcará.
+
+# ================================================================ hora y fecha
+qué hora es => JARVIS :: son las
+¿qué hora es? => JARVIS
+dime la hora => JARVIS
+qué día es hoy => JARVIS :: hoy es
+
+# ================================================================ volumen, música, brillo
+sube el volumen => skill:volumen :: subir
+baja el volumen => skill:volumen :: bajar
+volumen al 30 => skill:volumen :: 30
+silencio => skill:volumen
+pausa => skill:multimedia
+siguiente canción => skill:multimedia :: siguiente
+brillo al 70 => skill:brillo :: 70
+
+# ================================================================ peticiones con forma de pregunta (6.8: antes no hacían nada)
+¿puedes subir el volumen? => skill:volumen :: subir
+¿podrías bajar el volumen, por favor? => skill:volumen :: bajar
+¿me abres la calculadora? => skill:abrir_app :: calculadora
+¿podrías abrir Word? => skill:abrir_app :: word
+¿me puedes poner un temporizador de 5 minutos? => temporizador
+¿me dices la hora? => JARVIS :: son las
+¿me pones música? => IA:orden
+¿puedes poner algo de salsa? => IA:orden|skill:youtube|skill:spotify
+¿puedes explicarme la fotosíntesis? => IA
+¿qué es la fotosíntesis? => IA
+
+# ================================================================ lo que la IA interpreta como orden
+está muy oscuro aquí => IA:orden
+hay demasiado ruido, baja eso => IA:orden
+escríbeme un poema sobre el mar => IA:orden|IA
+
+# ================================================================ programas y web
+abre spotify => skill:spotify|skill:abrir_app
+ábreme la calculadora => skill:abrir_app
+cierra chrome => skill:cerrar_app
+busca recetas de arepas => skill:buscar_web
+pon Despacito en YouTube => skill:youtube
+
+# ================================================================ temporizadores, recordatorios, notas
+pon un temporizador de 5 minutos => temporizador
+recuérdame en 10 minutos sacar la ropa => recordatorio
+recuerda que la reunión de padres es el jueves a las 3 => NOTAS
+qué tengo pendiente => NOTAS
+
+# ================================================================ cuentas
+cuánto es 25 por 4 => MATE :: 100
+el 15% de 240 => MATE :: 36
+
+# ================================================================ acciones delicadas: siempre preguntan
+apaga el equipo => confirmar:apagar
+vacía la papelera => confirmar:vaciar_papelera
+cancelar => PC
+
+# ================================================================ memoria (6.8: familia, gustos, corregir y preguntar)
+trabajo en el colegio San José => MEMORIA
+mi hermana se llama Ana => MEMORIA
+¿cómo se llama mi hermana? => MEMORIA :: tu hermana se llama ana
+mi hermana se llama Laura => MEMORIA :: lo corrijo
+¿cómo se llama mi hermana? => MEMORIA :: laura
+me gusta el vallenato => MEMORIA
+¿qué música me gusta? => MEMORIA :: vallenato
+mi perro se llama Rocky => MEMORIA
+¿cómo se llama mi perro? => MEMORIA :: rocky
+tengo dos gatos => MEMORIA
+mi color favorito es el azul => MEMORIA
+¿cuál es mi color favorito? => MEMORIA :: azul
+qué sabes de mí => MEMORIA :: recuerdo
+¿cómo se llama mi abuela? => MEMORIA :: no me lo has dicho
+me gusta esto => !MEMORIA
+me gusta que me respondas corto => MEMORIA
+llama a mamá => !MEMORIA
+llámame profe => MEMORIA :: profe
+
+# ================================================================ rutinas
+modo clase => rutina:Modo clase
+fin de clase => rutina:Fin de clase
+qué rutinas tengo => RUTINA :: modo clase
+
+# ================================================================ prueba completa (6.8)
+prueba completa => show_system_check
+revisa todo => show_system_check
+haz una prueba completa => show_system_check
+
+# ================================================================ actualizaciones
+hay actualizaciones => ACTUALIZACIÓN :: al dia
+qué versión eres => ACTUALIZACIÓN :: jarvis
+actualízate => ACTUALIZACIÓN :: al dia
+
+# ================================================================ desde el celular (Telegram): lo seguro sí, lo delicado no
+cel: qué hora es => JARVIS
+cel: sube el volumen => skill:volumen
+cel: pon un temporizador de 5 minutos => temporizador
+cel: qué tengo pendiente => NOTAS
+cel: apaga el equipo => bloqueado
+cel: reinicia el pc => bloqueado
+cel: vacía la papelera => bloqueado
+cel: cierra chrome => bloqueado
+cel: escribe: hola qué tal => bloqueado
+cel: borra todas mis notas => bloqueado
+cel: olvida la conversación => bloqueado
+cel: prueba completa => prueba completa
