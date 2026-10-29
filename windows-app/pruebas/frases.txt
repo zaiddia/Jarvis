@@ -1,0 +1,213 @@
+# Frases de prueba de JARVIS. Cada línea es una prueba (las que empiezan por # son comentarios).
+#   frase -> palabras    cómo queda la orden normalizada (sin cortesías, verbo en forma base)
+#   frase = texto        la cuenta debe dar ese resultado
+#   frase => Módulo      qué parte la atiende (IA = se la pasa a la inteligencia artificial)
+#   frase ~> resto       quita el nombre de llamada
+#   frase ++ a | b       órdenes encadenadas
+# Varias respuestas válidas: «Media|Sys».
+# Para añadir una frase que JARVIS no entendió: escríbala aquí con lo que debía hacer y la compilación avisará.
+
+# ================================================================ normalización
+qué hora es -> que hora es
+¿Qué hora es? -> que hora es
+oye, ¿qué hora es? -> que hora es
+por favor dime la hora -> dime la hora
+dime la hora por favor -> dime la hora
+me dices la hora -> dime la hora
+¿me puedes decir la hora? -> dime la hora
+porfa ábreme Spotify -> abre spotify
+ábreme spotify porfa -> abre spotify
+me haces el favor de abrir Chrome -> abre chrome
+hazme el favor de cerrar el bloc de notas -> cierra el bloc de notas
+será que puedes poner música -> pon musica
+quiero que me recuerdes llamar a mamá -> recuerdame llamar a mama
+necesito que apagues la luz -> apaga la luz
+podrías subir el volumen -> sube el volumen
+súbele al volumen -> sube al volumen
+bájale un poquito -> baja un poquito
+parce pon salsa -> pon salsa
+oiga, ¿me pone un video de Karol G? -> pon un video de karol g
+bueno entonces pon vallenato -> pon vallenato
+listo, gracias -> gracias
+muchas gracias -> muchas gracias
+perfecto, gracias -> perfecto gracias
+abre Spotify, gracias -> abre spotify
+¿me dice la hora? -> dime la hora
+pon la música ya -> pon la musica
+quisiera que pusieras música -> pon musica
+abre Spotify y luego súbele -> abre spotify y luego sube
+abre chrome y ponme música -> abre chrome y pon musica
+treinta y cinco más siete -> 35 mas siete
+ciento veinte entre cuatro -> 120 entre cuatro
+doscientos cincuenta -> 250
+hazme reír -> haz reir
+enséñame el escritorio -> muestrame el escritorio
+cuéntame un chiste -> dime un chiste
+regálame un dato curioso -> dime un dato curioso
+¿me oyes? -> oyes
+lo que quiero es abrir el correo -> abre el correo
+una pregunta, ¿qué día es hoy? -> que dia es hoy
+
+# ================================================================ cuentas
+cuánto es 25 por 4 = 100
+cuánto es 15 más 27 = 42
+cuánto son 100 entre 8 = 12,5
+calcula 2 + 2 * 3 = 8
+cuánto es (2 + 2) * 3 = 12
+cuánto es treinta y cinco más siete = 42
+cuánto es mil menos uno = 999
+cuánto es el 20 % de 150 = 30
+cuánto es 3,5 por 2 = 7
+cuánto da 10 dividido entre 0 = dividir entre cero
+45 * 3 = 135
+cuánto es dos millones entre cuatro = 500.000
+
+# ================================================================ nombre de llamada
+oye Jarvis pon música ~> pon musica
+Jarvis, qué hora es ~> que hora es
+hey jarvis abre spotify ~> abre spotify
+yarvis qué hora es ~> que hora es
+qué hora es Jarvis ~> que hora es
+Viernes, sube el volumen ~> sube el volumen
+
+# ================================================================ órdenes encadenadas
+abre Spotify y sube el volumen ++ abre spotify | sube el volumen
+abre la calculadora y luego pon música ++ abre la calculadora | pon musica
+cierra chrome y después bloquea el equipo ++ cierra chrome | bloquea el equipo
+
+# ================================================================ qué módulo atiende cada orden
+# --- control de la conversación
+cállate => Talk.Control
+para => Talk.Control
+cancela => Talk.Control
+olvídalo => Talk.Control
+qué puedes hacer => Talk.Control
+ayuda => Talk.Control
+diagnóstico de voz => Talk.Control
+por qué no me oyes => Talk.Control
+qué IA usas => Talk.Control
+cambia a viernes => Talk.Control
+cambia a jarvis => Talk.Control
+
+# --- hora, fecha, temporizadores, alarmas
+qué hora es => Time
+qué horas son => Time
+¿me dices la hora? => Time
+dime la hora por favor => Time
+qué día es hoy => Time
+a cuánto estamos => Time
+qué día es mañana => Time
+en qué mes estamos => Time
+qué semana es => Time
+pon un temporizador de 5 minutos => Time
+temporizador de diez minutos para la pasta => Time
+avísame en 20 minutos => Time
+recuérdame en 10 minutos sacar la ropa => Time
+pon una alarma a las 6 de la mañana => Time
+despiértame mañana a las 7 => Time
+recuérdame mañana a las 8 llamar al médico => Time
+qué alarmas tengo => Time
+cancela los temporizadores => Time
+inicia el cronómetro => Time
+para el cronómetro => Time
+cuántos días faltan para navidad => Time|Extra
+
+# --- volumen y música
+sube el volumen => Sys
+baja el volumen => Sys
+súbele => Sys
+bájale un poquito => Sys
+volumen al 50 => Sys
+pon el volumen al máximo => Sys
+volumen a la mitad => Sys
+silencia => Sys
+quita el silencio => Sys
+qué volumen tiene => Sys
+pausa => Media|Sys
+pausa la música => Media|Sys
+reanuda la música => Media|Sys|Apps
+siguiente canción => Sys
+la anterior => Sys
+qué suena => Media
+qué canción es esta => Media
+baja el volumen de spotify => Extra
+silencia chrome => Extra
+
+# --- YouTube
+pon un video de Karol G => YouTube
+reproduce Despacito en YouTube => YouTube
+quiero ver videos de gatos => YouTube
+pon música de Juanes => YouTube|Extra
+quiero escuchar a Shakira => YouTube
+pon salsa => YouTube|Extra
+pon vallenato => YouTube|Extra
+pon la canción La Bicicleta => YouTube
+
+# --- ventanas y equipo
+muestra el escritorio => Sys
+enséñame el escritorio => Sys
+cambia de ventana => Sys
+modo oscuro => Extra
+activa el modo oscuro => Extra
+sube el brillo => Extra
+baja el brillo al 30 => Extra
+genera una contraseña => Extra
+
+# --- información
+qué tiempo hace => Info
+va a llover hoy => Info
+cómo está el clima en Medellín => Info
+cuánto es 25 por 4 => Info
+cuántos metros son 3 kilómetros => Info
+convierte 30 grados celsius a fahrenheit => Info
+cuántas libras son 10 kilos => Info
+anota comprar pan => Info
+añade leche a la lista de la compra => Info
+qué hay en la lista de la compra => Info
+qué hora es en Madrid => Info
+cuánto vale el dólar => Extra|Integrations
+noticias => Extra
+precio del bitcoin => Integrations
+
+# --- conversación
+hola => Talk.Chat
+buenos días => Talk.Chat
+gracias => Talk.Chat
+muchas gracias => Talk.Chat
+cómo estás => Talk.Chat
+quién eres => Talk.Chat
+me oyes => Talk.Chat
+¿estás ahí? => Talk.Chat
+cuéntame un chiste => Talk.Chat
+dime un chiste => Talk.Chat
+hazme reír => Talk.Chat
+dime un dato curioso => Talk.Chat
+lanza una moneda => Talk.Chat
+tira un dado => Talk.Chat
+dime un número entre 1 y 10 => Talk.Chat
+elige entre pizza o hamburguesa => Talk.Chat
+estoy cansado => Social
+me siento triste => Social
+tengo hambre => Social
+dime una adivinanza => Social
+dime un trabalenguas => Social
+dame ánimo => Social
+cómo se escribe ferrocarril => Social
+deletrea Bogotá => Social
+
+# --- programas y páginas
+abre la calculadora => Apps
+abre el bloc de notas => Apps
+ábreme YouTube => Apps
+abre Google => Apps
+abre la carpeta de descargas => Apps
+abre la configuración del wifi => Apps
+busca recetas de arepas => Apps
+busca en Google el clima de Bogotá => Apps
+
+# --- lo que debe ir a la IA (preguntas abiertas, no órdenes)
+explícame cómo funciona un motor eléctrico => IA
+escríbeme un poema sobre el mar => IA
+qué opinas de la inteligencia artificial => IA
+ayúdame a redactar un correo para mi jefe => IA
+cuál es la capital de Australia y cuántos habitantes tiene => IA

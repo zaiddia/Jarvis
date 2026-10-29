@@ -1,0 +1,213 @@
+J.A.R.V.I.S. 3.9.0 — programa para Windows
+==========================================
+
+Es el mismo asistente del mod de Windhawk, rehecho como programa propio en C# (.NET 8):
+se instala, vive en la bandeja del sistema y no depende de Windhawk ni del Explorador.
+
+INSTALAR
+  1. Descomprima esta carpeta donde quiera (por ejemplo en Documentos).
+  2. Doble clic en «instalar.bat».
+     - Si falta el SDK de .NET 8, se ofrece instalarlo con winget (gratis, de Microsoft).
+       Después vuelva a ejecutar instalar.bat.
+     - Compila el programa (1-2 minutos la primera vez), lo copia a
+       %LOCALAPPDATA%\Programs\JARVIS y crea accesos en el menú Inicio y el escritorio.
+     - Si no tiene las voces neuronales, ofrece instalarlas (las mismas del mod: si ya
+       las instaló para el mod, JARVIS las usa sin descargar nada).
+  3. Si usa el mod «JARVIS» en Windhawk, desactívelo para que no respondan los dos.
+
+USO
+  - Diga «Jarvis» y su orden: «Jarvis, abre Spotify», «Jarvis, ¿qué tiempo hace?».
+    O diga «Jarvis», espere el pitido y luego la orden.
+  - Ctrl+Alt+J abre el panel para escribir o hablar (Esc lo cierra).
+  - Tecla para hablar (opcional, Ajustes › Voz): manténgala pulsada mientras habla.
+  - Clic en el icono de la bandeja: panel. Clic derecho: ajustes, escuchar, salir.
+  - El panel se puede arrastrar; recuerda el sitio y nunca se sale de la pantalla.
+  - Botones del panel (arriba a la derecha):
+      micrófono  → activar o desactivar la escucha
+      altavoz    → barra de volumen (arrastre, o use la rueda del ratón sobre el altavoz)
+      engranaje  → ajustes
+      –          → ocultar el panel (como Esc)
+      ✕          → cerrar JARVIS (pulse dos veces: la primera pide confirmación)
+  - Pruebe «¿qué puedes hacer?».
+
+QUÉ SABE HACER SIN IA
+  Programas y webs (abrir, cerrar), carpetas, ajustes de Windows, búsquedas (Google,
+  YouTube, Wikipedia, Spotify, mapas, rutas), volumen y micrófono, música (pausa,
+  siguiente…), ventanas (minimizar, maximizar, cerrar, escritorio), bloquear, apagar,
+  reiniciar, suspender (con confirmación), apagado programado, capturas, papelera,
+  dictado («escribe…»), atajos (copia, pega, guarda…), hora, fecha, hora en otras
+  ciudades, el tiempo, temporizadores, alarmas, recordatorios, cronómetro, cuentas,
+  conversiones, notas, listas (la compra…), memoria («recuerda que…»), batería, RAM,
+  procesador, discos, IP, chistes, datos curiosos, moneda, dados, protocolos propios.
+
+ÓRDENES NUEVAS (3.2)
+  «Baja el volumen de Spotify», «pon el volumen de Chrome al 30», «silencia Discord»
+  «Sube el brillo», «brillo al 40» (portátiles; en monitores externos abre los ajustes)
+  «Activa el modo oscuro» / «modo claro»
+  «Pon esta ventana siempre encima» / «quita la ventana de siempre encima»
+  «Genera una contraseña de 20 caracteres» (la copia al portapapeles, no la dice)
+  «¿Cuántos pesos son 100 dólares?», «¿a cómo está el euro?»
+  «Noticias», «noticias de tecnología», «titulares de deportes»
+  «¿Qué día será dentro de 45 días?», «¿qué día cae el 25 de diciembre?»,
+  «¿cuántos días faltan para el 15 de marzo?»
+  «Escribe la fecha», «escribe la hora», «mi correo es…» y luego «escribe mi correo»
+  «Copia al portapapeles …», «pasa a mayúsculas», «cuenta las palabras»
+  «¿Qué programa consume más memoria?», «¿qué programa usa más CPU?»
+  «¿Tengo internet?», «¿cuál es mi IP pública?»
+  «Abre la última captura», «limpia los archivos temporales», «reinicia el explorador»
+
+MÚSICA
+  «¿Qué suena?», «pausa», «reproduce», «siguiente», «modo aleatorio», «repite esta
+  canción». Funciona con Spotify, YouTube en el navegador y cualquier app que use los
+  controles multimedia de Windows. Mientras JARVIS escucha o habla, baja el volumen de la
+  música y lo devuelve al terminar (Ajustes › Voz).
+
+AGENDA (Ajustes › Agenda)
+  Pegue el enlace iCal privado de Google Calendar u Outlook. Pregunte «¿qué tengo hoy?»,
+  «¿mi próxima reunión?», «¿qué tengo el jueves?» o diga «buenos días» para el resumen del
+  día. Avisa unos minutos antes de cada evento.
+
+AVISOS
+  Batería baja, disco casi lleno y programas que dejan de responder. Durante una llamada
+  (otra app usa el micrófono) contesta solo en el panel, sin hablar.
+
+NOVEDADES 3.9.0 (compilado y probado automáticamente)
+  - Se compila solo en GitHub: en https://github.com/zaiddia/Jarvis/releases está el zip ya
+    compilado. Descomprímalo y ejecute instalar.bat; no hace falta el SDK de .NET.
+  - Más de 170 pruebas de comprensión (pruebas/frases.txt) se pasan en cada cambio: si una
+    mejora estropea otra frase, la compilación lo avisa antes de que le llegue.
+  - Entiende «muchas gracias» (antes se quedaba en «muchas» y se lo pasaba a la IA), el trato
+    de usted («¿me pone un video…?», «¿me dice la hora?») y «quisiera que pusieras música».
+  - jarvis.log anota qué parte de JARVIS atendió cada orden, o si se la pasó a la IA.
+
+NOVEDADES 3.8.4 (no me escuchaba)
+  - El filtro de eco de la 3.8.3 tiraba órdenes de verdad: «Jarvis» a secas justo después del
+    saludo, o respuestas como «sí, ponla» que repetían palabras de lo que JARVIS acababa de decir.
+    Ahora el nombre no cuenta, se comparan palabras enteras y, una vez callado, solo es eco si
+    repite literalmente un trozo de lo que dijo.
+  - La hora de inicio de frase que da Windows no es fiable: si venía mal, todo lo que se decía
+    después de que JARVIS hablara se descartaba. Ahora se mide con el reloj propio, y una frase
+    con el nombre siempre se acepta cuando ya está callado.
+  - jarvis.log anota lo que oye y por qué descarta una frase (las primeras de cada sesión).
+
+NOVEDADES 3.8.3 (escucha y respuestas duplicadas)
+  - Respuestas duplicadas: con la IA, a veces decía la respuesta entera y además frase a frase.
+    Corregido. Tampoco se responde ya a sí misma cuando el reconocedor entrega tarde su propia voz.
+  - Si el mod JARVIS de Windhawk también está activo, avisa: los dos responden a la vez.
+  - Escucha: ya no deja de escuchar tras un rato largo en silencio (antes se rendía tras muchos
+    reinicios), y si se cae (micrófono desconectado, Windows la corta) se vuelve a montar sola.
+  - Si dice el nombre, acepta la orden aunque Windows no esté muy seguro (acentos, ruido).
+
+NOVEDADES 3.8.2
+  - YouTube más resistente: lee el bloque de datos de la página (ytInitialData) y, si
+    añade una clave gratuita de la API de YouTube en Integraciones, usa la búsqueda oficial.
+  - El brillo se cambia con WMI directamente (más rápido, sin abrir PowerShell).
+  - «Reinicia el explorador» primero le pide que salga por las buenas y solo lo fuerza si no responde.
+  - Leer el portapapeles desde otros hilos ya no puede quedarse esperando para siempre.
+
+NOVEDADES 3.8.1 (seguridad y solidez)
+  - Las claves (IA, voz en la nube, Home Assistant) se guardan cifradas con DPAPI de Windows:
+    solo su usuario en este equipo puede leerlas. Las que ya tenía se cifran solas al abrir.
+    Si copia ajustes.json a otro equipo, allí tendrá que volver a poner las claves.
+  - Los ajustes se guardan de forma segura (un corte de luz no los deja a medias) y, si el
+    archivo se daña, se guarda una copia antes de crear uno nuevo.
+  - Conexiones a internet que se renuevan solas (cambios de red o DNS) y con compresión.
+  - Más comprobaciones en el control de volumen por aplicación y en la captura de pantalla.
+
+NOVEDADES 3.8: INTEGRACIONES (Ajustes › Integraciones)
+  - Celular (ntfy, gratis): instale la app ntfy, suscríbase a un tema y póngalo en ajustes.
+      «mándame al celular que compre pan», «manda la lista de la compra al celular»,
+      «manda mis notas al celular». Los recordatorios, alarmas y avisos de agenda también
+      le llegan al teléfono.
+  - Casa inteligente (Home Assistant): dirección + token.
+      «enciende la luz de la sala», «apaga todas las luces», «pon la luz del cuarto al 30»,
+      «sube la persiana», «activa la escena cine», «enciende el ventilador»,
+      «¿qué temperatura hay en casa?». Por seguridad no abre cerraduras por voz.
+  - Radio en vivo: «pon la radio», «pon la emisora La Mega», «sintoniza Tropicana».
+  - Criptomonedas: «precio del bitcoin», «¿a cómo está el ethereum?» (en dólares y pesos).
+  - Pronóstico de varios días: «el tiempo del fin de semana», «el clima de esta semana».
+  - Pomodoro: «inicia un pomodoro», «pomodoro de 50 minutos», «¿cuánto queda del pomodoro?».
+  - Resumen del día automático a la hora que elija (por ejemplo 07:30).
+  - Traducción sin IA: «traduce buenos días al inglés», «¿cómo se dice gracias en francés?».
+  - Copias de seguridad de JARVIS: «haz una copia de seguridad», «restaura la copia de seguridad».
+
+NOVEDADES 3.7: VIDEOS DE YOUTUBE AL INSTANTE
+  «Pon un video de Karol G», «reproduce Despacito», «quiero escuchar a Juanes»,
+  «pon música de Shakira», «pon salsa», «pon el último video de…», «… en YouTube Music».
+  Busca en YouTube y abre directamente el primer video, que empieza a sonar solo.
+  Con «busca … en YouTube» solo muestra la búsqueda; con «… en Spotify» abre Spotify.
+
+NOVEDADES 3.6 (conversación más natural)
+  - Responde siempre a «Jarvis» y a «Viernes», elija la personalidad que elija
+    (antes, al pasar a VIERNES solo respondía a «Viernes» y parecía que el micrófono fallaba).
+  - Cambiar la voz o el tema ya no reinicia el micrófono.
+  - Confirma en voz alta lo que hace: «Listo», «Pausado», «Abriendo…», «Minimizada».
+  - Entiende cómo se habla de verdad: «regálame la hora», «me pones música», «¿será que
+    puedes abrir Spotify?», «hazme el favor de cerrar Chrome», «ábreme el correo».
+  - Conversación: después de responder sigue escuchando 10 segundos (ajustable) para que
+    siga hablando sin repetir el nombre. Mientras habla, puede interrumpirla diciendo su nombre.
+  - Con Ollama: precarga el modelo al arrancar, no lee en voz alta el «pensamiento» de
+    Qwen3/DeepSeek y entiende mejor lo que quiso decir aunque el micrófono se equivoque.
+  - Habilidades nuevas:
+      «recuérdame todos los días a las 8 tomar la pastilla», «de lunes a viernes»,
+      «cada martes»; «¿cuánto falta para las cinco?»; «pon música de Shakira»,
+      «pon salsa»; «me llamo Laura»; «estoy cansado / triste / estresado»;
+      adivinanzas, trabalenguas, «dame un consejo», «motívame»;
+      «¿cómo se escribe ferrocarril?»; «qué dice Wikipedia de Simón Bolívar».
+  - «¿Qué puedes hacer?» deja la lista completa en el panel.
+
+IA EN SU EQUIPO CON OLLAMA (gratis, sin internet, sin clave)
+  1. Instale Ollama desde https://ollama.com y ábralo (queda junto al reloj).
+  2. En una consola (cmd) descargue un modelo, por ejemplo:
+       ollama pull qwen3        (bueno en español; necesita unos 8 GB de RAM)
+       ollama pull llama3.2     (más ligero)
+  3. Ajustes de JARVIS › Inteligencia › Proveedor: «Ollama (en este equipo)».
+     No hace falta clave ni dirección. Pulse «Buscar modelos instalados» y elija uno
+     (o déjelo vacío: usa el primero). «Probar la conexión» confirma que funciona.
+  También por voz: «usa Ollama». La primera respuesta tarda más (carga el modelo).
+
+VOZ MÁS NATURAL
+  Ajustes › Voz › Voz: «En la nube» y Servicio:
+    - Google Gemini: voces de IA muy expresivas que siguen el «Estilo». Usa la misma
+      clave de Gemini (aistudio.google.com). Voz Charon (JARVIS) o Kore (VIERNES);
+      pruebe también Orus, Algenib o Gacrux. Por voz: «cambia la voz a Gemini».
+    - Azure: voces de Colombia (es-CO-GonzaloNeural, es-CO-SalomeNeural) con un plan
+      gratuito de 500.000 caracteres al mes.
+  Sin internet sigue usando Piper o la voz de Windows.
+
+CON IA (Claude, Gemini u OpenAI; clave en Ajustes › Inteligencia)
+  Gemini: cree una clave gratis en https://aistudio.google.com (Get API key), elija
+  «Gemini (Google)» como proveedor y péguela. Modelo por defecto: gemini-3.8-flash.
+  Cada proveedor guarda su clave: puede cambiar de uno a otro sin volver a pegarla,
+  también por voz: «usa Gemini», «cambia a Claude», «¿qué IA usas?».
+  Responde cualquier pregunta y puede usar todas las órdenes anteriores por sí misma:
+  «pon música tranquila y baja el volumen», «recuérdame lo que hablamos mañana a las 9».
+  «¿Qué hay en mi pantalla?», «mira esto y dime qué error es»: hace una captura (sin el
+  panel) y se la enseña a la IA. Solo cuando usted lo pide.
+  También funciona con Ollama o LM Studio (Dirección propia: http://localhost:11434/v1).
+
+ESCUCHA
+  Por defecto usa el reconocimiento de voz MODERNO de Windows (el mismo del dictado
+  Win+H), que entiende bien el español de Colombia, México o España. Para que funcione:
+    1. Configuración › Privacidad y seguridad › Voz › «Reconocimiento de voz en línea»: Activado.
+    2. Configuración › Privacidad y seguridad › Micrófono › «Permitir que las aplicaciones
+       de escritorio accedan al micrófono»: Activado.
+    3. Configuración › Hora e idioma › Idioma y región: tener Español (México, España o
+       EE. UU.) con «Reconocimiento de voz» instalado.
+  Si algo falla, clic derecho en el icono de JARVIS › «Diagnóstico de voz» (o diga/escriba
+  «diagnóstico de voz»): revisa todo, dice qué falta y abre el ajuste de Windows que lo arregla.
+  Mientras habla, el panel muestra lo que va entendiendo.
+  Sin internet puede usar el reconocedor clásico (Ajustes › Voz › Reconocedor), que solo
+  existe en español de España y mejora mucho con Whisper.
+
+ARCHIVOS
+  Ajustes:  %APPDATA%\JARVIS\ajustes.json
+  Datos:    %APPDATA%\JARVIS\datos.json (notas, listas, recordatorios, memoria)
+  Registro: %APPDATA%\JARVIS\jarvis.log
+  Voces:    %LOCALAPPDATA%\JarvisVoz (compartidas con el mod)
+
+SI NO COMPILA
+  compilar.bat deja los errores en compilacion.log. Envíeselo a Claude y lo corrige.
+
+DESINSTALAR
+  desinstalar.bat (pregunta si borrar también sus datos).

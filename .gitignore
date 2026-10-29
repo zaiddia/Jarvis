@@ -8,3 +8,9 @@ __pycache__/
 *.spec
 publicar/
 _respaldo_actualizacion/
+
+# App de Windows (C#)
+windows-app/**/bin/
+windows-app/**/obj/
+windows-app/programa/
+windows-app/compilacion.log

@@ -1,0 +1,81 @@
+# Compila JARVIS para Windows, pasa las pruebas de comprensión y publica el paquete listo para instalar.
+name: JARVIS para Windows
+
+on:
+  push:
+    branches: [main]
+    paths: ['windows-app/**', '.github/workflows/windows-app.yml']
+  pull_request:
+    paths: ['windows-app/**', '.github/workflows/windows-app.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compilar:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Versión
+        id: ver
+        run: |
+          $v = (Select-String -Path windows-app/codigo/JarvisApp.csproj -Pattern '<Version>(.+)</Version>').Matches[0].Groups[1].Value
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "JARVIS $v"
+
+      - name: Compilar Jarvis.exe
+        run: >
+          dotnet publish windows-app/codigo/JarvisApp.csproj -c Release -r win-x64 --self-contained false
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none
+          -o paquete/JARVIS-${{ steps.ver.outputs.version }}/programa
+
+      - name: Armar el paquete
+        run: |
+          $d = "paquete/JARVIS-${{ steps.ver.outputs.version }}"
+          Copy-Item windows-app/*.bat, windows-app/LEEME.txt $d
+          Copy-Item windows-app/voces $d -Recurse
+          Copy-Item windows-app/codigo $d/codigo -Recurse
+          # Lo mismo que hace compilar.bat: el instalador de voces viaja con el programa.
+          Copy-Item windows-app/instalar-voces.bat, windows-app/desinstalar-voces.bat "$d/programa"
+          Copy-Item windows-app/voces "$d/programa/voces" -Recurse
+          Compress-Archive -Path $d -DestinationPath "paquete/JARVIS-${{ steps.ver.outputs.version }}.zip"
+          Get-ChildItem "$d/programa" | Format-Table Name, Length
+
+      - name: Guardar el paquete
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-${{ steps.ver.outputs.version }}
+          path: paquete/JARVIS-${{ steps.ver.outputs.version }}.zip
+
+      - name: Pruebas de comprensión
+        run: dotnet run --project windows-app/pruebas/Pruebas.csproj -c Release
+
+      - name: Publicar en Releases
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $tag = "windows-v$v"
+          gh release delete $tag --cleanup-tag --yes 2>$null
+          $notes = "Compilado automáticamente (commit ${{ github.sha }}) y con todas las pruebas de comprensión superadas.`n`n" +
+                   "**Cómo instalar:** descargue **JARVIS-$v.zip**, descomprímalo (mejor fuera de OneDrive, por ejemplo en C:\JARVIS) y ejecute **instalar.bat**. " +
+                   "Ya viene compilado: no hace falta el SDK de .NET, solo el entorno de ejecución de escritorio .NET 8 (si falta, Windows ofrece instalarlo al abrir JARVIS)."
+          gh release create $tag "paquete/JARVIS-$v.zip" --target ${{ github.sha }} --title "JARVIS para Windows $v" --notes $notes --latest

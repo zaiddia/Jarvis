@@ -1,0 +1,7 @@
+# Los scripts de Windows necesitan saltos de línea CRLF (con LF, cmd.exe los lee partidos).
+windows-app/**/*.bat text eol=crlf
+windows-app/**/*.cmd text eol=crlf
+windows-app/**/*.ps1 text eol=crlf
+windows-app/LEEME.txt text eol=crlf
+windows-app/**/*.cs text eol=crlf
+windows-app/**/*.csproj text eol=crlf
