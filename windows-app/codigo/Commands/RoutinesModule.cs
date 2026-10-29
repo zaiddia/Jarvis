@@ -65,7 +65,7 @@ namespace Jarvis.Commands
             string w = Text.FoldText((when ?? "").Trim());
             if (w == "") return sc;
             if (Regex.IsMatch(w, @"\b(al )?(iniciar|inicio|encender|arrancar|arranque|prender|empezar)\b")) { sc.Kind = Kind.Startup; return sc; }
-            if (Regex.IsMatch(w, @"\b(al )?(volver|regresar|regreso|vuelta)\b")) { sc.Kind = Kind.Return; return sc; }
+            if (Regex.IsMatch(w, @"\b(al |cuando )?(volver|vuelva|vuelvo|regresar|regrese|regreso|vuelta|llegue|llego)\b")) { sc.Kind = Kind.Return; return sc; }
             var m = Clock.Match(w);
             if (!m.Success) return sc;
             int h = int.Parse(m.Groups["h"].Value, CultureInfo.InvariantCulture);

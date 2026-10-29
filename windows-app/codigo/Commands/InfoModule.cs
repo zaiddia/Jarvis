@@ -220,7 +220,7 @@ namespace Jarvis.Commands
             // Preguntas que la memoria contesta: «¿dónde dejé las llaves?», «¿cómo se llama mi hermana?», «¿qué música me gusta?»
             if (c.HasAny("donde", "cual", "cuando", "que", "quien", "como", "cuales") && c.Size >= 3)
             {
-                bool mine = c.Has("deje") || c.Has("puse") || c.Has("mi") || c.Has("mis") || Text.Squash(c.Orig).Contains(" me gusta") || Text.Squash(c.Orig).Contains(" me encanta");
+                bool mine = c.Has("deje") || c.Has("puse") || c.Has("mi") || c.Has("mis") || c.W(0) == "donde" || Text.Squash(c.Orig).Contains(" me gusta") || Text.Squash(c.Orig).Contains(" me encanta");
                 if (mine)
                 {
                     string hit = Memory.Find(c.Orig);
