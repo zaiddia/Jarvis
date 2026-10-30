@@ -2,7 +2,7 @@
 // @id              jarvis-orbe
 // @name            Reactor de Jarvis en la barra de tareas
 // @description     Un mini reactor animado junto al reloj: escucha, piensa y habla a la vista, tarjeta con tu día, cuadro para escribirle, volumen con la rueda y avisos
-// @version         2.0.0
+// @version         2.0.1
 // @author          zaiddia
 // @github          https://github.com/zaiddia
 // @include         explorer.exe
@@ -60,8 +60,8 @@ Habla con Jarvis solo dentro de tu equipo (127.0.0.1) y con el código secreto q
 - click: listen
   $name: Al hacer clic
   $options:
-  - listen: Hablarle a Jarvis (doble clic: mostrar u ocultar el panel)
-  - toggle: Mostrar u ocultar el panel (doble clic: hablarle)
+  - listen: Hablarle a Jarvis (y con doble clic, mostrar u ocultar el panel)
+  - toggle: Mostrar u ocultar el panel (y con doble clic, hablarle)
 - card: true
   $name: Tarjeta al pasar el ratón
 - bubble: true

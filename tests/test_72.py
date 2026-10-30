@@ -214,3 +214,22 @@ def test_el_aviso_llega_al_reactor(jv):
     n = jv.orb_feed["alert_seq"]
     jv.alert("Es la hora: recoger los trabajos.", "NOTAS")
     assert jv.orb_feed["alert_seq"] == n + 1 and "recoger" in jv.orb_feed["alert"]
+
+
+def test_mod_de_windhawk_bien_formado():
+    """Windhawk lee la cabecera, el «léeme» y los ajustes (YAML) antes de compilar: si fallan, no compila."""
+    yaml = pytest.importorskip("yaml")
+    src = open(os.path.join(ROOT, "windhawk", "jarvis-orbe.wh.cpp"), encoding="utf-8").read()
+    head = re.search(r"// ==WindhawkMod==\n(.*?)// ==/WindhawkMod==", src, re.S).group(1)
+    meta = dict(re.findall(r"// @(\w+)\s+(.+)", head))
+    assert meta["id"] == "jarvis-orbe" and re.fullmatch(r"\d+\.\d+\.\d+", meta["version"]) and meta["include"] == "explorer.exe"
+    readme = re.search(r"// ==WindhawkModReadme==\n/\*\n(.*?)\*/\n// ==/WindhawkModReadme==", src, re.S).group(1)
+    assert "*/" not in readme
+    block = re.search(r"// ==WindhawkModSettings==\n/\*\n(.*?)\*/\n// ==/WindhawkModSettings==", src, re.S).group(1)
+    settings = yaml.safe_load(block)
+    names = [next(iter(x)) for x in settings]
+    for n in names:                                   # cada ajuste se usa en el código
+        assert f'L"{n}"' in src, n
+    for x in settings:
+        for opt in x.get("$options", []):
+            assert isinstance(opt, dict) and all(isinstance(v, str) for v in opt.values()), opt

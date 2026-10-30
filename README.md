@@ -1,4 +1,4 @@
-# Jarvis 7.3 — Asistente virtual para Windows
+# Jarvis 7.3.1 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -156,6 +156,12 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## Corrección del reactor (v7.3.1)
+
+El mod del reactor (2.0.1) ya compila en Windhawk: dos opciones de sus ajustes llevaban «:» en el texto y Windhawk
+no podía leer la lista de ajustes. Copia otra vez el código en Windhawk (*Ajustes › Integraciones › Copiar el código
+del mod*) y pulsa *Compilar*.
 
 ## El reactor de Jarvis en la barra de tareas (v7.3)
 

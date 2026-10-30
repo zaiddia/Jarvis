@@ -44,7 +44,7 @@ jobs:
             python -m pip install $_ 2>&1 | Out-Null
             if ($LASTEXITCODE -ne 0) { $fallos += $_; Write-Host "::warning::No se instaló $_" }
           }
-          python -m pip install pytest pyflakes
+          python -m pip install pytest pyflakes pyyaml
           if ($fallos.Count -gt 0) { Write-Host "Sin instalar: $($fallos -join ', ')" }
 
       - name: Revisar el código
