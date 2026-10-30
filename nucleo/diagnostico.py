@@ -103,6 +103,8 @@ def system_check():
     if not J.settings["telegram_remote"] and not J._cal_urls():
         add(G, "info", "Ni Telegram ni calendario configurados (son opcionales).")
 
+    out += J.extra_checks()                    # 8.0: seguridad, cada conexión configurada y errores recientes
+
     # --- versión
     G = "Versión"
     try:

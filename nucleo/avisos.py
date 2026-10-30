@@ -217,7 +217,7 @@ def alert(text, origin="JARVIS"):
 _TG_HELP = ("Soy Jarvis, en tu computador. Escríbeme como me hablarías, por ejemplo:\n"
             "• ¿qué tengo hoy?\n• abre la presentación de ciencias\n• recuérdame a las 3 llamar a la coordinadora\n"
             "• volumen al 30\n• ¿cómo está el clima?\n• noticias\n\n"
-            "/captura – foto de la pantalla\n/estado – cómo está el PC\n/prueba – prueba completa de Jarvis\n/ayuda – esta ayuda\n\n"
+            "/captura – foto de la pantalla\n/estado – cómo está el PC\n/prueba – prueba completa de Jarvis\n/informe – informe de errores (sin claves)\n/ayuda – esta ayuda\n\n"
             "Por seguridad, desde aquí no apago ni reinicio el equipo, no cierro programas, no escribo en ventanas "
             "y no borro datos.")
 
@@ -300,6 +300,16 @@ def _tg_handle(msg):
             out = f"No pude enviar la captura: {e}"
     elif low in ("estado", "status"):
         out = J.telegram_run("estado del sistema")
+    elif low in ("informe", "informe de errores"):
+        J.telegram_send("Preparo el informe… (hago la prueba completa)")
+        _, path = J.make_report()
+        try:
+            with open(path, "rb") as f:
+                J._tg_call("sendDocument", {"chat_id": chat}, files={"document": (os.path.basename(path), f.read(), "text/plain")},
+                           timeout=60)
+            out = "Ahí va el informe. No lleva tus claves."
+        except Exception as e:
+            out = f"No pude enviar el informe: {e}"
     elif low in ("prueba", "prueba completa", "diagnostico"):
         J.telegram_send("Haciendo la prueba completa… (tarda unos segundos)")
         out = J.check_report(J.run_system_check(speak_it=False))

@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "7.9.1"
+VERSION = "8.0"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -360,6 +360,8 @@ import proactivo
 import vigilante
 import habilidades
 import mcp_cliente
+import errores
+import secreto
 
 
 # =============================================================================
@@ -700,6 +702,8 @@ DEFAULT_SETTINGS = {
     "whatsapp_alerts": True,
     "image_model": "",             # 7.9: modelo de imágenes de Gemini (vacío = el que tenga tu cuenta)
     "sync_folder": "",             # 7.9: carpeta compartida (OneDrive…) para usar Jarvis en varios equipos
+    "encrypt_secrets": True,       # 8.0: claves cifradas con la protección de Windows (no en modo USB)
+    "checked_version": "",         # 8.0: versión con la que ya se hizo la revisión tras actualizar
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -871,6 +875,13 @@ def load_settings():
     except Exception as e:
         print(f"config.json ilegible, uso valores por defecto: {e}")
     _file_values.clear()
+    lost = []
+    for k in SECRET_FIELDS:                         # 8.0: claves cifradas con DPAPI
+        if secreto.is_sealed(data.get(k)):
+            data[k], ok = secreto.unseal(data[k])
+            if not ok:
+                lost.append(k)
+    secrets_lost[:] = lost
     for k, v in data.items():
         if k in DEFAULT_SETTINGS:
             try:
@@ -900,7 +911,8 @@ def save_settings_file():
             data[k] = _file_values.get(k, DEFAULT_SETTINGS[k])
     tmp = CONFIG_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(secreto.seal_all(data, SECRET_FIELDS, settings["encrypt_secrets"] and not PORTABLE), f,
+                  ensure_ascii=False, indent=2)
     os.replace(tmp, CONFIG_PATH)
     _file_values.clear()
     _file_values.update(data)
@@ -943,6 +955,8 @@ def log_terminal(message, origin="JARVIS"):
     except Exception:
         pass
     socketio.emit("terminal_log", {"data": line})
+    if origin == "ERROR":                              # 8.0: queda en el registro de errores, con la orden
+        errores.record("ERROR", message, getattr(_tl, "cmd_text", "") or "")
 
 
 # Lo que el orbe de la barra de tareas muestra (7.3): último mensaje, último aviso y nivel del micrófono.
@@ -1432,6 +1446,8 @@ def process_command(text):
         return
     if image_voice(text, t):                           # «hazme una ilustración del ciclo del agua»
         return
+    if health_voice(text, t):                          # «genera el informe de errores», «¿has tenido errores?»
+        return
     if tasks_voice(text, t):                           # «cada lunes a las 6 resume mis pendientes y mándamelo al celular»
         return
     if recall_voice(text, t):                          # «¿qué te dije la semana pasada sobre el examen de 7A?»
@@ -1612,6 +1628,7 @@ def _command_worker():
         try:
             process_command(text)
         except Exception as e:
+            note_error("ORDEN", e, text)                # 8.0: con la traza, para poder arreglarlo
             log_terminal(f"Error procesando '{text}': {e}", "ERROR")
         if not (settings["tts_enabled"] and audio_ready):
             rapidez.finish_without_voice()
@@ -1694,6 +1711,13 @@ from nucleo.aulaplus import *  # noqa: F401,F403,E402
 # → nucleo/alcance.py (lógica en imagenes.py, whatsapp.py y sincronizar.py)
 # =============================================================================
 from nucleo.alcance import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
+# 8.0 · REGISTRO DE ERRORES, INFORME, CLAVES CIFRADAS Y REVISIÓN DE CONEXIONES
+# → nucleo/salud.py (lógica en errores.py y secreto.py)
+# =============================================================================
+from nucleo.salud import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
@@ -1819,6 +1843,7 @@ def main():
         agents_start()                    # 7.6: aprobaciones y proyectos
         aula_plus_start()                 # 7.8: seguimiento y banco de preguntas
         reach_start()                     # 7.9: sincronización entre equipos
+        health_start()                    # 8.0: registro de errores y revisión tras actualizar
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

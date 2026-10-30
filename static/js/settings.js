@@ -646,7 +646,7 @@
       } else if (it.arreglo && it.arreglo.startsWith("ajustes:")) {
         const b = document.createElement("button");
         b.type = "button"; b.className = "text-btn"; b.textContent = "Ir al ajuste";
-        const tab = { ia: "ia", integraciones: "integra" }[it.arreglo.split(":")[1]];
+        const tab = { ia: "ia", integraciones: "integra", memoria: "memoria", agente: "agente", acerca: "acerca" }[it.arreglo.split(":")[1]];
         b.addEventListener("click", () => { const el = document.querySelector(`.tab[data-tab="${tab}"]`); if (el) el.click(); });
         li.appendChild(b);
       } else if (it.arreglo === "actualizar") {
@@ -676,6 +676,32 @@
     navigator.clipboard.writeText(checkReport).then(() => toast("Informe copiado.", "ok"), () => toast("No pude copiarlo.", "err"));
   });
   socket.on("system_check", (res) => { if (res && res.items) renderCheck(Object.assign({ report: checkReport }, res)); });
+
+  // 8.0: registro de errores e informe para enviar
+  function renderErrors(r) {
+    const ul = $("#err-list");
+    ul.innerHTML = "";
+    const items = (r && r.items) || [];
+    if (!items.length) { ul.innerHTML = '<li class="empty">Sin errores registrados. 🎉</li>'; return; }
+    items.forEach((e) => {
+      const li = document.createElement("li");
+      const m = document.createElement("span"); m.className = "chk-mark " + (e.nivel === "error" ? "fallo" : "aviso");
+      m.textContent = e.nivel === "error" ? "✕" : "!";
+      const t = document.createElement("span");
+      t.textContent = `${e.t.replace("T", " ")} · ${e.origen}: ${e.error}` + (e.orden ? ` — orden «${e.orden}»` : "");
+      li.append(m, t); ul.appendChild(li);
+    });
+  }
+  $("#btn-report").addEventListener("click", () => {
+    const st = $("#report-status"); st.className = "status"; st.textContent = "Preparando el informe (hace la prueba completa)…";
+    socket.emit("report_make", {}, (r) => {
+      navigator.clipboard.writeText(r.text).then(() => {}, () => {});
+      st.className = "status ok";
+      st.textContent = "Informe copiado al portapapeles" + (r.path ? ` y guardado en ${r.path}` : "") + ". No lleva tus claves: pégalo o envíalo a quien te ayuda.";
+    });
+  });
+  $("#btn-err-clear").addEventListener("click", () => { if (confirm("¿Borrar el registro de errores?")) socket.emit("errors_info", { clear: true }, renderErrors); });
+  socket.on("connect", () => socket.emit("errors_info", {}, renderErrors));
   socket.on("rutinas_updated", (list) => renderRoutines(list));
 
   /* Rutinas */

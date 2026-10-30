@@ -1004,6 +1004,21 @@
     </div>
     <p class="status" id="check-status"></p>
     <ul class="chk-list" id="check-list"></ul>
+
+    <div class="group">Errores e informe</div>
+    <p class="pane-intro">Jarvis guarda cada fallo real con la orden que lo causó. «Enviar informe» junta la prueba completa, los últimos errores y el final del registro, <b>sin tus claves</b>, lo copia y lo guarda en <code>Documentos\Jarvis\Informes</code> para que se lo pases a quien te ayuda. También: «Jarvis, genera el informe de errores» o <code>/informe</code> en Telegram.</p>
+    <div class="row-btns">
+      <button class="btn btn-primary" type="button" id="btn-report">Enviar informe</button>
+      <button class="text-btn" type="button" id="btn-err-clear">Borrar el registro de errores</button>
+    </div>
+    <p class="status" id="report-status"></p>
+    <ul class="chk-list" id="err-list"></ul>
+
+    <div class="group">Seguridad</div>
+    <div class="field">
+      <div class="ft"><label for="f-enc">Cifrar mis claves</label><p>Las claves de la IA, Telegram, Classroom, WhatsApp y el correo se guardan cifradas con la protección de Windows: solo tu usuario, en este equipo, puede abrirlas. En modo USB no se cifran.</p></div>
+      <label class="switch"><input type="checkbox" id="f-enc" data-key="encrypt_secrets"><span></span></label>
+    </div>
     <div class="group">Todo lo que sé hacer</div>
     <p class="note">Habla empezando por «Jarvis», o escribe en la barra del HUD. Estos son ejemplos; entiendo muchas variantes.</p>
     <div class="caps" id="caps"></div>

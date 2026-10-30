@@ -157,6 +157,25 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Errores, informe y claves cifradas (v8.0)
+
+**Registro de errores.** Cada fallo real (una orden que se rompe, un servicio en segundo plano que se cae) queda
+guardado con la orden que lo causó y su traza, sin tus claves. Lo ves en *Ajustes › Acerca de › Errores e informe*.
+«**¿Has tenido errores?**» te dice cuántos hubo esta semana.
+
+**Enviar informe.** El botón (o «**genera el informe de errores**», o `/informe` en Telegram, que te lo manda como
+archivo) junta la prueba completa, los últimos errores y el final del registro, tapa cualquier clave o token, lo copia
+y lo guarda en `Documentos\Jarvis\Informes`. Es lo que necesita quien te ayuda para arreglar algo.
+
+**Revisión de cada conexión.** La prueba completa ahora revisa también lo que tengas configurado: WhatsApp,
+Classroom, el correo, la carpeta compartida, las imágenes de Gemini y cada conector, y te lleva al ajuste que falta.
+Después de cada actualización Jarvis hace la revisión solo una vez y te avisa si algo quedó mal.
+
+**Claves cifradas.** Las claves de la IA, Telegram, Classroom, WhatsApp y el correo se guardan cifradas con la
+protección de datos de Windows: solo tu usuario, en tu equipo, puede abrirlas. Las que ya tenías se cifran solas al
+arrancar. En modo USB no se cifran (dejarían de funcionar en otro PC). Si copias Jarvis a otro equipo, la prueba
+completa te dice qué claves debes volver a escribir.
+
 ## Arreglo del control del navegador (v7.9.1)
 
 «Cambia de pestaña», «cierra la pestaña», «baja», «busca en la página…», «escribe…» y «cierra esta ventana» volvían a
