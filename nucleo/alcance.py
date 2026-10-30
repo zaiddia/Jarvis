@@ -265,7 +265,7 @@ def image_voice(text, t):
 # ============================================================================ VARIOS EQUIPOS (SINCRONIZACIÓN)
 sync_state = {"last": 0.0, "msg": "", "error": ""}
 _RELOAD = {"perfil.json": "perfil", "rutinas.json": "rutinas", "tareas.json": "tareas", "notas.json": "notas",
-           "aula.json": "aula", "banco_preguntas.json": "banco", "notas_estudiantes.json": "seguimiento", "horario.json": "horario",
+           "aula.json": "aula", "banco_preguntas.json": "banco", "notas_estudiantes.json": "seguimiento", "horario.json": "horario", "observador.json": "informes",
            "aprendizaje.json": "aprendizaje"}
 
 

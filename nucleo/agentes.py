@@ -149,14 +149,14 @@ def run_step(st, step):
         if not out.get("path"):
             raise RuntimeError(out.get("msg") or "no encontré fuentes")
         return {"archivo": out["path"], "resumen": out.get("resumen", "")}
-    if tipo in ("plan", "taller", "quiz", "rubrica"):
+    if tipo in aula.KINDS:
         prompt = aula.build_prompt(tipo, pedido, aula.detect_count(step["pedido"]), "", "")
         last = None
         for _ in range(2):
             try:
                 m = aula.validate(tipo, J._extract_json(J.ai_chat([{"role": "user", "content": prompt}], json_mode=True,
                                                                    max_tokens=8000)), step["pedido"])
-                if tipo == "quiz":
+                if tipo in ("quiz", "saber"):
                     J.banco.add_quiz(m)
                     J.remember_quiz(m)
                 path = aula.build_docx(tipo, m, folder, J.Document, J.settings["aula_docente"],

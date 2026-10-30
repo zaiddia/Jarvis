@@ -295,14 +295,21 @@ KINDS = {
     "taller": ("Taller", r"taller|guia|ficha|ejercicios|actividad|tarea"),
     "rubrica": ("Rúbrica", r"rubrica"),
     "plan": ("Plan de clase", r"plan de clase|planeacion|planeador|planificacion|secuencia didactica"),
+    # 8.2
+    "saber": ("Preguntas tipo Saber", r"(?:preguntas|prueba|simulacro|quiz|evaluacion)\s+(?:tipo\s+)?(?:saber|icfes)(?:\s+\d+)?|"
+                                      r"tipo saber|tipo icfes|simulacro icfes|simulacro saber"),
+    "malla": ("Malla curricular", r"malla(?: curricular)?|plan (?:del|de|para el) periodo|planeacion (?:del|de) periodo|"
+                                  r"plan de area|plan de asignatura|planeacion anual|plan anual"),
+    "piar": ("Ajustes razonables (PIAR)", r"piar|ajustes razonables|adaptacion curricular|flexibilizacion curricular|"
+                                          r"para (?:un|una|el|la) (?:estudiante|alumno|alumna|nino|nina) (?:con|que tiene)"),
 }
-DEFAULT_COUNT = {"quiz": 10, "taller": 8, "rubrica": 4, "plan": 0}
+DEFAULT_COUNT = {"quiz": 10, "taller": 8, "rubrica": 4, "plan": 0, "saber": 8, "malla": 10, "piar": 0}
 NIVELES = ["Superior", "Alto", "Básico", "Bajo"]      # escala de valoración en Colombia
 
 
 def detect_kind(text):
     t = normalize(text)
-    for kind in ("rubrica", "plan", "quiz", "taller"):
+    for kind in ("piar", "saber", "malla", "rubrica", "plan", "quiz", "taller"):
         if re.search(rf"\b(?:{KINDS[kind][1]})\b", t):
             return kind
     return None
@@ -344,6 +351,35 @@ def build_prompt(kind, request, count=None, grade="", topic=""):
         task = (f"Crea una rúbrica de evaluación con {n} criterios. Los 4 descriptores de cada criterio "
                 "corresponden, en este orden, a los niveles de desempeño Superior, Alto, Básico y Bajo "
                 "(escala de valoración usada en Colombia). Descriptores concretos y observables.")
+    elif kind == "saber":
+        schema = ('{"titulo": str, "grado": str, "tema": str, "instrucciones": str, '
+                  '"preguntas": [{"contexto": str, "enunciado": str, "opciones": [str, str, str, str], '
+                  '"respuesta": "a"|"b"|"c"|"d", "competencia": str, "explicacion": str}]}')
+        task = (f"Crea {n} preguntas tipo Saber (estilo ICFES) de selección múltiple con única respuesta. Cada pregunta "
+                "parte de un «contexto» propio (una situación, un texto corto, una tabla o un gráfico descrito en texto) y "
+                "evalúa una competencia del área tal como la nombra el ICFES (por ejemplo, en matemáticas: interpretación y "
+                "representación, formulación y ejecución, argumentación). Las opciones incorrectas deben ser errores "
+                "frecuentes y creíbles. La explicación dice por qué la correcta lo es. No copies preguntas reales de "
+                "pruebas publicadas.")
+    elif kind == "malla":
+        schema = ('{"titulo": str, "grado": str, "tema": str, "periodo": str, "estandar": str, '
+                  '"semanas": [{"semana": int, "tema": str, "dba": str, "desempeno": str, "actividades": str, '
+                  '"evaluacion": str}], "evidencias": [str]}')
+        task = (f"Crea la malla curricular (planeación del periodo) de {n} semanas. «tema» del objeto es el área o "
+                "asignatura. Para cada semana: el tema, el DBA o estándar básico de competencias del MEN que se trabaja (con "
+                "número solo si lo conoces con certeza; si no, descríbelo sin inventar el número), un desempeño observable, "
+                "actividades sugeridas y cómo se evalúa. Ordena los temas de lo básico a lo complejo. «evidencias» son las "
+                "evidencias de aprendizaje del periodo.")
+    elif kind == "piar":
+        schema = ('{"titulo": str, "grado": str, "tema": str, "necesidad": str, "barreras": [str], '
+                  '"ajustes": [{"tipo": str, "ajuste": str}], "actividad": str, "evaluacion": str, "seguimiento": str}')
+        task = ("Prepara ajustes razonables (en el marco del PIAR, Decreto 1421 de 2017) para que un estudiante con la "
+                "situación que describe el docente participe en la clase o el material indicado. No diagnostiques ni uses "
+                "lenguaje clínico: habla de barreras para el aprendizaje y la participación y de apoyos. «necesidad» resume "
+                "en lenguaje respetuoso lo que dijo el docente. «ajustes» incluye ajustes de acceso, de la actividad, de "
+                "tiempos, de materiales y de evaluación («tipo» es uno de esos). «actividad» es la versión adaptada y "
+                "concreta de la actividad o el material, lista para usar. «evaluacion» dice cómo valorar el avance con "
+                "esos ajustes y «seguimiento» qué observar y cuándo revisar con la familia y orientación.")
     else:
         schema = ('{"titulo": str, "grado": str, "tema": str, "duracion": str, "objetivo": str, '
                   '"competencias": [str], "momentos": [{"nombre": str, "duracion": str, '
@@ -367,7 +403,7 @@ def validate(kind, d, request=""):
         raise ValueError("La IA no devolvió el material en el formato esperado.")
     out = {"titulo": _txt(d.get("titulo"), 140) or KINDS[kind][0],
            "grado": _txt(d.get("grado"), 40), "tema": _txt(d.get("tema"), 140)}
-    if kind == "quiz":
+    if kind in ("quiz", "saber"):
         qs = []
         for q in d.get("preguntas") or []:
             if not isinstance(q, dict):
@@ -377,6 +413,8 @@ def validate(kind, d, request=""):
             if _txt(q.get("enunciado")) and len(opts) == 4 and all(opts) and ans in "abcd" and ans:
                 qs.append({"enunciado": _txt(q["enunciado"], 800), "opciones": opts, "respuesta": ans,
                            "explicacion": _txt(q.get("explicacion"), 400)})
+                if kind == "saber":
+                    qs[-1].update(contexto=_txt(q.get("contexto"), 2500), competencia=_txt(q.get("competencia"), 200))
         if not qs:
             raise ValueError("La IA no generó preguntas válidas.")
         out.update(instrucciones=_txt(d.get("instrucciones"), 500) or
@@ -398,6 +436,29 @@ def validate(kind, d, request=""):
         if not crit:
             raise ValueError("La IA no generó criterios válidos.")
         out.update(criterios=crit)
+    elif kind == "malla":
+        sem = []
+        for i, s in enumerate(d.get("semanas") or [], 1):
+            if isinstance(s, dict) and _txt(s.get("tema")):
+                try:
+                    num = int(s.get("semana") or i)
+                except (TypeError, ValueError):
+                    num = i
+                sem.append({"semana": num, "tema": _txt(s["tema"], 300), "dba": _txt(s.get("dba"), 600),
+                            "desempeno": _txt(s.get("desempeno"), 600), "actividades": _txt(s.get("actividades"), 1200),
+                            "evaluacion": _txt(s.get("evaluacion"), 600)})
+        if not sem:
+            raise ValueError("La IA no generó las semanas del periodo.")
+        out.update(periodo=_txt(d.get("periodo"), 60), estandar=_txt(d.get("estandar"), 800), semanas=sem,
+                   evidencias=[_txt(x, 400) for x in (d.get("evidencias") or []) if _txt(x)])
+    elif kind == "piar":
+        aj = [{"tipo": _txt(a.get("tipo"), 60) or "Ajuste", "ajuste": _txt(a.get("ajuste"), 800)}
+              for a in (d.get("ajustes") or []) if isinstance(a, dict) and _txt(a.get("ajuste"))]
+        if not aj:
+            raise ValueError("La IA no generó ajustes válidos.")
+        out.update(necesidad=_txt(d.get("necesidad"), 800), barreras=[_txt(b, 400) for b in (d.get("barreras") or []) if _txt(b)],
+                   ajustes=aj, actividad=_txt(d.get("actividad"), 4000), evaluacion=_txt(d.get("evaluacion"), 1500),
+                   seguimiento=_txt(d.get("seguimiento"), 1200))
     else:
         mom = [{"nombre": _txt(m.get("nombre"), 80), "duracion": _txt(m.get("duracion"), 40),
                 "actividades": _txt(m.get("actividades"), 2500)}
@@ -429,7 +490,7 @@ def build_docx(kind, m, out_dir, Document, docente="", institucion="", curso="")
     sec = doc.sections[0]
     sec.left_margin = sec.right_margin = Cm(2)
     sec.top_margin = sec.bottom_margin = Cm(1.8)
-    if kind == "rubrica":                                  # la rúbrica cabe mejor en horizontal
+    if kind in ("rubrica", "malla"):                       # la rúbrica y la malla caben mejor en horizontal
         sec.orientation = WD_ORIENT.LANDSCAPE
         sec.page_width, sec.page_height = sec.page_height, sec.page_width
 
@@ -455,7 +516,7 @@ def build_docx(kind, m, out_dir, Document, docente="", institucion="", curso="")
         sp.alignment = WD_ALIGN_PARAGRAPH.CENTER
         sr = sp.add_run(f"Tema: {m['tema']}")
         sr.italic = True
-    if kind in ("quiz", "taller"):
+    if kind in ("quiz", "taller", "saber"):
         doc.add_paragraph("Nombre del estudiante: _______________________________________   "
                           "Curso: ________")
 
@@ -490,6 +551,76 @@ def build_docx(kind, m, out_dir, Document, docente="", institucion="", curso="")
             p.add_run(f"{i}. {q['respuesta']})").bold = True
             if q["explicacion"]:
                 p.add_run(f"  {q['explicacion']}")
+    elif kind == "saber":
+        heading("Instrucciones")
+        doc.add_paragraph(m["instrucciones"])
+        for i, q in enumerate(m["preguntas"], 1):
+            if q.get("contexto"):
+                c = doc.add_paragraph(q["contexto"])
+                c.paragraph_format.space_before = Pt(10)
+                c.paragraph_format.keep_with_next = True
+                c.runs[0].italic = True
+            p = doc.add_paragraph()
+            p.paragraph_format.keep_with_next = True
+            p.add_run(f"{i}. ").bold = True
+            p.add_run(q["enunciado"])
+            for letter, opt in zip("ABCD", q["opciones"]):
+                op = doc.add_paragraph(f"{letter}. {opt}")
+                op.paragraph_format.left_indent = Cm(0.8)
+                op.paragraph_format.space_after = Pt(0)
+        key_page("Clave, competencias y justificación (solo para el docente)")
+        for i, q in enumerate(m["preguntas"], 1):
+            p = doc.add_paragraph()
+            p.add_run(f"{i}. {q['respuesta'].upper()}").bold = True
+            if q.get("competencia"):
+                p.add_run(f"  ·  {q['competencia']}").italic = True
+            if q["explicacion"]:
+                p.add_run(f"  {q['explicacion']}")
+    elif kind == "malla":
+        info = [x for x in (f"Grado: {m['grado']}" if m["grado"] else "", f"Periodo: {m['periodo']}" if m.get("periodo") else "") if x]
+        if info:
+            doc.add_paragraph("   ·   ".join(info))
+        if m.get("estandar"):
+            heading("Estándar básico de competencias")
+            doc.add_paragraph(m["estandar"])
+        tb = doc.add_table(rows=1, cols=6)
+        tb.style = "Table Grid"
+        for cell, txt in zip(tb.rows[0].cells, ["Semana", "Tema", "DBA / estándar", "Desempeño", "Actividades", "Evaluación"]):
+            cell.paragraphs[0].add_run(txt).bold = True
+        for s in m["semanas"]:
+            row = tb.add_row().cells
+            for cell, v in zip(row, [str(s["semana"]), s["tema"], s["dba"], s["desempeno"], s["actividades"], s["evaluacion"]]):
+                cell.text = v
+        if m.get("evidencias"):
+            heading("Evidencias de aprendizaje del periodo")
+            for e in m["evidencias"]:
+                doc.add_paragraph(e, style="List Bullet")
+    elif kind == "piar":
+        if m.get("necesidad"):
+            heading("Situación del estudiante")
+            doc.add_paragraph(m["necesidad"])
+        if m.get("barreras"):
+            heading("Barreras para el aprendizaje y la participación")
+            for b in m["barreras"]:
+                doc.add_paragraph(b, style="List Bullet")
+        heading("Ajustes razonables")
+        tb = doc.add_table(rows=1, cols=2)
+        tb.style = "Table Grid"
+        for cell, txt in zip(tb.rows[0].cells, ["Tipo", "Ajuste"]):
+            cell.paragraphs[0].add_run(txt).bold = True
+        for a in m["ajustes"]:
+            row = tb.add_row().cells
+            row[0].text, row[1].text = a["tipo"], a["ajuste"]
+        if m.get("actividad"):
+            heading("Actividad adaptada")
+            doc.add_paragraph(m["actividad"])
+        if m.get("evaluacion"):
+            heading("Valoración con ajustes")
+            doc.add_paragraph(m["evaluacion"])
+        if m.get("seguimiento"):
+            heading("Seguimiento")
+            doc.add_paragraph(m["seguimiento"])
+        doc.add_paragraph("Ajustes en el marco del Decreto 1421 de 2017. Revísalos con orientación escolar y la familia.").runs[0].italic = True
     elif kind == "taller":
         if m["objetivo"]:
             heading("Objetivo")

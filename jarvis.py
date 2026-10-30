@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "8.1"
+VERSION = "8.2"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -363,6 +363,7 @@ import mcp_cliente
 import errores
 import horario
 import formularios
+import informes
 import secreto
 
 
@@ -1442,6 +1443,8 @@ def process_command(text):
         return
     if event_voice(text, t):                           # «agenda una reunión con los padres de Juan el jueves a las 3»
         return
+    if family_voice(text, t):                          # «anota en el observador de Juan que…», «informe para los padres de 7A»
+        return
     if forms_voice(text, t):                           # «pasa el quiz a Forms», «trae las notas del formulario»
         return
     if feedback_voice(text, t):                        # «revisa las respuestas del taller en Classroom de 7A»
@@ -1738,6 +1741,13 @@ from nucleo.aulaconecta import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 8.2 · OBSERVADOR E INFORMES PARA PADRES (materiales nuevos del aula: tipo Saber, malla del periodo y PIAR → aula.py)
+# → nucleo/familia.py (lógica en informes.py)
+# =============================================================================
+from nucleo.familia import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1862,6 +1872,7 @@ def main():
         reach_start()                     # 7.9: sincronización entre equipos
         health_start()                    # 8.0: registro de errores y revisión tras actualizar
         classroom_plus_start()            # 8.1: horario de clases
+        family_start()                    # 8.2: observador del estudiante
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

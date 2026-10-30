@@ -177,3 +177,4 @@ genera una imagen de una célula animal para sexto => IMAGEN :: célula animal
 ¿qué clase tengo ahora? => HORARIO
 mi horario de mañana => HORARIO
 ¿has tenido errores? => INFORME
+anota en el observador de Juan que hoy participó mucho => OBSERVADOR

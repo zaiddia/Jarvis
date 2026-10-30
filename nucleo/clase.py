@@ -131,8 +131,8 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
         return
     kind = kind if kind in aula.KINDS else (aula.detect_kind(request) or "taller")
     label = aula.KINDS[kind][0]
-    lo = {"quiz": "la evaluación", "taller": "el taller", "rubrica": "la rúbrica",
-          "plan": "el plan de clase"}[kind]
+    lo = {"quiz": "la evaluación", "taller": "el taller", "rubrica": "la rúbrica", "plan": "el plan de clase",
+          "saber": "las preguntas tipo Saber", "malla": "la malla curricular", "piar": "los ajustes razonables"}[kind]
     if J.material_job["busy"]:
         J.reply("Ya estoy preparando otro material. Te aviso cuando termine y luego hago este.", "AULA")
         return
@@ -148,7 +148,7 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
                 try:
                     raw = J.ai_chat([{"role": "user", "content": prompt}], json_mode=True, max_tokens=8000)
                     m = aula.validate(kind, J._extract_json(raw), request)
-                    if kind == "quiz":
+                    if kind in ("quiz", "saber"):
                         J.banco.add_quiz(m)                    # 7.8: banco de preguntas
                         J.remember_quiz(m)                     # 8.1: «pásalo a Forms»
                     break
@@ -181,7 +181,7 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
     threading.Thread(target=work, daemon=True, name="material").start()
 
 
-_AULA_VERB = r"\b(?:crea|creame|haz|hazme|prepara|preparame|genera|generame|disena|disename|elabora|elaborame|redacta|arma|armame)\b"
+_AULA_VERB = r"\b(?:crea|creame|haz|hazme|prepara|preparame|genera|generame|disena|disename|elabora|elaborame|redacta|arma|armame|adapta|adaptame)\b"
 # Si la frase habla de estas cosas, no es una orden del aula («crea un grupo de WhatsApp»...)
 _AULA_NOT = re.compile(r"\b(?:calendario|recordatorio|alarma|carpeta|archivo|correo|whatsapp|telegram|"
                        r"spotify|youtube|steam|contacto|chat|playlist|lista de reproduccion)\b")
@@ -196,7 +196,8 @@ def aula_voice(text, t):
         kind = aula.detect_kind(t)
         # palabras genéricas (actividad, tarea, prueba...) exigen decir el tema con «sobre»
         weak = not re.search(r"\b(?:taller|guia|ficha|quiz|evaluacion|examen|cuestionario|rubrica|"
-                             r"plan de clase|planeacion|planificacion|secuencia didactica)\b", t)
+                             r"plan de clase|planeacion|planificacion|secuencia didactica|saber|icfes|malla|piar|"
+                             r"ajustes razonables|periodo)\b", t)
         marker = r"\b(?:sobre|acerca)\b" if weak else r"\b(?:sobre|de|del|para|acerca)\b"
         if kind and re.search(J._AULA_VERB, t) and re.search(marker, t):
             J.generate_material(text, kind)

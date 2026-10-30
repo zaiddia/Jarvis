@@ -23,6 +23,7 @@ def batch_requests(quiz, points=1):
         k = LETTERS.find(str(q.get("respuesta", "a"))[:1].lower())
         correct = opts[k if 0 <= k < len(opts) else 0]
         item = {"title": str(q["enunciado"])[:1000],
+                **({"description": str(q["contexto"])[:4000]} if q.get("contexto") else {}),
                 "questionItem": {"question": {"required": True, "grading": {
                     "pointValue": points, "correctAnswers": {"answers": [{"value": correct}]},
                     **({"whenWrong": {"text": str(q["explicacion"])[:900]}} if q.get("explicacion") else {})},

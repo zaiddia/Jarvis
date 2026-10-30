@@ -99,7 +99,7 @@ main { flex: 1; min-height: 0; overflow: auto; padding: 22px 28px 28px; }
 .f .inp { color: var(--text); }
 .f small { color: var(--a); margin-left: 6px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.kinds { grid-template-columns: repeat(4, 1fr); }
+.kinds { grid-template-columns: repeat(4, 1fr); row-gap: 6px; }
 .chk { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .chk input { accent-color: var(--a); width: 16px; height: 16px; }
 .status { font-size: 12.5px; color: var(--muted); line-height: 1.5; }

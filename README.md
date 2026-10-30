@@ -157,6 +157,33 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Preguntas tipo Saber, malla del periodo, ajustes PIAR, observador e informes para padres (v8.2)
+
+**Preguntas tipo Saber.** «**Crea 10 preguntas tipo Saber de lectura crítica para once**», «**prepara un simulacro
+ICFES de química**». Cada pregunta trae su contexto (texto, situación o tabla), cuatro opciones con distractores
+creíbles y, en la clave del docente, la competencia que evalúa y la justificación. Quedan en tu banco de preguntas y se
+pueden pasar a Google Forms («pasa el quiz a Forms»).
+
+**Malla curricular del periodo.** «**Haz la malla curricular de matemáticas de séptimo para el tercer periodo**»:
+semana por semana, con tema, DBA o estándar, desempeño, actividades y evaluación, más las evidencias del periodo. En
+Word horizontal.
+
+**Ajustes razonables (PIAR).** «**Adapta el taller de fracciones para un estudiante con baja visión**», «**haz ajustes
+razonables del quiz de células para una estudiante con dificultades de lectura**». Barreras, ajustes (de acceso,
+actividad, tiempos, materiales y evaluación), la actividad adaptada lista para usar y cómo hacer el seguimiento, en el
+marco del Decreto 1421 de 2017 y sin lenguaje clínico.
+
+**Observador del estudiante.** «**Anota en el observador de Juan de 7A que hoy ayudó a sus compañeros**» (Jarvis la
+clasifica como positiva, académica o de convivencia), «**¿qué tiene Juan en el observador?**», «**genera el observador
+de Juan**» (Word con espacio para las firmas).
+
+**Informes para padres.** «**Haz el informe para los padres de Juan**» o «**prepara los informes para los padres de
+todo el curso 7A**»: con las notas del seguimiento, las fallas y el observador, la IA redacta una carta respetuosa
+(fortalezas, lo que debe mejorar y recomendaciones para la casa), un estudiante por página. No inventa datos y nada se
+envía solo: queda en `Documentos\Jarvis\Informes para padres` para que lo revises.
+
+Los tres materiales nuevos también están en la página del aula y se pueden pedir dentro de un proyecto.
+
 ## Google Forms, retroalimentación de entregas y horario de clases (v8.1)
 
 **El quiz en Google Forms.** «**Pasa el quiz a Forms**» (el último que preparaste) o «**haz un quiz de 10 preguntas

@@ -10,7 +10,7 @@ import shutil
 import socket
 
 FILES = ["perfil.json", "rutinas.json", "tareas.json", "notas.json", "aula.json", "banco_preguntas.json",
-         "notas_estudiantes.json", "aprendizaje.json", "horario.json", "formularios.json"]
+         "notas_estudiantes.json", "aprendizaje.json", "horario.json", "formularios.json", "observador.json"]
 FOLDERS = {"habilidades": ".json", "guias": ".md"}
 SUB = "Jarvis-sincronizado"
 STAMP = ".jarvis-sync.json"
