@@ -2,7 +2,7 @@
 // @id              jarvis-orbe
 // @name            Reactor de Jarvis en la barra de tareas
 // @description     Un mini reactor animado junto al reloj: escucha, piensa y habla a la vista, tarjeta con tu día, cuadro para escribirle, volumen con la rueda y avisos
-// @version         2.0.1
+// @version         2.1.0
 // @author          zaiddia
 // @github          https://github.com/zaiddia
 // @include         explorer.exe
@@ -28,6 +28,7 @@ Un **mini reactor** en la barra de tareas, junto al reloj, conectado a Jarvis
 | Arco ámbar alrededor | Un temporizador: el arco se va vaciando (parpadea el último medio minuto) |
 | Destello rojo-ámbar | Un aviso o recordatorio |
 | Onda blanca desde el núcleo | Jarvis acaba de responder |
+| Punto violeta a la izquierda | Hay algo esperando tu aprobación (clic derecho para aprobarlo o rechazarlo) |
 
 ## Qué puedes hacer
 - **Clic**: háblale (como decir «Jarvis»). **Doble clic**: mostrar u ocultar el panel.
@@ -103,6 +104,7 @@ struct View {
     float alert = 0;                          // 0..1 destello de aviso
     float ripple = -1;                        // 0..1 onda de mensaje nuevo; -1 = ninguna
     float hover = 0;                          // 0..1
+    bool pending = false;                     // algo espera tu aprobación
     float t = 0;                              // segundos
 };
 
@@ -244,7 +246,17 @@ inline void paint(unsigned int* px, int w, int h, const View& v) {
                 float ring = band(d, 0.80f, 1.0f, aap * 2);
                 p.add(1.0f, 0.38f, 0.22f, (ring * 0.9f + disc * 0.25f) * fl);
             }
-            // 8) brillo especular arriba (vidrio)
+            // 8) punto violeta: algo espera tu aprobación (late despacio)
+            if (v.pending) {
+                float px0 = cx - R * 0.68f, py0 = cy - R * 0.68f;
+                float pd = sqrtf((x + 0.5f - px0) * (x + 0.5f - px0) + (y + 0.5f - py0) * (y + 0.5f - py0));
+                float dot = clamp01(1.0f - (pd - R * 0.17f) / 1.1f) * (0.75f + 0.25f * sinf(t * 3.0f));
+                p.r = p.r * (1 - dot) + 0.78f * dot;
+                p.g = p.g * (1 - dot) + 0.45f * dot;
+                p.b = p.b * (1 - dot) + 1.00f * dot;
+                p.a = clamp01(p.a + dot);
+            }
+            // 9) brillo especular arriba (vidrio)
             float spec = band(d, 0.80f, 0.97f, aap) * smooth(-0.2f, -0.85f, dy / R) * 0.22f;
             p.add(1, 1, 1, spec);
             (void)PI;
@@ -323,8 +335,8 @@ struct Status {
     float level = 0;
     int timers = 0, next = -1, total = 0;
     bool visible = false, live = false;
-    int seq = 0, alertSeq = 0;
-    std::wstring role, msg, alert, label, agenda, aiLabel, net;
+    int seq = 0, alertSeq = 0, approvals = 0, approvalId = 0;
+    std::wstring role, msg, alert, label, agenda, aiLabel, net, approval;
     float accent[3] = {0.18f, 0.90f, 1.00f};
 };
 Status g_status;
@@ -613,6 +625,9 @@ DWORD WINAPI PollThread(LPVOID) {
             st.agenda = Wide(JsonRaw(j, "agenda"));
             st.aiLabel = Wide(JsonRaw(j, "ai_label"));
             st.net = Wide(JsonRaw(j, "net"));
+            st.approvals = atoi(JsonRaw(j, "approvals").c_str());
+            st.approvalId = atoi(JsonRaw(j, "approval_id").c_str());
+            st.approval = Wide(JsonRaw(j, "approval"));
             ParseAccent(JsonRaw(j, "accent"), st.accent);
         } else {
             fails++;
@@ -780,6 +795,7 @@ void RenderOrb() {
     if (g_anim.rippleStart && now - g_anim.rippleStart < 700) {
         v.ripple = (now - g_anim.rippleStart) / 700.0f;
     }
+    v.pending = st.approvals > 0;
     v.t = (now % 3600000) / 1000.0f;
 
     BITMAPINFO bi = {};
@@ -840,6 +856,7 @@ void BuildInfoCard() {
             if (st.timers > 1) t += L"  (+" + std::to_wstring(st.timers - 1) + L")";
             t += L"\n";
         }
+        if (st.approvals > 0) t += L"Por aprobar  ·  " + Clip(st.approval, 70) + L"  (clic derecho)\n";
         if (!st.agenda.empty()) t += L"Hoy  ·  " + Clip(st.agenda, 70) + L"\n";
         if (!st.aiLabel.empty()) t += L"IA  ·  " + Clip(st.aiLabel, 50) + (st.net == L"offline" ? L"  · sin internet" : L"") + L"\n";
         if (!st.msg.empty() && st.role == L"jarvis") t += L"\n«" + Clip(st.msg, 180) + L"»";
@@ -1101,7 +1118,7 @@ void OpenInput() {
 // ------------------------------------------------------------------ menú
 enum MenuId {
     kMenuListen = 1, kMenuToggle, kMenuType, kMenuPanelWrite, kMenuClass, kMenuTimer5, kMenuTimer10, kMenuPending,
-    kMenuPlay, kMenuNext, kMenuPrev, kMenuMic, kMenuCheck, kMenuSettings, kMenuResetPos,
+    kMenuPlay, kMenuNext, kMenuPrev, kMenuMic, kMenuCheck, kMenuSettings, kMenuResetPos, kMenuApprove, kMenuReject,
 };
 
 void ShowMenu(HWND hwnd) {
@@ -1112,6 +1129,11 @@ void ShowMenu(HWND hwnd) {
     AppendMenuW(music, MF_STRING, kMenuPlay, L"Pausar o reanudar");
     AppendMenuW(music, MF_STRING, kMenuNext, L"Siguiente");
     AppendMenuW(music, MF_STRING, kMenuPrev, L"Anterior");
+    if (st.approvals > 0 && st.approvalId > 0) {
+        AppendMenuW(m, MF_STRING, kMenuApprove, (L"Aprobar: " + Clip(st.approval, 50)).c_str());
+        AppendMenuW(m, MF_STRING, kMenuReject, L"Rechazar");
+        AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
+    }
     AppendMenuW(m, MF_STRING, kMenuListen, L"Hablar con Jarvis");
     AppendMenuW(m, MF_STRING, kMenuType, L"Escribir aquí…\tMayús+clic");
     AppendMenuW(m, MF_STRING, kMenuToggle, st.visible ? L"Ocultar el panel" : L"Mostrar el panel");
@@ -1154,6 +1176,8 @@ void ShowMenu(HWND hwnd) {
         case kMenuMic: Link("jarvis://microfono"); break;
         case kMenuCheck: Link("jarvis://prueba"); break;
         case kMenuSettings: Link("jarvis://ajustes"); break;
+        case kMenuApprove: Order(L"sí " + std::to_wstring(st.approvalId)); break;
+        case kMenuReject: Order(L"no " + std::to_wstring(st.approvalId)); break;
         case kMenuResetPos:
             g_dragOffset = 0;
             Wh_SetIntValue(L"dragOffset", 0);

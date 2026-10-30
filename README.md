@@ -1,4 +1,4 @@
-# Jarvis 7.5 — Asistente virtual para Windows
+# Jarvis 7.6 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -156,6 +156,28 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## Proyectos con sub-agentes y centro de aprobaciones (v7.6)
+
+**Proyectos de varios pasos.** «**Prepárame la semana de 7A sobre fracciones**», «organiza la unidad de ecosistemas
+para sexto», «hazme un proyecto: semana de la ciencia con investigación, 3 clases, taller, quiz y carta a los padres».
+La IA lo convierte en un plan con pasos de tipos conocidos (investigar, plan de clase, taller, quiz, rúbrica,
+presentación, textos) y sus dependencias, y **te lo dice antes de empezar**. Cuando dices «sí», varios **sub-agentes**
+trabajan a la vez (3 por defecto); lo que produce un paso (por ejemplo, la investigación con fuentes) se le pasa a los
+que dependen de él. Ves el avance en el HUD y el reactor; «¿cómo va el proyecto?», «cancela el proyecto». Al terminar
+te avisa (también por Telegram si lo pediste desde allá) y todo queda en *Documentos\Jarvis\Proyectos\<nombre>*, con
+un «Resumen del proyecto». Si un paso falla, los demás siguen; si Jarvis se cierra a mitad, al volver te pregunta si
+lo continúa.
+
+**Centro de aprobaciones.** Lo importante que Jarvis va a hacer por su cuenta te lo pregunta primero (hoy, los
+proyectos; desde la 7.7, correos, eventos y la casa). Respondes por voz («sí», «sí 3», «no 2»), en *Ajustes › Agente*,
+en el panel del celular (botones Aprobar/Rechazar), en Telegram o con clic derecho en el reactor (un **punto violeta**
+avisa que hay algo esperando). Si nadie responde en 15 minutos, no se hace. **Solo tú apruebas**: ni un enlace
+`jarvis://` (que podría venir de una web), ni otra IA por MCP, ni una tarea programada pueden aprobar nada. Todo queda
+en el **registro de acciones**: «¿qué hiciste por tu cuenta hoy?», «¿qué tengo por aprobar?».
+
+El reactor de Windhawk pasa a la versión 2.1 (punto violeta y «Aprobar/Rechazar» en su menú): cópialo otra vez desde
+*Ajustes › Integraciones*.
 
 ## Herramientas por significado, habilidades de la comunidad e investigaciones con fuentes (v7.5)
 

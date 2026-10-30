@@ -340,10 +340,13 @@ def tasks_voice(text, t):
 def run_task(task, why="a su hora"):
     """Hace la tarea (con las reglas del celular) y entrega lo que conteste."""
     J.log_terminal(f"Tarea programada ({why}): {task['orden']}", "TAREA")
+    J._tl.via = "tarea"
     try:
         result = J.telegram_run(task["orden"])
     except Exception as e:
         result = f"No pude hacerla: {e}"
+    finally:
+        J._tl.via = None
     result = str(result or "Hecho.").strip()
     msg = f"Tarea programada «{task['orden']}»: {result}"
     diario.log("tarea", task["orden"])

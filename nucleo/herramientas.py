@@ -276,8 +276,8 @@ def _read_page(s):
     return s
 
 
-def _save_report(report, sources, topic):
-    folder = os.path.join(J.settings["output_dir"], "Investigaciones")
+def _save_report(report, sources, topic, folder=None):
+    folder = folder or os.path.join(J.settings["output_dir"], "Investigaciones")
     os.makedirs(folder, exist_ok=True)
     base = os.path.join(folder, f"Investigación - {investigar.safe_filename(topic)} - {datetime.date.today():%Y-%m-%d}")
     if J.Document is not None:
@@ -308,8 +308,9 @@ def _save_report(report, sources, topic):
     return path
 
 
-def research(topic, sync=False):
-    """Investiga a fondo. sync=True: espera y devuelve el texto (Telegram, tareas, MCP)."""
+def research(topic, sync=False, folder=None, full=False):
+    """Investiga a fondo. sync=True: espera y devuelve el texto (Telegram, tareas, MCP).
+    folder: dónde guardar el informe; full=True (con sync): devuelve {"msg", "path", "resumen"} (proyectos)."""
     if J.is_offline():
         msg = "Ahora no hay internet, así que no puedo investigar."
         if sync:
@@ -353,9 +354,11 @@ def research(topic, sync=False):
                     J.log_terminal(f"Investigación: la IA no pudo escribir el informe ({e}).", "AVISO")
             if not report or (not report["resumen"] and not report["secciones"]):
                 report = investigar.fallback_report(topic, sources)
-            path = J._save_report(report, sources, topic)
+            path = J._save_report(report, sources, topic, folder)
+            out["resumen"] = (report["resumen"] + "\n" + "\n".join(
+                f"{t}: " + " ".join(ls)[:400] for t, ls in report["secciones"]))[:3000]
             J.generated_files.add(path)
-            opened = J._open_doc(path)
+            opened = J._open_doc(path) if not folder else False
             where = "Documentos, carpeta Jarvis, Investigaciones" + ("" if opened else f" ({os.path.basename(path)})")
             out["msg"] = investigar.spoken_summary(report, len(sources), where)
             out["path"] = path
@@ -372,7 +375,7 @@ def research(topic, sync=False):
 
     if sync:
         work()
-        return out.get("msg", "")
+        return out if full else out.get("msg", "")
     threading.Thread(target=work, daemon=True, name="investigacion").start()
     return ""
 

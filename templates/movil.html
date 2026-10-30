@@ -75,6 +75,7 @@
 </header>
 <main>
   <div id="cards"></div>
+  <section id="sec-ap" hidden><h2>Por aprobar</h2><div id="ap"></div></section>
   <section id="sec-tmr" hidden><h2>Temporizadores</h2><ul class="tmr" id="tmr"></ul></section>
   <section>
     <h2>Rápido</h2>
@@ -131,6 +132,18 @@
       el.innerHTML = '<div class="k"><span></span><span></span><em></em></div><p></p>';
       const k = el.firstChild.children; k[0].textContent = c.icon || "✦"; k[1].textContent = c.title || ""; k[2].textContent = c.time || "";
       el.lastChild.textContent = c.body || ""; return el; }));
+    const ap = d.approvals || [];
+    $("#sec-ap").hidden = !ap.length;
+    $("#ap").replaceChildren(...ap.map((a) => {
+      const el = document.createElement("div"); el.className = "card";
+      const t = document.createElement("p"); t.style.fontWeight = "600"; t.textContent = `${a.id}. ${a.titulo}`;
+      const dd = document.createElement("p"); dd.style.opacity = ".75"; dd.style.fontSize = "13px"; dd.textContent = a.detalle || "";
+      const row = document.createElement("div"); row.className = "grid"; row.style.gridTemplateColumns = "1fr 1fr"; row.style.marginTop = "8px";
+      const yes = document.createElement("button"); yes.textContent = "Aprobar";
+      const no = document.createElement("button"); no.textContent = "Rechazar";
+      const go = (ok) => api("/api/aprobar", { method: "POST", body: JSON.stringify({ id: a.id, ok }) }).then(poll).catch(() => alert("No pude enviarlo."));
+      yes.addEventListener("click", () => go(true)); no.addEventListener("click", () => go(false));
+      row.append(yes, no); el.append(t, dd, row); return el; }));
     const chat = d.chat || [];
     const key = chat.map((c) => c.time + c.text).join("|");
     if (key !== lastChat) {

@@ -158,3 +158,9 @@ busca en mi memoria la reunión de padres => MEMORIA
 
 # ================================================================ 7.5: investigación con fuentes
 cel: investiga a fondo el ciclo del agua => INVESTIGA
+
+# ================================================================ 7.6: agente
+¿qué tengo por aprobar? => APROBAR
+¿qué hiciste por tu cuenta hoy? => APROBAR
+¿cómo va el proyecto? => PROYECTO
+prepárame la semana de 7A sobre fracciones => PROYECTO

@@ -55,13 +55,13 @@ def link_order(text):
     def _run():
         J.push_chat("user", text, "enlace")
         J.pending.update(skill=None, args=None, expires=0)
-        J._tl.remote = True
+        J._tl.remote, J._tl.via = True, "enlace"
         try:
             J.process_command(text)
         except Exception as e:
             J.log_terminal(f"Error con la orden del enlace «{text}»: {e}", "ERROR")
         finally:
-            J._tl.remote = False
+            J._tl.remote, J._tl.via = False, None
     threading.Thread(target=_run, daemon=True, name="enlace").start()
 
 
@@ -168,7 +168,9 @@ def api_orb():
             "level": f["level"] if mode in ("awaiting", "idle") and J.state.get("mic") == "on" else 0.0,
             "seq": f["seq"], "role": f["role"], "msg": f["msg"],
             "alert_seq": f["alert_seq"], "alert": f["alert"],
-            "agenda": _orb_agenda(), "accent": "%02x%02x%02x" % J.THEMES.get(J.settings["theme"], J.THEMES["cyan"])[1],
+            "agenda": _orb_agenda(), "approvals": len(J.aprobaciones.pending()),
+            "approval": (J.aprobaciones.latest() or {}).get("titulo", "")[:120],
+            "approval_id": (J.aprobaciones.latest() or {}).get("id", 0), "accent": "%02x%02x%02x" % J.THEMES.get(J.settings["theme"], J.THEMES["cyan"])[1],
             "version": J.VERSION}
 
 

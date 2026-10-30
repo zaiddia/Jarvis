@@ -542,7 +542,11 @@ def api_mcp():
     texto = str(args.get("texto", "")).strip()[:1000]
     if tool == "jarvis_orden" and texto:
         J.log_terminal(f"Desde otra IA (MCP): {texto}", "MCP")
-        return {"text": J.telegram_run(texto)}
+        J._tl.via = "mcp"                              # otra IA no puede aprobar lo que Jarvis pide
+        try:
+            return {"text": J.telegram_run(texto)}
+        finally:
+            J._tl.via = None
     if tool == "jarvis_decir" and texto:
         J.reply(texto, "MCP")
         return {"text": "Dicho."}
@@ -615,7 +619,8 @@ def mobile_state():
     except Exception:
         items = []
     return {"state": J.state, "timers": J._timers_snapshot(), "agenda": items[:8], "version": J.VERSION,
-            "chat": list(J.chat_buffer)[-24:], "cards": list(J.recent_cards)[-4:], "name": J.settings["address_name"].strip()}
+            "chat": list(J.chat_buffer)[-24:], "cards": list(J.recent_cards)[-4:], "name": J.settings["address_name"].strip(),
+            "approvals": [{"id": i["id"], "titulo": i["titulo"], "detalle": i["detalle"][:400]} for i in J.aprobaciones.pending()]}
 
 
 @mobile_app.route("/api/orden", methods=["POST"])

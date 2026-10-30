@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "7.5"
+VERSION = "7.6"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -353,6 +353,7 @@ import buscar
 import diario
 import rapidez
 import recuerdos
+import aprobaciones
 import proactivo
 import vigilante
 import habilidades
@@ -679,6 +680,8 @@ DEFAULT_SETTINGS = {
     "memory_semantic": True,       # buscar también por significado (con Gemini u Ollama, si los tienes)
     "tool_select": True,           # 7.5: la IA solo ve las herramientas que tienen que ver con la orden
     "tool_select_max": 20,         # cuántos conectores como mucho (las acciones propias van siempre)
+    "approvals_telegram": True,    # 7.6: las aprobaciones también llegan a Telegram (si está conectado)
+    "project_parallel": 3,         # 7.6: cuántos sub-agentes trabajan a la vez en un proyecto
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -711,7 +714,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -1318,6 +1321,8 @@ def process_command(text):
         return
     if learn_answer(t):                                # «sí» a «¿lo guardo como rutina?»
         return
+    if approvals_answer(t):                            # «sí», «sí 3», «no 2» a una aprobación pendiente
+        return
     if _CHECK_RE.search(t):                            # «prueba completa», «revisa todo»
         if getattr(_tl, "remote", False):
             reply(check_report(run_system_check(speak_it=False)), "PRUEBA")
@@ -1392,6 +1397,10 @@ def process_command(text):
         learn_note("temporizador", {"segundos": int(_dur)})
         return
 
+    if approvals_voice(text, t):                       # «¿qué tengo por aprobar?», «¿qué hiciste por tu cuenta?»
+        return
+    if project_voice(text, t):                         # «prepárame la semana de 7A sobre fracciones»
+        return
     if tasks_voice(text, t):                           # «cada lunes a las 6 resume mis pendientes y mándamelo al celular»
         return
     if recall_voice(text, t):                          # «¿qué te dije la semana pasada sobre el examen de 7A?»
@@ -1629,6 +1638,13 @@ from nucleo.herramientas import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 7.6 · CENTRO DE APROBACIONES Y PROYECTOS CON SUB-AGENTES
+# → nucleo/agentes.py (lógica en aprobaciones.py y proyectos.py)
+# =============================================================================
+from nucleo.agentes import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1748,6 +1764,7 @@ def main():
         windows_at_start(START_LINK)      # enlace local, integración con Windows y el enlace de arranque
         learn_start()                     # 7.4: costumbres, historial y tareas programadas
         tools_start()                     # 7.5: habilidades de la comunidad
+        agents_start()                    # 7.6: aprobaciones y proyectos
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

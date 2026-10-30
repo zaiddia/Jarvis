@@ -1049,6 +1049,52 @@
   });
   socket.on("connect", () => socket.emit("tasks_list", {}, renderTasks));
 
+  /* 7.6: agente (aprobaciones, proyectos y registro) */
+  function renderAgent(r) {
+    if (!r) return;
+    const ap = $("#ap-list"); ap.innerHTML = "";
+    if (!r.pending.length) ap.innerHTML = '<li class="empty">Nada pendiente de aprobar.</li>';
+    r.pending.forEach((a) => {
+      const li = document.createElement("li");
+      const b = document.createElement("div"); b.className = "r-body";
+      const n = document.createElement("span"); n.className = "r-name"; n.textContent = `${a.id}. ${a.titulo}`;
+      const m = document.createElement("span"); m.className = "r-meta"; m.textContent = a.detalle; m.title = a.detalle;
+      b.append(n, m);
+      const yes = document.createElement("button"); yes.type = "button"; yes.className = "btn btn-primary"; yes.textContent = "Aprobar";
+      const no = document.createElement("button"); no.type = "button"; no.className = "text-btn"; no.textContent = "Rechazar";
+      yes.addEventListener("click", () => socket.emit("approval_resolve", { id: a.id, ok: true }, renderAgent));
+      no.addEventListener("click", () => socket.emit("approval_resolve", { id: a.id, ok: false }, renderAgent));
+      li.append(b, yes, no); ap.appendChild(li);
+    });
+    const pj = $("#pj-list"); pj.innerHTML = "";
+    if (!r.projects.length) pj.innerHTML = '<li class="empty">Aún no hay proyectos.</li>';
+    r.projects.forEach((p) => {
+      const li = document.createElement("li");
+      const b = document.createElement("div"); b.className = "r-body";
+      const n = document.createElement("span"); n.className = "r-name"; n.textContent = p.nombre;
+      const m = document.createElement("span"); m.className = "r-meta";
+      m.textContent = `${p.estado} · ${p.hechos} de ${p.total} pasos · ${new Date(p.creado * 1000).toLocaleString()}`;
+      b.append(n, m); li.append(b);
+      const btn = (txt, action) => { const x = document.createElement("button"); x.type = "button"; x.className = "text-btn"; x.textContent = txt;
+        x.addEventListener("click", () => socket.emit("project_action", { id: p.id, action }, renderAgent)); li.appendChild(x); };
+      btn("Abrir carpeta", "open");
+      if (r.running === p.id) btn("Cancelar", "cancel");
+      else if (p.estado === "interrumpido" || p.estado === "cancelado") btn("Continuar", "resume");
+      pj.appendChild(li);
+    });
+    const h = $("#ag-hist"); h.innerHTML = "";
+    const LBL = { pedida: "?", aprobada: "✓", rechazada: "✗", caducada: "…", hecha: "◆" };
+    (r.history || []).slice().reverse().slice(0, 25).forEach((e) => {
+      const li = document.createElement("li"); const i = document.createElement("b"); i.textContent = LBL[e.evento] || "·";
+      const s = document.createElement("span"); s.textContent = `${e.ts.slice(5, 16).replace("T", " ")} · ${e.titulo || e.texto || ""}` + (e.por ? ` (${e.por})` : "");
+      li.append(i, s); h.appendChild(li);
+    });
+    if (!(r.history || []).length) h.innerHTML = '<li><b>·</b><span>Nada todavía.</span></li>';
+  }
+  socket.on("connect", () => socket.emit("agent_info", {}, renderAgent));
+  socket.on("approvals", () => socket.emit("agent_info", {}, renderAgent));
+  document.querySelector('[data-tab="agente"]').addEventListener("click", () => socket.emit("agent_info", {}, renderAgent));
+
   /* 7.2: Jarvis dentro de Windows y el orbe de Windhawk */
   let orbCode = "";
   function renderWindows(w) {

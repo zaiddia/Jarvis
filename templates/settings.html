@@ -35,6 +35,7 @@
   <button class="tab" type="button" data-tab="integra">Integraciones</button>
   <button class="tab" type="button" data-tab="memoria">Memoria</button>
   <button class="tab" type="button" data-tab="rutinas">Rutinas</button>
+  <button class="tab" type="button" data-tab="agente">Agente</button>
   <button class="tab" type="button" data-tab="acerca">Acerca de</button>
 </nav>
 
@@ -847,6 +848,29 @@
     <div class="group">Investigaciones</div>
     <p class="pane-intro">«Jarvis, investiga a fondo la deforestación en la Amazonía» (o «hazme un informe sobre…»): busca en varias fuentes, las lee y te deja un documento de Word con cada dato citado [1], [2]… y la lista de fuentes con sus enlaces. «Busca en internet…» o «averigua…» siguen dando la respuesta rápida en voz.</p>
     <div class="row-btns"><button class="btn btn-ghost" type="button" id="btn-research-folder"><svg class="i"><use href="#i-folder"/></svg>Abrir la carpeta de investigaciones</button></div>
+  </section>
+
+  <!-- AGENTE (7.6) -->
+  <section class="pane" data-pane="agente">
+    <div class="group">Por aprobar</div>
+    <p class="pane-intro">Lo importante que Jarvis va a hacer por su cuenta (un proyecto, y en las próximas versiones correos, eventos o la casa) te lo pregunta primero. Respondes por voz («sí», «sí 3», «no»), aquí, en el reactor, en el panel del celular o en Telegram. Si nadie responde en 15 minutos, no se hace.</p>
+    <ul class="routines" id="ap-list"></ul>
+    <div class="field">
+      <div class="ft"><label for="f-ap-tg">Mandar las aprobaciones a Telegram</label><p>Para aprobar desde el celular aunque no estés frente al equipo.</p></div>
+      <label class="switch"><input type="checkbox" id="f-ap-tg" data-key="approvals_telegram"><span></span></label>
+    </div>
+
+    <div class="group">Proyectos</div>
+    <p class="pane-intro">«Jarvis, prepárame la semana de 7A sobre fracciones», «hazme un proyecto: unidad de ecosistemas para sexto con investigación, 3 clases, taller y quiz». Jarvis lo convierte en pasos (investigar, planes de clase, talleres, quiz, rúbrica, presentación, textos), te los dice y, cuando apruebas, varios <b>sub-agentes</b> los hacen a la vez; lo que sale de un paso se usa en los siguientes. Todo queda en <code>Documentos\Jarvis\Proyectos</code>. «¿Cómo va el proyecto?», «cancela el proyecto», «continúa el proyecto».</p>
+    <ul class="routines" id="pj-list"></ul>
+    <div class="field">
+      <div class="ft"><label for="f-pj-par">Sub-agentes a la vez</label><p>Más es más rápido, pero gasta más de tu IA al mismo tiempo.</p></div>
+      <div class="range"><input type="range" id="f-pj-par" min="1" max="4" step="1" data-key="project_parallel"><output></output></div>
+    </div>
+
+    <div class="group">Lo que hice por mi cuenta</div>
+    <p class="pane-intro">Registro de los últimos días: qué se pidió aprobar, quién lo aprobó y qué hizo Jarvis solo. También: «¿qué hiciste por tu cuenta hoy?».</p>
+    <ul class="chk-list" id="ag-hist"></ul>
   </section>
 
   <!-- ACERCA -->
