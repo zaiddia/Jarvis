@@ -846,6 +846,15 @@
   socket.on("classroom_done", (d) => { toast(d.msg, "info", 6000); socket.emit("classroom_status", {}, renderCr); });
   socket.on("connect", () => socket.emit("classroom_status", {}, renderCr));
 
+  // 8.1: horario de clases
+  socket.on("connect", () => socket.emit("schedule_get", {}, (r) => { $("#sch-text").value = r.text || ""; }));
+  $("#btn-sch-save").addEventListener("click", () => socket.emit("schedule_save", { text: $("#sch-text").value }, (r) => {
+    const st = $("#sch-status");
+    st.className = "status " + (r.ok ? "ok" : "err");
+    st.textContent = r.ok ? `Guardé ${r.n} clase(s).` : "No entendí estas líneas: " + r.bad.join(" · ") + ". Escríbelas así: «lunes 7:00-7:55 7A Matemáticas».";
+    if (r.ok) $("#sch-text").value = r.text;
+  }));
+
   // 7.9: WhatsApp y sincronización
   $("#btn-wa-test").addEventListener("click", () => {
     const st = $("#wa-status"); st.className = "status"; st.textContent = "Enviando…";

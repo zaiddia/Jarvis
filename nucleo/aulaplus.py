@@ -332,6 +332,7 @@ def bank_voice(text, t):
     if not quiz:
         J.reply(f"No tengo preguntas de {tema or 'ese tema'} en el banco todavía. Pídeme un quiz normal y las guardo.", "AULA")
         return True
+    J.remember_quiz(quiz)                              # 8.1: «pásalo a Forms»
     if J.Document is None:
         J.reply("No puedo crear documentos: falta python-docx.", "ERROR")
         return True

@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "8.0"
+VERSION = "8.1"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -361,6 +361,8 @@ import vigilante
 import habilidades
 import mcp_cliente
 import errores
+import horario
+import formularios
 import secreto
 
 
@@ -704,6 +706,8 @@ DEFAULT_SETTINGS = {
     "sync_folder": "",             # 7.9: carpeta compartida (OneDrive…) para usar Jarvis en varios equipos
     "encrypt_secrets": True,       # 8.0: claves cifradas con la protección de Windows (no en modo USB)
     "checked_version": "",         # 8.0: versión con la que ya se hizo la revisión tras actualizar
+    "schedule_auto_course": True,  # 8.1: el curso activo del aula sigue tu horario
+    "schedule_warn": False,        # 8.1: avisarme 5 minutos antes de cada clase
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -1438,6 +1442,12 @@ def process_command(text):
         return
     if event_voice(text, t):                           # «agenda una reunión con los padres de Juan el jueves a las 3»
         return
+    if forms_voice(text, t):                           # «pasa el quiz a Forms», «trae las notas del formulario»
+        return
+    if feedback_voice(text, t):                        # «revisa las respuestas del taller en Classroom de 7A»
+        return
+    if schedule_voice(text, t):                        # «¿qué clase tengo ahora?», «prepárame la próxima clase»
+        return
     if classroom_voice(text, t):                       # «¿quién no ha entregado el taller en Classroom de 7A?»
         return
     if student_voice(text, t):                         # «ponle 4,5 a Juan en el quiz», «¿quiénes están en riesgo en 7A?»
@@ -1721,6 +1731,13 @@ from nucleo.salud import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 8.1 · GOOGLE FORMS, RETROALIMENTACIÓN DE ENTREGAS Y HORARIO DE CLASES
+# → nucleo/aulaconecta.py (lógica en formularios.py y horario.py)
+# =============================================================================
+from nucleo.aulaconecta import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1844,6 +1861,7 @@ def main():
         aula_plus_start()                 # 7.8: seguimiento y banco de preguntas
         reach_start()                     # 7.9: sincronización entre equipos
         health_start()                    # 8.0: registro de errores y revisión tras actualizar
+        classroom_plus_start()            # 8.1: horario de clases
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

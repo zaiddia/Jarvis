@@ -824,10 +824,24 @@
       <button class="btn btn-ghost" type="button" id="btn-habits-forget">Olvidar mis costumbres</button>
     </div>
 
-    <div class="group">Google Classroom</div>
-    <p class="pane-intro">«¿Qué tareas tengo en Classroom de 7A?», «¿quién no ha entregado el taller de fracciones en Classroom de 7A?», «publica en Classroom de 7A que mañana hay examen» (con tu aprobación), «trae las notas de Classroom de 7A».</p>
+    <div class="group">Horario de clases</div>
+    <p class="pane-intro">Una clase por línea: <code>lunes 7:00-7:55 7A Matemáticas</code>. Con el horario: «¿qué clase tengo ahora?», «¿cuál es mi próxima clase?», «mi horario de mañana», «prepárame la próxima clase de fracciones». También por voz: «los martes de 1 a 2 tengo 9B física».</p>
+    <textarea class="inp mono" id="sch-text" rows="7" placeholder="lunes 7:00-7:55 7A Matemáticas&#10;lunes 8:00-8:55 9B Física&#10;martes 13:00-14:00 6A Ciencias"></textarea>
+    <div class="row-btns"><button class="btn btn-primary" type="button" id="btn-sch-save">Guardar horario</button></div>
+    <p class="status" id="sch-status"></p>
+    <div class="field">
+      <div class="ft"><label for="f-sch-auto">El curso del aula sigue mi horario</label><p>Al empezar cada clase, el curso activo (asistencia, grupos, material) cambia solo.</p></div>
+      <label class="switch"><input type="checkbox" id="f-sch-auto" data-key="schedule_auto_course"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-sch-warn">Avisarme 5 minutos antes de cada clase</label></div>
+      <label class="switch"><input type="checkbox" id="f-sch-warn" data-key="schedule_warn"><span></span></label>
+    </div>
+
+    <div class="group">Google Classroom y Google Forms</div>
+    <p class="pane-intro">«¿Qué tareas tengo en Classroom de 7A?», «¿quién no ha entregado el taller de fracciones en Classroom de 7A?», «publica en Classroom de 7A que mañana hay examen» (con tu aprobación), «trae las notas de Classroom de 7A». <b>Forms:</b> «pasa el quiz a Forms», «haz un quiz de 10 preguntas de fracciones en Forms para 7A» y luego «trae las notas del formulario». <b>Retroalimentación:</b> «revisa las respuestas del taller en Classroom de 7A» (respuestas cortas: te propone nota y comentario, y guardas las notas solo si apruebas). Si conectaste antes de la 8.1, pulsa «Conectar» otra vez para dar permiso a Forms.</p>
     <ol class="steps">
-      <li>Entra a <code>console.cloud.google.com</code>, crea un proyecto y activa la <b>Google Classroom API</b>.</li>
+      <li>Entra a <code>console.cloud.google.com</code>, crea un proyecto y activa la <b>Google Classroom API</b> y la <b>Google Forms API</b>.</li>
       <li>En «Pantalla de consentimiento de OAuth» elige «Externo», pon tu correo y agrégate como usuario de prueba.</li>
       <li>En «Credenciales» › «Crear credenciales» › «ID de cliente de OAuth» › tipo <b>App de escritorio</b>. Copia el ID y el secreto aquí.</li>
       <li>Pulsa «Conectar»: se abre Google, autorizas y listo. Jarvis guarda solo el permiso, nunca tu contraseña.</li>

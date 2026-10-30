@@ -27,7 +27,11 @@ SCOPES = ["https://www.googleapis.com/auth/classroom.courses.readonly",
           "https://www.googleapis.com/auth/classroom.coursework.students.readonly",
           "https://www.googleapis.com/auth/classroom.rosters.readonly",
           "https://www.googleapis.com/auth/classroom.profile.emails",
-          "https://www.googleapis.com/auth/classroom.announcements"]
+          "https://www.googleapis.com/auth/classroom.announcements",
+          # 8.1: Google Forms (crear el quiz autocalificable y leer sus respuestas)
+          "https://www.googleapis.com/auth/forms.body",
+          "https://www.googleapis.com/auth/forms.responses.readonly"]
+FORMS_API = "https://forms.googleapis.com/v1/"
 
 
 class ClassroomError(Exception):
@@ -90,8 +94,8 @@ class Client:
         self.token, self.exp = d["access_token"], time.time() + int(d.get("expires_in", 3600))
         return self.token
 
-    def call(self, method, path, params=None, body=None):
-        url = API + path + ("?" + urllib.parse.urlencode(params) if params else "")
+    def call(self, method, path, params=None, body=None, base=API):
+        url = base + path + ("?" + urllib.parse.urlencode(params) if params else "")
         req = urllib.request.Request(url, method=method, data=json.dumps(body).encode() if body is not None else None,
                                      headers={"Authorization": f"Bearer {self._access()}", "Content-Type": "application/json"})
         try:
@@ -101,7 +105,8 @@ class Client:
         except urllib.error.HTTPError as e:
             body = e.read().decode("utf-8", "replace")
             if e.code in (401, 403):
-                raise ClassroomError("Google no da permiso: vuelve a conectar Classroom en Ajustes. " + body[:120])
+                raise ClassroomError("Google no da permiso: vuelve a conectar Classroom en Ajustes (la 8.1 pide también "
+                                     "permiso para Google Forms). " + body[:120])
             raise ClassroomError(f"Classroom respondió {e.code}: {body[:200]}")
         except urllib.error.URLError as e:
             raise ClassroomError(f"sin conexión con Classroom ({e.reason})")
@@ -130,6 +135,32 @@ class Client:
     def submissions(self, course_id, cw_id):
         return self.pages(f"courses/{course_id}/courseWork/{cw_id}/studentSubmissions", "studentSubmissions",
                           {"pageSize": 100})
+
+    def roster_emails(self, course_id):
+        """{correo: nombre} de los estudiantes (para saber de quién es cada respuesta de Forms)."""
+        out = {}
+        for s in self.pages(f"courses/{course_id}/students", "students", {"pageSize": 100}):
+            p = s.get("profile", {})
+            if p.get("emailAddress"):
+                out[p["emailAddress"].lower()] = p.get("name", {}).get("fullName", s["userId"])
+        return out
+
+    # 8.1: Google Forms
+    def form_create(self, body):
+        return self.call("POST", "forms", body=body, base=FORMS_API)
+
+    def form_update(self, form_id, requests):
+        return self.call("POST", f"forms/{form_id}:batchUpdate", body={"requests": requests}, base=FORMS_API)
+
+    def form_responses(self, form_id):
+        out, params = [], {}
+        for _ in range(10):
+            d = self.call("GET", f"forms/{form_id}/responses", params or None, base=FORMS_API)
+            out += d.get("responses") or []
+            if not d.get("nextPageToken"):
+                break
+            params = {"pageToken": d["nextPageToken"]}
+        return out
 
     def announce(self, course_id, text):
         return self.call("POST", f"courses/{course_id}/announcements", body={"text": text, "state": "PUBLISHED"})

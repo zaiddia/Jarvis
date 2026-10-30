@@ -335,6 +335,8 @@ def restore_backup(name, parts):
         aula.load()
     if "rutinas" in done:
         rutinas.load()
+    if "horario" in done:                              # 8.1
+        J.horario.load()
     if "memoria" in done:
         J.load_memory()
     if "perfil" in done:

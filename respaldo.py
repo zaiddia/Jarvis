@@ -27,6 +27,8 @@ FILES = {
     "tareas.json": ("tareas", "Tareas programadas"),
     "aprendizaje.json": ("aprendizaje", "Costumbres aprendidas"),
     "notas_estudiantes.json": ("seguimiento", "Notas de los estudiantes"),
+    "horario.json": ("horario", "Horario de clases"),
+    "formularios.json": ("formularios", "Formularios de Google Forms"),
     "banco_preguntas.json": ("banco", "Banco de preguntas"),
 }
 # carpeta -> (parte, descripción, extensión): cada archivo de la carpeta va en la copia

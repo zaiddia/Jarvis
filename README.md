@@ -157,6 +157,28 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Google Forms, retroalimentación de entregas y horario de clases (v8.1)
+
+**El quiz en Google Forms.** «**Pasa el quiz a Forms**» (el último que preparaste) o «**haz un quiz de 10 preguntas
+de fracciones en Forms para 7A**» (usa tu banco si tiene suficientes preguntas; si no, lo crea la IA). Queda como
+formulario **autocalificable**, con las respuestas correctas, la explicación cuando se equivocan y el correo de cada
+estudiante. Jarvis lo abre para que lo revises y, con tu aprobación, publica el enlace en Classroom. Luego, «**trae las
+notas del formulario**»: pasa cada nota a la escala de 1 a 5 y la guarda en el seguimiento con el nombre del
+estudiante (lo cruza con la lista de Classroom).
+
+**Retroalimentación de entregas.** «**Revisa las respuestas del taller en Classroom de 7A**»: lee las respuestas
+cortas que entregaron, la IA propone una nota y un comentario para cada estudiante, los guarda en un Word en
+`Documentos\Jarvis\Retroalimentación` y te pide aprobación antes de guardar las notas. Los trabajos en papel siguen
+siendo con «revisa este trabajo» (cámara o pantalla).
+
+**Horario de clases.** En *Ajustes › Memoria › Horario* (una clase por línea: `lunes 7:00-7:55 7A Matemáticas`) o por
+voz: «**los martes de 1 a 2 tengo 9B física**». Luego: «**¿qué clase tengo ahora?**», «**¿cuál es mi próxima
+clase?**», «**mi horario de mañana**», «**prepárame la próxima clase de leyes de Newton**» (plan de clase para ese
+curso). El curso activo del aula cambia solo al empezar cada clase, y si quieres te avisa 5 minutos antes.
+
+Para Forms hay que activar la **Google Forms API** en el mismo proyecto de Google Cloud y pulsar «Conectar» otra vez
+en Ajustes (para dar el permiso nuevo).
+
 ## Errores, informe y claves cifradas (v8.0)
 
 **Registro de errores.** Cada fallo real (una orden que se rompe, un servicio en segundo plano que se cae) queda

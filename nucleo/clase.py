@@ -150,6 +150,7 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
                     m = aula.validate(kind, J._extract_json(raw), request)
                     if kind == "quiz":
                         J.banco.add_quiz(m)                    # 7.8: banco de preguntas
+                        J.remember_quiz(m)                     # 8.1: «pásalo a Forms»
                     break
                 except (ValueError, TypeError) as e:
                     last_err = e

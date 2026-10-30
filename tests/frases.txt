@@ -174,3 +174,6 @@ agenda una reunión con los padres de Juan el jueves a las 3 => CALENDARIO|APROB
 ¿cuántas preguntas tengo de fracciones? => AULA
 ¿qué tareas tengo en Classroom de 7A? => CLASSROOM
 genera una imagen de una célula animal para sexto => IMAGEN :: célula animal
+¿qué clase tengo ahora? => HORARIO
+mi horario de mañana => HORARIO
+¿has tenido errores? => INFORME
