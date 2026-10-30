@@ -150,3 +150,17 @@ def test_sincronizar_desde_jarvis(jv, monkeypatch, tmp_path):
     assert "apagada" in jv.sync_now()
     monkeypatch.setitem(jv.settings, "sync_folder", str(tmp_path / "no-existe"))
     assert "No encuentro" in jv.sync_now()
+
+
+# ----------------------------------------------------------------------------- 7.9.1: control del navegador
+def test_ventana_objetivo_ignora_el_reactor():
+    import skills
+    other = skills.OWN_PID + 1
+    assert skills.is_action_target("Chrome_WidgetWin_1", other, 0)                    # tu navegador
+    assert skills.is_action_target("CabinetWClass", other, 0)                         # el Explorador de archivos
+    assert not skills.is_action_target("JarvisReactorInput", other, 0x80)             # cuadro de órdenes del reactor
+    assert not skills.is_action_target("JarvisReactorWindhawk", other, 0)
+    assert not skills.is_action_target("#32768", other, 0)                            # un menú
+    assert not skills.is_action_target("XamlExplorerHostIslandWindow", other, 0)      # Alt+Tab
+    assert not skills.is_action_target("Chrome_WidgetWin_1", skills.OWN_PID, 0)       # el HUD de Jarvis
+    assert not skills.is_action_target("Algo", other, 0x08000000)                     # no se puede activar

@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Arreglo del control del navegador (v7.9.1)
+
+«Cambia de pestaña», «cierra la pestaña», «baja», «busca en la página…», «escribe…» y «cierra esta ventana» volvían a
+fallar si le dabas la orden desde el reactor de la barra de tareas: Jarvis tomaba el cuadro de órdenes del reactor
+(o un menú, o Alt+Tab) como «la ventana activa» y mandaba ahí las teclas. Ahora ignora sus propias ventanas, los menús
+y las vistas del sistema, y siempre actúa sobre tu navegador o la última aplicación que usaste. Si esa ventana se
+cerró, usa la que esté más arriba en vez de decir «No sé sobre qué ventana actuar».
+
 ## Jarvis en todas partes: notas de voz, WhatsApp, celular instalable, imágenes y varios equipos (v7.9)
 
 **Notas de voz por Telegram.** Mándale una nota de voz al bot: Jarvis la transcribe (con tu clave de Gemini, o con

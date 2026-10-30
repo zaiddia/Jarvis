@@ -281,13 +281,31 @@ def list_windows():
 
 _last_ext = {"hwnd": None}
 
+# Ventanas que nunca son «la ventana sobre la que actuar»: menús, Alt+Tab, vistas de tareas, miniaturas de la barra y
+# las ventanas del propio Jarvis que viven en otros procesos (el reactor del Explorador y su cuadro de órdenes).
+# Sin esto, al escribir una orden en el reactor, «cambia de pestaña», «baja» o «escribe…» iban al cuadro del reactor
+# y no a tu navegador.
+TRANSIENT_CLASSES = {"#32768", "XamlExplorerHostIslandWindow", "TopLevelWindowForOverflowXamlIsland",
+                     "MultitaskingViewFrame", "TaskSwitcherWnd", "TaskListThumbnailWnd", "ForegroundStaging",
+                     "Windows.UI.Input.InputSite.WindowClass", "tooltips_class32"}
+WS_EX_TOOLWINDOW, WS_EX_NOACTIVATE = 0x80, 0x08000000
+
+
+def is_action_target(cls, pid, exstyle):
+    """¿Es una ventana de aplicación sobre la que el usuario quiere que Jarvis actúe?"""
+    if pid == OWN_PID or cls in SHELL_CLASSES or cls in TRANSIENT_CLASSES:
+        return False
+    if cls.startswith("Jarvis"):                       # el reactor de Windhawk y sus ventanas
+        return False
+    return not (exstyle & (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE))
+
 
 def _foreground_loop():
     """Recuerda la última ventana externa activa, para «cierra esta ventana», «escribe: …»."""
     while True:
         try:
             h = user32.GetForegroundWindow()
-            if h and _pid_of(h) != OWN_PID and _class_of(h) not in SHELL_CLASSES:
+            if h and is_action_target(_class_of(h), _pid_of(h), user32.GetWindowLongW(h, -20)):
                 _last_ext["hwnd"] = h
         except Exception:
             pass
@@ -296,8 +314,13 @@ def _foreground_loop():
 
 def target_window():
     h = _last_ext["hwnd"]
-    if IS_WIN and h and user32.IsWindow(h):
+    if IS_WIN and h and user32.IsWindow(h) and user32.IsWindowVisible(h):
         return h
+    if IS_WIN:                                         # se cerró: la ventana de aplicación que esté más arriba
+        for w in list_windows():
+            if is_action_target(w["cls"], w["pid"], 0):
+                _last_ext["hwnd"] = w["hwnd"]
+                return w["hwnd"]
     raise SkillError("No sé sobre qué ventana actuar. Haz clic en ella y repite la orden.")
 
 
