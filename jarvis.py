@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "8.2"
+VERSION = "8.3"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -709,6 +709,11 @@ DEFAULT_SETTINGS = {
     "checked_version": "",         # 8.0: versión con la que ya se hizo la revisión tras actualizar
     "schedule_auto_course": True,  # 8.1: el curso activo del aula sigue tu horario
     "schedule_warn": False,        # 8.1: avisarme 5 minutos antes de cada clase
+    "weekly_summary": True,        # 8.3: resumen de la semana al celular
+    "weekly_day": "viernes",
+    "weekly_hour": 16,
+    "weekly_sent": "",
+    "update_night": True,          # 8.3: instalar de noche las versiones nuevas (con copia de seguridad)
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -742,7 +747,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -774,6 +779,7 @@ def _validate(key, value):
 
     v = str(value).strip()[:6000]
     choices = {"theme": THEMES, "ai_provider": tuple(PROVIDERS),
+               "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
                "tts_backend": ("edge", "piper", "gemini"), "stt_backend": ("vosk", "whisper"),
                "gemini_tts_model": ("gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts"),
@@ -1435,6 +1441,10 @@ def process_command(text):
         learn_note("temporizador", {"segundos": int(_dur)})
         return
 
+    if recurring_project(text, t):                     # «cada domingo a las 6 prepárame la semana de 7A sobre…»
+        return
+    if weekly_voice(text, t):                          # «dame el resumen semanal»
+        return
     if approvals_voice(text, t):                       # «¿qué tengo por aprobar?», «¿qué hiciste por tu cuenta?»
         return
     if project_voice(text, t):                         # «prepárame la semana de 7A sobre fracciones»
@@ -1748,6 +1758,13 @@ from nucleo.familia import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 8.3 · RESUMEN SEMANAL, PROYECTOS QUE SE REPITEN Y ACTUALIZACIÓN DE NOCHE
+# → nucleo/autonomia.py
+# =============================================================================
+from nucleo.autonomia import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1873,6 +1890,7 @@ def main():
         health_start()                    # 8.0: registro de errores y revisión tras actualizar
         classroom_plus_start()            # 8.1: horario de clases
         family_start()                    # 8.2: observador del estudiante
+        autonomy_start()                  # 8.3: resumen semanal, actualización de noche y vuelta atrás
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

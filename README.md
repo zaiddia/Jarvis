@@ -157,6 +157,21 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Resumen semanal, proyectos que se repiten y actualización de noche (v8.3)
+
+**Resumen de la semana.** Los viernes desde las 4 de la tarde (se cambia en *Ajustes › Agente*) te llega al celular,
+por Telegram o WhatsApp, o al HUD: lo que hiciste con Jarvis, los proyectos, lo que aprobaste, tus pendientes, quién
+está en riesgo en cada curso y lo que viene la próxima semana (clases del horario y eventos del calendario). Cuando
+quieras: «**dame el resumen semanal**».
+
+**Proyectos que se repiten.** «**Cada domingo a las 6 de la tarde prepárame la semana de 7A sobre fracciones**»: queda
+como tarea programada y cada domingo Jarvis arma el proyecto y te pide aprobación (en el celular si no estás).
+
+**Actualización de noche.** Si está activado (*Ajustes › Acerca de*), entre la 1 y las 5 de la mañana, con Jarvis
+quieto, instala la versión nueva con copia de seguridad y se reinicia. Si la versión nueva no logra arrancar bien tres
+veces seguidas, vuelve sola a la anterior (esto también protege las actualizaciones que instales tú). No aplica al
+.exe, que se actualiza descargando el zip nuevo.
+
 ## Preguntas tipo Saber, malla del periodo, ajustes PIAR, observador e informes para padres (v8.2)
 
 **Preguntas tipo Saber.** «**Crea 10 preguntas tipo Saber de lectura crítica para once**», «**prepara un simulacro

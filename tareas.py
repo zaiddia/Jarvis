@@ -70,7 +70,8 @@ _WHEN_PARTS = [
 ]
 _LEAD = re.compile(r"^(?:jarvis\s+)?(?:programa(?:me)?|crea|agenda|configura|pon)?\s*(?:una\s+)?(?:tarea\s+)?(?:para\s+)?(?:que\s+)?")
 _VERB = re.compile(r"\b(?:resume|resumeme|dime|di|dame|mandame|enviame|revisa|lee|leeme|busca|investiga|averigua|"
-                   r"cuenta|cuentame|haz|prepara|recuerdame que|pon|abre|muestrame|que tengo|como esta|como va|"
+                   r"cuenta|cuentame|haz|hazme|prepara|preparame|crea|creame|genera|generame|arma|armame|"
+                   r"recuerdame que|pon|abre|muestrame|que tengo|como esta|como va|"
                    r"cuales son|que hay|cuanto)\b")
 
 

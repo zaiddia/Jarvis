@@ -170,7 +170,7 @@ def install_update():
                                  + (r.stderr or "")[-300:], "AVISO")
             except Exception as e:
                 J.log_terminal(f"No pude instalar componentes nuevos ({e}); ejecuta instalar.bat.", "AVISO")
-        J._upd_save(installed=res["version"], notified=res["version"])
+        J._upd_save(installed=res["version"], notified=res["version"], just_updated=res["version"], boot_count=0)  # 8.3
         J._upd_progress(f"Listo: versión {res['version']} instalada. Reiniciando Jarvis…", 100, done=True)
         J.reply(f"Me actualicé a la versión {res['version']}. Me reinicio en un momento.", "ACTUALIZACIÓN")
         J.restart_jarvis(delay=3.0)

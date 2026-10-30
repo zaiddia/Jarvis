@@ -988,6 +988,25 @@
       <div class="range"><input type="range" id="f-pj-par" min="1" max="4" step="1" data-key="project_parallel"><output></output></div>
     </div>
 
+    <div class="group">Resumen de la semana</div>
+    <p class="pane-intro">Lo que hiciste, lo que quedó pendiente, quién está en riesgo y lo que viene la próxima semana, a tu celular (Telegram o WhatsApp) o al HUD. También: «Jarvis, dame el resumen semanal». Y para repetir un proyecto: «cada domingo a las 6 de la tarde prepárame la semana de 7A sobre fracciones» (te pide aprobación cada vez).</p>
+    <div class="field">
+      <div class="ft"><label for="f-wk-on">Enviarme el resumen</label></div>
+      <label class="switch"><input type="checkbox" id="f-wk-on" data-key="weekly_summary"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-wk-day">Día</label></div>
+      <select class="inp narrow" id="f-wk-day" data-key="weekly_day">
+        <option value="lunes">Lunes</option><option value="martes">Martes</option><option value="miercoles">Miércoles</option>
+        <option value="jueves">Jueves</option><option value="viernes">Viernes</option><option value="sabado">Sábado</option>
+        <option value="domingo">Domingo</option>
+      </select>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-wk-hour">Desde la hora</label></div>
+      <div class="range"><input type="range" id="f-wk-hour" min="0" max="23" step="1" data-key="weekly_hour"><output></output></div>
+    </div>
+
     <div class="group">Imágenes para la clase</div>
     <p class="pane-intro">«Jarvis, hazme una ilustración del ciclo del agua», «genera una imagen de una célula animal para sexto». Usa el modelo de imágenes de Gemini con tu clave y las guarda en <code>Documentos\Jarvis\Imágenes</code>. En los proyectos también puedes pedir imágenes.</p>
     <div class="field stack"><div class="ft"><label for="f-img-model">Modelo de imágenes</label><p>Déjalo vacío para que Jarvis use el que tenga tu cuenta.</p></div>
@@ -1069,8 +1088,12 @@
       <input class="inp" type="text" id="f-update-repo" data-key="update_repo" placeholder="usuario/jarvis" style="max-width:340px" autocomplete="off" spellcheck="false">
     </div>
     <div class="field">
-      <div class="ft"><label for="f-update-auto">Avisarme si hay una versión nueva</label><p>Lo mira una vez al día y solo avisa en el HUD; nunca se instala ni se reinicia solo.</p></div>
+      <div class="ft"><label for="f-update-auto">Buscar versiones nuevas</label><p>Lo mira una vez al día y avisa en el HUD.</p></div>
       <label class="switch"><input type="checkbox" id="f-update-auto" data-key="update_auto"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-update-night">Instalarlas solo de noche</label><p>Entre la 1 y las 5 de la mañana, si Jarvis está quieto, instala la versión nueva con copia de seguridad y se reinicia. Si la versión nueva no arranca bien tres veces seguidas, vuelve sola a la anterior. (No aplica al .exe.)</p></div>
+      <label class="switch"><input type="checkbox" id="f-update-night" data-key="update_night"><span></span></label>
     </div>
     <div class="field stack">
       <div class="ft"><label for="f-github-key">Clave de GitHub (solo si el repositorio es privado)</label><p>Un «fine-grained token» con permiso de solo lectura de <i>Contents</i> en ese repositorio. Se guarda solo en tu equipo.</p></div>
