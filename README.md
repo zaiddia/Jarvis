@@ -84,7 +84,12 @@ Se guardan en `%APPDATA%\Jarvis\config.json` y se aplican al momento.
 
 ## Ejecutable
 
-`compilar.bat` genera `dist\jarvis\jarvis.exe`, con icono y sin consola. Los accesos directos pasan a apuntar al ejecutable. Para arrancar con Windows, activa *Ajustes › General › Iniciar con Windows*.
+**Descargarlo ya hecho:** en cada versión, en GitHub › Releases, está **`Ejecutable-Windows-vX.Y.zip`**: descomprímelo
+(por ejemplo en `C:\Jarvis`) y abre `jarvis.exe`. No necesitas instalar Python; ya trae el modelo de voz. Tus ajustes,
+notas y memoria se guardan aparte (en `%APPDATA%\Jarvis`), así que puedes cambiar entre el .exe y la versión de Python
+sin perder nada. Para pasar a una versión nueva del .exe, descarga el zip nuevo y reemplaza la carpeta.
+
+**Hacerlo tú:** `compilar.bat` genera `dist\jarvis\jarvis.exe`, con icono y sin consola. Los accesos directos pasan a apuntar al ejecutable. Para arrancar con Windows, activa *Ajustes › General › Iniciar con Windows*.
 
 ## Modo sigilo (arrancar oculto)
 

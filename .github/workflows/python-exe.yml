@@ -1,0 +1,107 @@
+# JARVIS de Python como programa .exe: cuando la compilación principal publica una Release vX.Y, aquí se arma
+# el ejecutable con compilar.bat en un Windows limpio, se comprueba que arranca y se adjunta a esa Release como
+# «Ejecutable-Windows-vX.Y.zip» (sin la palabra jarvis en el nombre: así actualizar.py sigue eligiendo el .zip del proyecto).
+name: JARVIS (Python) · ejecutable
+
+on:
+  workflow_run:
+    workflows: ["JARVIS (Python)"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión a compilar (vacío = la de jarvis.py)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: python-exe
+  cancel-in-progress: false
+
+jobs:
+  exe:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PYTHONUTF8: "1"
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: ¿Hace falta?
+        id: need
+        run: |
+          $v = "${{ inputs.version }}"
+          if (-not $v) { $v = (Select-String -Path jarvis.py -Pattern '^VERSION\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value }
+          $asset = "Ejecutable-Windows-v$v.zip"
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "asset=$asset" >> $env:GITHUB_OUTPUT
+          $names = gh release view "v$v" --json assets --jq '.assets[].name' 2>$null
+          if ($LASTEXITCODE -ne 0) { Write-Host "No existe la Release v$v."; "go=no" >> $env:GITHUB_OUTPUT; exit 0 }
+          if ($names -contains $asset) { Write-Host "La Release v$v ya tiene $asset."; "go=no" >> $env:GITHUB_OUTPUT; exit 0 }
+          "go=yes" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/setup-python@v5
+        if: steps.need.outputs.go == 'yes'
+        with:
+          python-version: '3.12'
+
+      - name: Entorno e instalación (como instalar.bat)
+        if: steps.need.outputs.go == 'yes'
+        run: |
+          python -m venv .venv
+          $py = ".venv\Scripts\python.exe"
+          & $py -m pip install --upgrade pip
+          Get-Content requirements.txt | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') } | ForEach-Object {
+            & $py -m pip install $_ 2>&1 | Out-Null
+            if ($LASTEXITCODE -ne 0) { Write-Host "::warning::No se instaló $_" }
+          }
+          & $py -m pip install pyinstaller
+          & $py descargar_modelo.py
+
+      - name: Compilar (compilar.bat)
+        if: steps.need.outputs.go == 'yes'
+        shell: cmd
+        run: compilar.bat nopause
+
+      - name: Comprobar que el .exe arranca
+        if: steps.need.outputs.go == 'yes'
+        run: |
+          $exe = "dist\jarvis\jarvis.exe"
+          if (-not (Test-Path $exe)) { Write-Host "::error::No se generó $exe"; exit 1 }
+          $p = Start-Process $exe -ArgumentList "--browser" -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 90; $i++) {
+            Start-Sleep 2
+            try { $r = Invoke-WebRequest "http://127.0.0.1:5000/api/ping" -UseBasicParsing -TimeoutSec 3; if ($r.Content -like "jarvis *") { $ok = $true; Write-Host "Responde: $($r.Content)"; break } } catch {}
+            if ($p.HasExited) { break }
+          }
+          Start-Sleep 8
+          $log = Join-Path $env:APPDATA "Jarvis\jarvis.log"
+          if (Test-Path $log) { Get-Content $log -Tail 60 }
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          if (-not $ok) { Write-Host "::error::El ejecutable no arrancó (no responde en el puerto 5000)."; exit 1 }
+          if ((Test-Path $log) -and (Select-String -Path $log -Pattern "Traceback|ModuleNotFoundError" -Quiet)) {
+            Write-Host "::error::El ejecutable arrancó con errores (ver el registro arriba)."; exit 1
+          }
+
+      - name: Adjuntar a la Release
+        if: steps.need.outputs.go == 'yes'
+        run: |
+          $v = "${{ steps.need.outputs.version }}"
+          $asset = "${{ steps.need.outputs.asset }}"
+          Remove-Item -Recurse -Force "$env:APPDATA\Jarvis" -ErrorAction SilentlyContinue
+          Rename-Item dist\jarvis Jarvis
+          Copy-Item README.md dist\Jarvis\LEEME.md
+          7z a -tzip -mx=7 $asset .\dist\Jarvis | Out-Null
+          Write-Host ("Tamaño: {0:N0} MB" -f ((Get-Item $asset).Length / 1MB))
+          gh release upload "v$v" $asset --clobber

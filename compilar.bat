@@ -41,6 +41,10 @@ pyinstaller --noconfirm --clean --onedir --windowed --name jarvis --icon "%ICONO
   --add-data "static;static" ^
   %EXTRA% %ML% ^
   --collect-all vosk ^
+  --hidden-import edge_tts --collect-all edge_tts ^
+  --hidden-import pygame --collect-all pygame ^
+  --hidden-import ollama ^
+  --collect-submodules nucleo ^
   --collect-all webview ^
   --hidden-import engineio.async_drivers.threading ^
   --hidden-import pystray._win32 ^

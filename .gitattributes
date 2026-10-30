@@ -5,3 +5,4 @@ windows-app/**/*.ps1 text eol=crlf
 windows-app/LEEME.txt text eol=crlf
 windows-app/**/*.cs text eol=crlf
 windows-app/**/*.csproj text eol=crlf
+*.bat text eol=crlf
