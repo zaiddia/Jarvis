@@ -155,3 +155,6 @@ recuérdame mañana a las 9 llamar al banco => recordatorio|NOTAS
 ¿de qué hablamos ayer? => MEMORIA
 busca en mi memoria la reunión de padres => MEMORIA
 ¿qué hice ayer? => DIARIO
+
+# ================================================================ 7.5: investigación con fuentes
+cel: investiga a fondo el ciclo del agua => INVESTIGA

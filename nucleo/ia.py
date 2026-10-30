@@ -886,12 +886,8 @@ def ask_ai(prompt, route=False):
     if route:
         # Seguridad: la IA solo ve acciones NO destructivas. Apagar, reiniciar, vaciar la
         # papelera, etc. nunca se activan por interpretación: solo con la orden directa exacta.
-        safe = "\n".join(s.describe() for s in skills.REGISTRY.values() if not s.dangerous)
-        mcp = J.mcp_hub.catalog()
-        if mcp:
-            safe += "\n" + "\n".join(mcp) + ("\n(Las acciones mcp__… son conectores: «args» lleva los campos que pide "
-                                             "cada una; los marcados con * son obligatorios.)")
-        system += J.ROUTER_PROMPT.format(skills=safe)
+        # 7.5: solo las acciones y conectores que tienen que ver con la orden (por significado).
+        system += J.ROUTER_PROMPT.format(skills=J.router_catalog(prompt))
     user_msg = {"role": "user", "content": prompt}
     keep = J.settings["history_turns"] * 2
     history = J.chat_history[-keep:] if keep else []

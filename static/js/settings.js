@@ -412,7 +412,8 @@
   /* Copias de seguridad */
   const PART_NAMES = { ajustes: "Ajustes", notas: "Notas", aula: "Cursos y asistencia", rutinas: "Rutinas", memoria: "Memoria",
                        perfil: "Lo que sé de ti", habilidades: "Habilidades", diario: "Diario",
-                       tareas: "Tareas programadas", aprendizaje: "Costumbres", historial: "Historial" };
+                       tareas: "Tareas programadas", aprendizaje: "Costumbres", historial: "Historial",
+                       guias: "Habilidades de la comunidad" };
   function bakStatus(text, cls) { const st = $("#backup-status"); st.textContent = text || ""; st.className = "status" + (cls ? " " + cls : ""); }
   function fmtDate(iso) {
     const d = new Date(iso);
@@ -897,6 +898,77 @@
     e.target.value = "";
   });
   $("#hb-folder").addEventListener("click", () => socket.emit("habilidades_folder"));
+
+  /* 7.5: habilidades de la comunidad (SKILL.md) e investigaciones */
+  const RISK = { bajo: ["ok", "Riesgo bajo"], medio: ["warn", "Riesgo medio"], alto: ["err", "Riesgo ALTO"] };
+  function renderGuides(res) {
+    const ul = $("#gd-list");
+    ul.innerHTML = "";
+    const list = (res && res.guias) || [];
+    if (!list.length) ul.innerHTML = '<li class="empty">No hay habilidades de la comunidad.</li>';
+    list.forEach((g) => {
+      const li = document.createElement("li");
+      const b = document.createElement("div"); b.className = "r-body";
+      const n = document.createElement("span"); n.className = "r-name"; n.textContent = g.nombre;
+      const m = document.createElement("span"); m.className = "r-meta";
+      const rk = RISK[(g.revision || {}).nivel] || RISK.bajo;
+      m.textContent = `${rk[1]} · ${g.descripcion}`;
+      m.title = g.descripcion + (g.origen ? `\nOrigen: ${g.origen}` : "");
+      b.append(n, m);
+      const del = document.createElement("button"); del.type = "button"; del.className = "text-btn"; del.textContent = "Quitar";
+      del.addEventListener("click", () => { if (confirm(`¿Quitar «${g.nombre}»?`)) socket.emit("guias_delete", { slug: g.slug }, renderGuides); });
+      li.append(b, del);
+      ul.appendChild(li);
+    });
+  }
+  let gdCode = "";
+  function showReview(r) {
+    const st = $("#gd-status");
+    if (!r.ok) { st.className = "status err"; st.textContent = r.error; $("#gd-review").hidden = true; return; }
+    st.textContent = "";
+    gdCode = r.code;
+    const rv = r.revision || { nivel: "bajo", avisos: [] };
+    const rk = RISK[rv.nivel] || RISK.bajo;
+    $("#gd-review-head").innerHTML = "";
+    const h = document.createElement("div");
+    const nm = document.createElement("b"); nm.textContent = r.nombre;
+    const lv = document.createElement("span"); lv.className = "status " + rk[0]; lv.textContent = "  " + rk[1] + (r.reemplaza ? " · reemplaza la que ya tienes" : "");
+    const d = document.createElement("p"); d.className = "note"; d.textContent = r.descripcion;
+    h.append(nm, lv, d);
+    $("#gd-review-head").appendChild(h);
+    const ul = $("#gd-review-list"); ul.innerHTML = "";
+    (rv.avisos.length ? rv.avisos : ["El revisor no encontró nada raro."]).forEach((a) => {
+      const li = document.createElement("li"); const i = document.createElement("b"); i.textContent = rv.avisos.length ? "!" : "✓";
+      const s = document.createElement("span"); s.textContent = a; li.append(i, s); ul.appendChild(li);
+    });
+    $("#gd-install").disabled = rv.nivel === "alto";
+    $("#gd-install").textContent = rv.nivel === "alto" ? "No se puede instalar" : (rv.nivel === "medio" ? "Instalar de todos modos" : "Instalar");
+    $("#gd-review").hidden = false;
+  }
+  $("#gd-check").addEventListener("click", () => {
+    const url = $("#gd-url").value.trim();
+    if (!url) { toast("Pega el enlace de la habilidad.", "err"); return; }
+    $("#gd-status").className = "status"; $("#gd-status").textContent = "Descargando y revisando…";
+    socket.emit("guias_preview", { url }, showReview);
+  });
+  $("#gd-file").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => socket.emit("guias_preview", { b64: rd.result, name: f.name }, showReview);
+    rd.readAsDataURL(f);
+    e.target.value = "";
+  });
+  $("#gd-install").addEventListener("click", () => socket.emit("guias_install", { code: gdCode }, (r) => {
+    $("#gd-review").hidden = true;
+    const st = $("#gd-status");
+    st.className = "status " + (r.ok ? "ok" : "err");
+    st.textContent = r.ok ? "Instalada. Jarvis la usará cuando lo que pidas encaje con ella." : r.error;
+    if (r.ok) { renderGuides(r); $("#gd-url").value = ""; }
+  }));
+  $("#gd-cancel").addEventListener("click", () => { $("#gd-review").hidden = true; gdCode = ""; });
+  $("#btn-research-folder").addEventListener("click", () => socket.emit("research_folder"));
+  socket.on("connect", () => socket.emit("guias_list", {}, renderGuides));
   socket.on("connect", () => socket.emit("habilidades_get", {}, renderSkills));
 
   /* 7.0: conectores MCP */

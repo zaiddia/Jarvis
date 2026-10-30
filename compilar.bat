@@ -39,6 +39,7 @@ pyinstaller --noconfirm --clean --onedir --windowed --name jarvis --icon "%ICONO
   --add-data "model_es;model_es" ^
   --add-data "templates;templates" ^
   --add-data "static;static" ^
+  --add-data "habilidades_comunidad;habilidades_comunidad" ^
   %EXTRA% %ML% ^
   --collect-all vosk ^
   --hidden-import edge_tts --collect-all edge_tts ^

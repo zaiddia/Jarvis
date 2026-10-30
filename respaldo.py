@@ -32,6 +32,7 @@ FOLDERS = {
     "habilidades": ("habilidades", "Habilidades instaladas", ".json"),
     "diario": ("diario", "Diario", ".jsonl"),
     "historial": ("historial", "Historial de conversaciones", ".jsonl"),
+    "guias": ("guias", "Habilidades de la comunidad", ".md"),
 }
 FOLDER_MAX_FILE = 2 * 1024 * 1024
 PARTS = {p: d for p, d in FILES.values()}

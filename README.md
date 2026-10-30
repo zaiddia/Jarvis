@@ -1,4 +1,4 @@
-# Jarvis 7.4 — Asistente virtual para Windows
+# Jarvis 7.5 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -156,6 +156,30 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## Herramientas por significado, habilidades de la comunidad e investigaciones con fuentes (v7.5)
+
+**Investiga a fondo, con fuentes.** «**Investiga a fondo la deforestación en la Amazonía**», «investiga el ciclo del
+agua», «hazme un informe sobre el reciclaje»: Jarvis planea varias búsquedas, junta hasta 8 fuentes distintas, lee cada
+página y te deja un **documento de Word** en *Documentos\Jarvis\Investigaciones* con título, resumen, secciones, ideas
+«Para llevar al aula» y **cada dato citado [1], [2]…**, con la lista de fuentes y sus enlaces al final. Te dice el
+resumen en voz alta. Sin IA, el documento recoge lo que dice cada fuente (también citado). «Busca en internet…» y
+«averigua…» siguen siendo la respuesta rápida en voz. Desde Telegram, una tarea programada («cada viernes a las 5
+investiga noticias de educación y mándamelo al celular») o Claude Desktop también funciona: te llega el resumen.
+
+**Habilidades de la comunidad (OpenClaw, Hermes, Claude).** En *Ajustes › Rutinas* importas habilidades en el formato
+`SKILL.md` (agentskills.io) desde un archivo `.md`/`.zip` o desde el enlace a su carpeta en GitHub. Jarvis importa
+**solo sus instrucciones**: cuando lo que pides encaja con su descripción, su IA responde siguiéndolas. **Nunca
+ejecuta sus programas.** Antes de instalar, un **revisor de seguridad** te muestra lo que encontró: instrucciones para
+engañar a la IA («ignora las instrucciones anteriores», «no le digas al usuario»), intentos de sacar claves o
+archivos, comandos que descargan y ejecutan código, texto escondido (caracteres invisibles, bloques codificados) y las
+webs que menciona. Con riesgo alto no se instala. Vienen dos de ejemplo: **planificador de clases** («ayúdame a planear
+una clase de fracciones para quinto») y **rúbrica de evaluación**. Entran en las copias de seguridad.
+
+**Herramientas por significado.** Con muchos conectores MCP, la IA solo ve los que tienen que ver con lo que pides (las
+acciones propias de Jarvis las ve siempre): responde más rápido y se equivoca menos. Con tu clave de Gemini (o un
+modelo de embeddings en Ollama) los elige por significado; sin ellos, por palabras. Se ajusta en *Ajustes › Control
+del PC › Interpretación de órdenes*.
 
 ## Aprende tus costumbres, recuerda lo que hablaron y hace tareas solo (v7.4)
 

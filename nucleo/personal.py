@@ -30,6 +30,8 @@ def _user_ctx(question=""):
     name = J.settings["address_name"].strip()
     if name:
         ctx += f" Cuando te dirijas al usuario, llámalo «{name}»."
+    if question:
+        ctx += J.guides_ctx(question)                    # 7.5: habilidades de la comunidad que encajan
     return ctx
 
 

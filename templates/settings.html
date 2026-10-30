@@ -471,6 +471,14 @@
       <label class="switch"><input type="checkbox" id="f-router" data-key="ai_router"><span></span></label>
     </div>
     <div class="field">
+      <div class="ft"><label for="f-toolsel">Elegir las herramientas por significado</label><p>Con muchos conectores MCP, la IA solo ve los que tienen que ver con lo que pides (las acciones propias de Jarvis las ve siempre): responde más rápido y se equivoca menos. Con tu clave de Gemini (o embeddings en Ollama) entiende el significado; sin ellos, las palabras.</p></div>
+      <label class="switch"><input type="checkbox" id="f-toolsel" data-key="tool_select"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-toolsel-max">Como mucho</label></div>
+      <div class="range"><input type="range" id="f-toolsel-max" min="10" max="80" step="1" data-key="tool_select_max" data-unit=" conectores"><output></output></div>
+    </div>
+    <div class="field">
       <div class="ft"><label>Aplicaciones encontradas</label><p class="status" id="apps-status">—</p></div>
       <button class="btn btn-ghost" type="button" id="btn-reindex"><svg class="i"><use href="#i-refresh"/></svg>Volver a buscar</button>
     </div>
@@ -813,6 +821,32 @@
       <button class="btn btn-ghost" type="button" id="hb-folder">Abrir la carpeta</button>
     </div>
     <p class="status" id="hb-status"></p>
+
+    <div class="group">Habilidades de la comunidad (OpenClaw, Hermes, Claude)</div>
+    <p class="pane-intro">Miles de habilidades escritas por la comunidad en el formato <code>SKILL.md</code> (agentskills.io). Jarvis importa <b>solo sus instrucciones</b>: cuando lo que pides encaja con su descripción, su IA responde siguiéndolas. <b>Nunca ejecuta sus programas</b>. Antes de instalar, un revisor de seguridad busca trucos para engañar a la IA, robo de claves o datos, comandos peligrosos y texto escondido; si el riesgo es alto, no se instala. Vienen dos de ejemplo: planificador de clases y rúbrica de evaluación.</p>
+    <ul class="routines" id="gd-list"></ul>
+    <div class="field stack">
+      <div class="ft"><label for="gd-url">Importar</label><p>Un archivo <code>SKILL.md</code> o <code>.zip</code>, o el enlace a su carpeta en GitHub (por ejemplo <code>https://github.com/dueño/repo/tree/main/skills/nombre</code>).</p></div>
+      <div class="row wrap">
+        <input class="inp" type="text" id="gd-url" placeholder="https://github.com/…/skills/…" style="flex:1;min-width:220px">
+        <button class="btn btn-ghost" type="button" id="gd-check">Revisar</button>
+        <label class="btn btn-ghost" for="gd-file" style="cursor:pointer">Elegir archivo…</label>
+        <input type="file" id="gd-file" accept=".md,.zip" hidden>
+      </div>
+      <div id="gd-review" hidden style="margin-top:10px;padding:10px 12px;border:1px solid var(--line-strong)">
+        <div id="gd-review-head"></div>
+        <ul class="chk-list" id="gd-review-list" style="margin-top:6px"></ul>
+        <div class="row-btns" style="margin-top:8px">
+          <button class="btn btn-primary" type="button" id="gd-install">Instalar</button>
+          <button class="btn btn-ghost" type="button" id="gd-cancel">Cancelar</button>
+        </div>
+      </div>
+      <p class="status" id="gd-status"></p>
+    </div>
+
+    <div class="group">Investigaciones</div>
+    <p class="pane-intro">«Jarvis, investiga a fondo la deforestación en la Amazonía» (o «hazme un informe sobre…»): busca en varias fuentes, las lee y te deja un documento de Word con cada dato citado [1], [2]… y la lista de fuentes con sus enlaces. «Busca en internet…» o «averigua…» siguen dando la respuesta rápida en voz.</p>
+    <div class="row-btns"><button class="btn btn-ghost" type="button" id="btn-research-folder"><svg class="i"><use href="#i-folder"/></svg>Abrir la carpeta de investigaciones</button></div>
   </section>
 
   <!-- ACERCA -->

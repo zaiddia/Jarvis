@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "7.4"
+VERSION = "7.5"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -677,6 +677,8 @@ DEFAULT_SETTINGS = {
     "history_enabled": True,       # 7.4: historial de conversaciones buscable («¿qué te dije sobre…?»)
     "history_days": 180,           # cuántos días guardarlo
     "memory_semantic": True,       # buscar también por significado (con Gemini u Ollama, si los tienes)
+    "tool_select": True,           # 7.5: la IA solo ve las herramientas que tienen que ver con la orden
+    "tool_select_max": 20,         # cuántos conectores como mucho (las acciones propias van siempre)
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -709,7 +711,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -1433,6 +1435,8 @@ def process_command(text):
     # Aula: sorteo, grupos, asistencia, semáforo, tablero y material de clase
     if info_voice(text, t):
         return
+    if research_voice(text, t):                        # «investiga a fondo…» → informe con fuentes
+        return
     if search_voice(text, t):                          # «busca en internet… / averigua…»
         return
     if office_voice(text, t):
@@ -1618,6 +1622,13 @@ from nucleo.aprende import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 7.5 · HERRAMIENTAS POR SIGNIFICADO, HABILIDADES DE LA COMUNIDAD (SKILL.md) E INVESTIGACIÓN CON FUENTES
+# → nucleo/herramientas.py (lógica en selector.py, guias.py e investigar.py)
+# =============================================================================
+from nucleo.herramientas import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1736,6 +1747,7 @@ def main():
     def _start_services():
         windows_at_start(START_LINK)      # enlace local, integración con Windows y el enlace de arranque
         learn_start()                     # 7.4: costumbres, historial y tareas programadas
+        tools_start()                     # 7.5: habilidades de la comunidad
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()
