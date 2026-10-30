@@ -2,7 +2,7 @@
 // @id              jarvis-orbe
 // @name            Reactor de Jarvis en la barra de tareas
 // @description     Un mini reactor animado junto al reloj: escucha, piensa y habla a la vista, tarjeta con tu día, cuadro para escribirle, volumen con la rueda y avisos
-// @version         2.1.0
+// @version         2.2.0
 // @author          zaiddia
 // @github          https://github.com/zaiddia
 // @include         explorer.exe
@@ -29,6 +29,7 @@ Un **mini reactor** en la barra de tareas, junto al reloj, conectado a Jarvis
 | Destello rojo-ámbar | Un aviso o recordatorio |
 | Onda blanca desde el núcleo | Jarvis acaba de responder |
 | Punto violeta a la izquierda | Hay algo esperando tu aprobación (clic derecho para aprobarlo o rechazarlo) |
+| Arco verde en el anillo interior | Avance del proyecto que Jarvis está haciendo (pasos hechos / total) |
 
 ## Qué puedes hacer
 - **Clic**: háblale (como decir «Jarvis»). **Doble clic**: mostrar u ocultar el panel.
@@ -105,6 +106,7 @@ struct View {
     float ripple = -1;                        // 0..1 onda de mensaje nuevo; -1 = ninguna
     float hover = 0;                          // 0..1
     bool pending = false;                     // algo espera tu aprobación
+    float project = -1;                       // 0..1 avance del proyecto en marcha; -1 = ninguno
     float t = 0;                              // segundos
 };
 
@@ -222,6 +224,10 @@ inline void paint(unsigned int* px, int w, int h, const View& v) {
             float inner = band(d, 0.40f, 0.455f, aap);
             p.over(0.12f, 0.16f, 0.20f, inner * 0.9f);
             p.add(base[0], base[1], base[2], inner * (0.25f + 0.5f * energy));
+            if (v.project >= 0) {                              // avance del proyecto: arco verde en el anillo interior
+                float on = ua <= v.project * TAU ? 1.0f : 0.0f;
+                p.over(0.35f, 1.0f, 0.55f, inner * on * (0.80f + 0.20f * breathe));
+            }
             float coreR = 0.30f + 0.04f * (v.mode == Mode::Speaking ? speak : v.mode == Mode::Awaiting ? v.level : breathe * 0.5f);
             float core = 1 - smooth(coreR - aap * 1.2f, coreR + aap * 0.6f, d);
             float hot = expf(-powf(d / (coreR * 0.55f), 2));
@@ -335,8 +341,8 @@ struct Status {
     float level = 0;
     int timers = 0, next = -1, total = 0;
     bool visible = false, live = false;
-    int seq = 0, alertSeq = 0, approvals = 0, approvalId = 0;
-    std::wstring role, msg, alert, label, agenda, aiLabel, net, approval;
+    int seq = 0, alertSeq = 0, approvals = 0, approvalId = 0, prjDone = 0, prjTotal = 0;
+    std::wstring role, msg, alert, label, agenda, aiLabel, net, approval, prjName;
     float accent[3] = {0.18f, 0.90f, 1.00f};
 };
 Status g_status;
@@ -628,6 +634,9 @@ DWORD WINAPI PollThread(LPVOID) {
             st.approvals = atoi(JsonRaw(j, "approvals").c_str());
             st.approvalId = atoi(JsonRaw(j, "approval_id").c_str());
             st.approval = Wide(JsonRaw(j, "approval"));
+            st.prjDone = atoi(JsonRaw(j, "project_done").c_str());
+            st.prjTotal = atoi(JsonRaw(j, "project_total").c_str());
+            st.prjName = Wide(JsonRaw(j, "project_name"));
             ParseAccent(JsonRaw(j, "accent"), st.accent);
         } else {
             fails++;
@@ -796,6 +805,7 @@ void RenderOrb() {
         v.ripple = (now - g_anim.rippleStart) / 700.0f;
     }
     v.pending = st.approvals > 0;
+    v.project = st.prjTotal > 0 ? reactor::clamp01((float)st.prjDone / (float)st.prjTotal) : -1.0f;
     v.t = (now % 3600000) / 1000.0f;
 
     BITMAPINFO bi = {};
@@ -857,6 +867,9 @@ void BuildInfoCard() {
             t += L"\n";
         }
         if (st.approvals > 0) t += L"Por aprobar  ·  " + Clip(st.approval, 70) + L"  (clic derecho)\n";
+        if (st.prjTotal > 0)
+            t += L"Proyecto  ·  " + Clip(st.prjName, 50) + L"  " + std::to_wstring(st.prjDone) + L"/" +
+                 std::to_wstring(st.prjTotal) + L" pasos\n";
         if (!st.agenda.empty()) t += L"Hoy  ·  " + Clip(st.agenda, 70) + L"\n";
         if (!st.aiLabel.empty()) t += L"IA  ·  " + Clip(st.aiLabel, 50) + (st.net == L"offline" ? L"  · sin internet" : L"") + L"\n";
         if (!st.msg.empty() && st.role == L"jarvis") t += L"\n«" + Clip(st.msg, 180) + L"»";

@@ -310,6 +310,48 @@
     form.scrollTop = 0;
   }));
 
+  // 8.4: buscador de ajustes (en todas las pestañas a la vez)
+  const plain = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  $$(".pane").forEach((p) => { const tab = $(`.tab[data-tab="${p.dataset.pane}"]`); if (tab) p.dataset.title = tab.textContent.trim(); });
+  const noRes = document.createElement("p");
+  noRes.className = "s-none"; noRes.hidden = true;
+  form.prepend(noRes);
+  function runSearch(q) {
+    const words = plain(q).split(/\s+/).filter((w) => w.length > 1);
+    const on = words.length > 0;
+    form.classList.toggle("searching", on);
+    $(".tabs").classList.toggle("dim", on);
+    let total = 0;
+    $$(".pane").forEach((pane) => {
+      const sections = [];
+      [...pane.children].forEach((el) => {
+        if (el.classList.contains("group")) { sections.push({ g: el, items: [] }); return; }
+        if (!sections.length) sections.push({ g: null, items: [] });
+        sections[sections.length - 1].items.push(el);
+      });
+      let paneHits = 0;
+      sections.forEach((s) => {
+        const gHit = on && s.g && words.every((w) => plain(s.g.textContent).includes(w));
+        let hits = 0;
+        s.items.forEach((el) => {
+          const hit = !on || gHit || words.every((w) => plain(el.textContent + " " + [...el.querySelectorAll("input,textarea")].map((i) => i.placeholder || "").join(" ")).includes(w));
+          el.classList.toggle("s-hide", on && !hit);
+          if (hit) hits++;
+        });
+        if (s.g) s.g.classList.toggle("s-hide", on && !hits);
+        paneHits += on ? hits : 1;
+      });
+      pane.classList.toggle("s-empty", on && !paneHits);
+      total += paneHits;
+    });
+    noRes.hidden = !on || total > 0;
+    noRes.textContent = on ? `No encuentro ajustes con «${q}». Prueba con otra palabra (voz, telegram, clave, horario…).` : "";
+    if (on) form.scrollTop = 0;
+  }
+  $("#s-search").addEventListener("input", (e) => runSearch(e.target.value));
+  $("#s-search").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.target.value = ""; runSearch(""); } });
+  $$(".tab").forEach((t) => t.addEventListener("click", () => { if ($("#s-search").value) { $("#s-search").value = ""; runSearch(""); } }));
+
   form.addEventListener("input", (e) => {
     const f = e.target;
     if (f.type === "range") syncRange(f);

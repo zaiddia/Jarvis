@@ -9,15 +9,33 @@ No usa la IA: los resultados son exactos y al instante.
 import re
 import unicodedata
 
-try:
-    import sympy
-    from sympy import symbols, Eq, solve, diff, integrate, factor, simplify, expand, sqrt, nsimplify, N
-    from sympy.parsing.sympy_parser import (parse_expr, standard_transformations,
-                                            implicit_multiplication_application, convert_xor)
-    _TRANSFORM = standard_transformations + (implicit_multiplication_application, convert_xor)
-    SYMPY_OK = True
-except Exception:
-    SYMPY_OK = False
+import importlib.util
+
+# 8.4: SymPy tarda en cargar (un tercio del arranque de Jarvis), así que se importa la primera vez que haces una cuenta.
+SYMPY_OK = importlib.util.find_spec("sympy") is not None
+_loaded = False
+
+
+def _load():
+    global _loaded, SYMPY_OK, sympy, symbols, Eq, solve, diff, integrate, factor, simplify, expand, sqrt, nsimplify, N
+    global parse_expr, _TRANSFORM
+    if _loaded:
+        return SYMPY_OK
+    _loaded = True
+    try:
+        import sympy
+        from sympy import symbols, Eq, solve, diff, integrate, factor, simplify, expand, sqrt, nsimplify, N
+        from sympy.parsing.sympy_parser import (parse_expr, standard_transformations,
+                                                implicit_multiplication_application, convert_xor)
+        _TRANSFORM = standard_transformations + (implicit_multiplication_application, convert_xor)
+    except Exception:
+        SYMPY_OK = False
+    return SYMPY_OK
+
+
+def preload():
+    """Para cargar SymPy en segundo plano un rato después de arrancar."""
+    _load()
 
 
 # Palabras habladas -> símbolo (se aplican como texto completo, respetando límites de palabra)
@@ -79,6 +97,7 @@ def _to_symbolic(t):
 
 def _fmt(expr):
     """Formatea un resultado de SymPy para leerlo: exacto y, si aplica, decimal."""
+    _load()
     try:
         val = nsimplify(expr) if expr.free_symbols == set() else expr
     except Exception:
@@ -110,7 +129,7 @@ def _percent(t):
 
 
 def resolver(text):
-    if not SYMPY_OK:
+    if not _load():
         return "Para hacer cálculos necesito la librería SymPy instalada."
     t = _strip_accents(text)
 

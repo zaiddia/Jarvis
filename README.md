@@ -157,6 +157,18 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Buscador de ajustes, arranque más rápido y proyectos en el reactor (v8.4)
+
+**Buscador en Ajustes.** Arriba a la derecha: escribe «whatsapp», «voz», «clave», «horario»… y aparecen los ajustes
+de todas las pestañas que coinciden, con el nombre de su pestaña. Esc para volver.
+
+**Arranque más rápido.** La librería de matemáticas (SymPy), que era un tercio del arranque, ahora se carga sola un
+rato después de abrir Jarvis o la primera vez que haces una cuenta. En las pruebas, Jarvis carga un 40 % más rápido.
+
+**Proyectos en el reactor.** El reactor de la barra de tareas (Windhawk 2.2) muestra un **arco verde** en su anillo
+interior con el avance del proyecto que Jarvis está haciendo, y la tarjeta dice «Proyecto · nombre 3/7 pasos». Copia el
+mod otra vez desde `windhawk\jarvis-orbe.wh.cpp` en Windhawk (Ajustes › Integraciones › Windows › Abrir la carpeta).
+
 ## Resumen semanal, proyectos que se repiten y actualización de noche (v8.3)
 
 **Resumen de la semana.** Los viernes desde las 4 de la tarde (se cambia en *Ajustes › Agente*) te llega al celular,

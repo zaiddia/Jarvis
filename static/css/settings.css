@@ -10,6 +10,14 @@ body {
 .page-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 26px 14px; }
 .eyebrow { font-family: var(--hud); font-size: 10px; letter-spacing: .38em; text-transform: uppercase; color: var(--a); }
 .page-head h1 { margin-top: 4px; font-family: var(--hud); font-weight: 700; font-size: 19px; letter-spacing: .1em; }
+.head-right { display: flex; align-items: center; gap: 10px; }
+.s-search { width: 220px; max-width: 46vw; padding: 7px 10px; font-size: 12.5px; }
+.content.searching .pane { display: block; animation: none; }
+.content.searching .pane.s-empty { display: none; }
+.content.searching .pane::before { content: attr(data-title); display: block; margin: 18px 0 2px; font-family: var(--hud); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--text); opacity: .8; }
+.s-hide { display: none !important; }
+.s-none { padding: 24px 4px; color: var(--muted); font-size: 13px; }
+.tabs.dim .tab { opacity: .45; }
 .ver { font-size: 11px; color: var(--muted); border: 1px solid var(--line); padding: 3px 8px; }
 
 .tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 18px 10px; border-bottom: 1px solid var(--line); }

@@ -171,7 +171,17 @@ def api_orb():
             "agenda": _orb_agenda(), "approvals": len(J.aprobaciones.pending()),
             "approval": (J.aprobaciones.latest() or {}).get("titulo", "")[:120],
             "approval_id": (J.aprobaciones.latest() or {}).get("id", 0), "accent": "%02x%02x%02x" % J.THEMES.get(J.settings["theme"], J.THEMES["cyan"])[1],
-            "version": J.VERSION}
+            "version": J.VERSION, **_orb_project()}
+
+
+def _orb_project():
+    """8.4: avance del proyecto en marcha, para el arco verde del reactor."""
+    st = J.project_run["st"] if J.project_run["busy"] else None
+    if not st:
+        return {"project_total": 0, "project_done": 0, "project_name": ""}
+    steps = st.get("pasos") or []
+    done = sum(1 for p in steps if p.get("estado") in ("hecho", "error", "omitido"))
+    return {"project_total": len(steps), "project_done": done, "project_name": str(st.get("nombre", ""))[:60]}
 
 
 @J.app.route("/api/orden", methods=["POST"])
@@ -318,6 +328,6 @@ def windows_at_start(link=None):
 
 __all__ = [
     'LINK_FILE', 'TOAST_ORIGINS', 'WINDHAWK_MOD', '_launch', '_orb_mark', '_toast_last', '_token_ok', 'api_link',
-    'api_orb', 'api_local_order', 'quick_skill', '_agenda_cache', '_orb_agenda', 'focus_input', 'forward_link', 'handle_open_windhawk_folder', 'handle_windows_info', 'link_order',
+    'api_orb', '_orb_project', 'api_local_order', 'quick_skill', '_agenda_cache', '_orb_agenda', 'focus_input', 'forward_link', 'handle_open_windhawk_folder', 'handle_windows_info', 'link_order',
     'link_token', 'orb_seen', 'run_link', 'windows_apply', 'windows_at_start', 'windows_toast', 'write_link_file',
 ]

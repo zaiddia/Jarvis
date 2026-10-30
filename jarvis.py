@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "8.3"
+VERSION = "8.4"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1914,6 +1914,7 @@ def main():
         mcp_server_apply()                                   # Jarvis como servidor MCP (si está activado)
         mobile_apply()                                       # panel del celular (si está activado)
         threading.Timer(20.0, prewarm_voice).start()         # frases frecuentes listas para sonar al instante
+        threading.Timer(35.0, mates.preload).start()         # 8.4: SymPy se carga después, sin frenar el arranque
         if not start_hidden:
             threading.Timer(2.5, welcome_at_start).start()   # la primera vez: la bienvenida
 
