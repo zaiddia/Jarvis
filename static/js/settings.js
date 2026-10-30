@@ -935,4 +935,21 @@
     if (confirm("El enlace actual dejará de funcionar y tendrás que escanear el nuevo. ¿Seguir?")) socket.emit("mobile_info", { new_token: true }, renderMobile);
   });
   socket.on("connect", () => socket.emit("mobile_info", {}, renderMobile));
+
+  /* 7.2: Jarvis dentro de Windows y el orbe de Windhawk */
+  let orbCode = "";
+  function renderWindows(w) {
+    if (!w) return;
+    orbCode = w.mod_code || "";
+    $("#win-status").textContent = !w.supported ? "Solo en Windows (y no en modo USB)."
+      : (w.msg || (w.installed ? "Activo: prueba el clic derecho en el escritorio o Win+R › jarvis." : "Apagado."));
+    $("#orb-status").textContent = w.orb_connected ? "● El orbe está conectado." : "El orbe no está conectado (o Windhawk no está abierto).";
+  }
+  $("#btn-orb-copy").addEventListener("click", () => {
+    if (!orbCode) { toast("No encuentro el archivo del mod (carpeta windhawk).", "err"); return; }
+    navigator.clipboard.writeText(orbCode).then(() => toast("Código copiado. Pégalo en un mod nuevo de Windhawk.", "ok"));
+  });
+  $("#btn-orb-folder").addEventListener("click", () => socket.emit("open_windhawk_folder"));
+  socket.on("connect", () => socket.emit("windows_info", {}, renderWindows));
+  socket.on("settings_updated", () => setTimeout(() => socket.emit("windows_info", {}, renderWindows), 1500));
 })();

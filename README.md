@@ -1,4 +1,4 @@
-# Jarvis 7.1 — Asistente virtual para Windows
+# Jarvis 7.2 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -156,6 +156,32 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## Jarvis dentro de Windows y el orbe de la barra de tareas (v7.2)
+
+**Integrar Jarvis con Windows** (*Ajustes › Integraciones › Jarvis dentro de Windows*). Con un interruptor:
+- **Clic derecho en el escritorio o en una carpeta › Jarvis**: *Mostrar Jarvis*, *Escribir una orden…*, *Modo clase*,
+  *Temporizador de 5 minutos*, *¿Qué tengo pendiente?*, *Pausar el micrófono*, *Prueba completa* y *Ajustes*.
+  En Windows 11 está en «Mostrar más opciones» (o Shift+F10).
+- **Win+R › `jarvis`** abre Jarvis (y `jarvis:` también).
+- **Lista de saltos**: clic derecho en el icono de Jarvis en la barra de tareas › *Escribir una orden*, *Modo clase*,
+  *Temporizador*, *Micrófono*, *Ajustes*.
+- **Enlaces `jarvis://`** para tus propios accesos directos o botones: `jarvis://rutina/Modo clase`,
+  `jarvis://temporizador/10`, `jarvis://orden/qué tengo hoy`, `jarvis://escribir`, `jarvis://mostrar`.
+- **Notificaciones de Windows**: los recordatorios, la agenda, los temporizadores y lo que vigilas salen también en el
+  centro de notificaciones, con botones *Posponer 5 min*, *Posponer 15 min* u *Otros 5 minutos*.
+
+Solo cambia tu usuario de Windows (sin permisos de administrador), y al apagar el interruptor se quita todo. Las
+órdenes que llegan por un enlace siguen las reglas del celular: nada de apagar, cerrar programas, escribir en
+ventanas ni borrar datos, porque un enlace también podría venir de una página web.
+
+**El orbe de Jarvis en la barra de tareas** (mod de Windhawk, en la carpeta `windhawk/`). El reactor de Jarvis junto
+al reloj: cian cuando está atento, brillante cuando te escucha, ámbar girando cuando piensa, verde cuando habla, gris
+con el micrófono en pausa y apagado si Jarvis está cerrado; un punto ámbar si hay un temporizador (pasa el ratón para
+ver cuánto falta). **Clic**: háblale. **Clic derecho**: menú de órdenes. Para instalarlo: instala Windhawk
+(windhawk.net) › *Crear un nuevo mod* › borra el ejemplo y pega el código (botón *Copiar el código del mod* en
+Ajustes) › *Compilar* › *Activar*. Se comunica con Jarvis solo dentro de tu equipo y con un código secreto que
+cambia cada vez que Jarvis arranca.
 
 ## Bienvenida, respuestas más rápidas y copias completas (v7.1)
 

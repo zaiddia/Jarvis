@@ -102,6 +102,7 @@ jobs:
           Remove-Item -Recurse -Force "$env:APPDATA\Jarvis" -ErrorAction SilentlyContinue
           Rename-Item dist\jarvis Jarvis
           Copy-Item README.md dist\Jarvis\LEEME.md
+          if (-not (Test-Path dist\Jarvis\windhawk)) { Copy-Item -Recurse windhawk dist\Jarvis\windhawk }
           7z a -tzip -mx=7 $asset .\dist\Jarvis | Out-Null
           Write-Host ("Tamaño: {0:N0} MB" -f ((Get-Item $asset).Length / 1MB))
           gh release upload "v$v" $asset --clobber

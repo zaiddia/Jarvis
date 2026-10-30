@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "7.1"
+VERSION = "7.2"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -306,6 +306,27 @@ def _wait_previous():
 _wait_previous()
 PORT = _resolve_port()
 URL = f"http://{HOST}:{PORT}"
+import windows_shell  # noqa: E402
+START_LINK = windows_shell.find_link(sys.argv)     # abierto desde el clic derecho, la lista de saltos o un enlace
+
+
+def _forward_start_link():
+    """Ya hay un Jarvis abierto: se le pasa el enlace con su código secreto y este se cierra al instante."""
+    try:
+        with open(os.path.join(CONFIG_DIR, "enlace.json"), encoding="utf-8") as f:
+            d = json.load(f)
+        req = urllib.request.Request(d["url"] + "/api/enlace", data=json.dumps({"url": START_LINK}).encode("utf-8"),
+                                     headers={"Content-Type": "application/json", "X-Jarvis-Token": d["token"]},
+                                     method="POST")
+        with urllib.request.urlopen(req, timeout=4) as r:
+            return bool(json.loads(r.read().decode("utf-8")).get("ok"))
+    except Exception as e:
+        _boot(f"No pude pasarle el enlace al Jarvis abierto: {e}")
+        return False
+
+
+if START_LINK and SAME_JARVIS_RUNNING and _forward_start_link():
+    sys.exit(0)
 if PORT != 5000:
     _boot(f"Uso el puerto {PORT}.")
 
@@ -649,6 +670,8 @@ DEFAULT_SETTINGS = {
     "diary_days": 30,              # cuántos días guardar
     "hud_cards": True,             # tarjetas holográficas en el HUD
     "onboarding_done": False,      # 7.1: ya vio la bienvenida (la primera vez se abre sola)
+    "windows_integration": False,  # 7.2: clic derecho, Win+R «jarvis», enlaces jarvis:// y lista de saltos
+    "windows_toasts": True,        # 7.2: los avisos también como notificación de Windows
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -1027,6 +1050,7 @@ def trigger_alarm(seconds, label="Recordatorio"):
         hud_show()
         play_sound(resolve_alarm_sound())
         reply(f"Atención: {label}.", "ALARMA")
+        windows_toast(f"Atención: {label}.", "ALARMA")
 
     t = threading.Timer(seconds, _fire)
     t.daemon = True
@@ -1558,6 +1582,13 @@ from nucleo.funciones70 import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 7.2 · JARVIS DENTRO DE WINDOWS (clic derecho, jarvis://, lista de saltos, notificaciones, orbe)
+# → nucleo/integracion.py (lo que toca Windows está en windows_shell.py)
+# =============================================================================
+from nucleo.integracion import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1646,7 +1677,8 @@ def main():
 
     if SAME_JARVIS_RUNNING:            # ya hay un Jarvis igual abierto: mostrar su HUD y salir
         _boot("Ya hay un Jarvis abierto: muestro su panel (si estaba oculto, pulsa Ctrl+Alt+J).")
-        _http_text(f"{URL}/api/show", timeout=3)
+        if not (START_LINK and forward_link(START_LINK)):
+            _http_text(f"{URL}/api/show", timeout=3)
         return
 
     _fix_autostart_path()
@@ -1669,7 +1701,11 @@ def main():
     if env_overrides:
         log_terminal(f"Valores tomados de .env: {', '.join(sorted(env_overrides))}.", "SISTEMA")
 
+    if settings["windows_integration"]:
+        windows_shell.set_app_id()      # identidad propia en la barra de tareas (antes de crear ventanas)
+
     def _start_services():
+        windows_at_start(START_LINK)      # enlace local, integración con Windows y el enlace de arranque
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

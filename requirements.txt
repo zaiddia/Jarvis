@@ -5,6 +5,7 @@
 # Conversación en vivo con Gemini: websockets.
 # Presentaciones y hojas de Excel: python-pptx y openpyxl.
 # Código QR del panel del celular: qrcode.
+# Lista de saltos del icono de la barra de tareas (Integrar con Windows): pywin32.
 # Calendario (iCal): icalendar, recurring-ical-events y tzdata (zonas horarias en Windows).
 flask
 flask-socketio
@@ -30,3 +31,4 @@ websockets
 python-pptx
 openpyxl
 qrcode
+pywin32

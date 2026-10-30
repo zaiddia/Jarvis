@@ -268,6 +268,7 @@
   socket.on("hud_size", ({ size }) => { body.dataset.size = size; updateSizeButton(); poke(); });
   socket.on("timers", ({ timers }) => { setTimers(timers || []); });
   socket.on("card", (c) => showCard(c));
+  socket.on("focus_input", () => setTimeout(() => { try { window.focus(); el.input.focus(); } catch (e) {} }, 200));
   socket.on("dictation", ({ on }) => {
     dictating = on;
     body.classList.toggle("dictating", on);

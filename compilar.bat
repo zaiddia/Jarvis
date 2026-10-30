@@ -59,6 +59,8 @@ if errorlevel 1 (
 )
 rem El .env nunca se mete dentro del paquete: se copia al lado del ejecutable.
 if exist ".env" copy /y ".env" "dist\jarvis\" >nul
+rem El orbe de la barra de tareas (mod de Windhawk) va al lado, para copiarlo desde Ajustes.
+if exist "windhawk" xcopy /e /i /y /q "windhawk" "dist\jarvis\windhawk" >nul
 echo.
 
 echo [3/3] Actualizando accesos directos...

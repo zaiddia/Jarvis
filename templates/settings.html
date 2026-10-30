@@ -493,6 +493,24 @@
 
   <!-- INTEGRACIONES -->
   <section class="pane" data-pane="integra">
+    <div class="group">Jarvis dentro de Windows</div>
+    <p class="pane-intro">Pone a Jarvis en el <b>clic derecho del escritorio</b> y de las carpetas (submenú «Jarvis»: escribir una orden, modo clase, temporizador, pendientes…), en <b>Win+R › jarvis</b>, en la <b>lista de saltos</b> de su icono de la barra de tareas y en los enlaces <code>jarvis://</code>. Solo cambia tu usuario de Windows (sin permisos de administrador) y al apagarlo se quita todo. En Windows 11 el submenú sale en «Mostrar más opciones».</p>
+    <div class="field">
+      <div class="ft"><label for="f-win">Integrar Jarvis con Windows</label><p id="win-status"></p></div>
+      <label class="switch"><input type="checkbox" id="f-win" data-key="windows_integration"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-win-toasts">Avisos como notificación de Windows</label><p>Recordatorios, agenda, temporizadores y lo que vigilas salen también en el centro de notificaciones, con botones «Posponer 5 min» u «Otros 5 minutos».</p></div>
+      <label class="switch"><input type="checkbox" id="f-win-toasts" data-key="windows_toasts"><span></span></label>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label>El orbe de Jarvis en la barra de tareas (Windhawk)</label><p>Un orbe junto al reloj que cambia de color cuando Jarvis escucha, piensa o habla. Clic: háblale. Clic derecho: menú de órdenes. Necesita <b>Windhawk</b> (windhawk.net): ábrelo › <i>Crear un nuevo mod</i> › borra el ejemplo, pega el código › <i>Compilar</i> › <i>Activar</i>.</p><p id="orb-status"></p></div>
+      <div class="row-btns">
+        <button class="btn btn-ghost" type="button" id="btn-orb-copy">Copiar el código del mod</button>
+        <button class="btn btn-ghost" type="button" id="btn-orb-folder"><svg class="i"><use href="#i-folder"/></svg>Abrir la carpeta</button>
+      </div>
+    </div>
+
     <div class="group">Panel en el celular (misma wifi)</div>
     <p class="pane-intro">Abre Jarvis en el navegador del celular, sin instalar nada: escanea el código, y verás el reactor, la conversación, tus temporizadores y botones rápidos. Solo funciona en tu red y con el código secreto; desde ahí no se apaga el equipo, ni se cierran programas, ni se escribe en ventanas, ni se borran datos. La primera vez, Windows puede preguntar si permites el acceso en redes privadas: acepta.</p>
     <div class="field">

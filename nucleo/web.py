@@ -97,6 +97,8 @@ def apply_settings(data):
         J.mcp_reconfigure()
     if "mcp_server_enabled" in changed:
         J.mcp_server_apply()
+    if "windows_integration" in changed:
+        threading.Thread(target=J.windows_apply, daemon=True).start()
     if changed & {"mobile_enabled", "mobile_port"}:
         if J.settings["mobile_enabled"] and not J.settings["mobile_token"]:
             J.settings["mobile_token"] = uuid.uuid4().hex[:24]
