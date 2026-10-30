@@ -574,6 +574,7 @@ def audio_loop():
                 now = time.time()
                 if now - last_level > 0.12:
                     J.socketio.emit("mic_level", {"v": round(min(1.0, peak * 1.6), 3)})
+                    J.orb_feed["level"] = round(min(1.0, peak * 1.6), 3)
                     last_level = now
                 if J.live["active"] or J.live["connecting"]:
                     J.live_feed(data, peak)               # conversación en vivo: el audio va a Gemini

@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "7.2"
+VERSION = "7.3"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -916,10 +916,15 @@ def log_terminal(message, origin="JARVIS"):
     socketio.emit("terminal_log", {"data": line})
 
 
+# Lo que el orbe de la barra de tareas muestra (7.3): último mensaje, último aviso y nivel del micrófono.
+orb_feed = {"seq": 0, "msg": "", "role": "", "alert_seq": 0, "alert": "", "level": 0.0}
+
+
 def push_chat(role, text, source=""):
     item = {"role": role, "text": text, "source": source,
             "time": datetime.datetime.now().strftime("%H:%M")}
     chat_buffer.append(item)
+    orb_feed.update(seq=orb_feed["seq"] + 1, msg=str(text)[:400], role=role)
     socketio.emit("chat", item)
 
 
@@ -1050,6 +1055,7 @@ def trigger_alarm(seconds, label="Recordatorio"):
         hud_show()
         play_sound(resolve_alarm_sound())
         reply(f"Atención: {label}.", "ALARMA")
+        orb_feed.update(alert_seq=orb_feed["alert_seq"] + 1, alert=f"Atención: {label}.")
         windows_toast(f"Atención: {label}.", "ALARMA")
 
     t = threading.Timer(seconds, _fire)

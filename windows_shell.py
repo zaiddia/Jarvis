@@ -32,7 +32,8 @@ JUMP = [m for m in MENU if m[0] in ("02escribir", "03clase", "04timer", "06mic",
 
 # Acciones que entiende un enlace jarvis://acción/argumento
 ACTIONS = {"mostrar", "ocultar", "alternar", "escuchar", "escribir", "rutina", "temporizador", "orden", "microfono", "prueba", "ajustes",
-           "posponer", "bienvenida"}
+           "posponer", "bienvenida", "volumen", "multimedia"}
+ARG_CHOICES = {"volumen": {"subir", "bajar", "silenciar"}, "multimedia": {"pausar", "siguiente", "anterior"}}
 MAX_ARG = 300
 
 CLASSES = r"Software\Classes"
@@ -65,7 +66,9 @@ def parse_link(url):
             return None
     if action in ("rutina", "orden") and not arg:
         return None
-    return action, arg
+    if action in ARG_CHOICES and arg.lower() not in ARG_CHOICES[action]:
+        return None
+    return action, (arg.lower() if action in ARG_CHOICES else arg)
 
 
 def make_link(action, arg=""):

@@ -170,3 +170,47 @@ def test_lista_de_saltos_y_accesos_directos(tmp_path):
 @solo_windows
 def test_identidad_en_la_barra():
     assert ws.set_app_id()
+
+
+# ----------------------------------------------------------------------------- 7.3: el reactor
+def test_enlaces_de_volumen_y_musica():
+    assert ws.parse_link("jarvis://volumen/subir") == ("volumen", "subir")
+    assert ws.parse_link("jarvis://multimedia/Pausar") == ("multimedia", "pausar")
+    assert ws.parse_link("jarvis://volumen/100") is None
+    assert ws.parse_link("jarvis://multimedia/apagar") is None
+
+
+def test_reactor_api_y_orden_local(jv, monkeypatch):
+    jv.write_link_file()
+    tok = {"X-Jarvis-Token": jv.link_token["value"]}
+    c = jv.app.test_client()
+    jv.orb_feed.update(seq=jv.orb_feed["seq"] + 1, msg="Son las 10 y «cuarto»", role="jarvis")
+    jv.orb_feed.update(alert_seq=jv.orb_feed["alert_seq"] + 1, alert="Es la hora: examen.")
+    d = c.get("/api/orbe", headers=tok).get_json()
+    assert d["msg"] == "Son las 10 y «cuarto»" and d["role"] == "jarvis" and d["seq"] >= 1
+    assert d["alert"] == "Es la hora: examen." and len(d["accent"]) == 6
+    assert {"total", "label", "level", "agenda", "ai_label"} <= set(d)
+    sent = []
+    monkeypatch.setattr(jv, "submit_command", lambda text, source="texto": sent.append((text, source)))
+    assert c.post("/api/orden", json={"texto": "qué hora es"}).status_code == 403
+    assert c.post("/api/orden", json={"texto": "qué hora es"}, headers=tok).get_json()["ok"]
+    assert sent == [("qué hora es", "orbe")]
+    ran = []
+
+    class Sk:
+        def run(self, args):
+            ran.append(args)
+    monkeypatch.setitem(jv.skills.REGISTRY, "volumen", Sk())
+    assert jv.run_link("jarvis://volumen/bajar")
+    import time
+    for _ in range(50):
+        if ran:
+            break
+        time.sleep(0.02)
+    assert ran == [{"accion": "bajar"}]
+
+
+def test_el_aviso_llega_al_reactor(jv):
+    n = jv.orb_feed["alert_seq"]
+    jv.alert("Es la hora: recoger los trabajos.", "NOTAS")
+    assert jv.orb_feed["alert_seq"] == n + 1 and "recoger" in jv.orb_feed["alert"]

@@ -1,4 +1,4 @@
-# Jarvis 7.2 — Asistente virtual para Windows
+# Jarvis 7.3 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -156,6 +156,25 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## El reactor de Jarvis en la barra de tareas (v7.3)
+
+El orbe de la 7.2 ahora es un **mini reactor** (mod de Windhawk `windhawk/jarvis-orbe.wh.cpp`, versión 2.0): bisel
+metálico con marcas que giran, diez bobinas, anillo interior y un núcleo que brilla, todo del color de tu tema.
+- **Te escucha**: las bobinas se encienden con tu voz, como un medidor de nivel. **Piensa**: un destello ámbar gira
+  por las bobinas. **Habla**: todo late al ritmo de la voz. **Micrófono en pausa**: gris. **Cerrado**: núcleo rojo.
+- **Temporizador**: un arco ámbar alrededor que se va vaciando (parpadea el último medio minuto).
+- **Avisos**: destello rojo-ámbar y una tarjeta con el recordatorio. **Respuestas**: una onda blanca desde el núcleo
+  y, si el panel está oculto, una burbuja con lo que te dijo.
+- **Pasar el ratón**: una tarjeta con su estado, el temporizador con cuenta atrás y barra, lo próximo de hoy, la IA
+  y lo último que te dijo.
+- **Clic**: háblale. **Doble clic**: mostrar u ocultar el panel. **Mayús+clic**: un cuadro para escribirle sin abrir
+  el panel. **Rueda**: volumen. **Clic central**: pausa o reanuda la música. **Arrastrar**: cambiarlo de sitio.
+  **Clic derecho**: menú con modo clase, temporizadores de 5 y 10 minutos, pendientes, música, micrófono, prueba
+  completa y ajustes.
+
+Para actualizarlo: en Windhawk, abre el mod del orbe › *Editar*, reemplaza el código por el nuevo (*Ajustes ›
+Integraciones › Copiar el código del mod*) › *Compilar*.
 
 ## Jarvis dentro de Windows y el orbe de la barra de tareas (v7.2)
 

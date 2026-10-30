@@ -1,62 +1,73 @@
 // ==WindhawkMod==
 // @id              jarvis-orbe
-// @name            Orbe de Jarvis en la barra de tareas
-// @description     Un orbe junto al reloj que muestra si Jarvis escucha, piensa o habla. Clic: háblale. Clic derecho: menú de órdenes
-// @version         1.0.0
+// @name            Reactor de Jarvis en la barra de tareas
+// @description     Un mini reactor animado junto al reloj: escucha, piensa y habla a la vista, tarjeta con tu día, cuadro para escribirle, volumen con la rueda y avisos
+// @version         2.0.0
 // @author          zaiddia
 // @github          https://github.com/zaiddia
 // @include         explorer.exe
-// @compilerOptions -lwinhttp -lcomctl32 -lgdi32 -luser32 -lshell32
+// @compilerOptions -lwinhttp -lcomctl32 -lgdi32 -luser32 -lshell32 -lmsimg32
 // ==/WindhawkMod==
 
 // ==WindhawkModReadme==
 /*
-# Orbe de Jarvis
+# Reactor de Jarvis
 
-Pone el **reactor de Jarvis** en la barra de tareas, junto al reloj. Necesita
-**Jarvis 7.2 o posterior** abierto en el mismo usuario de Windows.
+Un **mini reactor** en la barra de tareas, junto al reloj, conectado a Jarvis
+(7.3 o posterior, abierto en tu mismo usuario de Windows).
 
-| El orbe | Significa |
+## Qué muestra
+| El reactor | Significa |
 |---|---|
-| Cian suave, respirando | Jarvis está atento (di «Jarvis») |
-| Cian brillante | Te está escuchando |
-| Ámbar girando | Está pensando |
-| Verde latiendo | Está hablando |
+| Bobinas del color de tu tema, respirando | Jarvis está atento: di «Jarvis» |
+| Las bobinas se encienden con tu voz | Te está escuchando (medidor de nivel) |
+| Un destello que gira por las bobinas | Está pensando |
+| Todo late al ritmo de la voz | Está hablando |
 | Gris | Micrófono en pausa |
-| Apagado, con una raya | Jarvis no está abierto |
-| Punto ámbar arriba | Hay un temporizador en marcha (pasa el ratón para ver cuánto falta) |
+| Apagado, con el núcleo rojo | Jarvis no está abierto |
+| Arco ámbar alrededor | Un temporizador: el arco se va vaciando (parpadea el último medio minuto) |
+| Destello rojo-ámbar | Un aviso o recordatorio |
+| Onda blanca desde el núcleo | Jarvis acaba de responder |
 
-- **Clic**: háblale (como decir «Jarvis» o pulsar Ctrl+Alt+Espacio). Lo puedes
-  cambiar por «mostrar u ocultar el panel» en los ajustes del mod.
-- **Clic derecho**: menú con *Escribir una orden*, *Modo clase*,
-  *Temporizador de 5 minutos*, *¿Qué tengo pendiente?*, *Pausar el micrófono*,
+## Qué puedes hacer
+- **Clic**: háblale (como decir «Jarvis»). **Doble clic**: mostrar u ocultar el panel.
+- **Mayús + clic** (o clic derecho › *Escribir aquí*): un cuadro para escribirle sin abrir el panel.
+- **Rueda del ratón** encima: sube o baja el volumen. **Clic central**: pausa o reanuda la música.
+- **Pasar el ratón**: una tarjeta con su estado, tu temporizador con cuenta atrás, lo próximo de tu agenda
+  y lo último que te dijo.
+- Cuando responde con el panel oculto, su respuesta aparece en una **burbuja** sobre el reactor.
+- **Arrástralo** por la barra para cambiarlo de sitio (clic derecho › *Volver a su sitio* para deshacerlo).
+- **Clic derecho**: menú con *Modo clase*, *Temporizador*, *¿Qué tengo pendiente?*, música, micrófono,
   *Prueba completa* y *Ajustes*.
-- Si Jarvis está cerrado, el clic lo abre (activa antes *Ajustes › Integraciones ›
-  Integrar Jarvis con Windows*).
 
-El orbe habla con Jarvis solo dentro de tu equipo (127.0.0.1), con el código
-secreto que Jarvis guarda en `%APPDATA%\Jarvis\enlace.json`. Se oculta solo
-cuando hay un programa en pantalla completa.
+Habla con Jarvis solo dentro de tu equipo (127.0.0.1) y con el código secreto que Jarvis guarda en
+`%APPDATA%\Jarvis\enlace.json` (cambia cada vez que Jarvis arranca). Se oculta con programas en pantalla completa.
 */
 // ==/WindhawkModReadme==
 
 // ==WindhawkModSettings==
 /*
 - position: clock
-  $name: Dónde va el orbe
+  $name: Dónde va el reactor
   $options:
   - clock: A la izquierda del reloj y los iconos de la bandeja
   - left: En el extremo izquierdo de la barra de tareas
 - offset: 0
   $name: Desplazamiento (píxeles)
-  $description: Muévelo a la izquierda (positivo) o a la derecha (negativo) si tapa algún icono.
-- size: 34
-  $name: Tamaño del orbe (píxeles, a 100 % de escala)
+  $description: Muévelo a la izquierda (positivo) o a la derecha (negativo). También puedes arrastrarlo.
+- size: 40
+  $name: Tamaño del reactor (píxeles, a 100 % de escala)
 - click: listen
   $name: Al hacer clic
   $options:
-  - listen: Hablarle a Jarvis
-  - toggle: Mostrar u ocultar el panel de Jarvis
+  - listen: Hablarle a Jarvis (doble clic: mostrar u ocultar el panel)
+  - toggle: Mostrar u ocultar el panel (doble clic: hablarle)
+- card: true
+  $name: Tarjeta al pasar el ratón
+- bubble: true
+  $name: Burbuja con lo que responde (cuando el panel está oculto)
+- wheel: true
+  $name: Rueda del ratón para el volumen (y clic central para la música)
 - hideFullscreen: true
   $name: Ocultarlo con programas en pantalla completa
 - linkFile: ""
@@ -68,6 +79,7 @@ cuando hay un programa en pantalla completa.
 #include <windows.h>
 #include <commctrl.h>
 #include <shellapi.h>
+#include <windowsx.h>
 #include <winhttp.h>
 
 #include <math.h>
@@ -76,19 +88,200 @@ cuando hay un programa en pantalla completa.
 
 #include <string>
 
+// ============================================================================ DIBUJO (puro, sin Windows)
+// El reactor se pinta píxel a píxel con alfa premultiplicado. Esta parte no usa la API de Windows.
+namespace reactor {
+
+enum class Mode { Off, Idle, Awaiting, Thinking, Speaking, Muted };
+
+struct View {
+    Mode mode = Mode::Off;
+    float accent[3] = {0.18f, 0.90f, 1.00f};   // color del tema de Jarvis
+    float level = 0;                          // micrófono 0..1 (suavizado)
+    float timerFrac = -1;                     // 0..1 lo que queda del temporizador; -1 = ninguno
+    float timerLeft = 0;                      // segundos
+    float alert = 0;                          // 0..1 destello de aviso
+    float ripple = -1;                        // 0..1 onda de mensaje nuevo; -1 = ninguna
+    float hover = 0;                          // 0..1
+    float t = 0;                              // segundos
+};
+
+inline float clamp01(float v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
+inline float smooth(float e0, float e1, float x) {
+    float k = clamp01((x - e0) / (e1 - e0));
+    return k * k * (3 - 2 * k);
+}
+// 1 dentro de la banda [a, b] con bordes suaves de «aa» píxeles
+inline float band(float d, float a, float b, float aa) { return smooth(a - aa, a + aa, d) * (1 - smooth(b - aa, b + aa, d)); }
+inline float wrapPi(float a) {
+    while (a > 3.14159265f) a -= 6.2831853f;
+    while (a < -3.14159265f) a += 6.2831853f;
+    return a;
+}
+
+struct Px {
+    float r = 0, g = 0, b = 0, a = 0;
+    void over(float cr, float cg, float cb, float ca) {        // pintar encima (no premultiplicado de entrada)
+        ca = clamp01(ca);
+        r = cr * ca + r * (1 - ca);
+        g = cg * ca + g * (1 - ca);
+        b = cb * ca + b * (1 - ca);
+        a = ca + a * (1 - ca);
+    }
+    void add(float cr, float cg, float cb, float k) {          // luz que se suma
+        k = k < 0 ? 0 : k;
+        r += cr * k;
+        g += cg * k;
+        b += cb * k;
+        a = clamp01(a + k * 0.9f);
+    }
+};
+
+inline void paint(unsigned int* px, int w, int h, const View& v) {
+    const float PI = 3.14159265f, TAU = 6.2831853f;
+    float cx = w / 2.0f, cy = h / 2.0f;
+    float R = (w < h ? w : h) / 2.0f - 0.5f;
+    float aa = 0.75f;
+    bool off = v.mode == Mode::Off, muted = v.mode == Mode::Muted;
+    float base[3] = {v.accent[0], v.accent[1], v.accent[2]};
+    if (muted || off) {
+        base[0] = base[1] = base[2] = off ? 0.32f : 0.62f;
+    }
+    if (v.mode == Mode::Thinking) {                     // pensando: hacia el ámbar
+        base[0] = 0.25f * base[0] + 0.75f * 1.00f;
+        base[1] = 0.25f * base[1] + 0.75f * 0.70f;
+        base[2] = 0.25f * base[2] + 0.75f * 0.26f;
+    }
+    float t = v.t;
+    float breathe = 0.5f + 0.5f * sinf(t * 1.7f);
+    float speak = v.mode == Mode::Speaking ? 0.55f + 0.45f * fabsf(sinf(t * 7.3f) * sinf(t * 3.1f + 1.0f)) : 0;
+    float energy = off ? 0.08f : muted ? 0.30f : v.mode == Mode::Idle ? 0.36f + 0.24f * breathe
+                 : v.mode == Mode::Awaiting ? 0.70f + 0.30f * v.level : v.mode == Mode::Thinking ? 0.75f : 0.6f + 0.4f * speak;
+    energy = clamp01(energy + v.hover * 0.15f);
+    float spin = t * (v.mode == Mode::Thinking ? 2.6f : v.mode == Mode::Speaking ? 1.2f : 0.35f);
+    const int COILS = 10;
+    float lit = v.mode == Mode::Awaiting ? 2.0f + v.level * COILS : COILS;   // medidor de voz: bobinas encendidas
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            float dx = x + 0.5f - cx, dy = y + 0.5f - cy;
+            float d = sqrtf(dx * dx + dy * dy) / R;           // 0 centro .. 1 borde
+            float ang = atan2f(dx, -dy);                      // 0 arriba, sentido horario
+            float ua = ang < 0 ? ang + TAU : ang;             // 0..2π
+            Px p;
+            if (d > 1.06f) {
+                px[y * w + x] = 0;
+                continue;
+            }
+            float aap = aa / R;
+            // 1) disco de fondo (casi negro azulado) para que se lea sobre cualquier barra
+            float disc = 1 - smooth(1.0f - aap * 1.5f, 1.0f, d);
+            p.over(0.016f, 0.03f, 0.05f, disc * 0.92f);
+            // 2) bisel metálico exterior con marcas que giran
+            float bez = band(d, 0.84f, 0.98f, aap);
+            float shade = 0.20f + 0.16f * (-dy / R) ;          // luz desde arriba
+            p.over(0.10f + shade * 0.5f, 0.13f + shade * 0.5f, 0.17f + shade * 0.55f, bez * 0.95f);
+            float tick = 0.5f + 0.5f * cosf((ua - spin * 0.25f) * 24.0f);
+            float ticks = band(d, 0.88f, 0.95f, aap) * smooth(0.82f, 0.97f, tick);
+            p.add(base[0], base[1], base[2], ticks * (0.18f + 0.30f * energy));
+            // 3) arco del temporizador sobre el bisel (se vacía en sentido horario)
+            if (v.timerFrac >= 0) {
+                float blink = v.timerLeft < 30 ? 0.55f + 0.45f * (sinf(t * 9.0f) > 0 ? 1.0f : 0.25f) : 1.0f;
+                float on = ua <= v.timerFrac * TAU ? 1.0f : 0.0f;
+                float arc = band(d, 0.855f, 0.965f, aap);
+                p.over(1.0f, 0.70f, 0.26f, arc * on * 0.92f * blink);
+                p.add(1.0f, 0.70f, 0.26f, arc * (1 - on) * 0.06f);
+            }
+            // 4) bobinas (segmentos trapezoidales) — el corazón del reactor
+            float seg = ua / TAU * COILS;
+            int idx = (int)seg;
+            float within = seg - idx;                          // 0..1 dentro del segmento
+            float gapPx = 1.1f / (d * R * TAU / COILS + 1e-3f);  // hueco de ~1 px entre bobinas
+            float coilMask = band(d, 0.50f, 0.78f, aap) * smooth(gapPx, gapPx + 0.08f, within) *
+                             (1 - smooth(1 - gapPx - 0.08f, 1 - gapPx, within));
+            float coilLevel = energy;
+            if (v.mode == Mode::Awaiting) {
+                coilLevel = idx < (int)lit ? 0.55f + 0.45f * v.level : 0.12f;
+            } else if (v.mode == Mode::Thinking) {
+                float head = fmodf(spin * 1.6f, TAU);
+                float da = wrapPi(ua - head);
+                float trail = da < 0 ? expf(da * 1.6f) : expf(-da * 9.0f);
+                coilLevel = 0.10f + 1.0f * trail;
+            } else if (v.mode == Mode::Speaking) {
+                coilLevel = 0.35f + 0.65f * speak * (0.75f + 0.25f * sinf(idx * 1.7f + t * 6.0f));
+            }
+            float radial = 1 - 0.35f * fabsf((d - 0.64f) / 0.14f);   // más brillante en el centro de la bobina
+            p.over(0.05f, 0.07f, 0.09f, coilMask * 0.9f);
+            p.add(base[0], base[1], base[2], coilMask * coilLevel * radial * 1.05f);
+            // resplandor entre bobinas
+            float glowR = expf(-powf((d - 0.64f) / 0.20f, 2)) * (off ? 0 : 0.22f * energy);
+            p.add(base[0], base[1], base[2], glowR * disc);
+            // 5) anillo interior y núcleo
+            float inner = band(d, 0.40f, 0.455f, aap);
+            p.over(0.12f, 0.16f, 0.20f, inner * 0.9f);
+            p.add(base[0], base[1], base[2], inner * (0.25f + 0.5f * energy));
+            float coreR = 0.30f + 0.04f * (v.mode == Mode::Speaking ? speak : v.mode == Mode::Awaiting ? v.level : breathe * 0.5f);
+            float core = 1 - smooth(coreR - aap * 1.2f, coreR + aap * 0.6f, d);
+            float hot = expf(-powf(d / (coreR * 0.55f), 2));
+            if (off) {
+                p.over(0.08f, 0.09f, 0.10f, core);
+                p.add(0.9f, 0.18f, 0.22f, hot * (0.35f + 0.25f * breathe));   // núcleo rojo apagado
+            } else {
+                p.over(base[0] * 0.35f, base[1] * 0.35f, base[2] * 0.35f, core);
+                p.add(base[0], base[1], base[2], core * (0.45f + 0.55f * energy));
+                p.add(1, 1, 1, hot * (0.35f + 0.55f * energy) * core);      // centro casi blanco
+                p.add(base[0], base[1], base[2], expf(-powf(d / 0.55f, 2)) * 0.25f * energy * disc);
+            }
+            // 6) onda de mensaje nuevo
+            if (v.ripple >= 0) {
+                float rr = 0.25f + v.ripple * 0.85f;
+                float wave = expf(-powf((d - rr) / 0.07f, 2)) * (1 - v.ripple);
+                p.add(1, 1, 1, wave * 0.75f * disc);
+            }
+            // 7) destello de aviso
+            if (v.alert > 0) {
+                float fl = (0.5f + 0.5f * sinf(t * 14.0f)) * v.alert;
+                float ring = band(d, 0.80f, 1.0f, aap * 2);
+                p.add(1.0f, 0.38f, 0.22f, (ring * 0.9f + disc * 0.25f) * fl);
+            }
+            // 8) brillo especular arriba (vidrio)
+            float spec = band(d, 0.80f, 0.97f, aap) * smooth(-0.2f, -0.85f, dy / R) * 0.22f;
+            p.add(1, 1, 1, spec);
+            (void)PI;
+            // salida premultiplicada
+            float A = clamp01(p.a);
+            float r = clamp01(p.r), g = clamp01(p.g), b = clamp01(p.b);
+            unsigned Ai = (unsigned)(A * 255 + 0.5f);
+            unsigned Ri = (unsigned)(r * 255 + 0.5f), Gi = (unsigned)(g * 255 + 0.5f), Bi = (unsigned)(b * 255 + 0.5f);
+            if (Ri > Ai) Ri = Ai;
+            if (Gi > Ai) Gi = Ai;
+            if (Bi > Ai) Bi = Ai;
+            px[y * w + x] = (Ai << 24) | (Ri << 16) | (Gi << 8) | Bi;
+        }
+    }
+}
+
+}  // namespace reactor
+// ============================================================================ FIN DIBUJO
+
 namespace {
+
+using reactor::Mode;
 
 // ------------------------------------------------------------------ ajustes
 struct Settings {
     bool atClock = true;
     int offset = 0;
-    int size = 34;
+    int size = 40;
     bool clickToggles = false;
+    bool card = true;
+    bool bubble = true;
+    bool wheel = true;
     bool hideFullscreen = true;
     std::wstring linkFile;
 };
 Settings g_settings;
-CRITICAL_SECTION g_lock;                 // protege g_settings, g_status, el puerto y el código
+CRITICAL_SECTION g_lock;   // protege g_settings, g_status, el puerto y el código
 
 void LoadSettings() {
     Settings s;
@@ -97,12 +290,15 @@ void LoadSettings() {
     Wh_FreeStringSetting(pos);
     s.offset = Wh_GetIntSetting(L"offset");
     s.size = Wh_GetIntSetting(L"size");
-    if (s.size < 18 || s.size > 64) {
-        s.size = 34;
+    if (s.size < 20 || s.size > 72) {
+        s.size = 40;
     }
     PCWSTR click = Wh_GetStringSetting(L"click");
     s.clickToggles = click && wcscmp(click, L"toggle") == 0;
     Wh_FreeStringSetting(click);
+    s.card = Wh_GetIntSetting(L"card") != 0;
+    s.bubble = Wh_GetIntSetting(L"bubble") != 0;
+    s.wheel = Wh_GetIntSetting(L"wheel") != 0;
     s.hideFullscreen = Wh_GetIntSetting(L"hideFullscreen") != 0;
     PCWSTR lf = Wh_GetStringSetting(L"linkFile");
     if (lf && *lf) {
@@ -114,47 +310,175 @@ void LoadSettings() {
     LeaveCriticalSection(&g_lock);
 }
 
-Settings CurrentSettings() {
+Settings Cfg() {
     EnterCriticalSection(&g_lock);
     Settings s = g_settings;
     LeaveCriticalSection(&g_lock);
     return s;
 }
 
-// ------------------------------------------------------------------ estado compartido
-enum class Mode { Off, Idle, Awaiting, Thinking, Speaking, Muted };
-
+// ------------------------------------------------------------------ estado que llega de Jarvis
 struct Status {
     Mode mode = Mode::Off;
-    int timers = 0;
-    int next = -1;
-    bool visible = false;
-    bool live = false;
+    float level = 0;
+    int timers = 0, next = -1, total = 0;
+    bool visible = false, live = false;
+    int seq = 0, alertSeq = 0;
+    std::wstring role, msg, alert, label, agenda, aiLabel, net;
+    float accent[3] = {0.18f, 0.90f, 1.00f};
 };
-
 Status g_status;
-std::wstring g_host = L"127.0.0.1";
 int g_port = 0;
 std::string g_token;
 
-HANDLE g_thread = nullptr;
-HANDLE g_poller = nullptr;
-HANDLE g_quit = nullptr;
-HANDLE g_single = nullptr;
-HWND g_orb = nullptr;
-HWND g_tip = nullptr;
-TOOLINFOW g_ti = {};
-bool g_hover = false;
+HANDLE g_thread = nullptr, g_poller = nullptr, g_quit = nullptr, g_single = nullptr;
+HWND g_orb = nullptr, g_card = nullptr, g_input = nullptr, g_edit = nullptr;
+HFONT g_fontTitle = nullptr, g_fontBody = nullptr, g_fontSmall = nullptr;
 
-const wchar_t kClass[] = L"JarvisOrbeWindhawk";
+const wchar_t kOrbClass[] = L"JarvisReactorWindhawk";
+const wchar_t kCardClass[] = L"JarvisReactorCard";
+const wchar_t kInputClass[] = L"JarvisReactorInput";
 constexpr UINT WM_APP_STATUS = WM_APP + 1;
 constexpr UINT WM_APP_RELOAD = WM_APP + 2;
-constexpr UINT_PTR kAnimTimer = 1;
-constexpr UINT_PTR kPlaceTimer = 2;
+constexpr UINT_PTR kAnimTimer = 1, kPlaceTimer = 2, kHoverTimer = 3, kClickTimer = 4, kCardTimer = 5;
+
+// animación (solo hilo de la ventana)
+struct Anim {
+    float level = 0, hover = 0, alert = 0, ripple = -1;
+    DWORD alertUntil = 0, rippleStart = 0;
+    int lastSeq = -1, lastAlertSeq = -1;
+} g_anim;
+
+// tarjeta
+enum class CardKind { None, Info, Message, Alert };
+CardKind g_cardKind = CardKind::None;
+std::wstring g_cardTitle, g_cardText;
+bool g_hovering = false;
+
+// arrastre
+bool g_down = false, g_dragging = false, g_ignoreUp = false;
+POINT g_downPt = {};
+int g_dragOffset = 0, g_dragStartOffset = 0;
+
+// ------------------------------------------------------------------ JSON mínimo (el que manda Jarvis)
+// Busca "clave": como clave de verdad (no dentro de un texto, donde las comillas van escapadas).
+size_t JsonFind(const std::string& j, const char* key) {
+    std::string k = std::string("\"") + key + "\"";
+    size_t p = 0;
+    while ((p = j.find(k, p)) != std::string::npos) {
+        size_t q = p;
+        while (q > 0 && (j[q - 1] == ' ' || j[q - 1] == '\n')) {
+            q--;
+        }
+        if (q > 0 && (j[q - 1] == '{' || j[q - 1] == ',')) {
+            size_t c = j.find(':', p + k.size());
+            return c == std::string::npos ? c : c + 1;
+        }
+        p += k.size();
+    }
+    return std::string::npos;
+}
+
+void Utf8Append(std::string& out, unsigned cp) {
+    if (cp < 0x80) {
+        out += (char)cp;
+    } else if (cp < 0x800) {
+        out += (char)(0xC0 | (cp >> 6));
+        out += (char)(0x80 | (cp & 0x3F));
+    } else if (cp < 0x10000) {
+        out += (char)(0xE0 | (cp >> 12));
+        out += (char)(0x80 | ((cp >> 6) & 0x3F));
+        out += (char)(0x80 | (cp & 0x3F));
+    } else {
+        out += (char)(0xF0 | (cp >> 18));
+        out += (char)(0x80 | ((cp >> 12) & 0x3F));
+        out += (char)(0x80 | ((cp >> 6) & 0x3F));
+        out += (char)(0x80 | (cp & 0x3F));
+    }
+}
+
+std::wstring Wide(const std::string& u8) {
+    if (u8.empty()) {
+        return L"";
+    }
+    int n = MultiByteToWideChar(CP_UTF8, 0, u8.data(), (int)u8.size(), nullptr, 0);
+    std::wstring w(n, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, u8.data(), (int)u8.size(), &w[0], n);
+    return w;
+}
+
+std::string Utf8(const std::wstring& w) {
+    if (w.empty()) {
+        return "";
+    }
+    int n = WideCharToMultiByte(CP_UTF8, 0, w.data(), (int)w.size(), nullptr, 0, nullptr, nullptr);
+    std::string s(n, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, w.data(), (int)w.size(), &s[0], n, nullptr, nullptr);
+    return s;
+}
+
+std::string JsonRaw(const std::string& j, const char* key) {
+    size_t p = JsonFind(j, key);
+    if (p == std::string::npos) {
+        return "";
+    }
+    while (p < j.size() && j[p] == ' ') {
+        p++;
+    }
+    if (p < j.size() && j[p] == '"') {                       // texto con escapes \" \\ \n \uXXXX
+        std::string out;
+        for (size_t i = p + 1; i < j.size(); i++) {
+            char ch = j[i];
+            if (ch == '"') {
+                break;
+            }
+            if (ch != '\\' || i + 1 >= j.size()) {
+                out += ch;
+                continue;
+            }
+            char e = j[++i];
+            if (e == 'n' || e == 'r' || e == 't') {
+                out += ' ';
+            } else if (e == 'u' && i + 4 < j.size()) {
+                unsigned cp = (unsigned)strtoul(j.substr(i + 1, 4).c_str(), nullptr, 16);
+                i += 4;
+                if (cp >= 0xD800 && cp <= 0xDBFF && i + 6 < j.size() && j[i + 1] == '\\' && j[i + 2] == 'u') {
+                    unsigned lo = (unsigned)strtoul(j.substr(i + 3, 4).c_str(), nullptr, 16);
+                    cp = 0x10000 + ((cp - 0xD800) << 10) + (lo - 0xDC00);
+                    i += 6;
+                }
+                Utf8Append(out, cp);
+            } else {
+                out += e;
+            }
+        }
+        return out;
+    }
+    size_t e = p;
+    while (e < j.size() && j[e] != ',' && j[e] != '}' && j[e] != ' ') {
+        e++;
+    }
+    return j.substr(p, e - p);
+}
+
+std::string JsonEscape(const std::string& s) {
+    std::string o;
+    for (unsigned char c : s) {
+        if (c == '"' || c == '\\') {
+            o += '\\';
+            o += (char)c;
+        } else if (c < 0x20) {
+            o += ' ';
+        } else {
+            o += (char)c;
+        }
+    }
+    return o;
+}
 
 // ------------------------------------------------------------------ enlace con Jarvis
 std::wstring LinkPath() {
-    std::wstring custom = CurrentSettings().linkFile;
+    std::wstring custom = Cfg().linkFile;
     if (!custom.empty()) {
         return custom;
     }
@@ -164,32 +488,6 @@ std::wstring LinkPath() {
         return L"";
     }
     return std::wstring(buf) + L"\\Jarvis\\enlace.json";
-}
-
-// Valor de "clave": "texto" o "clave": número en un JSON pequeño y conocido.
-std::string JsonStr(const std::string& j, const char* key) {
-    std::string k = std::string("\"") + key + "\"";
-    size_t p = j.find(k);
-    if (p == std::string::npos) {
-        return "";
-    }
-    p = j.find(':', p + k.size());
-    if (p == std::string::npos) {
-        return "";
-    }
-    p++;
-    while (p < j.size() && (j[p] == ' ' || j[p] == '\t')) {
-        p++;
-    }
-    if (p < j.size() && j[p] == '"') {
-        size_t e = j.find('"', p + 1);
-        return e == std::string::npos ? "" : j.substr(p + 1, e - p - 1);
-    }
-    size_t e = p;
-    while (e < j.size() && j[e] != ',' && j[e] != '}' && j[e] != ' ') {
-        e++;
-    }
-    return j.substr(p, e - p);
 }
 
 bool ReadLinkFile() {
@@ -210,8 +508,8 @@ bool ReadLinkFile() {
         return false;
     }
     std::string j(buf, got);
-    std::string token = JsonStr(j, "token");
-    int port = atoi(JsonStr(j, "port").c_str());
+    std::string token = JsonRaw(j, "token");
+    int port = atoi(JsonRaw(j, "port").c_str());
     if (token.size() < 32 || port <= 0 || port > 65535) {
         return false;
     }
@@ -232,20 +530,18 @@ int Http(const wchar_t* method, const wchar_t* path, const std::string& body, st
         return 0;
     }
     int status = 0;
-    HINTERNET s = WinHttpOpen(L"JarvisOrbe/1.0", WINHTTP_ACCESS_TYPE_NO_PROXY, WINHTTP_NO_PROXY_NAME,
+    HINTERNET s = WinHttpOpen(L"JarvisReactor/2.0", WINHTTP_ACCESS_TYPE_NO_PROXY, WINHTTP_NO_PROXY_NAME,
                               WINHTTP_NO_PROXY_BYPASS, 0);
     if (!s) {
         return 0;
     }
     WinHttpSetTimeouts(s, 800, 800, 1500, 3000);
-    HINTERNET c = WinHttpConnect(s, g_host.c_str(), (INTERNET_PORT)port, 0);
-    HINTERNET r = c ? WinHttpOpenRequest(c, method, path, nullptr, WINHTTP_NO_REFERER,
-                                         WINHTTP_DEFAULT_ACCEPT_TYPES, 0)
+    HINTERNET c = WinHttpConnect(s, L"127.0.0.1", (INTERNET_PORT)port, 0);
+    HINTERNET r = c ? WinHttpOpenRequest(c, method, path, nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, 0)
                     : nullptr;
     if (r) {
-        std::wstring hdr = L"X-Jarvis-Token: ";
-        hdr += std::wstring(token.begin(), token.end());
-        hdr += L"\r\nContent-Type: application/json\r\n";
+        std::wstring hdr = L"X-Jarvis-Token: " + std::wstring(token.begin(), token.end()) +
+                           L"\r\nContent-Type: application/json; charset=utf-8\r\n";
         BOOL sent = WinHttpSendRequest(r, hdr.c_str(), (DWORD)-1L,
                                        body.empty() ? WINHTTP_NO_REQUEST_DATA : (LPVOID)body.data(),
                                        (DWORD)body.size(), (DWORD)body.size(), 0);
@@ -257,7 +553,7 @@ int Http(const wchar_t* method, const wchar_t* path, const std::string& body, st
             if (out) {
                 out->clear();
                 DWORD avail = 0;
-                while (WinHttpQueryDataAvailable(r, &avail) && avail && out->size() < 8192) {
+                while (WinHttpQueryDataAvailable(r, &avail) && avail && out->size() < 16384) {
                     std::string chunk(avail, '\0');
                     DWORD read = 0;
                     if (!WinHttpReadData(r, &chunk[0], avail, &read) || !read) {
@@ -276,80 +572,95 @@ int Http(const wchar_t* method, const wchar_t* path, const std::string& body, st
     return status;
 }
 
-Mode ParseMode(const std::string& j) {
-    std::string mode = JsonStr(j, "mode");
-    std::string mic = JsonStr(j, "mic");
-    if (mode == "speaking") {
-        return Mode::Speaking;
+void ParseAccent(const std::string& hex, float* rgb) {
+    if (hex.size() != 6) {
+        return;
     }
-    if (mode == "thinking") {
-        return Mode::Thinking;
-    }
-    if (mode == "awaiting") {
-        return Mode::Awaiting;
-    }
-    if (mic != "on") {
-        return Mode::Muted;
-    }
-    return Mode::Idle;
+    unsigned v = (unsigned)strtoul(hex.c_str(), nullptr, 16);
+    rgb[0] = ((v >> 16) & 255) / 255.0f;
+    rgb[1] = ((v >> 8) & 255) / 255.0f;
+    rgb[2] = (v & 255) / 255.0f;
 }
 
 DWORD WINAPI PollThread(LPVOID) {
     DWORD lastRead = 0;
     int fails = 0;
-    while (WaitForSingleObject(g_quit, fails ? 1500 : 350) == WAIT_TIMEOUT) {
+    DWORD wait = 300;
+    while (WaitForSingleObject(g_quit, wait) == WAIT_TIMEOUT) {
         if (!g_port || (fails && GetTickCount() - lastRead > 4000)) {
-            ReadLinkFile();                         // Jarvis cambia el código cada vez que arranca
+            ReadLinkFile();                          // Jarvis cambia el código cada vez que arranca
             lastRead = GetTickCount();
         }
-        std::string body;
+        std::string j;
         Status st;
-        if (Http(L"GET", L"/api/orbe", "", &body) == 200) {
+        if (Http(L"GET", L"/api/orbe", "", &j) == 200) {
             fails = 0;
-            st.mode = ParseMode(body);
-            st.timers = atoi(JsonStr(body, "timers").c_str());
-            st.next = atoi(JsonStr(body, "next").c_str());
-            st.visible = JsonStr(body, "visible") == "true";
-            st.live = JsonStr(body, "live") == "true";
+            std::string mode = JsonRaw(j, "mode"), mic = JsonRaw(j, "mic");
+            st.mode = mode == "speaking" ? Mode::Speaking : mode == "thinking" ? Mode::Thinking
+                    : mode == "awaiting" ? Mode::Awaiting : mic != "on" ? Mode::Muted : Mode::Idle;
+            st.level = (float)atof(JsonRaw(j, "level").c_str());
+            st.timers = atoi(JsonRaw(j, "timers").c_str());
+            st.next = atoi(JsonRaw(j, "next").c_str());
+            st.total = atoi(JsonRaw(j, "total").c_str());
+            st.visible = JsonRaw(j, "visible") == "true";
+            st.live = JsonRaw(j, "live") == "true";
+            st.seq = atoi(JsonRaw(j, "seq").c_str());
+            st.alertSeq = atoi(JsonRaw(j, "alert_seq").c_str());
+            st.role = Wide(JsonRaw(j, "role"));
+            st.msg = Wide(JsonRaw(j, "msg"));
+            st.alert = Wide(JsonRaw(j, "alert"));
+            st.label = Wide(JsonRaw(j, "label"));
+            st.agenda = Wide(JsonRaw(j, "agenda"));
+            st.aiLabel = Wide(JsonRaw(j, "ai_label"));
+            st.net = Wide(JsonRaw(j, "net"));
+            ParseAccent(JsonRaw(j, "accent"), st.accent);
         } else {
             fails++;
             st.mode = Mode::Off;
         }
         EnterCriticalSection(&g_lock);
-        bool changed = st.mode != g_status.mode || st.timers != g_status.timers || st.next != g_status.next;
         g_status = st;
         LeaveCriticalSection(&g_lock);
-        if (changed && g_orb) {
+        if (g_orb) {
             PostMessageW(g_orb, WM_APP_STATUS, 0, 0);
         }
+        // Más rápido mientras te escucha (el medidor de voz), tranquilo en reposo, lento si Jarvis está cerrado.
+        wait = st.mode == Mode::Off ? 1500 : (st.mode == Mode::Awaiting || st.mode == Mode::Speaking) ? 110 : 300;
     }
     return 0;
 }
 
+Status Snapshot() {
+    EnterCriticalSection(&g_lock);
+    Status s = g_status;
+    LeaveCriticalSection(&g_lock);
+    return s;
+}
+
 struct SendJob {
-    std::string url;
+    std::wstring path;
+    std::string body;
+    std::string fallbackUrl;
 };
 
 DWORD WINAPI SendThread(LPVOID p) {
     SendJob* job = (SendJob*)p;
-    std::string body = "{\"url\": \"" + job->url + "\", \"origen\": \"orbe\"}";
-    int code = Http(L"POST", L"/api/enlace", body, nullptr);
+    int code = Http(L"POST", job->path.c_str(), job->body, nullptr);
     if (code == 403 || code == 0) {
         // Código viejo (Jarvis se reinició) o Jarvis cerrado: releer el enlace y, si no, abrir Jarvis.
         if (ReadLinkFile()) {
-            code = Http(L"POST", L"/api/enlace", body, nullptr);
+            code = Http(L"POST", job->path.c_str(), job->body, nullptr);
         }
-        if (code != 200) {
-            std::wstring w(job->url.begin(), job->url.end());
-            ShellExecuteW(nullptr, L"open", w.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+        if (code != 200 && !job->fallbackUrl.empty()) {
+            ShellExecuteW(nullptr, L"open", Wide(job->fallbackUrl).c_str(), nullptr, nullptr, SW_SHOWNORMAL);
         }
     }
     delete job;
     return 0;
 }
 
-void Send(const char* url) {
-    SendJob* job = new SendJob{url};
+void Post(const wchar_t* path, const std::string& body, const std::string& fallback) {
+    SendJob* job = new SendJob{path, body, fallback};
     HANDLE t = CreateThread(nullptr, 0, SendThread, job, 0, nullptr);
     if (t) {
         CloseHandle(t);
@@ -358,135 +669,21 @@ void Send(const char* url) {
     }
 }
 
-// ------------------------------------------------------------------ dibujo (alfa por píxel, sin GDI+)
-struct Rgb {
-    float r, g, b;
-};
-
-Rgb ModeColor(Mode m) {
-    switch (m) {
-        case Mode::Awaiting: return {0.18f, 0.90f, 1.00f};
-        case Mode::Thinking: return {1.00f, 0.71f, 0.28f};
-        case Mode::Speaking: return {0.24f, 1.00f, 0.60f};
-        case Mode::Muted: return {0.55f, 0.60f, 0.66f};
-        case Mode::Off: return {0.35f, 0.38f, 0.42f};
-        default: return {0.18f, 0.90f, 1.00f};
-    }
+void Link(const char* url) {
+    Post(L"/api/enlace", std::string("{\"url\": \"") + url + "\", \"origen\": \"orbe\"}", url);
 }
 
-float Clamp01(float v) {
-    return v < 0 ? 0 : (v > 1 ? 1 : v);
+void Order(const std::wstring& text) {
+    Post(L"/api/orden", "{\"texto\": \"" + JsonEscape(Utf8(text)) + "\"}", "");
 }
 
-void Render(HWND hwnd) {
-    RECT rc;
-    GetWindowRect(hwnd, &rc);
-    int w = rc.right - rc.left, h = rc.bottom - rc.top;
-    if (w <= 0 || h <= 0) {
-        return;
-    }
-    EnterCriticalSection(&g_lock);
-    Status st = g_status;
-    LeaveCriticalSection(&g_lock);
-
-    BITMAPINFO bi = {};
-    bi.bmiHeader.biSize = sizeof(bi.bmiHeader);
-    bi.bmiHeader.biWidth = w;
-    bi.bmiHeader.biHeight = -h;
-    bi.bmiHeader.biPlanes = 1;
-    bi.bmiHeader.biBitCount = 32;
-    bi.bmiHeader.biCompression = BI_RGB;
-    void* bits = nullptr;
-    HDC screen = GetDC(nullptr);
-    HDC mem = CreateCompatibleDC(screen);
-    HBITMAP bmp = CreateDIBSection(screen, &bi, DIB_RGB_COLORS, &bits, nullptr, 0);
-    if (!bmp || !bits) {
-        DeleteDC(mem);
-        ReleaseDC(nullptr, screen);
-        return;
-    }
-    HGDIOBJ old = SelectObject(mem, bmp);
-
-    float t = GetTickCount() / 1000.0f;
-    Rgb c = ModeColor(st.mode);
-    float cx = w / 2.0f, cy = h / 2.0f;
-    float R = (w < h ? w : h) / 2.0f - 1.5f;
-    float breathe = 0.5f + 0.5f * sinf(t * (st.mode == Mode::Speaking ? 9.0f : st.mode == Mode::Awaiting ? 4.0f : 1.6f));
-    float glow = st.mode == Mode::Off ? 0.0f : (st.mode == Mode::Idle || st.mode == Mode::Muted ? 0.35f + 0.25f * breathe : 0.6f + 0.4f * breathe);
-    if (g_hover) {
-        glow = glow < 0.8f ? 0.8f : glow;
-    }
-    float spin = t * 4.0f;
-
-    unsigned int* px = (unsigned int*)bits;
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            float dx = x + 0.5f - cx, dy = y + 0.5f - cy;
-            float d = sqrtf(dx * dx + dy * dy);
-            float a = 0, r = 0, g = 0, b = 0;
-            // halo exterior
-            float hd = (d - R * 0.78f) / (R * 0.16f);
-            float cd = d / (R * 0.45f);
-            float halo = (expf(-hd * hd) * 0.55f + expf(-cd * cd) * 0.45f) * glow * (d < R ? 1.0f : 0.0f);
-            // anillo
-            float ring = Clamp01(1.0f - fabsf(d - R * 0.78f) / 1.6f);
-            if (st.mode == Mode::Thinking) {
-                float ang = atan2f(dy, dx);
-                float seg = 0.5f + 0.5f * cosf(ang * 3.0f - spin);
-                ring *= 0.35f + 0.65f * seg;
-            }
-            // núcleo
-            float core = Clamp01(1.0f - (d - R * 0.28f) / 1.4f);
-            float coreLevel = st.mode == Mode::Off ? 0.25f : 0.55f + 0.45f * glow;
-            // fondo oscuro del disco (para que se lea sobre cualquier barra)
-            float disc = Clamp01(1.0f - (d - R) / 1.2f) * 0.78f;
-
-            a = disc;
-            r = g = b = 0.02f * disc;                       // casi negro
-            float add = halo + ring * 0.95f + core * coreLevel;
-            r += c.r * add;
-            g += c.g * add;
-            b += c.b * add;
-            a = Clamp01(a + halo + ring + core * coreLevel);
-            if (st.mode == Mode::Off) {                      // raya: Jarvis cerrado
-                float line = Clamp01(1.0f - fabsf(dx + dy) / 1.3f) * (d < R * 0.7f ? 1.0f : 0.0f);
-                r += 0.6f * line; g += 0.6f * line; b += 0.6f * line;
-                a = Clamp01(a + line);
-            }
-            if (st.timers > 0) {                             // punto ámbar arriba a la derecha
-                float tx = cx + R * 0.68f, ty = cy - R * 0.68f;
-                float td = sqrtf((x + 0.5f - tx) * (x + 0.5f - tx) + (y + 0.5f - ty) * (y + 0.5f - ty));
-                float dot = Clamp01(1.0f - (td - R * 0.17f) / 1.1f);
-                r = r * (1 - dot) + 1.0f * dot;
-                g = g * (1 - dot) + 0.71f * dot;
-                b = b * (1 - dot) + 0.28f * dot;
-                a = Clamp01(a + dot);
-            }
-            // alfa premultiplicado
-            r = Clamp01(r); g = Clamp01(g); b = Clamp01(b);
-            unsigned A = (unsigned)(a * 255 + 0.5f);
-            unsigned Rr = (unsigned)(Clamp01(r) * a * 255 + 0.5f);
-            unsigned Gg = (unsigned)(Clamp01(g) * a * 255 + 0.5f);
-            unsigned Bb = (unsigned)(Clamp01(b) * a * 255 + 0.5f);
-            if (Rr > A) Rr = A;
-            if (Gg > A) Gg = A;
-            if (Bb > A) Bb = A;
-            px[y * w + x] = (A << 24) | (Rr << 16) | (Gg << 8) | Bb;
-        }
-    }
-
-    POINT src = {0, 0};
-    POINT dst = {rc.left, rc.top};
-    SIZE sz = {w, h};
-    BLENDFUNCTION bf = {AC_SRC_OVER, 0, 255, AC_SRC_ALPHA};
-    UpdateLayeredWindow(hwnd, screen, &dst, &sz, mem, &src, 0, &bf, ULW_ALPHA);
-    SelectObject(mem, old);
-    DeleteObject(bmp);
-    DeleteDC(mem);
-    ReleaseDC(nullptr, screen);
+// ------------------------------------------------------------------ utilidades de pantalla
+UINT DpiOf(HWND h) {
+    typedef UINT(WINAPI * Fn)(HWND);
+    static Fn fn = (Fn)GetProcAddress(GetModuleHandleW(L"user32.dll"), "GetDpiForWindow");
+    return fn && h ? fn(h) : 96;
 }
 
-// ------------------------------------------------------------------ posición
 bool ForegroundIsFullscreen() {
     HWND fg = GetForegroundWindow();
     if (!fg || fg == GetShellWindow() || fg == GetDesktopWindow()) {
@@ -511,174 +708,601 @@ bool ForegroundIsFullscreen() {
 }
 
 void Place() {
-    if (!g_orb) {
+    if (!g_orb || g_dragging) {
         return;
     }
-    Settings cs = CurrentSettings();
+    Settings cs = Cfg();
     HWND tray = FindWindowW(L"Shell_TrayWnd", nullptr);
     RECT tr;
     if (!tray || !GetWindowRect(tray, &tr) || !IsWindowVisible(tray)) {
         ShowWindow(g_orb, SW_HIDE);
         return;
     }
-    UINT dpi = 96;
-    typedef UINT(WINAPI * GetDpiForWindowFn)(HWND);
-    static GetDpiForWindowFn getDpi =
-        (GetDpiForWindowFn)GetProcAddress(GetModuleHandleW(L"user32.dll"), "GetDpiForWindow");
-    if (getDpi) {
-        dpi = getDpi(tray);
-    }
+    UINT dpi = DpiOf(tray);
     int size = MulDiv(cs.size, dpi, 96);
     int barH = tr.bottom - tr.top, barW = tr.right - tr.left;
-    bool vertical = barH > barW;
+    if (barH < barW && size > barH - 2) {
+        size = barH - 2;                             // barra fina: que quepa
+    }
+    int shift = cs.offset + g_dragOffset;
     int x, y;
-    if (vertical) {                                      // barra a un lado: el orbe arriba
+    if (barH > barW) {                               // barra vertical: arriba
         x = tr.left + (barW - size) / 2;
-        y = tr.top + MulDiv(8, dpi, 96) + cs.offset;
+        y = tr.top + MulDiv(8, dpi, 96) + shift;
     } else {
         y = tr.top + (barH - size) / 2;
         if (cs.atClock) {
             RECT nr;
             HWND notify = FindWindowExW(tray, nullptr, L"TrayNotifyWnd", nullptr);
             int right = (notify && GetWindowRect(notify, &nr) && nr.left > tr.left) ? nr.left : tr.right - MulDiv(260, dpi, 96);
-            x = right - size - MulDiv(8, dpi, 96) - cs.offset;
+            x = right - size - MulDiv(8, dpi, 96) - shift;
         } else {
-            x = tr.left + MulDiv(6, dpi, 96) - cs.offset;
+            x = tr.left + MulDiv(6, dpi, 96) - shift;
         }
+        if (x < tr.left) x = tr.left;
+        if (x > tr.right - size) x = tr.right - size;
     }
-    bool hide = cs.hideFullscreen && ForegroundIsFullscreen();
-    if (hide) {
+    if (cs.hideFullscreen && ForegroundIsFullscreen()) {
         ShowWindow(g_orb, SW_HIDE);
+        if (g_card) ShowWindow(g_card, SW_HIDE);
         return;
     }
     SetWindowPos(g_orb, HWND_TOPMOST, x, y, size, size, SWP_NOACTIVATE | SWP_SHOWWINDOW);
-    if (g_tip) {
-        g_ti.rect = {0, 0, size, size};
-        SendMessageW(g_tip, TTM_NEWTOOLRECTW, 0, (LPARAM)&g_ti);
-    }
 }
 
-// ------------------------------------------------------------------ texto de ayuda y menú
-void TipText(wchar_t* buf, size_t n) {
-    EnterCriticalSection(&g_lock);
-    Status st = g_status;
-    LeaveCriticalSection(&g_lock);
-    const wchar_t* what = L"Jarvis está atento: di «Jarvis» o haz clic";
+// ------------------------------------------------------------------ pintar el reactor
+void RenderOrb() {
+    if (!g_orb || !IsWindowVisible(g_orb)) {
+        return;
+    }
+    RECT rc;
+    GetWindowRect(g_orb, &rc);
+    int w = rc.right - rc.left, h = rc.bottom - rc.top;
+    if (w <= 0 || h <= 0) {
+        return;
+    }
+    Status st = Snapshot();
+    DWORD now = GetTickCount();
+    reactor::View v;
+    v.mode = st.mode;
+    v.accent[0] = st.accent[0];
+    v.accent[1] = st.accent[1];
+    v.accent[2] = st.accent[2];
+    g_anim.level += (st.level - g_anim.level) * 0.35f;
+    v.level = g_anim.level;
+    g_anim.hover += ((g_hovering ? 1.0f : 0.0f) - g_anim.hover) * 0.25f;
+    v.hover = g_anim.hover;
+    if (st.timers > 0 && st.total > 0 && st.next >= 0) {
+        v.timerFrac = reactor::clamp01((float)st.next / (float)st.total);
+        v.timerLeft = (float)st.next;
+    }
+    v.alert = now < g_anim.alertUntil ? reactor::clamp01((g_anim.alertUntil - now) / 1500.0f) : 0;
+    if (g_anim.rippleStart && now - g_anim.rippleStart < 700) {
+        v.ripple = (now - g_anim.rippleStart) / 700.0f;
+    }
+    v.t = (now % 3600000) / 1000.0f;
+
+    BITMAPINFO bi = {};
+    bi.bmiHeader.biSize = sizeof(bi.bmiHeader);
+    bi.bmiHeader.biWidth = w;
+    bi.bmiHeader.biHeight = -h;
+    bi.bmiHeader.biPlanes = 1;
+    bi.bmiHeader.biBitCount = 32;
+    bi.bmiHeader.biCompression = BI_RGB;
+    void* bits = nullptr;
+    HDC screen = GetDC(nullptr);
+    HDC mem = CreateCompatibleDC(screen);
+    HBITMAP bmp = CreateDIBSection(screen, &bi, DIB_RGB_COLORS, &bits, nullptr, 0);
+    if (bmp && bits) {
+        HGDIOBJ old = SelectObject(mem, bmp);
+        reactor::paint((unsigned int*)bits, w, h, v);
+        POINT src = {0, 0}, dst = {rc.left, rc.top};
+        SIZE sz = {w, h};
+        BLENDFUNCTION bf = {AC_SRC_OVER, 0, 255, AC_SRC_ALPHA};
+        UpdateLayeredWindow(g_orb, screen, &dst, &sz, mem, &src, 0, &bf, ULW_ALPHA);
+        SelectObject(mem, old);
+        DeleteObject(bmp);
+    }
+    DeleteDC(mem);
+    ReleaseDC(nullptr, screen);
+}
+
+// ------------------------------------------------------------------ tarjeta (estado, burbuja, aviso)
+COLORREF Accent(const Status& st) {
+    return RGB((int)(st.accent[0] * 255), (int)(st.accent[1] * 255), (int)(st.accent[2] * 255));
+}
+
+std::wstring ModeText(const Status& st) {
     switch (st.mode) {
-        case Mode::Off: what = L"Jarvis no está abierto (clic para abrirlo)"; break;
-        case Mode::Awaiting: what = L"Jarvis te escucha…"; break;
-        case Mode::Thinking: what = L"Jarvis está pensando…"; break;
-        case Mode::Speaking: what = L"Jarvis está hablando"; break;
-        case Mode::Muted: what = L"Micrófono en pausa · clic derecho para reanudarlo"; break;
-        default: break;
-    }
-    if (st.timers > 0 && st.next >= 0) {
-        swprintf(buf, n, L"%ls\nTemporizador: faltan %d:%02d%ls", what, st.next / 60, st.next % 60,
-                 st.timers > 1 ? L" (y otros)" : L"");
-    } else {
-        swprintf(buf, n, L"%ls", what);
+        case Mode::Off: return L"Jarvis no está abierto · clic para abrirlo";
+        case Mode::Awaiting: return L"Te escucho…";
+        case Mode::Thinking: return L"Pensando…";
+        case Mode::Speaking: return L"Hablando";
+        case Mode::Muted: return L"Micrófono en pausa";
+        default: return L"Atento · di «Jarvis» o haz clic";
     }
 }
 
+std::wstring Clip(const std::wstring& s, size_t n) {
+    return s.size() <= n ? s : s.substr(0, n - 1) + L"…";
+}
+
+void BuildInfoCard() {
+    Status st = Snapshot();
+    g_cardTitle = L"J.A.R.V.I.S.  ·  " + ModeText(st);
+    std::wstring t;
+    if (st.mode != Mode::Off) {
+        if (st.timers > 0 && st.next >= 0) {
+            wchar_t b[96];
+            swprintf(b, 96, L"Temporizador  %d:%02d", st.next / 60, st.next % 60);
+            t += b;
+            if (!st.label.empty()) t += L"  ·  " + Clip(st.label, 30);
+            if (st.timers > 1) t += L"  (+" + std::to_wstring(st.timers - 1) + L")";
+            t += L"\n";
+        }
+        if (!st.agenda.empty()) t += L"Hoy  ·  " + Clip(st.agenda, 70) + L"\n";
+        if (!st.aiLabel.empty()) t += L"IA  ·  " + Clip(st.aiLabel, 50) + (st.net == L"offline" ? L"  · sin internet" : L"") + L"\n";
+        if (!st.msg.empty() && st.role == L"jarvis") t += L"\n«" + Clip(st.msg, 180) + L"»";
+        if (t.empty()) t = L"Clic: háblale · Doble clic: panel · Rueda: volumen · Clic derecho: más";
+    } else {
+        t = L"Ábrelo y el reactor se enciende solo.";
+    }
+    while (!t.empty() && t.back() == L'\n') t.pop_back();
+    g_cardText = t;
+}
+
+void LayoutCard() {
+    if (!g_card || !g_orb) return;
+    UINT dpi = DpiOf(g_orb);
+    int width = MulDiv(g_cardKind == CardKind::Info ? 300 : 280, dpi, 96);
+    int pad = MulDiv(12, dpi, 96);
+    HDC dc = GetDC(g_card);
+    RECT tr = {0, 0, width - 2 * pad, 0}, br = {0, 0, width - 2 * pad, 0};
+    HGDIOBJ old = SelectObject(dc, g_fontTitle);
+    DrawTextW(dc, g_cardTitle.c_str(), -1, &tr, DT_CALCRECT | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+    SelectObject(dc, g_fontBody);
+    DrawTextW(dc, g_cardText.c_str(), -1, &br, DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX);
+    SelectObject(dc, old);
+    ReleaseDC(g_card, dc);
+    int height = pad + (tr.bottom - tr.top) + MulDiv(6, dpi, 96) + (br.bottom - br.top) + pad + MulDiv(3, dpi, 96);
+    int maxH = MulDiv(260, dpi, 96);
+    if (height > maxH) height = maxH;
+
+    RECT orb;
+    GetWindowRect(g_orb, &orb);
+    MONITORINFO mi = {};
+    mi.cbSize = sizeof(mi);
+    GetMonitorInfoW(MonitorFromWindow(g_orb, MONITOR_DEFAULTTONEAREST), &mi);
+    RECT wa = mi.rcWork;
+    int gap = MulDiv(10, dpi, 96);
+    int x = (orb.left + orb.right) / 2 - width / 2;
+    int y = orb.top - gap - height;                         // barra abajo: encima
+    if (y < wa.top) y = orb.bottom + gap;                   // barra arriba: debajo
+    if (x + width > wa.right - gap) x = wa.right - gap - width;
+    if (x < wa.left + gap) x = wa.left + gap;
+    int r = MulDiv(14, dpi, 96);
+    SetWindowPos(g_card, HWND_TOPMOST, x, y, width, height, SWP_NOACTIVATE | SWP_SHOWWINDOW);
+    SetWindowRgn(g_card, CreateRoundRectRgn(0, 0, width + 1, height + 1, r, r), TRUE);
+    InvalidateRect(g_card, nullptr, FALSE);
+}
+
+void ShowCard(CardKind kind, UINT ms) {
+    if (!g_card) return;
+    Status st = Snapshot();
+    g_cardKind = kind;
+    if (kind == CardKind::Info) {
+        BuildInfoCard();
+    } else if (kind == CardKind::Message) {
+        g_cardTitle = L"Jarvis";
+        g_cardText = Clip(st.msg, 320);
+    } else if (kind == CardKind::Alert) {
+        g_cardTitle = L"Aviso de Jarvis";
+        g_cardText = Clip(st.alert, 300);
+    }
+    LayoutCard();
+    KillTimer(g_orb, kCardTimer);
+    if (ms) SetTimer(g_orb, kCardTimer, ms, nullptr);
+}
+
+void HideCard() {
+    if (g_card) ShowWindow(g_card, SW_HIDE);
+    g_cardKind = CardKind::None;
+    KillTimer(g_orb, kCardTimer);
+}
+
+LRESULT CALLBACK CardProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+    switch (msg) {
+        case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC dc = BeginPaint(hwnd, &ps);
+            RECT rc;
+            GetClientRect(hwnd, &rc);
+            int w = rc.right, h = rc.bottom;
+            HDC mem = CreateCompatibleDC(dc);
+            HBITMAP bmp = CreateCompatibleBitmap(dc, w, h);
+            HGDIOBJ oldBmp = SelectObject(mem, bmp);
+            Status st = Snapshot();
+            COLORREF acc = g_cardKind == CardKind::Alert ? RGB(255, 150, 70) : Accent(st);
+            // fondo: degradado azul noche
+            TRIVERTEX vx[2] = {{0, 0, 0x0700, 0x1000, 0x1C00, 0}, {w, h, 0x0200, 0x0500, 0x0B00, 0}};
+            GRADIENT_RECT gr = {0, 1};
+            GradientFill(mem, vx, 2, &gr, 1, GRADIENT_FILL_RECT_V);
+            UINT dpi = DpiOf(hwnd);
+            int pad = MulDiv(12, dpi, 96);
+            // línea de acento arriba y borde fino
+            HBRUSH ab = CreateSolidBrush(acc);
+            RECT top = {0, 0, w, MulDiv(3, dpi, 96)};
+            FillRect(mem, &top, ab);
+            DeleteObject(ab);
+            HPEN pen = CreatePen(PS_SOLID, 1, RGB(GetRValue(acc) / 3, GetGValue(acc) / 3, GetBValue(acc) / 3));
+            HGDIOBJ oldPen = SelectObject(mem, pen);
+            HGDIOBJ oldBr = SelectObject(mem, GetStockObject(NULL_BRUSH));
+            int r = MulDiv(14, dpi, 96);
+            RoundRect(mem, 0, 0, w, h, r, r);
+            SelectObject(mem, oldBr);
+            SelectObject(mem, oldPen);
+            DeleteObject(pen);
+            SetBkMode(mem, TRANSPARENT);
+            RECT tr = {pad, pad, w - pad, h - pad};
+            HGDIOBJ oldFont = SelectObject(mem, g_fontTitle);
+            SetTextColor(mem, acc);
+            RECT tcalc = tr;
+            DrawTextW(mem, g_cardTitle.c_str(), -1, &tcalc, DT_CALCRECT | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+            DrawTextW(mem, g_cardTitle.c_str(), -1, &tr, DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
+            RECT br = {pad, tr.top + (tcalc.bottom - tcalc.top) + MulDiv(6, dpi, 96), w - pad, h - pad};
+            SelectObject(mem, g_fontBody);
+            SetTextColor(mem, RGB(214, 242, 255));
+            DrawTextW(mem, g_cardText.c_str(), -1, &br, DT_WORDBREAK | DT_END_ELLIPSIS | DT_NOPREFIX);
+            // barra de progreso del temporizador (tarjeta de estado)
+            if (g_cardKind == CardKind::Info && st.timers > 0 && st.total > 0 && st.next >= 0) {
+                int bh = MulDiv(3, dpi, 96);
+                RECT bg = {pad, h - pad / 2 - bh, w - pad, h - pad / 2};
+                HBRUSH dim = CreateSolidBrush(RGB(30, 40, 52));
+                FillRect(mem, &bg, dim);
+                DeleteObject(dim);
+                RECT fg = bg;
+                fg.right = bg.left + (int)((bg.right - bg.left) * ((double)st.next / st.total));
+                HBRUSH amber = CreateSolidBrush(RGB(255, 181, 71));
+                FillRect(mem, &fg, amber);
+                DeleteObject(amber);
+            }
+            SelectObject(mem, oldFont);
+            BitBlt(dc, 0, 0, w, h, mem, 0, 0, SRCCOPY);
+            SelectObject(mem, oldBmp);
+            DeleteObject(bmp);
+            DeleteDC(mem);
+            EndPaint(hwnd, &ps);
+            return 0;
+        }
+        case WM_LBUTTONUP:
+            HideCard();
+            Link("jarvis://mostrar");
+            return 0;
+        case WM_RBUTTONUP:
+            HideCard();
+            return 0;
+        case WM_MOUSEACTIVATE:
+            return MA_NOACTIVATE;
+        case WM_ERASEBKGND:
+            return 1;
+    }
+    return DefWindowProcW(hwnd, msg, wp, lp);
+}
+
+// ------------------------------------------------------------------ cuadro para escribirle
+WNDPROC g_editOrig = nullptr;
+
+void CloseInput() {
+    if (g_input) {
+        HWND w = g_input;
+        g_input = nullptr;
+        g_edit = nullptr;
+        DestroyWindow(w);
+    }
+}
+
+LRESULT CALLBACK EditProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+    if (msg == WM_KEYDOWN && wp == VK_RETURN) {
+        wchar_t buf[1024] = {};
+        GetWindowTextW(hwnd, buf, 1024);
+        std::wstring text = buf;
+        while (!text.empty() && text.back() == L' ') text.pop_back();
+        if (!text.empty()) Order(text);
+        CloseInput();
+        return 0;
+    }
+    if (msg == WM_KEYDOWN && wp == VK_ESCAPE) {
+        CloseInput();
+        return 0;
+    }
+    if (msg == WM_CHAR && (wp == VK_RETURN || wp == VK_ESCAPE)) {
+        return 0;                                    // sin «ding»
+    }
+    return CallWindowProcW(g_editOrig, hwnd, msg, wp, lp);
+}
+
+HBRUSH g_inputBrush = nullptr;
+
+LRESULT CALLBACK InputProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+    switch (msg) {
+        case WM_ACTIVATE:
+            if (LOWORD(wp) == WA_INACTIVE) {
+                PostMessageW(hwnd, WM_CLOSE, 0, 0);
+            }
+            return 0;
+        case WM_CLOSE:
+            CloseInput();
+            return 0;
+        case WM_CTLCOLOREDIT:
+            SetTextColor((HDC)wp, RGB(214, 242, 255));
+            SetBkColor((HDC)wp, RGB(8, 16, 28));
+            return (LRESULT)g_inputBrush;
+        case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC dc = BeginPaint(hwnd, &ps);
+            RECT rc;
+            GetClientRect(hwnd, &rc);
+            FillRect(dc, &rc, g_inputBrush);
+            Status st = Snapshot();
+            HBRUSH ab = CreateSolidBrush(Accent(st));
+            RECT line = {0, rc.bottom - 2, rc.right, rc.bottom};
+            FillRect(dc, &line, ab);
+            DeleteObject(ab);
+            SetBkMode(dc, TRANSPARENT);
+            SetTextColor(dc, Accent(st));
+            HGDIOBJ of = SelectObject(dc, g_fontSmall);
+            RECT tr = rc;
+            tr.left += MulDiv(10, DpiOf(hwnd), 96);
+            tr.top += MulDiv(5, DpiOf(hwnd), 96);
+            DrawTextW(dc, L"Escríbele a Jarvis  ·  Enter para enviar, Esc para cerrar", -1, &tr, DT_SINGLELINE | DT_NOPREFIX);
+            SelectObject(dc, of);
+            EndPaint(hwnd, &ps);
+            return 0;
+        }
+    }
+    return DefWindowProcW(hwnd, msg, wp, lp);
+}
+
+void OpenInput() {
+    if (g_input) {
+        SetForegroundWindow(g_input);
+        return;
+    }
+    HideCard();
+    UINT dpi = DpiOf(g_orb);
+    int w = MulDiv(360, dpi, 96), h = MulDiv(62, dpi, 96);
+    RECT orb;
+    GetWindowRect(g_orb, &orb);
+    MONITORINFO mi = {};
+    mi.cbSize = sizeof(mi);
+    GetMonitorInfoW(MonitorFromWindow(g_orb, MONITOR_DEFAULTTONEAREST), &mi);
+    int gap = MulDiv(10, dpi, 96);
+    int x = (orb.left + orb.right) / 2 - w / 2, y = orb.top - gap - h;
+    if (y < mi.rcWork.top) y = orb.bottom + gap;
+    if (x + w > mi.rcWork.right - gap) x = mi.rcWork.right - gap - w;
+    if (x < mi.rcWork.left + gap) x = mi.rcWork.left + gap;
+    HINSTANCE inst = GetModuleHandleW(nullptr);
+    g_input = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW, kInputClass, L"Jarvis", WS_POPUP, x, y, w, h, nullptr,
+                              nullptr, inst, nullptr);
+    if (!g_input) return;
+    int r = MulDiv(12, dpi, 96);
+    SetWindowRgn(g_input, CreateRoundRectRgn(0, 0, w + 1, h + 1, r, r), FALSE);
+    int pad = MulDiv(10, dpi, 96);
+    g_edit = CreateWindowExW(0, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, pad, MulDiv(26, dpi, 96),
+                             w - 2 * pad, MulDiv(26, dpi, 96), g_input, nullptr, inst, nullptr);
+    SendMessageW(g_edit, WM_SETFONT, (WPARAM)g_fontBody, TRUE);
+    SendMessageW(g_edit, EM_SETCUEBANNER, TRUE, (LPARAM)L"Por ejemplo: pon un temporizador de 10 minutos");
+    g_editOrig = (WNDPROC)SetWindowLongPtrW(g_edit, GWLP_WNDPROC, (LONG_PTR)EditProc);
+    ShowWindow(g_input, SW_SHOW);
+    SetForegroundWindow(g_input);
+    SetFocus(g_edit);
+}
+
+// ------------------------------------------------------------------ menú
 enum MenuId {
-    kMenuListen = 1, kMenuToggle, kMenuWrite, kMenuClass, kMenuTimer, kMenuPending, kMenuMic, kMenuCheck, kMenuSettings,
+    kMenuListen = 1, kMenuToggle, kMenuType, kMenuPanelWrite, kMenuClass, kMenuTimer5, kMenuTimer10, kMenuPending,
+    kMenuPlay, kMenuNext, kMenuPrev, kMenuMic, kMenuCheck, kMenuSettings, kMenuResetPos,
 };
 
 void ShowMenu(HWND hwnd) {
+    HideCard();
+    Status st = Snapshot();
     HMENU m = CreatePopupMenu();
+    HMENU music = CreatePopupMenu();
+    AppendMenuW(music, MF_STRING, kMenuPlay, L"Pausar o reanudar");
+    AppendMenuW(music, MF_STRING, kMenuNext, L"Siguiente");
+    AppendMenuW(music, MF_STRING, kMenuPrev, L"Anterior");
     AppendMenuW(m, MF_STRING, kMenuListen, L"Hablar con Jarvis");
-    AppendMenuW(m, MF_STRING, kMenuToggle, L"Mostrar u ocultar el panel");
-    AppendMenuW(m, MF_STRING, kMenuWrite, L"Escribir una orden…");
+    AppendMenuW(m, MF_STRING, kMenuType, L"Escribir aquí…\tMayús+clic");
+    AppendMenuW(m, MF_STRING, kMenuToggle, st.visible ? L"Ocultar el panel" : L"Mostrar el panel");
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(m, MF_STRING, kMenuClass, L"Modo clase");
-    AppendMenuW(m, MF_STRING, kMenuTimer, L"Temporizador de 5 minutos");
+    AppendMenuW(m, MF_STRING, kMenuTimer5, L"Temporizador de 5 minutos");
+    AppendMenuW(m, MF_STRING, kMenuTimer10, L"Temporizador de 10 minutos");
     AppendMenuW(m, MF_STRING, kMenuPending, L"¿Qué tengo pendiente?");
+    AppendMenuW(m, MF_POPUP, (UINT_PTR)music, L"Música");
     AppendMenuW(m, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(m, MF_STRING, kMenuMic, L"Pausar o reanudar el micrófono");
+    AppendMenuW(m, MF_STRING, kMenuMic, st.mode == Mode::Muted ? L"Reanudar el micrófono" : L"Pausar el micrófono");
     AppendMenuW(m, MF_STRING, kMenuCheck, L"Prueba completa");
     AppendMenuW(m, MF_STRING, kMenuSettings, L"Ajustes de Jarvis");
+    if (g_dragOffset) {
+        AppendMenuW(m, MF_STRING, kMenuResetPos, L"Volver a su sitio");
+    }
+    if (st.mode == Mode::Off) {
+        for (int id = kMenuListen; id <= kMenuSettings; id++) {
+            if (id != kMenuToggle) EnableMenuItem(m, id, MF_BYCOMMAND | MF_GRAYED);
+        }
+        ModifyMenuW(m, kMenuToggle, MF_BYCOMMAND | MF_STRING, kMenuToggle, L"Abrir Jarvis");
+    }
     POINT p;
     GetCursorPos(&p);
     SetForegroundWindow(hwnd);
-    int cmd = TrackPopupMenu(m, TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_BOTTOMALIGN | TPM_CENTERALIGN, p.x, p.y, 0,
-                             hwnd, nullptr);
+    int cmd = TrackPopupMenu(m, TPM_RETURNCMD | TPM_RIGHTBUTTON | TPM_BOTTOMALIGN | TPM_CENTERALIGN, p.x, p.y, 0, hwnd, nullptr);
     DestroyMenu(m);
     PostMessageW(hwnd, WM_NULL, 0, 0);
     switch (cmd) {
-        case kMenuListen: Send("jarvis://escuchar"); break;
-        case kMenuToggle: Send("jarvis://alternar"); break;
-        case kMenuWrite: Send("jarvis://escribir"); break;
-        case kMenuClass: Send("jarvis://rutina/Modo%20clase"); break;
-        case kMenuTimer: Send("jarvis://temporizador/5"); break;
-        case kMenuPending: Send("jarvis://orden/qu%C3%A9%20tengo%20pendiente"); break;
-        case kMenuMic: Send("jarvis://microfono"); break;
-        case kMenuCheck: Send("jarvis://prueba"); break;
-        case kMenuSettings: Send("jarvis://ajustes"); break;
+        case kMenuListen: Link("jarvis://escuchar"); break;
+        case kMenuType: OpenInput(); break;
+        case kMenuToggle: Link(st.mode == Mode::Off ? "jarvis://mostrar" : "jarvis://alternar"); break;
+        case kMenuClass: Link("jarvis://rutina/Modo%20clase"); break;
+        case kMenuTimer5: Link("jarvis://temporizador/5"); break;
+        case kMenuTimer10: Link("jarvis://temporizador/10"); break;
+        case kMenuPending: Link("jarvis://orden/qu%C3%A9%20tengo%20pendiente"); break;
+        case kMenuPlay: Link("jarvis://multimedia/pausar"); break;
+        case kMenuNext: Link("jarvis://multimedia/siguiente"); break;
+        case kMenuPrev: Link("jarvis://multimedia/anterior"); break;
+        case kMenuMic: Link("jarvis://microfono"); break;
+        case kMenuCheck: Link("jarvis://prueba"); break;
+        case kMenuSettings: Link("jarvis://ajustes"); break;
+        case kMenuResetPos:
+            g_dragOffset = 0;
+            Wh_SetIntValue(L"dragOffset", 0);
+            Place();
+            break;
         default: break;
     }
 }
 
-bool Animating() {
-    EnterCriticalSection(&g_lock);
-    Mode m = g_status.mode;
-    LeaveCriticalSection(&g_lock);
-    return m != Mode::Off;
+// ------------------------------------------------------------------ ventana del reactor
+void OnStatus() {
+    Status st = Snapshot();
+    Settings cs = Cfg();
+    DWORD now = GetTickCount();
+    if (g_anim.lastSeq >= 0 && st.seq != g_anim.lastSeq && st.role == L"jarvis") {
+        g_anim.rippleStart = now;                              // onda: acaba de responder
+        if (cs.bubble && !st.visible && !g_hovering && !g_input && g_cardKind != CardKind::Alert && !st.msg.empty()) {
+            ShowCard(CardKind::Message, 4000 + (UINT)st.msg.size() * 45 > 12000 ? 12000 : 4000 + (UINT)st.msg.size() * 45);
+        }
+    }
+    if (g_anim.lastAlertSeq >= 0 && st.alertSeq != g_anim.lastAlertSeq) {
+        g_anim.alertUntil = now + 4000;                        // destello del aviso
+        if (!g_input) ShowCard(CardKind::Alert, 12000);
+    }
+    if (st.mode != Mode::Off) {
+        g_anim.lastSeq = st.seq;
+        g_anim.lastAlertSeq = st.alertSeq;
+    } else {
+        g_anim.lastSeq = g_anim.lastAlertSeq = -1;             // al volver Jarvis, no repetir lo viejo
+    }
+    if (g_cardKind == CardKind::Info) {
+        BuildInfoCard();
+        LayoutCard();
+    }
 }
 
 LRESULT CALLBACK OrbProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     switch (msg) {
         case WM_TIMER:
             if (wp == kAnimTimer) {
-                if (IsWindowVisible(hwnd)) {
-                    Render(hwnd);
-                }
-                EnterCriticalSection(&g_lock);
-                Mode m = g_status.mode;
-                LeaveCriticalSection(&g_lock);
-                // Más fluido cuando pasa algo; tranquilo (y barato) cuando está en reposo.
-                UINT next = (m == Mode::Thinking || m == Mode::Speaking || m == Mode::Awaiting) ? 33 : 90;
-                SetTimer(hwnd, kAnimTimer, Animating() ? next : 500, nullptr);
+                RenderOrb();
+                Status st = Snapshot();
+                bool busy = st.mode == Mode::Thinking || st.mode == Mode::Speaking || st.mode == Mode::Awaiting ||
+                            GetTickCount() < g_anim.alertUntil || g_anim.hover > 0.02f;
+                SetTimer(hwnd, kAnimTimer, st.mode == Mode::Off ? 400 : busy ? 33 : 66, nullptr);
             } else if (wp == kPlaceTimer) {
                 Place();
+            } else if (wp == kHoverTimer) {
+                KillTimer(hwnd, kHoverTimer);
+                if (g_hovering && Cfg().card && !g_input && g_cardKind != CardKind::Alert) {
+                    ShowCard(CardKind::Info, 0);
+                }
+            } else if (wp == kClickTimer) {
+                KillTimer(hwnd, kClickTimer);
+                Status st = Snapshot();
+                if (st.mode == Mode::Off) {
+                    Link("jarvis://mostrar");
+                } else {
+                    Link(Cfg().clickToggles ? "jarvis://alternar" : "jarvis://escuchar");
+                }
+            } else if (wp == kCardTimer) {
+                HideCard();
             }
             return 0;
         case WM_APP_STATUS:
-            Render(hwnd);
+            OnStatus();
             return 0;
         case WM_APP_RELOAD:
             Place();
-            Render(hwnd);
+            RenderOrb();
             return 0;
-        case WM_MOUSEMOVE:
-            if (!g_hover) {
-                g_hover = true;
+        case WM_MOUSEMOVE: {
+            if (!g_hovering) {
+                g_hovering = true;
                 TRACKMOUSEEVENT tme = {sizeof(tme), TME_LEAVE, hwnd, 0};
                 TrackMouseEvent(&tme);
-                Render(hwnd);
+                SetTimer(hwnd, kHoverTimer, 450, nullptr);
+            }
+            if (g_down) {
+                POINT p;
+                GetCursorPos(&p);
+                int dxs = p.x - g_downPt.x, dys = p.y - g_downPt.y;
+                if (!g_dragging && (abs(dxs) > 6 || abs(dys) > 6)) {
+                    g_dragging = true;
+                    HideCard();
+                }
+                if (g_dragging) {
+                    HWND tray = FindWindowW(L"Shell_TrayWnd", nullptr);
+                    RECT tr = {};
+                    if (tray) GetWindowRect(tray, &tr);
+                    bool vertical = (tr.bottom - tr.top) > (tr.right - tr.left);
+                    g_dragOffset = g_dragStartOffset + (vertical ? dys : -dxs);
+                    g_dragging = false;
+                    Place();
+                    g_dragging = true;
+                }
             }
             return 0;
+        }
         case WM_MOUSELEAVE:
-            g_hover = false;
-            Render(hwnd);
+            g_hovering = false;
+            KillTimer(hwnd, kHoverTimer);
+            if (g_cardKind == CardKind::Info) HideCard();
             return 0;
-        case WM_LBUTTONUP:
-            Send(CurrentSettings().clickToggles ? "jarvis://alternar" : "jarvis://escuchar");
+        case WM_LBUTTONDOWN:
+            g_down = true;
+            g_dragging = false;
+            GetCursorPos(&g_downPt);
+            g_dragStartOffset = g_dragOffset;
+            SetCapture(hwnd);
+            return 0;
+        case WM_LBUTTONUP: {
+            if (g_ignoreUp) {                            // el segundo «soltar» de un doble clic
+                g_ignoreUp = g_down = g_dragging = false;
+                ReleaseCapture();
+                return 0;
+            }
+            bool wasDrag = g_dragging;
+            g_down = g_dragging = false;
+            ReleaseCapture();
+            if (wasDrag) {
+                Wh_SetIntValue(L"dragOffset", g_dragOffset);
+                return 0;
+            }
+            if (GetKeyState(VK_SHIFT) & 0x8000) {
+                OpenInput();
+                return 0;
+            }
+            SetTimer(hwnd, kClickTimer, GetDoubleClickTime(), nullptr);   // esperar por si es doble clic
+            return 0;
+        }
+        case WM_LBUTTONDBLCLK:
+            KillTimer(hwnd, kClickTimer);
+            g_ignoreUp = true;
+            Link(Cfg().clickToggles ? "jarvis://escuchar" : "jarvis://alternar");
+            return 0;
+        case WM_MBUTTONUP:
+            if (Cfg().wheel) Link("jarvis://multimedia/pausar");
+            return 0;
+        case WM_MOUSEWHEEL:
+            if (Cfg().wheel) {
+                Link(GET_WHEEL_DELTA_WPARAM(wp) > 0 ? "jarvis://volumen/subir" : "jarvis://volumen/bajar");
+            }
             return 0;
         case WM_RBUTTONUP:
             ShowMenu(hwnd);
             return 0;
         case WM_MOUSEACTIVATE:
             return MA_NOACTIVATE;
-        case WM_NOTIFY: {
-            NMHDR* nm = (NMHDR*)lp;
-            if (nm && nm->code == TTN_GETDISPINFOW) {
-                static wchar_t text[256];
-                TipText(text, 256);
-                ((NMTTDISPINFOW*)lp)->lpszText = text;
-                return 0;
-            }
-            break;
-        }
         case WM_DISPLAYCHANGE:
         case WM_DPICHANGED:
         case WM_SETTINGCHANGE:
@@ -692,37 +1316,53 @@ LRESULT CALLBACK OrbProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
+HFONT MakeFont(int pt, int weight, UINT dpi) {
+    return CreateFontW(-MulDiv(pt, dpi, 72), 0, 0, 0, weight, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                       CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, L"Segoe UI");
+}
+
 DWORD WINAPI OrbThread(LPVOID ready) {
     HINSTANCE inst = GetModuleHandleW(nullptr);
     WNDCLASSW wc = {};
+    wc.style = CS_DBLCLKS;
     wc.lpfnWndProc = OrbProc;
     wc.hInstance = inst;
-    wc.lpszClassName = kClass;
-    wc.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(32649));
+    wc.lpszClassName = kOrbClass;
+    wc.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(32649));   // mano
     RegisterClassW(&wc);
-    g_orb = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED, kClass, L"Jarvis",
-                            WS_POPUP, 0, 0, CurrentSettings().size, CurrentSettings().size, nullptr, nullptr, inst, nullptr);
+    WNDCLASSW cc = {};
+    cc.lpfnWndProc = CardProc;
+    cc.hInstance = inst;
+    cc.lpszClassName = kCardClass;
+    cc.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(32649));
+    RegisterClassW(&cc);
+    WNDCLASSW ic = {};
+    ic.lpfnWndProc = InputProc;
+    ic.hInstance = inst;
+    ic.lpszClassName = kInputClass;
+    ic.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(32512));
+    RegisterClassW(&ic);
+    INITCOMMONCONTROLSEX icc = {sizeof(icc), ICC_STANDARD_CLASSES};
+    InitCommonControlsEx(&icc);
+    g_inputBrush = CreateSolidBrush(RGB(8, 16, 28));
+
+    g_dragOffset = Wh_GetIntValue(L"dragOffset", 0);
+    g_orb = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED, kOrbClass, L"Jarvis",
+                            WS_POPUP, 0, 0, 40, 40, nullptr, nullptr, inst, nullptr);
     if (g_orb) {
-        INITCOMMONCONTROLSEX icc = {sizeof(icc), ICC_WIN95_CLASSES};
-        InitCommonControlsEx(&icc);
-        g_tip = CreateWindowExW(WS_EX_TOPMOST, TOOLTIPS_CLASSW, nullptr, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP, 0,
-                                0, 0, 0, g_orb, nullptr, inst, nullptr);
-        if (g_tip) {
-            g_ti.cbSize = sizeof(g_ti);
-            g_ti.uFlags = TTF_SUBCLASS;
-            g_ti.hwnd = g_orb;
-            g_ti.uId = 1;
-            g_ti.lpszText = LPSTR_TEXTCALLBACKW;
-            g_ti.rect = {0, 0, CurrentSettings().size, CurrentSettings().size};
-            SendMessageW(g_tip, TTM_ADDTOOLW, 0, (LPARAM)&g_ti);
-            SendMessageW(g_tip, TTM_SETMAXTIPWIDTH, 0, 360);
-        }
+        UINT dpi = DpiOf(FindWindowW(L"Shell_TrayWnd", nullptr));
+        g_fontTitle = MakeFont(10, FW_SEMIBOLD, dpi);
+        g_fontBody = MakeFont(10, FW_NORMAL, dpi);
+        g_fontSmall = MakeFont(8, FW_NORMAL, dpi);
+        g_card = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED, kCardClass, L"",
+                                 WS_POPUP, 0, 0, 10, 10, nullptr, nullptr, inst, nullptr);
+        if (g_card) SetLayeredWindowAttributes(g_card, 0, 242, LWA_ALPHA);
         Place();
-        Render(g_orb);
-        SetTimer(g_orb, kAnimTimer, 90, nullptr);
+        RenderOrb();
+        SetTimer(g_orb, kAnimTimer, 66, nullptr);
         SetTimer(g_orb, kPlaceTimer, 1000, nullptr);   // la barra puede moverse, ocultarse o cambiar de tamaño
     } else {
-        Wh_Log(L"No se pudo crear el orbe: %u", GetLastError());
+        Wh_Log(L"No se pudo crear el reactor: %u", GetLastError());
     }
     SetEvent((HANDLE)ready);
 
@@ -742,15 +1382,26 @@ DWORD WINAPI OrbThread(LPVOID ready) {
             DispatchMessageW(&msg);
         }
     }
-    if (g_tip) {
-        DestroyWindow(g_tip);
-        g_tip = nullptr;
+    CloseInput();
+    for (HWND* h : {&g_card, &g_orb}) {
+        if (*h) {
+            DestroyWindow(*h);
+            *h = nullptr;
+        }
     }
-    if (g_orb) {
-        DestroyWindow(g_orb);
-        g_orb = nullptr;
+    for (HFONT* f : {&g_fontTitle, &g_fontBody, &g_fontSmall}) {
+        if (*f) {
+            DeleteObject(*f);
+            *f = nullptr;
+        }
     }
-    UnregisterClassW(kClass, inst);
+    if (g_inputBrush) {
+        DeleteObject(g_inputBrush);
+        g_inputBrush = nullptr;
+    }
+    UnregisterClassW(kOrbClass, inst);
+    UnregisterClassW(kCardClass, inst);
+    UnregisterClassW(kInputClass, inst);
     return 0;
 }
 
@@ -762,7 +1413,7 @@ DWORD WINAPI OrbThread(LPVOID ready) {
 BOOL Wh_ModInit() {
     InitializeCriticalSection(&g_lock);
     LoadSettings();
-    // Puede haber varios explorer.exe: solo uno muestra el orbe.
+    // Puede haber varios explorer.exe: solo uno muestra el reactor.
     g_single = CreateMutexW(nullptr, FALSE, L"WindhawkJarvisOrbe_Instance");
     if (!g_single || GetLastError() == ERROR_ALREADY_EXISTS) {
         if (g_single) {
@@ -806,7 +1457,6 @@ void Wh_ModUninit() {
     if (g_single) {
         CloseHandle(g_single);
         g_single = nullptr;
-        DeleteCriticalSection(&g_lock);
     }
 }
 

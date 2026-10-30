@@ -207,6 +207,7 @@ def telegram_send(text, chat=None):
 def alert(text, origin="JARVIS"):
     """Un aviso (recordatorio, calendario, temporizador): en el PC y, si lo activaste, en tu celular."""
     J.reply(text, origin)
+    J.orb_feed.update(alert_seq=J.orb_feed["alert_seq"] + 1, alert=str(text)[:300])   # el orbe destella
     J.windows_toast(text, origin)                      # 7.2: también como notificación de Windows
     if J.settings["telegram_alerts"] and J.settings["telegram_remote"]:
         threading.Thread(target=J.telegram_send, args=(f"🔔 {text}",), daemon=True).start()

@@ -108,7 +108,23 @@ def run_link(url, source="enlace"):
         J.reply(f"Vale, te lo recuerdo en {mins} minutos.", "ALARMA")
     elif action in ("orden", "rutina"):
         link_order(arg)
+    elif action in ("volumen", "multimedia"):
+        quick_skill(action, arg)
     return True
+
+
+def quick_skill(name, accion):
+    """Volumen y música desde el orbe (rueda del ratón, clic central): al instante y sin hablar."""
+    sk = J.skills.REGISTRY.get(name)
+    if sk is None:
+        return
+
+    def _run():
+        try:
+            sk.run({"accion": accion})
+        except Exception as e:
+            J.log_terminal(f"Orbe: {name} {accion}: {e}", "AVISO")
+    threading.Thread(target=_run, daemon=True, name="orbe-" + name).start()
 
 
 @J.app.route("/api/enlace", methods=["POST"])
@@ -120,16 +136,54 @@ def api_link():
     return {"ok": ok}
 
 
+_agenda_cache = {"t": 0.0, "text": ""}
+
+
+def _orb_agenda():
+    """Lo próximo de hoy (una línea), como mucho una consulta por minuto."""
+    if time.time() - _agenda_cache["t"] > 60:
+        _agenda_cache["t"] = time.time()
+        try:
+            items = J.agenda("hoy", with_day=False)
+            _agenda_cache["text"] = str(items[0])[:90] if items else ""
+        except Exception:
+            _agenda_cache["text"] = ""
+    return _agenda_cache["text"]
+
+
 @J.app.route("/api/orbe")
 def api_orb():
-    """Lo que necesita el orbe de la barra de tareas para pintarse (y nada privado)."""
+    """Lo que necesita el orbe de la barra de tareas para pintarse. Solo para tu equipo y con el código."""
     J._token_ok()
     snap = J._timers_snapshot()
     nxt = min(snap, key=lambda x: x["remaining"]) if snap else None
-    return {"mode": J.state.get("mode", "idle"), "mic": J.state.get("mic", "off"), "ai": J.state.get("ai", ""),
+    f = J.orb_feed
+    mode = J.state.get("mode", "idle")
+    return {"mode": mode, "mic": J.state.get("mic", "off"), "ai": J.state.get("ai", ""),
+            "ai_label": J.state.get("ai_label", "")[:60], "net": J.state.get("net", ""),
             "live": bool(J.state.get("live")), "visible": bool(J.hud.get("visible")),
             "resting": bool(J.state.get("resting")), "timers": len(snap),
-            "next": int(nxt["remaining"]) if nxt else -1, "version": J.VERSION}
+            "next": int(nxt["remaining"]) if nxt else -1, "total": int(nxt["total"]) if nxt else 0,
+            "label": (nxt["label"] or "")[:40] if nxt else "",
+            "level": f["level"] if mode in ("awaiting", "idle") and J.state.get("mic") == "on" else 0.0,
+            "seq": f["seq"], "role": f["role"], "msg": f["msg"],
+            "alert_seq": f["alert_seq"], "alert": f["alert"],
+            "agenda": _orb_agenda(), "accent": "%02x%02x%02x" % J.THEMES.get(J.settings["theme"], J.THEMES["cyan"])[1],
+            "version": J.VERSION}
+
+
+@J.app.route("/api/orden", methods=["POST"])
+def api_local_order():
+    """Una orden escrita en el cuadro del orbe. Es tuya (llega con el código secreto, que solo puede leer tu
+    usuario de Windows), así que se atiende igual que en la barra del HUD."""
+    J._token_ok()
+    d = request.get_json(silent=True) or {}
+    text = str(d.get("texto", "")).strip()[:1000]
+    if not text:
+        return {"ok": False}
+    J.log_terminal(text, "USUARIO")
+    J.submit_command(text, "orbe")
+    return {"ok": True}
 
 
 def forward_link(url, link_file=None, timeout=4):
@@ -262,6 +316,6 @@ def windows_at_start(link=None):
 
 __all__ = [
     'LINK_FILE', 'TOAST_ORIGINS', 'WINDHAWK_MOD', '_launch', '_orb_mark', '_toast_last', '_token_ok', 'api_link',
-    'api_orb', 'focus_input', 'forward_link', 'handle_open_windhawk_folder', 'handle_windows_info', 'link_order',
+    'api_orb', 'api_local_order', 'quick_skill', '_agenda_cache', '_orb_agenda', 'focus_input', 'forward_link', 'handle_open_windhawk_folder', 'handle_windows_info', 'link_order',
     'link_token', 'orb_seen', 'run_link', 'windows_apply', 'windows_at_start', 'windows_toast', 'write_link_file',
 ]
