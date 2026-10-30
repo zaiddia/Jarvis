@@ -51,7 +51,13 @@ jobs:
         run: python tests/revisar_codigo.py
 
       - name: Pruebas de comprensión
-        run: python -m pytest -q tests
+        run: |
+          python -m pytest -q -rs tests 2>&1 | Tee-Object -FilePath pruebas.txt
+          $code = $LASTEXITCODE
+          $last = (Get-Content pruebas.txt | Where-Object { $_ -match "passed|failed" } | Select-Object -Last 1)
+          $skips = (Get-Content pruebas.txt | Where-Object { $_ -match "^SKIPPED" }) -join " | "
+          Write-Host "::notice title=Pruebas::$last$(if ($skips) { ' · ' + $skips })"
+          exit $code
 
       - name: Versión
         id: ver
