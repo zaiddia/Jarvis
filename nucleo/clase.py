@@ -148,6 +148,8 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
                 try:
                     raw = J.ai_chat([{"role": "user", "content": prompt}], json_mode=True, max_tokens=8000)
                     m = aula.validate(kind, J._extract_json(raw), request)
+                    if kind == "quiz":
+                        J.banco.add_quiz(m)                    # 7.8: banco de preguntas
                     break
                 except (ValueError, TypeError) as e:
                     last_err = e

@@ -153,6 +153,8 @@ def run_step(st, step):
             try:
                 m = aula.validate(tipo, J._extract_json(J.ai_chat([{"role": "user", "content": prompt}], json_mode=True,
                                                                    max_tokens=8000)), step["pedido"])
+                if tipo == "quiz":
+                    J.banco.add_quiz(m)
                 path = aula.build_docx(tipo, m, folder, J.Document, J.settings["aula_docente"],
                                        J.settings["aula_institucion"], aula.data.get("activo", ""))
                 return {"archivo": path, "resumen": json.dumps(m, ensure_ascii=False)[:2500]}

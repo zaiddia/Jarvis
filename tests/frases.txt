@@ -168,3 +168,8 @@ prepárame la semana de 7A sobre fracciones => PROYECTO
 # ================================================================ 7.7: correo y calendario (sin configurar: explica qué falta)
 ¿qué correos importantes tengo? => CORREO
 agenda una reunión con los padres de Juan el jueves a las 3 => CALENDARIO|APROBAR
+
+# ================================================================ 7.8: aula conectada
+¿quiénes están en riesgo en 7A? => AULA
+¿cuántas preguntas tengo de fracciones? => AULA
+¿qué tareas tengo en Classroom de 7A? => CLASSROOM

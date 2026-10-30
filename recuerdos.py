@@ -112,6 +112,35 @@ def load(since=None, until=None):
     return out
 
 
+def delete_entry(ts, text):
+    """Borra una línea del historial (memoria editable). Devuelve cuántas borró."""
+    if not _dir or not ts:
+        return 0
+    path = os.path.join(_dir, ts[:7] + ".jsonl")
+    try:
+        with _lock:
+            with open(path, encoding="utf-8") as f:
+                lines = f.readlines()
+            keep = []
+            removed = 0
+            for line in lines:
+                try:
+                    e = json.loads(line)
+                except ValueError:
+                    keep.append(line)
+                    continue
+                if e.get("ts") == ts and (not text or e.get("x") == text):
+                    removed += 1
+                    continue
+                keep.append(line)
+            with open(path + ".tmp", "w", encoding="utf-8") as f:
+                f.writelines(keep)
+            os.replace(path + ".tmp", path)
+        return removed
+    except OSError:
+        return 0
+
+
 def purge(today=None):
     if not _dir or not os.path.isdir(_dir):
         return

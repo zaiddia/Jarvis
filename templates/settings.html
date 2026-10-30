@@ -717,7 +717,16 @@
     <div class="group">Lo que Jarvis ha aprendido de ti</div>
     <p class="pane-intro">Cuando le cuentas algo tuyo («trabajo en el San José», «prefiero respuestas cortas»), lo recuerda solo y lo tiene en cuenta. Dile «olvida que…» para borrar algo, o quítalo aquí.</p>
     <ul class="notes" id="profile-list"></ul>
+    <div class="row wrap" style="margin:6px 0 4px">
+      <input class="inp" type="text" id="profile-new" placeholder="Añadir un dato: «mi hija se llama Sara»" style="flex:1;min-width:200px">
+      <button class="btn btn-ghost" type="button" id="btn-profile-add">Añadir</button>
+    </div>
+    <p class="note">Toca un dato para corregirlo.</p>
     <button class="text-btn" type="button" id="btn-profile-clear"><svg class="i"><use href="#i-trash"/></svg>Borrar todo lo aprendido</button>
+    <div class="field">
+      <div class="ft"><label for="f-mem-pro">Recordar solo lo relacionado</label><p>Cuando le preguntas algo, la IA tiene en cuenta lo que le contaste antes sobre lo mismo («la última vez dijiste que el examen de 7A vale 30 %»).</p></div>
+      <label class="switch"><input type="checkbox" id="f-mem-pro" data-key="memory_proactive"><span></span></label>
+    </div>
     <div class="group">Calendario (Google u Outlook)</div>
     <p class="pane-intro">Jarvis lee tu calendario para responder «¿qué tengo hoy?» o «¿cuál es mi próxima clase?» y avisarte antes de cada evento. Solo lee; no cambia nada en tu calendario.</p>
     <ol class="steps">
@@ -777,6 +786,11 @@
       <div class="ft"><label for="f-hist-sem">Buscar también por significado</label><p>Con tu clave de Gemini (o un modelo de «embeddings» en Ollama, como nomic-embed-text), «la prueba» encuentra «el examen». Sin ellos, busca por palabras.</p></div>
       <label class="switch"><input type="checkbox" id="f-hist-sem" data-key="memory_semantic"><span></span></label>
     </div>
+    <div class="row wrap" style="margin-top:6px">
+      <input class="inp" type="text" id="hist-q" placeholder="Buscar en lo que hablamos: «examen de 7A»" style="flex:1;min-width:200px">
+      <button class="btn btn-ghost" type="button" id="btn-hist-search">Buscar</button>
+    </div>
+    <ul class="chk-list" id="hist-results" style="margin-top:6px"></ul>
     <div class="row-btns"><button class="btn btn-danger" type="button" id="btn-hist-clear">Borrar el historial</button></div>
 
     <div class="group">Aprender de mis costumbres</div>
@@ -785,6 +799,38 @@
       <div class="ft"><label for="f-learn">Aprender y proponerme rutinas</label></div>
       <label class="switch"><input type="checkbox" id="f-learn" data-key="learn_enabled"><span></span></label>
     </div>
+    <p class="status" id="habits-status"></p>
+    <div class="row-btns">
+      <button class="btn btn-ghost" type="button" id="btn-habits-unreject">Volver a proponerme lo que rechacé</button>
+      <button class="btn btn-ghost" type="button" id="btn-habits-forget">Olvidar mis costumbres</button>
+    </div>
+
+    <div class="group">Google Classroom</div>
+    <p class="pane-intro">«¿Qué tareas tengo en Classroom de 7A?», «¿quién no ha entregado el taller de fracciones en Classroom de 7A?», «publica en Classroom de 7A que mañana hay examen» (con tu aprobación), «trae las notas de Classroom de 7A».</p>
+    <ol class="steps">
+      <li>Entra a <code>console.cloud.google.com</code>, crea un proyecto y activa la <b>Google Classroom API</b>.</li>
+      <li>En «Pantalla de consentimiento de OAuth» elige «Externo», pon tu correo y agrégate como usuario de prueba.</li>
+      <li>En «Credenciales» › «Crear credenciales» › «ID de cliente de OAuth» › tipo <b>App de escritorio</b>. Copia el ID y el secreto aquí.</li>
+      <li>Pulsa «Conectar»: se abre Google, autorizas y listo. Jarvis guarda solo el permiso, nunca tu contraseña.</li>
+    </ol>
+    <div class="field stack"><div class="ft"><label for="f-cr-id">ID de cliente</label></div>
+      <input class="inp mono" type="text" id="f-cr-id" data-key="classroom_client_id" placeholder="123…apps.googleusercontent.com"></div>
+    <div class="field stack"><div class="ft"><label for="f-cr-secret">Secreto del cliente</label></div>
+      <input class="inp mono" type="password" id="f-cr-secret" data-key="classroom_client_secret" placeholder="GOCSPX-…"></div>
+    <div class="row-btns">
+      <button class="btn btn-primary" type="button" id="btn-cr-connect">Conectar (guarda antes)</button>
+      <button class="btn btn-ghost" type="button" id="btn-cr-disconnect">Desconectar</button>
+    </div>
+    <p class="status" id="cr-status"></p>
+
+    <div class="group">Seguimiento de estudiantes</div>
+    <p class="pane-intro">«Ponle 4,5 a Juan Pérez en el quiz de fracciones de 7A», «¿cómo va Juan en 7A?», «¿quiénes están en riesgo en 7A?». Usa la escala de 1,0 a 5,0 y las fallas de la asistencia del aula. Los viernes por la tarde te avisa quién está en riesgo.</p>
+    <div class="field"><div class="ft"><label for="f-risk-g">En riesgo con promedio menor a</label></div>
+      <div class="range"><input type="range" id="f-risk-g" min="1" max="5" step="0.1" data-key="risk_grade"><output></output></div></div>
+    <div class="field"><div class="ft"><label for="f-risk-a">…o con fallas desde</label></div>
+      <div class="range"><input type="range" id="f-risk-a" min="1" max="30" step="1" data-key="risk_absences"><output></output></div></div>
+    <div class="field"><div class="ft"><label for="f-risk-on">Resumen de riesgo los viernes</label></div>
+      <label class="switch"><input type="checkbox" id="f-risk-on" data-key="risk_alerts"><span></span></label></div>
   </section>
 
   <section class="pane" data-pane="rutinas">

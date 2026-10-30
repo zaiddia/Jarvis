@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "7.7"
+VERSION = "7.8"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -354,6 +354,8 @@ import diario
 import rapidez
 import recuerdos
 import aprobaciones
+import banco
+import seguimiento
 import proactivo
 import vigilante
 import habilidades
@@ -685,6 +687,13 @@ DEFAULT_SETTINGS = {
     "email_read": True,            # 7.7: leer tu bandeja (IMAP) cuando se lo pides
     "email_days": 3,               # cuántos días de correos revisa
     "calendar_create": "google",   # 7.7: dónde crear los eventos: "google" (abre Google Calendar) o "ics" (Outlook/Calendario)
+    "classroom_client_id": "",     # 7.8: Google Classroom (ID de cliente OAuth «App de escritorio»)
+    "classroom_client_secret": "",
+    "classroom_refresh": "",       # el permiso que guarda Jarvis al conectar (no tu contraseña)
+    "risk_grade": 3.0,             # 7.8: promedio por debajo del cual un estudiante está en riesgo
+    "risk_absences": 3,            # fallas a partir de las cuales avisa
+    "risk_alerts": True,           # resumen de estudiantes en riesgo los viernes por la tarde
+    "memory_proactive": True,      # 7.8: la IA recuerda sola lo relacionado que le contaste antes
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -703,7 +712,8 @@ for _pid, _sp in PROVIDERS.items():
         DEFAULT_SETTINGS.setdefault(f"{_pid}_model", _sp.get("model", ""))
 API_KEY_FIELDS = tuple(k for k in DEFAULT_SETTINGS if k.endswith("_api_key"))
 # Nunca salen hacia las páginas (solo «guardado sí/no»): claves y el enlace secreto del calendario
-SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls", "telegram_token", "email_app_password", "mobile_token") + (
+SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls", "telegram_token", "email_app_password", "mobile_token",
+                                   "classroom_client_secret", "classroom_refresh") + (
     ("spotify_client_secret",) if "spotify_client_secret" in DEFAULT_SETTINGS else ())
 AI_SETTING_KEYS = ({"ai_provider", "ollama_host", "ollama_model", "openai_base_url"}
                    | set(API_KEY_FIELDS) | {f"{p}_model" for p in PROVIDERS})
@@ -717,7 +727,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -1408,6 +1418,12 @@ def process_command(text):
         return
     if event_voice(text, t):                           # «agenda una reunión con los padres de Juan el jueves a las 3»
         return
+    if classroom_voice(text, t):                       # «¿quién no ha entregado el taller en Classroom de 7A?»
+        return
+    if student_voice(text, t):                         # «ponle 4,5 a Juan en el quiz», «¿quiénes están en riesgo en 7A?»
+        return
+    if bank_voice(text, t):                            # «haz un quiz de fracciones con el banco»
+        return
     if tasks_voice(text, t):                           # «cada lunes a las 6 resume mis pendientes y mándamelo al celular»
         return
     if recall_voice(text, t):                          # «¿qué te dije la semana pasada sobre el examen de 7A?»
@@ -1659,6 +1675,13 @@ from nucleo.conecta import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 7.8 · AULA CONECTADA (CLASSROOM, SEGUIMIENTO, BANCO DE PREGUNTAS) Y MEMORIA EDITABLE
+# → nucleo/aulaplus.py (lógica en classroom.py, seguimiento.py y banco.py)
+# =============================================================================
+from nucleo.aulaplus import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1779,6 +1802,7 @@ def main():
         learn_start()                     # 7.4: costumbres, historial y tareas programadas
         tools_start()                     # 7.5: habilidades de la comunidad
         agents_start()                    # 7.6: aprobaciones y proyectos
+        aula_plus_start()                 # 7.8: seguimiento y banco de preguntas
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

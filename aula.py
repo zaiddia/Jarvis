@@ -350,7 +350,10 @@ def build_prompt(kind, request, count=None, grade="", topic=""):
                   '"actividades": str}], "recursos": [str], "evaluacion": str}')
         task = ("Crea un plan de clase con los momentos inicio (exploración), desarrollo "
                 "(estructuración y práctica) y cierre (transferencia y valoración), con tiempos "
-                "realistas que sumen la duración de la clase (55 minutos si no se indica otra).")
+                "realistas que sumen la duración de la clase (55 minutos si no se indica otra). "
+                "Alinéalo con los Derechos Básicos de Aprendizaje (DBA) y los Estándares Básicos de Competencias "
+                "del MEN de Colombia para ese grado y área: en «competencias» nombra el DBA o estándar que se "
+                "trabaja (con su número si lo conoces con certeza; si no, descríbelo sin inventar el número).")
     return (base + pedido + " " + task + " Responde SOLO con un objeto JSON con esta forma: " + schema)
 
 

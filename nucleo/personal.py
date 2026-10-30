@@ -32,6 +32,7 @@ def _user_ctx(question=""):
         ctx += f" Cuando te dirijas al usuario, llámalo «{name}»."
     if question:
         ctx += J.guides_ctx(question)                    # 7.5: habilidades de la comunidad que encajan
+        ctx += J.recall_ctx(question)                    # 7.8: recuerdos relacionados de conversaciones anteriores
     return ctx
 
 

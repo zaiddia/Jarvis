@@ -413,7 +413,7 @@
   const PART_NAMES = { ajustes: "Ajustes", notas: "Notas", aula: "Cursos y asistencia", rutinas: "Rutinas", memoria: "Memoria",
                        perfil: "Lo que sé de ti", habilidades: "Habilidades", diario: "Diario",
                        tareas: "Tareas programadas", aprendizaje: "Costumbres", historial: "Historial",
-                       guias: "Habilidades de la comunidad" };
+                       guias: "Habilidades de la comunidad", seguimiento: "Notas de estudiantes", banco: "Banco de preguntas" };
   function bakStatus(text, cls) { const st = $("#backup-status"); st.textContent = text || ""; st.className = "status" + (cls ? " " + cls : ""); }
   function fmtDate(iso) {
     const d = new Date(iso);
@@ -762,6 +762,11 @@
       const li = document.createElement("li");
       const body = document.createElement("div"); body.className = "n-body";
       const q = document.createElement("span"); q.className = "n-que"; q.textContent = f.texto;
+      q.style.cursor = "text"; q.title = "Toca para corregir";
+      q.addEventListener("click", () => {
+        const nuevo = prompt("Corrige el dato:", f.texto);
+        if (nuevo && nuevo.trim() && nuevo.trim() !== f.texto) socket.emit("profile_edit", { id: f.id, texto: nuevo.trim() }, (r) => renderProfile(r.facts));
+      });
       body.appendChild(q);
       const del = document.createElement("button");
       del.type = "button"; del.className = "n-del"; del.title = "Olvidar";
@@ -775,6 +780,45 @@
     if (confirm("¿Borrar todo lo que Jarvis ha aprendido de ti?")) socket.emit("clear_profile", {}, (r) => renderProfile(r.facts));
   });
   socket.on("profile_updated", renderProfile);
+  $("#btn-profile-add").addEventListener("click", () => {
+    const t = $("#profile-new").value.trim();
+    if (t) socket.emit("profile_edit", { texto: t }, (r) => { renderProfile(r.facts); $("#profile-new").value = ""; });
+  });
+  /* 7.8: historial, costumbres y Classroom */
+  function histSearch() {
+    const q = $("#hist-q").value.trim();
+    if (!q) return;
+    socket.emit("history_search", { q }, (r) => {
+      const ul = $("#hist-results"); ul.innerHTML = "";
+      if (!r.items.length) { ul.innerHTML = "<li><b>·</b><span>No encontré nada.</span></li>"; return; }
+      r.items.forEach((it) => {
+        const li = document.createElement("li");
+        const b = document.createElement("b"); b.textContent = it.r === "u" ? "Tú" : "J";
+        const s = document.createElement("span"); s.textContent = `${it.cuando}: ${it.x}`;
+        const del = document.createElement("button"); del.type = "button"; del.className = "text-btn"; del.textContent = "Borrar";
+        del.addEventListener("click", () => socket.emit("history_delete", { ts: it.ts, x: it.x }, () => li.remove()));
+        li.append(b, s, del); ul.appendChild(li);
+      });
+    });
+  }
+  $("#btn-hist-search").addEventListener("click", histSearch);
+  $("#hist-q").addEventListener("keydown", (e) => { if (e.key === "Enter") histSearch(); });
+  function renderHabits(r) {
+    if (r) $("#habits-status").textContent = `Me he fijado en ${r.acciones} órdenes; guardaste ${r.hechas} propuestas y rechazaste ${r.rechazadas}. Banco: ${r.banco} preguntas. Notas de estudiantes: ${r.seguimiento}.`;
+  }
+  $("#btn-habits-unreject").addEventListener("click", () => socket.emit("habits_info", { unreject: true }, (r) => { renderHabits(r); toast("Listo: puede volver a proponértelo.", "ok"); }));
+  $("#btn-habits-forget").addEventListener("click", () => { if (confirm("¿Olvidar todas tus costumbres?")) socket.emit("habits_info", { forget: true }, renderHabits); });
+  socket.on("connect", () => socket.emit("habits_info", {}, renderHabits));
+  function renderCr(r) {
+    const st = $("#cr-status");
+    if (!r.connected) { st.className = "status"; st.textContent = "No conectado."; return; }
+    st.className = "status " + (r.error ? "err" : "ok");
+    st.textContent = r.error ? r.error : `Conectado · ${r.courses.length} clase(s): ${r.courses.slice(0, 6).join(", ")}`;
+  }
+  $("#btn-cr-connect").addEventListener("click", () => { $("#cr-status").textContent = "Se abrió Google en tu navegador: autoriza a Jarvis…"; socket.emit("classroom_connect", {}); });
+  $("#btn-cr-disconnect").addEventListener("click", () => socket.emit("classroom_disconnect", {}, renderCr));
+  socket.on("classroom_done", (d) => { toast(d.msg, "info", 6000); socket.emit("classroom_status", {}, renderCr); });
+  socket.on("connect", () => socket.emit("classroom_status", {}, renderCr));
 
   function renderNotes(list) {
     const ul = $("#notes-list");

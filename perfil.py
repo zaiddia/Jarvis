@@ -239,6 +239,20 @@ def forget(text):
     return None
 
 
+def update(fid, texto):
+    """Corrige un dato desde Ajustes (memoria editable)."""
+    texto = _clean(texto)
+    if not texto:
+        return None
+    with _lock:
+        for f in facts:
+            if f["id"] == fid:
+                f["texto"] = texto
+                save()
+                return f
+    return None
+
+
 def delete(fid):
     with _lock:
         before = len(facts)

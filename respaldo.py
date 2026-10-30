@@ -26,6 +26,8 @@ FILES = {
     "perfil.json": ("perfil", "Lo que Jarvis sabe de ti"),
     "tareas.json": ("tareas", "Tareas programadas"),
     "aprendizaje.json": ("aprendizaje", "Costumbres aprendidas"),
+    "notas_estudiantes.json": ("seguimiento", "Notas de los estudiantes"),
+    "banco_preguntas.json": ("banco", "Banco de preguntas"),
 }
 # carpeta -> (parte, descripción, extensión): cada archivo de la carpeta va en la copia
 FOLDERS = {
@@ -130,7 +132,7 @@ def _count(part, data):
         return len(data.get("cursos") or {})
     if part == "rutinas" and isinstance(data, list):
         return len(data)
-    if part in ("memoria", "perfil", "tareas") and isinstance(data, list):
+    if part in ("memoria", "perfil", "tareas", "banco") and isinstance(data, list):
         return len(data)
     return None
 
@@ -197,9 +199,9 @@ def restore(path, config_dir, parts):
                 data = json.loads(z.read(fname).decode("utf-8"))
             except ValueError:
                 continue
-            if part == "aula" and not isinstance(data, dict):
+            if part in ("aula", "seguimiento") and not isinstance(data, dict):
                 continue
-            if part in ("notas", "rutinas", "memoria", "perfil", "tareas") and not isinstance(data, list):
+            if part in ("notas", "rutinas", "memoria", "perfil", "tareas", "banco") and not isinstance(data, list):
                 continue
             dest = os.path.join(config_dir, fname)
             os.makedirs(config_dir, exist_ok=True)

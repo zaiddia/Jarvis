@@ -343,6 +343,8 @@ def restore_backup(name, parts):
     if "habilidades" in done:
         habilidades.load()
         tareas.load()                                  # 7.4
+        J.seguimiento.load()                           # 7.8
+        J.banco.load()
         aprendizaje.load()
     J.socketio.emit("settings_updated", J.public_settings())
     names = [respaldo.PARTS[p].lower() for p in parts]

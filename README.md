@@ -1,4 +1,4 @@
-# Jarvis 7.7 — Asistente virtual para Windows
+# Jarvis 7.8 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -156,6 +156,30 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## Aula conectada (Classroom, seguimiento, banco de preguntas) y memoria editable (v7.8)
+
+**Google Classroom.** «**¿Qué tareas tengo en Classroom de 7A?**», «**¿quién no ha entregado el taller de fracciones en
+Classroom de 7A?**», «**publica en Classroom de 7A que mañana hay examen**» (con tu aprobación) y «**trae las notas de
+Classroom de 7A**» (pasa las notas a la escala de 1,0 a 5,0). Se conecta una vez en *Ajustes › Memoria › Google
+Classroom*, con un ID de cliente «App de escritorio» de Google Cloud (los pasos están ahí); Jarvis guarda solo el
+permiso, nunca tu contraseña.
+
+**Seguimiento por estudiante.** «**Ponle 4,5 a Juan Pérez en el quiz de fracciones de 7A**», «**¿cómo va Juan en
+7A?**» (promedio, última nota y fallas de la asistencia), «**¿quiénes están en riesgo en 7A?**» (promedio menor a 3,0
+o 3 fallas o más; se ajusta). Los viernes por la tarde te avisa quién está en riesgo en cada curso.
+
+**Banco de preguntas.** Cada quiz que Jarvis prepara guarda sus preguntas (sin repetir). «**¿Cuántas preguntas tengo
+de fracciones?**», «**haz un quiz de 10 preguntas de fracciones con el banco**»: lo arma al instante y sin usar la IA,
+usando primero las preguntas que menos has usado.
+
+**Planes alineados con los DBA.** Los planes de clase (también los de los proyectos) se alinean con los Derechos
+Básicos de Aprendizaje y los Estándares Básicos de Competencias del MEN, sin inventar números de DBA.
+
+**Memoria visible y editable.** En *Ajustes › Memoria*: toca un dato de «Lo que Jarvis ha aprendido de ti» para
+corregirlo o añade uno nuevo; busca en el historial de conversaciones y borra líneas sueltas; mira lo que ha
+aprendido de tus costumbres y vuelve a permitir lo que rechazaste. Y Jarvis **recuerda solo**: si preguntas algo de lo
+que ya le habías hablado, la IA lo tiene en cuenta («la última vez dijiste que el examen de 7A vale 30 %»).
 
 ## Galería de conectores, tu correo, tu calendario y tu casa (v7.7)
 
