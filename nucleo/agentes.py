@@ -37,6 +37,9 @@ def request_approval(tipo, titulo, detalle="", on_ok=None, on_no=None, ttl=900, 
     if J.telegram_ready() and J.settings["approvals_telegram"] and not remote:
         threading.Thread(target=J.telegram_send, daemon=True,
                          args=(f"🟡 Aprobación {item['id']}: {titulo}\n{detalle[:800]}\n\nResponde «sí {item['id']}» o «no {item['id']}».",)).start()
+    elif J.whatsapp_ready() and J.settings["approvals_telegram"] and not remote:
+        threading.Thread(target=J.whatsapp_send, daemon=True,
+                         args=(f"🟡 Jarvis espera tu aprobación: {titulo}. Respóndela por voz, en el panel del celular o en Ajustes.",)).start()
     return item
 
 
@@ -161,6 +164,9 @@ def run_step(st, step):
             except (ValueError, TypeError) as e:
                 last = e
         raise RuntimeError(f"la IA no devolvió un material válido ({last})")
+    if tipo == "imagen":
+        path = J.make_image(step["pedido"], folder)
+        return {"archivo": path, "resumen": f"Imagen: {step['pedido']}"}
     if tipo == "presentacion":
         grade = oficina.detect_grade(J.normalize(step["pedido"]))
         prompt = oficina.pptx_prompt(pedido, 8, grade)

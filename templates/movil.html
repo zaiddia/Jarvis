@@ -106,6 +106,9 @@
   let token = params.get("k") || "";
   try { if (token) sessionStorage.setItem("jk", token); else token = sessionStorage.getItem("jk") || ""; } catch (e) {}
   if (params.get("k")) history.replaceState(null, "", location.pathname);   // que el código no quede en la barra
+  // 7.9: instalable en la pantalla de inicio (Chrome › «Añadir a la pantalla de inicio»)
+  const mf = document.createElement("link"); mf.rel = "manifest"; mf.href = "/manifest.json?k=" + encodeURIComponent(token); document.head.appendChild(mf);
+  const ic = document.createElement("link"); ic.rel = "apple-touch-icon"; ic.href = "/icono.png?k=" + encodeURIComponent(token); document.head.appendChild(ic);
   const MODES = { idle: "en espera", awaiting: "te escucha", thinking: "procesando", speaking: "respondiendo" };
   const api = (path, opts = {}) => fetch(path, { ...opts, headers: { "Content-Type": "application/json", "X-Jarvis-Token": token, ...(opts.headers || {}) } })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });

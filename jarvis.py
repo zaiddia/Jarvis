@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "7.8"
+VERSION = "7.9"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -694,6 +694,12 @@ DEFAULT_SETTINGS = {
     "risk_absences": 3,            # fallas a partir de las cuales avisa
     "risk_alerts": True,           # resumen de estudiantes en riesgo los viernes por la tarde
     "memory_proactive": True,      # 7.8: la IA recuerda sola lo relacionado que le contaste antes
+    "telegram_voice_reply": True,  # 7.9: a una nota de voz por Telegram, responder también con voz
+    "whatsapp_phone": "",          # 7.9: avisos al WhatsApp (CallMeBot): tu número con +57
+    "whatsapp_apikey": "",
+    "whatsapp_alerts": True,
+    "image_model": "",             # 7.9: modelo de imágenes de Gemini (vacío = el que tenga tu cuenta)
+    "sync_folder": "",             # 7.9: carpeta compartida (OneDrive…) para usar Jarvis en varios equipos
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -713,7 +719,7 @@ for _pid, _sp in PROVIDERS.items():
 API_KEY_FIELDS = tuple(k for k in DEFAULT_SETTINGS if k.endswith("_api_key"))
 # Nunca salen hacia las páginas (solo «guardado sí/no»): claves y el enlace secreto del calendario
 SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls", "telegram_token", "email_app_password", "mobile_token",
-                                   "classroom_client_secret", "classroom_refresh") + (
+                                   "classroom_client_secret", "classroom_refresh", "whatsapp_apikey") + (
     ("spotify_client_secret",) if "spotify_client_secret" in DEFAULT_SETTINGS else ())
 AI_SETTING_KEYS = ({"ai_provider", "ollama_host", "ollama_model", "openai_base_url"}
                    | set(API_KEY_FIELDS) | {f"{p}_model" for p in PROVIDERS})
@@ -1424,6 +1430,8 @@ def process_command(text):
         return
     if bank_voice(text, t):                            # «haz un quiz de fracciones con el banco»
         return
+    if image_voice(text, t):                           # «hazme una ilustración del ciclo del agua»
+        return
     if tasks_voice(text, t):                           # «cada lunes a las 6 resume mis pendientes y mándamelo al celular»
         return
     if recall_voice(text, t):                          # «¿qué te dije la semana pasada sobre el examen de 7A?»
@@ -1682,6 +1690,13 @@ from nucleo.aulaplus import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 7.9 · NOTAS DE VOZ, WHATSAPP, PANEL INSTALABLE, IMÁGENES Y VARIOS EQUIPOS
+# → nucleo/alcance.py (lógica en imagenes.py, whatsapp.py y sincronizar.py)
+# =============================================================================
+from nucleo.alcance import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1803,6 +1818,7 @@ def main():
         tools_start()                     # 7.5: habilidades de la comunidad
         agents_start()                    # 7.6: aprobaciones y proyectos
         aula_plus_start()                 # 7.8: seguimiento y banco de preguntas
+        reach_start()                     # 7.9: sincronización entre equipos
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

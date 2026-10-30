@@ -621,6 +621,25 @@
       <div class="ft"><label for="f-tg-alerts">Enviarme los avisos al celular</label><p>Recordatorios, avisos del calendario, temporizadores y el reporte de la mañana también te llegan por Telegram.</p></div>
       <label class="switch"><input type="checkbox" id="f-tg-alerts" data-key="telegram_alerts"><span></span></label>
     </div>
+    <div class="field">
+      <div class="ft"><label for="f-tg-voice">Responder con voz a las notas de voz</label><p>Mándale una nota de voz al bot: Jarvis la entiende y, si esto está encendido, te contesta también con un audio.</p></div>
+      <label class="switch"><input type="checkbox" id="f-tg-voice" data-key="telegram_voice_reply"><span></span></label>
+    </div>
+
+    <div class="group">WhatsApp</div>
+    <p class="pane-intro">Avisos y recordatorios a tu WhatsApp con CallMeBot (gratis). Agrega el número <code>+34 644 66 32 62</code> a tus contactos, envíale «I allow callmebot to send me messages» y te responde con tu clave. Pégala aquí con tu número (con <code>+57</code>). Si tienes Telegram, Jarvis lo prefiere; WhatsApp sirve para avisos, no para darle órdenes.</p>
+    <div class="field stack"><div class="ft"><label for="f-wa-phone">Tu número</label></div>
+      <input class="inp narrow" type="text" id="f-wa-phone" data-key="whatsapp_phone" placeholder="+573001234567"></div>
+    <div class="field stack"><div class="ft"><label for="f-wa-key">Clave de CallMeBot</label></div>
+      <div class="row">
+        <input class="inp narrow" type="password" id="f-wa-key" data-key="whatsapp_apikey" autocomplete="off">
+        <button class="btn btn-ghost" type="button" id="btn-wa-test"><svg class="i"><use href="#i-play"/></svg>Probar (guarda antes)</button>
+      </div>
+      <p class="status" id="wa-status"></p></div>
+    <div class="field">
+      <div class="ft"><label for="f-wa-alerts">Enviarme los avisos por WhatsApp</label></div>
+      <label class="switch"><input type="checkbox" id="f-wa-alerts" data-key="whatsapp_alerts"><span></span></label>
+    </div>
 
     <div class="group">Clima y noticias</div>
     <div class="field stack">
@@ -954,6 +973,20 @@
       <div class="ft"><label for="f-pj-par">Sub-agentes a la vez</label><p>Más es más rápido, pero gasta más de tu IA al mismo tiempo.</p></div>
       <div class="range"><input type="range" id="f-pj-par" min="1" max="4" step="1" data-key="project_parallel"><output></output></div>
     </div>
+
+    <div class="group">Imágenes para la clase</div>
+    <p class="pane-intro">«Jarvis, hazme una ilustración del ciclo del agua», «genera una imagen de una célula animal para sexto». Usa el modelo de imágenes de Gemini con tu clave y las guarda en <code>Documentos\Jarvis\Imágenes</code>. En los proyectos también puedes pedir imágenes.</p>
+    <div class="field stack"><div class="ft"><label for="f-img-model">Modelo de imágenes</label><p>Déjalo vacío para que Jarvis use el que tenga tu cuenta.</p></div>
+      <input class="inp mono narrow" type="text" id="f-img-model" data-key="image_model" placeholder="automático"></div>
+
+    <div class="group">Varios equipos</div>
+    <p class="pane-intro">Pon una carpeta que se sincronice sola (OneDrive, Google Drive para escritorio o Dropbox) en cada computador. Jarvis guarda ahí cada 3 minutos tu perfil, rutinas, tareas, notas, aula, banco de preguntas, notas de estudiantes y habilidades, y trae lo más nuevo de los otros equipos. Las claves y el historial no se copian.</p>
+    <div class="field stack"><div class="ft"><label for="f-sync">Carpeta compartida</label></div>
+      <div class="row">
+        <input class="inp mono" type="text" id="f-sync" data-key="sync_folder" placeholder="C:\Users\tú\OneDrive">
+        <button class="btn btn-ghost" type="button" id="btn-sync"><svg class="i"><use href="#i-refresh"/></svg>Sincronizar ahora</button>
+      </div>
+      <p class="status" id="sync-status"></p></div>
 
     <div class="group">Lo que hice por mi cuenta</div>
     <p class="pane-intro">Registro de los últimos días: qué se pidió aprobar, quién lo aprobó y qué hizo Jarvis solo. También: «¿qué hiciste por tu cuenta hoy?».</p>

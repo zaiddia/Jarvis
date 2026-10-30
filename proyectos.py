@@ -24,6 +24,7 @@ TYPES = {
     "rubrica": "rúbrica de evaluación en Word",
     "presentacion": "presentación de diapositivas en PowerPoint",
     "texto": "un texto libre en Word: carta a padres, guía, resumen, correo, comunicado, etc.",
+    "imagen": "una imagen o ilustración para la clase (solo si el docente pide imágenes)",
 }
 MAX_STEPS = 8
 

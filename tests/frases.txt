@@ -173,3 +173,4 @@ agenda una reunión con los padres de Juan el jueves a las 3 => CALENDARIO|APROB
 ¿quiénes están en riesgo en 7A? => AULA
 ¿cuántas preguntas tengo de fracciones? => AULA
 ¿qué tareas tengo en Classroom de 7A? => CLASSROOM
+genera una imagen de una célula animal para sexto => IMAGEN :: célula animal

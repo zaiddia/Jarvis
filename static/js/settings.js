@@ -820,6 +820,20 @@
   socket.on("classroom_done", (d) => { toast(d.msg, "info", 6000); socket.emit("classroom_status", {}, renderCr); });
   socket.on("connect", () => socket.emit("classroom_status", {}, renderCr));
 
+  // 7.9: WhatsApp y sincronización
+  $("#btn-wa-test").addEventListener("click", () => {
+    const st = $("#wa-status"); st.className = "status"; st.textContent = "Enviando…";
+    socket.emit("whatsapp_test", {}, (r) => { st.className = "status " + (r.ok ? "ok" : "err"); st.textContent = r.msg; });
+  });
+  function renderSync(r) {
+    const st = $("#sync-status");
+    if (!r || !r.folder) { st.className = "status"; st.textContent = "Apagada."; return; }
+    st.className = "status " + (r.error ? "err" : "ok");
+    st.textContent = r.error || (r.last ? `${r.msg} (${new Date(r.last * 1000).toLocaleTimeString()})` : "Aún no se ha sincronizado.");
+  }
+  $("#btn-sync").addEventListener("click", () => { $("#sync-status").textContent = "Sincronizando…"; socket.emit("sync_info", { now: true }, renderSync); });
+  socket.on("connect", () => socket.emit("sync_info", {}, renderSync));
+
   function renderNotes(list) {
     const ul = $("#notes-list");
     ul.innerHTML = "";

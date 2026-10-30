@@ -157,6 +157,29 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Jarvis en todas partes: notas de voz, WhatsApp, celular instalable, imágenes y varios equipos (v7.9)
+
+**Notas de voz por Telegram.** Mándale una nota de voz al bot: Jarvis la transcribe (con tu clave de Gemini, o con
+Whisper si lo tienes), te muestra lo que entendió, la atiende como cualquier orden y te contesta también con un audio
+(se apaga en *Ajustes › Integraciones*).
+
+**Avisos al WhatsApp.** Recordatorios, avisos, tareas programadas y aprobaciones pendientes también te llegan al
+WhatsApp con CallMeBot (gratis). Los pasos están en *Ajustes › Integraciones › WhatsApp*, con un botón para probar.
+WhatsApp sirve para recibir avisos; para darle órdenes desde el celular usa Telegram o el panel.
+
+**Panel del celular instalable.** Abre el panel del celular en Chrome y elige «Añadir a la pantalla de inicio»: queda
+como una app, con el icono de Jarvis y a pantalla completa.
+
+**Imágenes para tus clases.** «**Hazme una ilustración del ciclo del agua**», «**genera una imagen de una célula
+animal para sexto**». Usa el modelo de imágenes de Gemini de tu cuenta y las guarda en `Documentos\Jarvis\Imágenes`.
+Los proyectos también pueden incluir imágenes («…con investigación, taller e imágenes»). Si te escribe por Telegram,
+te manda la imagen ahí.
+
+**Varios equipos.** En *Ajustes › Agente › Varios equipos* pon una carpeta que se sincronice sola (OneDrive, Google
+Drive para escritorio, Dropbox) en el PC del colegio y en el de la casa. Cada 3 minutos Jarvis guarda ahí tu perfil,
+rutinas, tareas, notas, aula, banco de preguntas, notas de estudiantes, costumbres y habilidades, y trae lo más nuevo
+del otro equipo. Tus claves, ajustes e historial no se copian.
+
 ## Aula conectada (Classroom, seguimiento, banco de preguntas) y memoria editable (v7.8)
 
 **Google Classroom.** «**¿Qué tareas tengo en Classroom de 7A?**», «**¿quién no ha entregado el taller de fracciones en

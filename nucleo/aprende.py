@@ -330,7 +330,7 @@ def tasks_voice(text, t):
         J.reply(str(e), "TAREA")
         return True
     extra = ""
-    if x["entrega"] != "voz" and not telegram_ready():
+    if x["entrega"] != "voz" and not telegram_ready() and not J.whatsapp_ready():
         extra = " Aún no tienes Telegram conectado: hasta que lo conectes (Ajustes, Integraciones), te lo diré en voz alta."
     J.reply(f"Listo, tarea programada {tareas.spoken(x)}.{extra}", "TAREA")
     diario.log("nota", f"tarea programada: {x['orden']}")
@@ -351,8 +351,8 @@ def run_task(task, why="a su hora"):
     msg = f"Tarea programada «{task['orden']}»: {result}"
     diario.log("tarea", task["orden"])
     sent = False
-    if task.get("entrega") in ("celular", "ambos") and telegram_ready():
-        sent = J.telegram_send("🗓 " + msg)
+    if task.get("entrega") in ("celular", "ambos") and (telegram_ready() or J.whatsapp_ready()):
+        sent = J.phone_send("🗓 " + msg)
     if task.get("entrega") in ("voz", "ambos") or not sent:
         J.reply(msg, "TAREA")
         J.orb_feed.update(alert_seq=J.orb_feed["alert_seq"] + 1, alert=msg[:300])

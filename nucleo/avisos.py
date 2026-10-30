@@ -208,6 +208,7 @@ def alert(text, origin="JARVIS"):
     """Un aviso (recordatorio, calendario, temporizador): en el PC y, si lo activaste, en tu celular."""
     J.reply(text, origin)
     J.orb_feed.update(alert_seq=J.orb_feed["alert_seq"] + 1, alert=str(text)[:300])   # el orbe destella
+    J.whatsapp_alert(text)                             # 7.9: también al WhatsApp, si lo configuraste
     J.windows_toast(text, origin)                      # 7.2: también como notificación de Windows
     if J.settings["telegram_alerts"] and J.settings["telegram_remote"]:
         threading.Thread(target=J.telegram_send, args=(f"🔔 {text}",), daemon=True).start()
@@ -280,8 +281,11 @@ def _tg_handle(msg):
             J.tg["unknown_warned"].add(chat)
             J.log_terminal(f"Telegram: ignoré un mensaje de un chat desconocido ({who}, {chat}).", "AVISO")
         return
+    if not text and (msg.get("voice") or msg.get("audio")):
+        J.tg_voice(msg)                                # 7.9: notas de voz
+        return
     if not text:
-        J.telegram_send("Por ahora solo entiendo mensajes de texto.")
+        J.telegram_send("Por ahora entiendo mensajes de texto y notas de voz.")
         return
     J.tg["last_cmd"] = time.time()
     J.log_terminal(f"Desde el celular: {text}", "TELEGRAM")
