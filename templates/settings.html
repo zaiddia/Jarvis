@@ -712,6 +712,29 @@
       <div class="ft"><label for="f-diary-days">Guardar</label><p>Los días más viejos se borran solos.</p></div>
       <div class="range"><input type="range" id="f-diary-days" min="7" max="365" step="1" data-key="diary_days" data-unit=" días"><output></output></div>
     </div>
+
+    <div class="group">Historial de conversaciones (memoria buscable)</div>
+    <p class="pane-intro">Para preguntarle «¿qué te dije la semana pasada sobre el examen de 7A?», «¿de qué hablamos ayer?» o «busca en mi memoria la reunión de padres». Guarda lo que hablan, solo en tu equipo, y antes de guardarlo tapa correos, claves, contraseñas y números de tarjeta.</p>
+    <div class="field">
+      <div class="ft"><label for="f-hist">Guardar el historial</label></div>
+      <label class="switch"><input type="checkbox" id="f-hist" data-key="history_enabled"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-hist-days">Guardar</label><p>Los meses más viejos se borran solos.</p></div>
+      <div class="range"><input type="range" id="f-hist-days" min="7" max="730" step="1" data-key="history_days" data-unit=" días"><output></output></div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-hist-sem">Buscar también por significado</label><p>Con tu clave de Gemini (o un modelo de «embeddings» en Ollama, como nomic-embed-text), «la prueba» encuentra «el examen». Sin ellos, busca por palabras.</p></div>
+      <label class="switch"><input type="checkbox" id="f-hist-sem" data-key="memory_semantic"><span></span></label>
+    </div>
+    <div class="row-btns"><button class="btn btn-danger" type="button" id="btn-hist-clear">Borrar el historial</button></div>
+
+    <div class="group">Aprender de mis costumbres</div>
+    <p class="pane-intro">Si repites las mismas órdenes seguidas varios días, Jarvis te propone guardarlas como rutina («sí, llámala modo escribir»); si haces algo casi siempre a la misma hora, te propone hacerlo solo; y si justo después de una rutina cambias algo que ella hizo, te propone corregirla. Como mucho 3 propuestas al día, nunca en tus horas de silencio, y lo que rechaces no te lo vuelve a proponer. «Olvida mis costumbres» lo borra.</p>
+    <div class="field">
+      <div class="ft"><label for="f-learn">Aprender y proponerme rutinas</label></div>
+      <label class="switch"><input type="checkbox" id="f-learn" data-key="learn_enabled"><span></span></label>
+    </div>
   </section>
 
   <section class="pane" data-pane="rutinas">
@@ -763,6 +786,24 @@
         <button class="btn btn-ghost" type="button" id="btn-test-alarm"><svg class="i"><use href="#i-play"/></svg>Probar</button>
       </div>
     </div>
+    <div class="group">Tareas programadas</div>
+    <p class="pane-intro">Órdenes que Jarvis hace solo a su hora y te entrega el resultado: en voz alta, en tu celular (Telegram) o ambos. También por voz: «cada lunes a las 6 de la tarde resume mis pendientes y mándamelo al celular», «¿qué tareas tengo programadas?», «borra la tarea del clima». Se hacen con las reglas del celular: nada de apagar, cerrar programas, escribir en ventanas ni borrar.</p>
+    <ul class="routines" id="tk-list"></ul>
+    <div class="field stack">
+      <div class="ft"><label for="tk-orden">Nueva tarea</label><p>Qué hacer (como se lo dirías), cuándo (<code>07:00</code>, <code>18:00 lun</code>, <code>06:30 lun-vie</code>) y a dónde llevarlo.</p></div>
+      <input class="inp" type="text" id="tk-orden" placeholder="resume mis pendientes de hoy" maxlength="300">
+      <div class="row wrap" style="margin-top:8px">
+        <input class="inp narrow" type="text" id="tk-cuando" placeholder="18:00 lun-vie" style="max-width:160px">
+        <select class="inp" id="tk-entrega" style="max-width:220px">
+          <option value="voz">Decírmelo en voz alta</option>
+          <option value="celular">Mandarlo al celular</option>
+          <option value="ambos">Las dos cosas</option>
+        </select>
+        <button class="btn btn-primary" type="button" id="tk-add">Programar</button>
+      </div>
+      <p class="status" id="tk-status"></p>
+    </div>
+
     <div class="group">Habilidades instaladas</div>
     <p class="pane-intro">Una habilidad es un archivo <code>.json</code> que le enseña a Jarvis algo nuevo: frases con huecos (<code>busca {tema} en wikipedia</code>) y qué hacer (abrir una web, decir algo, preguntarle a la IA o una lista de órdenes). Se comparten como un archivo: instálalas aquí o ponlas en su carpeta.</p>
     <ul class="routines" id="hb-list"></ul>

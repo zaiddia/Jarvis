@@ -421,6 +421,7 @@ def run_routine(r):
     if J.routine_state["running"]:
         J.reply(f"Ya estoy ejecutando la rutina {J.routine_state['running']}.", "RUTINA")
         return
+    J.learn_note("rutina", {"nombre": r["nombre"]})
     J.routine_state["running"] = r["nombre"]
     J.log_terminal(f"Rutina «{r['nombre']}»: {len(r['pasos'])} pasos.", "RUTINA")
     diario.log("rutina", r["nombre"])
@@ -462,6 +463,7 @@ def run_routine(r):
         finally:
             J._tl.quiet = False
             J.routine_state["running"] = None
+            J.learn_routine_done(r)
         if saltados:
             n = len(saltados)
             J.reply(f"Rutina {r['nombre']} lista, pero me salté {n} paso{'s' if n != 1 else ''} que no "

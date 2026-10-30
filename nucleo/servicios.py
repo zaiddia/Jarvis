@@ -6,6 +6,8 @@ import actualizar
 import aula
 import datetime
 import habilidades
+import aprendizaje
+import tareas
 import json
 import notas
 import os
@@ -340,6 +342,8 @@ def restore_backup(name, parts):
         J._profile_changed()
     if "habilidades" in done:
         habilidades.load()
+        tareas.load()                                  # 7.4
+        aprendizaje.load()
     J.socketio.emit("settings_updated", J.public_settings())
     names = [respaldo.PARTS[p].lower() for p in parts]
     J.log_terminal(f"Restaurado desde «{info['name']}»: {', '.join(names)}. "

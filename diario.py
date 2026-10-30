@@ -20,7 +20,8 @@ keep_days = 30
 
 # Tipos de entrada y cómo se cuentan
 KINDS = {"orden": "órdenes", "rutina": "rutinas", "temporizador": "temporizadores", "recordatorio": "recordatorios",
-         "nota": "notas", "aviso": "avisos", "habilidad": "habilidades", "busqueda": "búsquedas", "pregunta": "preguntas"}
+         "nota": "notas", "aviso": "avisos", "habilidad": "habilidades", "busqueda": "búsquedas", "pregunta": "preguntas",
+         "tarea": "tareas programadas"}
 
 # Lo que nunca se anota (por si alguien dicta algo privado)
 _PRIVATE = re.compile(r"\b(?:contrasena|password|clave|pin|tarjeta|cvv|codigo de seguridad)\b")
@@ -121,7 +122,8 @@ def stats(entries):
 
 
 _SINGULAR = {"órdenes": "orden", "rutinas": "rutina", "temporizadores": "temporizador", "recordatorios": "recordatorio",
-             "notas": "nota", "avisos": "aviso", "habilidades": "habilidad", "búsquedas": "búsqueda", "preguntas": "pregunta"}
+             "notas": "nota", "avisos": "aviso", "habilidades": "habilidad", "búsquedas": "búsqueda", "preguntas": "pregunta",
+             "tareas programadas": "tarea programada"}
 
 
 def _plural(n, word):

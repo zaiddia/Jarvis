@@ -144,3 +144,14 @@ cel: lee lo que hay en el tablero => TABLERO
 # ================================================================ 7.1: bienvenida
 repite la bienvenida => SISTEMA :: bienvenida
 enséñame a usarte => SISTEMA :: bienvenida
+
+# ================================================================ 7.4: tareas programadas, memoria buscable
+cada lunes a las 6 de la tarde resume mis pendientes y mándamelo al celular => TAREA :: lunes
+todos los días a las 7 de la mañana dime el clima => TAREA :: dime el clima
+qué tareas tengo programadas => TAREA :: dime el clima
+borra la tarea del clima => TAREA :: borré
+recuérdame mañana a las 9 llamar al banco => recordatorio|NOTAS
+¿qué te dije la semana pasada sobre el examen de 7A? => MEMORIA
+¿de qué hablamos ayer? => MEMORIA
+busca en mi memoria la reunión de padres => MEMORIA
+¿qué hice ayer? => DIARIO

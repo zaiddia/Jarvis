@@ -21,6 +21,7 @@ import respaldo
 import rutinas
 import skills
 import threading
+import recuerdos
 import time
 import uuid
 import webbrowser
@@ -97,6 +98,8 @@ def apply_settings(data):
         J.mcp_reconfigure()
     if "mcp_server_enabled" in changed:
         J.mcp_server_apply()
+    if changed & {"history_enabled", "history_days"}:
+        recuerdos.configure(J.CONFIG_DIR, J.settings["history_enabled"], J.settings["history_days"])
     if "windows_integration" in changed:
         threading.Thread(target=J.windows_apply, daemon=True).start()
     if changed & {"mobile_enabled", "mobile_port"}:

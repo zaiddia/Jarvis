@@ -411,7 +411,8 @@
 
   /* Copias de seguridad */
   const PART_NAMES = { ajustes: "Ajustes", notas: "Notas", aula: "Cursos y asistencia", rutinas: "Rutinas", memoria: "Memoria",
-                       perfil: "Lo que sé de ti", habilidades: "Habilidades", diario: "Diario" };
+                       perfil: "Lo que sé de ti", habilidades: "Habilidades", diario: "Diario",
+                       tareas: "Tareas programadas", aprendizaje: "Costumbres", historial: "Historial" };
   function bakStatus(text, cls) { const st = $("#backup-status"); st.textContent = text || ""; st.className = "status" + (cls ? " " + cls : ""); }
   function fmtDate(iso) {
     const d = new Date(iso);
@@ -935,6 +936,46 @@
     if (confirm("El enlace actual dejará de funcionar y tendrás que escanear el nuevo. ¿Seguir?")) socket.emit("mobile_info", { new_token: true }, renderMobile);
   });
   socket.on("connect", () => socket.emit("mobile_info", {}, renderMobile));
+
+  /* 7.4: tareas programadas y memoria */
+  function renderTasks(res) {
+    const ul = $("#tk-list");
+    ul.innerHTML = "";
+    const list = (res && res.tasks) || [];
+    if (!list.length) ul.innerHTML = '<li class="empty">No hay tareas programadas.</li>';
+    const dest = { voz: "en voz alta", celular: "al celular", ambos: "voz y celular" };
+    list.forEach((t) => {
+      const li = document.createElement("li");
+      const b = document.createElement("div"); b.className = "r-body";
+      const n = document.createElement("span"); n.className = "r-name"; n.textContent = t.orden;
+      const m = document.createElement("span"); m.className = "r-meta";
+      m.textContent = `${t.cuando} · ${dest[t.entrega] || t.entrega}` + (t.activa === false ? " · en pausa" : "") + (t.ultima ? ` · última: ${t.ultima}` : "");
+      b.append(n, m);
+      const run = document.createElement("button"); run.type = "button"; run.className = "text-btn"; run.textContent = "Probar";
+      run.addEventListener("click", () => socket.emit("tasks_run", { id: t.id }, () => toast("Haciendo la tarea ahora…", "info")));
+      const tog = document.createElement("button"); tog.type = "button"; tog.className = "text-btn"; tog.textContent = t.activa === false ? "Reanudar" : "Pausar";
+      tog.addEventListener("click", () => socket.emit("tasks_toggle", { id: t.id, on: t.activa === false }, renderTasks));
+      const del = document.createElement("button"); del.type = "button"; del.className = "text-btn"; del.textContent = "Borrar";
+      del.addEventListener("click", () => { if (confirm(`¿Borrar la tarea «${t.orden}»?`)) socket.emit("tasks_remove", { id: t.id }, renderTasks); });
+      li.append(b, run, tog, del);
+      ul.appendChild(li);
+    });
+    if (res && "telegram" in res) {
+      $("#tk-status").textContent = res.telegram ? "" : "Telegram no está conectado: lo que vaya «al celular» te lo diré en voz alta.";
+    }
+  }
+  $("#tk-add").addEventListener("click", () => {
+    socket.emit("tasks_add", { orden: $("#tk-orden").value, cuando: $("#tk-cuando").value, entrega: $("#tk-entrega").value }, (r) => {
+      if (!r.ok) { toast(r.error, "err", 6000); return; }
+      $("#tk-orden").value = ""; $("#tk-cuando").value = "";
+      toast("Tarea programada: " + r.spoken, "ok", 5000);
+      renderTasks(r);
+    });
+  });
+  $("#btn-hist-clear").addEventListener("click", () => {
+    if (confirm("¿Borrar todo el historial de conversaciones? No se puede deshacer.")) socket.emit("history_clear", {}, () => toast("Historial borrado.", "ok"));
+  });
+  socket.on("connect", () => socket.emit("tasks_list", {}, renderTasks));
 
   /* 7.2: Jarvis dentro de Windows y el orbe de Windhawk */
   let orbCode = "";

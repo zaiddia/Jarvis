@@ -421,6 +421,7 @@ def run_skill(name, args, confirmed=False):
         J.reply(sk.confirm_text(args) + " Di «confirmar» o «cancelar».", "PC")
         return True
     J.log_terminal(f"Acción: {name} {json.dumps(args, ensure_ascii=False)}", "PC")
+    J.learn_note(name, args)                         # 7.4: aprende tus costumbres
     J._run_skill_guarded(name, sk, args)
     return True
 

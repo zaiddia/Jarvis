@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "7.3.1"
+VERSION = "7.4"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -352,6 +352,7 @@ import infodia
 import buscar
 import diario
 import rapidez
+import recuerdos
 import proactivo
 import vigilante
 import habilidades
@@ -672,6 +673,10 @@ DEFAULT_SETTINGS = {
     "onboarding_done": False,      # 7.1: ya vio la bienvenida (la primera vez se abre sola)
     "windows_integration": False,  # 7.2: clic derecho, Win+R «jarvis», enlaces jarvis:// y lista de saltos
     "windows_toasts": True,        # 7.2: los avisos también como notificación de Windows
+    "learn_enabled": True,         # 7.4: aprende tus costumbres y propone rutinas
+    "history_enabled": True,       # 7.4: historial de conversaciones buscable («¿qué te dije sobre…?»)
+    "history_days": 180,           # cuántos días guardarlo
+    "memory_semantic": True,       # buscar también por significado (con Gemini u Ollama, si los tienes)
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -704,7 +709,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -924,6 +929,7 @@ def push_chat(role, text, source=""):
     item = {"role": role, "text": text, "source": source,
             "time": datetime.datetime.now().strftime("%H:%M")}
     chat_buffer.append(item)
+    recuerdos.log(role, text)                         # 7.4: historial buscable (sin claves ni contraseñas)
     orb_feed.update(seq=orb_feed["seq"] + 1, msg=str(text)[:400], role=role)
     socketio.emit("chat", item)
 
@@ -1273,6 +1279,7 @@ def process_command(text):
     if not t:
         return
     rapidez.mark("orden")
+    _tl.cmd_text = text                               # 7.4: para aprender tus costumbres
     if not getattr(_tl, "polite", False):
         order = polite_to_order(t)
         if order and order != t:
@@ -1306,6 +1313,8 @@ def process_command(text):
     if _email_confirm_pending(t):                      # «sí, envíalo» / «no» de un correo pendiente
         return
     if proactive_answer(t) or mcp_answer(t):           # «sí» a «¿activo el modo clase?» o a un conector
+        return
+    if learn_answer(t):                                # «sí» a «¿lo guardo como rutina?»
         return
     if _CHECK_RE.search(t):                            # «prueba completa», «revisa todo»
         if getattr(_tl, "remote", False):
@@ -1378,8 +1387,15 @@ def process_command(text):
         add_timer(_dur, label)
         extra = f" para {label}" if label else ""
         reply(f"Temporizador de {_spoken_duration(_dur)}{extra} en marcha.", "TIMER")
+        learn_note("temporizador", {"segundos": int(_dur)})
         return
 
+    if tasks_voice(text, t):                           # «cada lunes a las 6 resume mis pendientes y mándamelo al celular»
+        return
+    if recall_voice(text, t):                          # «¿qué te dije la semana pasada sobre el examen de 7A?»
+        return
+    if learn_voice(text, t):                           # «olvida mis costumbres»
+        return
     # Rutinas: «modo clase», «fin de clase», «¿qué rutinas tengo?»
     if routine_voice(text, t):
         return
@@ -1595,6 +1611,13 @@ from nucleo.integracion import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 7.4 · APRENDE TUS COSTUMBRES, MEMORIA BUSCABLE Y TAREAS PROGRAMADAS
+# → nucleo/aprende.py (lógica en aprendizaje.py, recuerdos.py y tareas.py)
+# =============================================================================
+from nucleo.aprende import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1712,6 +1735,7 @@ def main():
 
     def _start_services():
         windows_at_start(START_LINK)      # enlace local, integración con Windows y el enlace de arranque
+        learn_start()                     # 7.4: costumbres, historial y tareas programadas
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

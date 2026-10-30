@@ -24,11 +24,14 @@ FILES = {
     "rutinas.json": ("rutinas", "Rutinas"),
     "memoria.json": ("memoria", "Memoria de la conversación"),
     "perfil.json": ("perfil", "Lo que Jarvis sabe de ti"),
+    "tareas.json": ("tareas", "Tareas programadas"),
+    "aprendizaje.json": ("aprendizaje", "Costumbres aprendidas"),
 }
 # carpeta -> (parte, descripción, extensión): cada archivo de la carpeta va en la copia
 FOLDERS = {
     "habilidades": ("habilidades", "Habilidades instaladas", ".json"),
     "diario": ("diario", "Diario", ".jsonl"),
+    "historial": ("historial", "Historial de conversaciones", ".jsonl"),
 }
 FOLDER_MAX_FILE = 2 * 1024 * 1024
 PARTS = {p: d for p, d in FILES.values()}
@@ -126,7 +129,7 @@ def _count(part, data):
         return len(data.get("cursos") or {})
     if part == "rutinas" and isinstance(data, list):
         return len(data)
-    if part in ("memoria", "perfil") and isinstance(data, list):
+    if part in ("memoria", "perfil", "tareas") and isinstance(data, list):
         return len(data)
     return None
 
@@ -195,7 +198,7 @@ def restore(path, config_dir, parts):
                 continue
             if part == "aula" and not isinstance(data, dict):
                 continue
-            if part in ("notas", "rutinas", "memoria", "perfil") and not isinstance(data, list):
+            if part in ("notas", "rutinas", "memoria", "perfil", "tareas") and not isinstance(data, list):
                 continue
             dest = os.path.join(config_dir, fname)
             os.makedirs(config_dir, exist_ok=True)

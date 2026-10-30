@@ -1,4 +1,4 @@
-# Jarvis 7.3.1 — Asistente virtual para Windows
+# Jarvis 7.4 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -156,6 +156,32 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## Aprende tus costumbres, recuerda lo que hablaron y hace tareas solo (v7.4)
+
+**Aprende de lo que haces.** Si varios días repites las mismas órdenes seguidas (por ejemplo «abre Word», «volumen
+al 30», «pon música para concentrarse»), Jarvis te pregunta: *¿Quieres que lo guarde como una rutina?* Respondes
+«sí» o «sí, llámala modo escribir», y desde entonces basta con decir «modo escribir». Si haces algo casi siempre a la
+misma hora, te propone hacerlo solo («¿lo hago yo a las 7:30 de lunes a viernes?»). Y si justo después de una rutina
+cambias algo que ella hizo («volumen al 25» tras una rutina que lo pone al 40), te propone corregirla para la próxima
+vez. Como mucho 3 propuestas al día, nunca en tus horas de silencio, y lo que rechaces no te lo vuelve a proponer. No
+aprende de lo que llega por el celular, por enlaces ni de los pasos de las rutinas. «Olvida mis costumbres» lo borra.
+
+**Memoria buscable.** Pregúntale **«¿qué te dije la semana pasada sobre el examen de 7A?»**, **«¿de qué hablamos
+ayer?»**, **«busca en mi memoria la reunión de padres»** o **«¿te acuerdas de lo que te conté del paseo?»**. Busca en
+todo el historial de conversaciones, entiende fechas («ayer», «la semana pasada», «en octubre», «el lunes») y, con la
+IA, te responde en una frase diciendo cuándo fue. Busca por palabras (con tildes, plurales y palabras parecidas) y,
+si tienes la clave de Gemini o un modelo de embeddings en Ollama, también **por significado** («la prueba» encuentra
+«el examen»). Antes de guardar nada tapa correos, claves, contraseñas y números de tarjeta. Se ajusta y se borra en
+*Ajustes › Memoria*, y entra en las copias de seguridad.
+
+**Tareas programadas que trabajan solas.** «**Cada lunes a las 6 de la tarde resume mis pendientes y mándamelo al
+celular**», «todos los días a las 7 de la mañana dime el clima», «de lunes a viernes a las 6:30 dime qué tengo hoy»,
+«cada viernes a las 5 pm investiga noticias de educación y envíamelo por Telegram». Jarvis la hace a su hora y te
+entrega lo que conteste: en voz alta, en tu celular (Telegram) o las dos cosas. Si el equipo estaba apagado, la hace
+al encenderlo (si no pasaron más de 6 horas). «¿Qué tareas tengo programadas?», «borra la tarea del clima», «pausa la
+tarea de los pendientes». También en *Ajustes › Rutinas › Tareas programadas*, con botón para probarlas. Se hacen con
+las reglas del celular: nada de apagar, cerrar programas, escribir en ventanas ni borrar.
 
 ## Corrección del reactor (v7.3.1)
 
