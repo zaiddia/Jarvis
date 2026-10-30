@@ -1,4 +1,4 @@
-# Jarvis 7.6 — Asistente virtual para Windows
+# Jarvis 7.7 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -156,6 +156,29 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## Galería de conectores, tu correo, tu calendario y tu casa (v7.7)
+
+**Galería de conectores.** En *Ajustes › Integraciones › Galería de conectores* conectas tus apps con un formulario,
+sin escribir JSON: **Home Assistant** (tu casa: luces, enchufes, clima, escenas y automatizaciones, con el conector
+ha-mcp de unas 90 herramientas; ahora se aceptan direcciones http de tu red, como `homeassistant.local`), **GitHub**,
+**Notion**, **Todoist**, **hora en el mundo** y **leer páginas web**. Te dice si a un conector le falta Node.js o uv.
+Gracias a la elección por significado de la 7.5, la IA solo ve las herramientas que tienen que ver con lo que pides.
+
+**Los conectores ahora pasan por el centro de aprobaciones.** Lo que no marques como de confianza («apaga las luces
+de la sala» con Home Assistant, crear una página en Notion…) se aprueba por voz, en el HUD, el reactor, el celular o
+Telegram.
+
+**Tu bandeja de correo.** «**¿Qué correos importantes tengo?**» (resume quién escribió y qué pide, sin publicidad ni
+avisos automáticos, y con tu agenda de correos primero), «**lee el correo de la coordinadora**», «**contéstale que sí
+asisto**»: redacta la respuesta en el mismo hilo y **solo la envía si la apruebas**. Usa la misma contraseña de
+aplicación con la que Jarvis ya envía correos, por IMAP y en modo solo lectura (no borra, no mueve ni marca nada como
+leído). Botón «Probar la bandeja» en *Ajustes › Integraciones › Correo*.
+
+**Crear eventos.** «**Agenda una reunión con los padres de Juan el jueves a las 3**», «ponme en el calendario el
+consejo académico el lunes a las 7»: la IA entiende la fecha, te lo confirma y, al aprobar, abre **Google Calendar**
+con el evento escrito (solo pulsas «Guardar») o crea un archivo para **Outlook / Calendario de Windows** con aviso 30
+minutos antes. Se elige en *Ajustes › Memoria › Calendario*.
 
 ## Proyectos con sub-agentes y centro de aprobaciones (v7.6)
 

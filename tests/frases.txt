@@ -164,3 +164,7 @@ cel: investiga a fondo el ciclo del agua => INVESTIGA
 ¿qué hiciste por tu cuenta hoy? => APROBAR
 ¿cómo va el proyecto? => PROYECTO
 prepárame la semana de 7A sobre fracciones => PROYECTO
+
+# ================================================================ 7.7: correo y calendario (sin configurar: explica qué falta)
+¿qué correos importantes tengo? => CORREO
+agenda una reunión con los padres de Juan el jueves a las 3 => CALENDARIO|APROBAR

@@ -32,6 +32,21 @@ class MCPError(Exception):
     pass
 
 
+def _lan_http(url):
+    """http:// solo dentro de tu red (Home Assistant en 192.168.x.x, homeassistant.local…)."""
+    import ipaddress
+    import urllib.parse
+    if not url.startswith("http://"):
+        return False
+    host = urllib.parse.urlparse(url).hostname or ""
+    if host.endswith(".local") or host in ("homeassistant", "localhost"):
+        return True
+    try:
+        return ipaddress.ip_address(host).is_private
+    except ValueError:
+        return False
+
+
 def parse_config(text):
     """Texto JSON de Ajustes → {nombre: {"command", "args", "env"} | {"url", "headers"}}. Lanza ValueError."""
     text = (text or "").strip()
@@ -55,8 +70,8 @@ def parse_config(text):
             continue
         if c.get("url"):
             url = str(c["url"]).strip()
-            if not url.startswith(("https://", "http://127.0.0.1", "http://localhost")):
-                raise ValueError(f"«{name}»: la url debe ser https:// (o local).")
+            if not (url.startswith(("https://", "http://127.0.0.1", "http://localhost")) or _lan_http(url)):
+                raise ValueError(f"«{name}»: la url debe ser https:// (o de tu red local, como Home Assistant).")
             out[name] = {"url": url, "headers": {str(k): str(v) for k, v in (c.get("headers") or {}).items()}}
         elif c.get("command"):
             out[name] = {"command": str(c["command"]), "args": [str(a) for a in (c.get("args") or [])],

@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "7.6"
+VERSION = "7.7"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -682,6 +682,9 @@ DEFAULT_SETTINGS = {
     "tool_select_max": 20,         # cuántos conectores como mucho (las acciones propias van siempre)
     "approvals_telegram": True,    # 7.6: las aprobaciones también llegan a Telegram (si está conectado)
     "project_parallel": 3,         # 7.6: cuántos sub-agentes trabajan a la vez en un proyecto
+    "email_read": True,            # 7.7: leer tu bandeja (IMAP) cuando se lo pides
+    "email_days": 3,               # cuántos días de correos revisa
+    "calendar_create": "google",   # 7.7: dónde crear los eventos: "google" (abre Google Calendar) o "ics" (Outlook/Calendario)
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -714,7 +717,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -749,7 +752,7 @@ def _validate(key, value):
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
                "tts_backend": ("edge", "piper", "gemini"), "stt_backend": ("vosk", "whisper"),
                "gemini_tts_model": ("gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts"),
-               "stt_refine": ("auto", "gemini", "whisper", "off"),
+               "stt_refine": ("auto", "gemini", "whisper", "off"), "calendar_create": ("google", "ics"),
                "listen_mode": ("auto", "vivo", "clasico"),
                "live_provider": ("gemini", "openai", "deepgram"),
                "openai_live_voice": tuple(v for v, _ in envivo.OPENAI_VOICES),
@@ -1401,6 +1404,10 @@ def process_command(text):
         return
     if project_voice(text, t):                         # «prepárame la semana de 7A sobre fracciones»
         return
+    if mail_voice(text, t):                            # «¿qué correos importantes tengo?», «contéstale que sí»
+        return
+    if event_voice(text, t):                           # «agenda una reunión con los padres de Juan el jueves a las 3»
+        return
     if tasks_voice(text, t):                           # «cada lunes a las 6 resume mis pendientes y mándamelo al celular»
         return
     if recall_voice(text, t):                          # «¿qué te dije la semana pasada sobre el examen de 7A?»
@@ -1642,6 +1649,13 @@ from nucleo.herramientas import *  # noqa: F401,F403,E402
 # → nucleo/agentes.py (lógica en aprobaciones.py y proyectos.py)
 # =============================================================================
 from nucleo.agentes import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
+# 7.7 · GALERÍA DE CONECTORES, CORREO, CALENDARIO Y CONECTORES CON APROBACIÓN
+# → nucleo/conecta.py (lógica en conectores.py, bandeja.py y eventos.py)
+# =============================================================================
+from nucleo.conecta import *  # noqa: F401,F403,E402
 
 
 # =============================================================================

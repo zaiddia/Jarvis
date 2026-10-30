@@ -6,6 +6,16 @@
 <title>Ajustes · Jarvis</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+<style>
+  .gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+  .gal-card { border: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: border-color .2s, background .2s; }
+  .gal-card:hover { border-color: var(--a); background: rgba(var(--a-rgb), .05); }
+  .gal-card .gi { font-size: 18px; color: var(--a); }
+  .gal-card b { font-size: 13px; }
+  .gal-card small { color: var(--muted); font-size: 11px; line-height: 1.35; }
+  .gal-card .on { color: var(--ok); font-size: 11px; }
+  .gal-card .warn { color: var(--warn); font-size: 11px; }
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -539,6 +549,21 @@
       </div>
     </div>
 
+    <div class="group">Galería de conectores</div>
+    <p class="pane-intro">Conecta tus apps con un formulario: Jarvis las usa cuando lo que pides encaja, y lo que no marques como de confianza te lo pregunta antes (centro de aprobaciones).</p>
+    <div class="gal" id="gal"></div>
+    <div id="gal-form" hidden style="margin-top:10px;padding:12px;border:1px solid var(--line-strong)">
+      <b id="gal-title"></b>
+      <p class="note" id="gal-desc"></p>
+      <div id="gal-fields"></div>
+      <div class="field">
+        <div class="ft"><label for="gal-trust">De confianza (no preguntar antes de usarlo)</label></div>
+        <label class="switch"><input type="checkbox" id="gal-trust"><span></span></label>
+      </div>
+      <div class="row-btns"><button class="btn btn-primary" type="button" id="gal-save">Conectar</button><button class="btn btn-ghost" type="button" id="gal-cancel">Cancelar</button></div>
+      <p class="status" id="gal-status"></p>
+    </div>
+
     <div class="group">Conectores MCP</div>
     <p class="pane-intro">MCP es el estándar con el que Claude, Goose o Jan se conectan a otras apps. Pega aquí la configuración de los conectores que quieras (el mismo formato que Claude Desktop): Jarvis le enseña sus herramientas a la IA y las usa cuando le pides algo que encaja, <b>preguntándote antes</b> salvo en los que marques como de confianza. Necesita la IA encendida.</p>
     <div class="field stack">
@@ -655,6 +680,15 @@
       <div class="ft"><label for="f-email-book">Agenda de correos</label><p>Uno por línea: <code>Coordinadora = ana@colegio.edu.co</code>. Luego di «escríbele a la coordinadora…».</p></div>
       <textarea class="inp mono" id="f-email-book" rows="3" data-key="email_book" placeholder="Coordinadora = ana@colegio.edu.co&#10;Rector = rector@colegio.edu.co"></textarea>
     </div>
+    <div class="field">
+      <div class="ft"><label for="f-email-read">Leer mi bandeja</label><p>«¿Qué correos importantes tengo?», «lee el correo de la coordinadora», «contéstale que sí asisto». Con la misma contraseña de aplicación, por IMAP y solo cuando se lo pides; no borra, no mueve ni marca nada como leído. Las respuestas se envían solo si las apruebas.</p></div>
+      <label class="switch"><input type="checkbox" id="f-email-read" data-key="email_read"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-email-days">Revisar los últimos</label></div>
+      <div class="range"><input type="range" id="f-email-days" min="1" max="14" step="1" data-key="email_days" data-unit=" días"><output></output></div>
+    </div>
+    <div class="row-btns"><button class="btn btn-ghost" type="button" id="btn-mail-test"><svg class="i"><use href="#i-plug"/></svg>Probar la bandeja</button><span class="status" id="mail-status"></span></div>
 
     <div class="group">Spotify (reproducir por nombre)</div>
     <p class="note">Sin configurar, «reproduce X en Spotify» abre la búsqueda. Para que reproduzca solo, crea una app en <code>developer.spotify.com</code>, añade la URL de redirección <code>http://127.0.0.1:8888/callback</code> y pega aquí tus credenciales (necesita Spotify Premium).</p>
@@ -701,6 +735,13 @@
     <div class="field">
       <div class="ft"><label for="f-cal-notice">Avisar antes de cada evento</label><p>0 = sin avisos del calendario.</p></div>
       <div class="range"><input type="range" id="f-cal-notice" min="0" max="60" step="5" data-key="calendar_notice_min" data-unit=" min"><output></output></div>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label>Crear eventos</label><p>«Agenda una reunión con los padres de Juan el jueves a las 3»: Jarvis entiende la fecha y, cuando lo apruebas, abre tu calendario con el evento listo para guardar.</p></div>
+      <div class="seg">
+        <label><input type="radio" name="calcreate" value="google" data-key="calendar_create"><span>Google Calendar</span></label>
+        <label><input type="radio" name="calcreate" value="ics" data-key="calendar_create"><span>Outlook / Calendario de Windows</span></label>
+      </div>
     </div>
     <div class="group">Avisos de tus notas</div>
     <div class="field">

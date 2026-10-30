@@ -446,8 +446,7 @@ def run_mcp(tid, args, prompt="", confirmed=False):
         J.reply(f"Desde el celular solo uso los conectores marcados como de confianza, y «{server}» no lo está.", "MCP")
         return
     if not confirmed and not J.mcp_trusted(tid):
-        J.mcp_pending.update(tid=tid, args=args, prompt=prompt, expires=time.time() + 30)
-        J.reply(f"¿Uso «{tool}» del conector {server}? Di «confirmar» o «cancelar».", "MCP")
+        J.mcp_approval(tid, args, prompt)              # 7.7: lo decide el centro de aprobaciones
         return
     box = {}
 

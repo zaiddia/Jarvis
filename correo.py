@@ -90,7 +90,7 @@ def spoken_preview(to_name, to_addr, asunto, cuerpo):
             f"{falta} ¿Lo envío? Di «sí, envíalo» o «no».")
 
 
-def send(sender, app_password, to_addr, asunto, cuerpo, sender_name=""):
+def send(sender, app_password, to_addr, asunto, cuerpo, sender_name="", in_reply_to=""):
     """Envía el correo por SMTP. Lanza una excepción con un mensaje claro si algo falla."""
     dominio = sender.split("@")[-1].lower()
     host, port = SMTP.get(dominio, ("smtp.gmail.com", 587))
@@ -98,6 +98,9 @@ def send(sender, app_password, to_addr, asunto, cuerpo, sender_name=""):
     msg["From"] = formataddr((sender_name or "", sender))
     msg["To"] = to_addr
     msg["Subject"] = asunto
+    if in_reply_to:                                    # respuesta: que quede en el mismo hilo
+        msg["In-Reply-To"] = in_reply_to
+        msg["References"] = in_reply_to
     msg.set_content(cuerpo)
     try:
         with smtplib.SMTP(host, port, timeout=30) as s:

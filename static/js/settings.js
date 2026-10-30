@@ -1049,6 +1049,63 @@
   });
   socket.on("connect", () => socket.emit("tasks_list", {}, renderTasks));
 
+  /* 7.7: galería de conectores y bandeja */
+  let galData = null, galSel = null;
+  function renderGallery(r) {
+    if (!r) return;
+    galData = r;
+    const box = $("#gal"); box.innerHTML = "";
+    const NAMES = { homeassistant: "casa", github: "github", notion: "notion", todoist: "todoist", hora: "hora", web: "web" };
+    r.presets.forEach((p) => {
+      const c = document.createElement("div"); c.className = "gal-card";
+      const i = document.createElement("span"); i.className = "gi"; i.textContent = p.icono;
+      const b = document.createElement("b"); b.textContent = p.nombre;
+      const s = document.createElement("small"); s.textContent = p.descripcion;
+      c.append(i, b, s);
+      const inst = r.installed.includes(NAMES[p.id]);
+      if (inst) { const o = document.createElement("span"); o.className = "on"; o.textContent = "● Conectado · clic para quitarlo"; c.appendChild(o); }
+      else if (p.falta) { const w = document.createElement("span"); w.className = "warn"; w.textContent = `Necesita ${p.falta === "npx" ? "Node.js" : "uv"} instalado`; c.appendChild(w); }
+      c.addEventListener("click", () => {
+        if (inst) { if (confirm(`¿Quitar el conector «${p.nombre}»?`)) socket.emit("gallery_remove", { name: NAMES[p.id] }, renderGallery); return; }
+        galSel = p;
+        $("#gal-title").textContent = p.nombre; $("#gal-desc").textContent = p.descripcion;
+        const f = $("#gal-fields"); f.innerHTML = "";
+        p.campos.forEach((c2) => {
+          const w = document.createElement("div"); w.className = "field stack";
+          const ft = document.createElement("div"); ft.className = "ft";
+          const l = document.createElement("label"); l.textContent = c2.label; ft.appendChild(l);
+          if (c2.ayuda) { const h = document.createElement("p"); h.textContent = c2.ayuda; ft.appendChild(h); }
+          const inp = document.createElement("input"); inp.className = "inp"; inp.type = c2.secret ? "password" : "text"; inp.dataset.k = c2.key; inp.placeholder = c2.placeholder || "";
+          w.append(ft, inp); f.appendChild(w);
+        });
+        $("#gal-trust").checked = !!p.confianza;
+        $("#gal-status").textContent = p.falta ? `Este conector necesita ${p.falta === "npx" ? "Node.js (nodejs.org)" : "uv (docs.astral.sh/uv)"} instalado en el equipo.` : "";
+        $("#gal-form").hidden = false;
+      });
+      box.appendChild(c);
+    });
+  }
+  $("#gal-save").addEventListener("click", () => {
+    if (!galSel) return;
+    const values = {};
+    document.querySelectorAll("#gal-fields input").forEach((i) => { values[i.dataset.k] = i.value; });
+    socket.emit("gallery_add", { id: galSel.id, values, trusted: $("#gal-trust").checked }, (r) => {
+      if (!r.ok) { $("#gal-status").className = "status err"; $("#gal-status").textContent = r.error; return; }
+      $("#gal-form").hidden = true; toast(`Conectado: ${galSel.nombre}. Tarda unos segundos en estar listo.`, "ok", 5000);
+      renderGallery(r);
+    });
+  });
+  $("#gal-cancel").addEventListener("click", () => { $("#gal-form").hidden = true; });
+  socket.on("connect", () => socket.emit("gallery_list", {}, renderGallery));
+  socket.on("mcp_status", () => socket.emit("gallery_list", {}, renderGallery));
+  $("#btn-mail-test").addEventListener("click", () => {
+    $("#mail-status").className = "status"; $("#mail-status").textContent = "Revisando…";
+    socket.emit("mail_test", {}, (r) => {
+      $("#mail-status").className = "status " + (r.ok ? "ok" : "err");
+      $("#mail-status").textContent = r.ok ? `Funciona: ${r.n} correos recientes, ${r.importantes} que no son publicidad.` : r.error;
+    });
+  });
+
   /* 7.6: agente (aprobaciones, proyectos y registro) */
   function renderAgent(r) {
     if (!r) return;
