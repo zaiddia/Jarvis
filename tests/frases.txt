@@ -135,3 +135,12 @@ lee lo que hay en el tablero => TABLERO
 pasa esta hoja a word => TABLERO
 haz un quiz con lo que hay en el tablero => TABLERO
 cel: lee lo que hay en el tablero => TABLERO
+
+# ================================================================ 7.1: tiempos de respuesta
+¿qué tan rápido respondes? => TIEMPOS
+¿cuánto tardas en responder? => TIEMPOS
+¿por qué tardas tanto? => TIEMPOS
+
+# ================================================================ 7.1: bienvenida
+repite la bienvenida => SISTEMA :: bienvenida
+enséñame a usarte => SISTEMA :: bienvenida

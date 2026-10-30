@@ -27,11 +27,41 @@ for f in files:
         bad += 1
         error(f"No compila {os.path.relpath(f, ROOT)}: {e.msg}")
 
+# jarvis.py trae sus partes con «from nucleo.X import *». Para que pyflakes siga encontrando nombres sin definir,
+# se revisa una copia donde cada * se cambia por la lista de nombres de esa parte (en la misma línea).
+import ast  # noqa: E402
+import re  # noqa: E402
+
+STAR = re.compile(r"^from nucleo\.(\w+) import \*")
+_copy = os.path.join(ROOT, "_revision_jarvis.py")
+
+
+def _all(mod):
+    t = ast.parse(open(os.path.join(ROOT, "nucleo", mod + ".py"), encoding="utf-8").read())
+    for st in t.body:
+        if isinstance(st, ast.Assign) and any(getattr(x, "id", "") == "__all__" for x in st.targets):
+            return [e.value for e in st.value.elts]
+    return []
+
+
+main = os.path.join(ROOT, "jarvis.py")
+if os.path.exists(main) and os.path.isdir(os.path.join(ROOT, "nucleo")):
+    lines = open(main, encoding="utf-8").read().split("\n")
+    for i, line in enumerate(lines):
+        m = STAR.match(line)
+        if m:
+            lines[i] = f"from nucleo.{m.group(1)} import ({', '.join(_all(m.group(1)))})"
+    with open(_copy, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    files = [_copy if f == main else f for f in files]
+
 try:
     out = subprocess.run([sys.executable, "-m", "pyflakes", *files], capture_output=True, text=True, encoding="utf-8").stdout
 except Exception as e:
     out = ""
     print(f"pyflakes no disponible: {e}")
+finally_rm = os.path.exists(_copy) and os.remove(_copy)
+out = out.replace("_revision_jarvis.py", "jarvis.py")
 SERIOUS = ("undefined name", "syntax error", "invalid syntax", "unexpected indent", "referenced before assignment")
 for line in out.splitlines():
     if any(s in line for s in SERIOUS):

@@ -23,8 +23,35 @@ FILES = {
     "aula.json": ("aula", "Cursos, listas y asistencia"),
     "rutinas.json": ("rutinas", "Rutinas"),
     "memoria.json": ("memoria", "Memoria de la conversación"),
+    "perfil.json": ("perfil", "Lo que Jarvis sabe de ti"),
 }
+# carpeta -> (parte, descripción, extensión): cada archivo de la carpeta va en la copia
+FOLDERS = {
+    "habilidades": ("habilidades", "Habilidades instaladas", ".json"),
+    "diario": ("diario", "Diario", ".jsonl"),
+}
+FOLDER_MAX_FILE = 2 * 1024 * 1024
 PARTS = {p: d for p, d in FILES.values()}
+PARTS.update({p: d for p, d, _ in FOLDERS.values()})
+
+
+def _folder_files(config_dir, folder, ext):
+    d = os.path.join(config_dir, folder)
+    try:
+        return sorted(e for e in os.listdir(d) if e.lower().endswith(ext) and os.path.isfile(os.path.join(d, e))
+                      and os.path.getsize(os.path.join(d, e)) <= FOLDER_MAX_FILE)
+    except OSError:
+        return []
+
+
+def _safe_member(name, folder, ext):
+    """«habilidades/wikipedia.json» → «wikipedia.json»; None si la ruta no es segura."""
+    if not name.startswith(folder + "/"):
+        return None
+    base = name[len(folder) + 1:]
+    if not base or "/" in base or "\\" in base or ".." in base or ":" in base or base.startswith(".") or not base.lower().endswith(ext):
+        return None
+    return base
 
 
 class BackupError(Exception):
@@ -72,6 +99,13 @@ def create(config_dir, dest_dir, settings, secret_fields=(), include_secrets=Fal
             z.writestr(fname, json.dumps(data, ensure_ascii=False, indent=1))
             included.append(part)
             counts[part] = _count(part, data)
+        for folder, (part, _, ext) in FOLDERS.items():
+            files = _folder_files(config_dir, folder, ext)
+            for f in files:
+                z.write(os.path.join(config_dir, folder, f), f"{folder}/{f}")
+            if files:
+                included.append(part)
+                counts[part] = len(files)
         z.writestr(MANIFEST, json.dumps({
             "app": "Jarvis", "version": version, "fecha": stamp.isoformat(timespec="seconds"),
             "equipo": platform.node(), "tipo": kind, "con_claves": bool(include_secrets and _has_secrets(cfg, secret_fields)),
@@ -92,7 +126,7 @@ def _count(part, data):
         return len(data.get("cursos") or {})
     if part == "rutinas" and isinstance(data, list):
         return len(data)
-    if part == "memoria" and isinstance(data, list):
+    if part in ("memoria", "perfil") and isinstance(data, list):
         return len(data)
     return None
 
@@ -128,6 +162,10 @@ def inspect(path):
                 except ValueError:
                     continue
                 parts.append({"part": part, "desc": desc, "count": _count(part, data)})
+        for folder, (part, desc, ext) in FOLDERS.items():
+            n = sum(1 for x in names if _safe_member(x, folder, ext))
+            if n:
+                parts.append({"part": part, "desc": desc, "count": n})
     return {"name": os.path.basename(path), "version": man.get("version", ""), "date": man.get("fecha", ""),
             "computer": man.get("equipo", ""), "kind": man.get("tipo", "manual"),
             "with_secrets": bool(man.get("con_claves")), "parts": parts}
@@ -157,13 +195,36 @@ def restore(path, config_dir, parts):
                 continue
             if part == "aula" and not isinstance(data, dict):
                 continue
-            if part in ("notas", "rutinas", "memoria") and not isinstance(data, list):
+            if part in ("notas", "rutinas", "memoria", "perfil") and not isinstance(data, list):
                 continue
             dest = os.path.join(config_dir, fname)
             os.makedirs(config_dir, exist_ok=True)
             with open(dest + ".tmp", "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=1)
             os.replace(dest + ".tmp", dest)
+            done.append(part)
+        for folder, (part, _, ext) in FOLDERS.items():
+            if part not in parts:
+                continue
+            members = [(x, _safe_member(x, folder, ext)) for x in names]
+            members = [(x, b) for x, b in members if b]
+            if not members:
+                continue
+            dest_dir = os.path.join(config_dir, folder)
+            os.makedirs(dest_dir, exist_ok=True)
+            for member, base in members:
+                info = z.getinfo(member)
+                if info.file_size > FOLDER_MAX_FILE:
+                    continue
+                raw = z.read(member)
+                if ext == ".json":
+                    try:
+                        json.loads(raw.decode("utf-8"))
+                    except ValueError:
+                        continue
+                with open(os.path.join(dest_dir, base + ".tmp"), "wb") as f:
+                    f.write(raw)
+                os.replace(os.path.join(dest_dir, base + ".tmp"), os.path.join(dest_dir, base))
             done.append(part)
     return done
 

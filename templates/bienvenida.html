@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bienvenida · Jarvis</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<style>
+  html, body { background: var(--bg); color: var(--text); min-height: 100%; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px; display: flex; flex-direction: column; min-height: 100vh;
+         background: radial-gradient(ellipse at 50% -10%, rgba(var(--a-rgb), .16), transparent 60%), var(--bg); }
+  header { display: flex; align-items: center; gap: 14px; padding: 22px 28px 8px; }
+  .orb { width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; border: 2px solid var(--a);
+         box-shadow: 0 0 18px rgba(var(--a-rgb), .6), inset 0 0 14px rgba(var(--a-rgb), .5);
+         background: radial-gradient(circle, rgba(var(--a-rgb), .9) 0 18%, transparent 20% 100%); animation: pulse 3s ease-in-out infinite; }
+  .orb.heard { animation: pulse .5s ease-in-out 3; }
+  @keyframes pulse { 50% { box-shadow: 0 0 34px rgba(var(--a-rgb), .9), inset 0 0 20px rgba(var(--a-rgb), .7); } }
+  header h1 { font-family: var(--hud); font-size: 17px; letter-spacing: .14em; color: var(--a); }
+  header p { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .dots { display: flex; gap: 6px; margin-left: auto; }
+  .dots span { width: 26px; height: 4px; background: var(--line); transition: background .3s; }
+  .dots span.on { background: var(--a); box-shadow: 0 0 8px rgba(var(--a-rgb), .7); }
+  main { flex: 1; padding: 10px 28px 0; }
+  section { display: none; animation: in .35s ease; max-width: 620px; }
+  section.on { display: block; }
+  @keyframes in { from { opacity: 0; transform: translateY(8px); } }
+  h2 { font-family: var(--hud); font-size: 15px; letter-spacing: .08em; margin: 10px 0 6px; }
+  .lead { color: var(--muted); line-height: 1.55; margin-bottom: 16px; }
+  label.f { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px; letter-spacing: .04em; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .row .inp { flex: 1; }
+  .box { border: 1px solid var(--line); background: rgba(var(--a-rgb), .04); padding: 14px 16px; margin-top: 14px; clip-path: var(--cut-sm); line-height: 1.5; }
+  .box b { color: var(--a); }
+  .say { font-family: var(--hud); font-size: 16px; color: var(--a); letter-spacing: .04em; margin: 6px 0; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .err { color: var(--err); }
+  .st { display: inline-flex; align-items: center; gap: 8px; }
+  .st::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip { padding: 8px 12px; border: 1px solid var(--line-strong); color: var(--text); background: rgba(var(--a-rgb), .06); font-size: 13px; transition: all .2s; }
+  .chip:hover { border-color: var(--a); color: var(--a); background: rgba(var(--a-rgb), .14); }
+  .log { margin-top: 14px; max-height: 190px; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+  .log div { padding: 8px 12px; border-left: 2px solid var(--line-strong); background: rgba(0, 0, 0, .3); line-height: 1.45; }
+  .log .u { border-color: var(--a2); color: var(--muted); }
+  .opt { display: block; border: 1px solid var(--line); padding: 12px 14px; margin-top: 10px; cursor: pointer; clip-path: var(--cut-sm); transition: all .2s; }
+  .opt:hover, .opt.on { border-color: var(--a); background: rgba(var(--a-rgb), .08); }
+  .opt b { display: block; margin-bottom: 3px; } .opt small { color: var(--muted); }
+  footer { display: flex; align-items: center; gap: 10px; padding: 18px 28px 22px; }
+  footer .sp { flex: 1; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  @media (max-width: 520px) { header, main, footer { padding-left: 16px; padding-right: 16px; } .dots { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="orb" id="orb"></div>
+  <div><h1>J.A.R.V.I.S.</h1><p>Primeros pasos · v{{ version }}</p></div>
+  <div class="dots" id="dots"></div>
+</header>
+
+<main>
+  <section data-step="0">
+    <h2>Hola. Soy Jarvis.</h2>
+    <p class="lead">Soy tu asistente: me hablas y hago cosas en tu PC, te respondo, te recuerdo lo pendiente y te ayudo con las clases.
+      En cinco pasos cortos me dejas a tu gusto. Todo se puede cambiar después en Ajustes.</p>
+    <label class="f" for="name">¿Cómo quieres que te llame?</label>
+    <input class="inp" id="name" maxlength="30" placeholder="Por ejemplo: Zaid, profe, jefe…">
+    <label class="f">Mi color</label>
+    <div class="seg" id="themes"></div>
+  </section>
+
+  <section data-step="1">
+    <h2>Te escucho</h2>
+    <p class="lead">Me activo cuando dices mi nombre. Elige el micrófono y pruébalo ahora.</p>
+    <label class="f" for="mic">Micrófono</label>
+    <select class="inp" id="mic"></select>
+    <div class="box">
+      <div id="micstate"></div>
+      <div style="margin-top:8px">Di en voz alta:</div>
+      <div class="say" id="sayit">«Jarvis, ¿qué hora es?»</div>
+      <div id="heard" class="hint">Esperando…</div>
+    </div>
+    <p class="hint">¿Sin micrófono? No pasa nada: también puedes escribirme en el panel.</p>
+  </section>
+
+  <section data-step="2">
+    <h2>Mi voz</h2>
+    <p class="lead">Elige cómo quieres que suene. Pulsa «Escuchar» para probarla.</p>
+    <label class="f" for="voice">Voz</label>
+    <div class="row">
+      <select class="inp" id="voice"></select>
+      <button class="btn btn-ghost" id="hear" type="button">Escuchar</button>
+    </div>
+    <div class="box" id="voicenote"></div>
+  </section>
+
+  <section data-step="3">
+    <h2>Mi cerebro (la IA)</h2>
+    <p class="lead">Para las órdenes del PC no necesito IA. Para conversar, explicar y crear material, sí.</p>
+    <div class="box" id="aistate"></div>
+    <div id="aiopts"></div>
+    <div id="keyrow" hidden>
+      <label class="f" for="key" id="keylabel">Clave</label>
+      <div class="row">
+        <input class="inp" id="key" type="password" autocomplete="off">
+        <button class="btn btn-ghost" id="getkey" type="button">Conseguir clave</button>
+        <button class="btn btn-primary" id="testkey" type="button">Conectar</button>
+      </div>
+      <p class="hint" id="keynote"></p>
+    </div>
+  </section>
+
+  <section data-step="4">
+    <h2>¡Pruébame!</h2>
+    <p class="lead">Toca una frase (o dila en voz alta empezando por mi nombre). Lo que pase aquí es de verdad.</p>
+    <div class="chips" id="try"></div>
+    <div class="log" id="log"></div>
+    <div class="box">Más ideas: <b>«modo clase»</b>, <b>«qué hice hoy»</b>, <b>«avísame cuando termine la descarga»</b>,
+      <b>«lee lo que hay en el tablero»</b>, <b>«prueba completa»</b>. Si algo falla, di <b>«prueba completa»</b> y te digo cómo arreglarlo.</div>
+  </section>
+</main>
+
+<footer>
+  <button class="text-btn" id="skip" type="button">Saltar la bienvenida</button>
+  <span class="sp"></span>
+  <button class="btn btn-ghost" id="back" type="button">Atrás</button>
+  <button class="btn btn-primary" id="next" type="button">Siguiente</button>
+</footer>
+
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const socket = io();
+  const steps = [...document.querySelectorAll("section")];
+  let step = 0, S = null, pick = "", aiTimer = null;
+
+  steps.forEach(() => $("#dots").appendChild(document.createElement("span")));
+  const save = (data) => new Promise((ok) => socket.emit("save_settings", data, ok));
+  const setTheme = (t) => { document.documentElement.dataset.theme = t || "cyan"; };
+
+  function go(n) {
+    step = Math.max(0, Math.min(steps.length - 1, n));
+    steps.forEach((s, i) => s.classList.toggle("on", i === step));
+    [...$("#dots").children].forEach((d, i) => d.classList.toggle("on", i <= step));
+    $("#back").hidden = step === 0;
+    $("#next").textContent = step === steps.length - 1 ? "Terminar" : "Siguiente";
+    if (step === 3) renderAI();
+  }
+
+  function render() {
+    $("#name").value = S.name || "";
+    setTheme(S.theme);
+    $("#themes").innerHTML = S.themes.map(([k, n]) =>
+      `<label><input type="radio" name="theme" value="${esc(k)}" ${k === S.theme ? "checked" : ""}><span>${esc(n)}</span></label>`).join("");
+    $("#themes").onchange = (e) => { setTheme(e.target.value); save({ theme: e.target.value }); };
+
+    const mics = [{ index: -1, name: "El predeterminado de Windows" }, ...S.mics];
+    $("#mic").innerHTML = mics.map((m) => `<option value="${m.index}" ${m.index === S.mic_device ? "selected" : ""}>${esc(m.name)}</option>`).join("");
+    $("#mic").onchange = () => save({ mic_device: Number($("#mic").value) });
+    const w = (S.wake[0] || "jarvis");
+    $("#sayit").textContent = `«${w.charAt(0).toUpperCase() + w.slice(1)}, ¿qué hora es?»`;
+    micState(S.mic);
+
+    $("#voice").innerHTML = S.voices.map(([k, n]) => `<option value="${esc(k)}" ${k === S.voice ? "selected" : ""}>${esc(n)}</option>`).join("");
+    $("#voice").onchange = () => save({ tts_voice: $("#voice").value });
+    $("#voicenote").innerHTML = !S.audio
+      ? `<span class="err">No pude abrir el audio de tu equipo: no podré hablar. Revisa los altavoces y vuelve a abrir Jarvis.</span>`
+      : S.tts_backend === "edge"
+        ? `Estas voces necesitan internet. ${S.piper ? "Sin conexión uso Piper, que ya está instalado." : "Para hablar sin internet instala Piper (python descargar_voz.py)."}`
+        : `Ahora hablo con <b>${S.tts_backend === "piper" ? "Piper (sin internet)" : "la voz de Gemini"}</b>; la lista de arriba es para la voz de Microsoft. Lo cambias en Ajustes › Voz.`;
+
+    $("#try").innerHTML = S.try.map((t) => `<button class="chip" type="button">${esc(t)}</button>`).join("");
+    $("#try").onclick = (e) => { if (e.target.classList.contains("chip")) socket.emit("manual_command", { command: e.target.textContent }); };
+  }
+
+  function micState(m) {
+    $("#micstate").innerHTML = m === "on" ? `<span class="st ok">El micrófono está escuchando.</span>`
+      : m === "off" ? `<span class="st warn">El micrófono está en pausa: actívalo con el botón del panel.</span>`
+      : `<span class="st err">El micrófono no abre. ¿Lo usa otra aplicación? ¿Windows le da permiso a las apps de escritorio?</span>`;
+  }
+
+  function renderAI() {
+    if (!S) return;
+    const st = $("#aistate");
+    if (S.ai_ok) {
+      st.innerHTML = `<span class="st ok">Ya tengo IA: ${esc(S.ai_label)}.</span><div class="hint">Puedes seguir, o cambiarla abajo.</div>`;
+    } else {
+      st.innerHTML = `<span class="st warn">Todavía no tengo IA conectada.</span><div class="hint">Elige una opción. La más fácil y gratuita es Gemini.</div>`;
+    }
+    const opts = [];
+    opts.push({ id: "gemini", t: "Gemini · gratis, en la nube", d: "Necesitas una clave gratuita de Google (1 minuto). Conversa natural y puede ver la pantalla." });
+    opts.push({ id: "ollama", t: "Ollama · en tu equipo, sin internet",
+      d: S.local_model ? `Encontré Ollama con el modelo «${S.local_model}». Privado y sin cuotas.` : "Instala Ollama (ollama.com) y un modelo como llama3.2. Va más lento en equipos modestos." });
+    opts.push({ id: "otra", t: "Otra (Claude, ChatGPT, DeepSeek, Groq…)", d: "Elige el proveedor y pega tu clave." });
+    $("#aiopts").innerHTML = opts.map((o) => `<div class="opt ${pick === o.id ? "on" : ""}" data-id="${o.id}"><b>${esc(o.t)}</b><small>${esc(o.d)}</small></div>`).join("")
+      + (pick === "otra" ? `<label class="f" for="prov">Proveedor</label><select class="inp" id="prov">${
+        Object.entries(S.providers).filter(([k, p]) => p.key_url && k !== "gemini").map(([k, p]) => `<option value="${k}">${esc(p.label)}</option>`).join("")}</select>` : "");
+    $("#aiopts").onclick = (e) => { const o = e.target.closest(".opt"); if (o) choose(o.dataset.id); };
+    const prov = $("#prov");
+    if (prov) { prov.onchange = () => keyFor(prov.value); keyFor(prov.value); }
+    else if (pick === "gemini") keyFor("gemini");
+    else $("#keyrow").hidden = true;
+  }
+
+  function choose(id) {
+    pick = id;
+    if (id === "ollama") {
+      save({ ai_provider: "ollama" }).then(() => waitAI("Probando Ollama…"));
+    }
+    renderAI();
+  }
+
+  function keyFor(pid) {
+    const p = S.providers[pid];
+    $("#keyrow").hidden = false;
+    $("#keyrow").dataset.pid = pid;
+    $("#keylabel").textContent = `Clave de ${p.short}`;
+    $("#key").placeholder = p.key_set ? "Ya hay una guardada (escribe otra para cambiarla)" : (p.key_hint || "Pega aquí tu clave");
+    $("#keynote").textContent = (p.note || "") + " La clave se guarda solo en tu equipo.";
+    $("#getkey").onclick = () => socket.emit("open_url", { url: p.key_url });
+  }
+
+  $("#testkey").onclick = async () => {
+    const pid = $("#keyrow").dataset.pid, key = $("#key").value.trim();
+    const data = { ai_provider: pid };
+    if (key) data[`${pid}_api_key`] = key;
+    else if (!S.providers[pid].key_set) { $("#keynote").innerHTML = `<span class="err">Pega primero la clave.</span>`; return; }
+    $("#testkey").disabled = true;
+    const r = await save(data);
+    $("#testkey").disabled = false;
+    if (r && !r.ok) { $("#keynote").innerHTML = `<span class="err">${esc((r.errors || []).join(" "))}</span>`; return; }
+    $("#key").value = "";
+    waitAI(`Conectando con ${S.providers[pid].short}…`);
+  };
+
+  function waitAI(msg) {
+    $("#aistate").innerHTML = `<span class="st warn">${esc(msg)}</span>`;
+    clearTimeout(aiTimer);
+    aiTimer = setTimeout(() => {
+      if (!S.ai_ok) $("#aistate").innerHTML = `<span class="st err">No conecta todavía${S.ai_label ? ": " + esc(S.ai_label) : ""}.</span><div class="hint">Revisa la clave (o que Ollama esté abierto). Puedes seguir y arreglarlo luego en Ajustes › IA.</div>`;
+    }, 25000);
+  }
+
+  socket.on("state", (st) => {
+    if (!S) return;
+    if (st.mic) { S.mic = st.mic; micState(st.mic); }
+    if (st.ai) {
+      const was = S.ai_ok;
+      S.ai = st.ai; S.ai_label = st.ai_label || ""; S.ai_ok = st.ai === "ok";
+      if (step === 3 && (S.ai_ok || was !== S.ai_ok)) { clearTimeout(aiTimer); renderAI(); }
+    }
+  });
+  socket.on("heard", ({ text }) => { if (step === 1) $("#heard").textContent = `Oigo: «${text}»`; });
+  socket.on("chat", (item) => {
+    if (step === 1 && item.role === "user" && item.source === "voz") {
+      $("#heard").innerHTML = `<span class="ok">¡Te oí perfectamente!</span> Dijiste: «${esc(item.text)}»`;
+      $("#orb").classList.remove("heard"); void $("#orb").offsetWidth; $("#orb").classList.add("heard");
+    }
+    if (step === 4) {
+      const d = document.createElement("div");
+      d.className = item.role === "user" ? "u" : "";
+      d.textContent = item.text;
+      $("#log").appendChild(d);
+      $("#log").scrollTop = 1e6;
+    }
+  });
+  socket.on("settings_updated", (p) => { if (p && p.theme) setTheme(p.theme); });
+
+  $("#hear").onclick = () => socket.emit("preview_voice", { voice: $("#voice").value, backend: "edge" }, (r) => {
+    if (r && !r.ok) $("#voicenote").innerHTML = `<span class="err">${esc(r.error)}</span>`;
+  });
+  $("#back").onclick = () => go(step - 1);
+  $("#next").onclick = async () => {
+    if (!S) return;
+    if (step === 0) {
+      const n = $("#name").value.trim();
+      if (n !== (S.name || "")) { await save({ address_name: n }); S.name = n; }
+    }
+    if (step === steps.length - 1) return finish();
+    go(step + 1);
+  };
+  $("#skip").onclick = finish;
+  function finish() { socket.emit("welcome_done", {}, () => {}); }
+
+  socket.on("connect", () => socket.emit("welcome_status", (s) => { S = s; render(); go(step); }));
+})();
+</script>
+</body>
+</html>

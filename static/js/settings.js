@@ -410,7 +410,8 @@
   });
 
   /* Copias de seguridad */
-  const PART_NAMES = { ajustes: "Ajustes", notas: "Notas", aula: "Cursos y asistencia", rutinas: "Rutinas", memoria: "Memoria" };
+  const PART_NAMES = { ajustes: "Ajustes", notas: "Notas", aula: "Cursos y asistencia", rutinas: "Rutinas", memoria: "Memoria",
+                       perfil: "Lo que sé de ti", habilidades: "Habilidades", diario: "Diario" };
   function bakStatus(text, cls) { const st = $("#backup-status"); st.textContent = text || ""; st.className = "status" + (cls ? " " + cls : ""); }
   function fmtDate(iso) {
     const d = new Date(iso);
@@ -661,6 +662,7 @@
     checkReport = res.report || "";
     $("#btn-check-copy").hidden = !checkReport;
   }
+  $("#btn-welcome").addEventListener("click", () => socket.emit("open_welcome"));
   $("#btn-check").addEventListener("click", () => {
     const btn = $("#btn-check");
     btn.disabled = true;

@@ -1,4 +1,4 @@
-# Jarvis 7.0 — Asistente virtual para Windows
+# Jarvis 7.1 — Asistente virtual para Windows
 
 Un HUD pequeño, semitransparente y siempre visible en una esquina de la pantalla. Escucha tu voz (Vosk, sin internet), responde con IA local (Ollama) o compatible OpenAI, habla con voz neuronal (Edge-TTS) y **controla el PC**: abre y cierra aplicaciones, maneja ventanas, volumen, brillo, música, web, archivos y energía.
 
@@ -151,6 +151,29 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 ## Sonido de alarma
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
+
+## Bienvenida, respuestas más rápidas y copias completas (v7.1)
+
+**Bienvenida.** La primera vez que abres Jarvis aparece una guía de cinco pasos: cómo quieres que te llame y tu
+color, el micrófono (dices «Jarvis, ¿qué hora es?» y te confirma que te oyó), la voz (con botón para escucharla), la
+IA (Gemini gratis con su clave, Ollama en tu equipo u otra) y una prueba con frases que puedes tocar. Si ya usabas
+Jarvis no te salta; la repites cuando quieras con **«repite la bienvenida»**, desde *Ajustes › Acerca de* o desde el
+icono de la bandeja.
+
+**Responde más rápido, y sabe por qué tarda.** Las frases cortas que más se repiten («¿Sí?», «Hecho», «Listo», los
+saludos…) se guardan ya convertidas en voz y suenan al instante, sin volver a pedirlas a internet; al arrancar deja
+listas las más comunes (con la voz de Microsoft o Piper; la de Gemini no, para no gastar tu cuota). Además mide cada
+respuesta por etapas (reconocer tu voz, pensar, generar la voz, empezar a sonar): pregúntale **«¿qué tan rápido
+respondes?»** o **«¿por qué tardas tanto?»** y te dice su tiempo medio, qué etapa es la más lenta y qué cambiar. El
+registro anota cada tiempo (TIEMPOS) y la prueba completa avisa si va lento.
+
+**Copias de seguridad completas.** Ahora la copia también guarda **lo que Jarvis sabe de ti**, tus **habilidades
+instaladas** y el **diario**, y al restaurarla los recarga sin reiniciar. Las copias se revisan al restaurar: nada
+puede escribirse fuera de la carpeta de Jarvis.
+
+**Por dentro, ordenado.** `jarvis.py` pasó de 9.000 líneas a unas 1.700: cada área vive ahora en su propio archivo
+dentro de la carpeta `nucleo/` (voz, IA, escucha, ventanas, aula, avisos, diagnóstico…). Funciona igual, pero es más
+fácil de mantener y de revisar; las pruebas automáticas comprueban que todas las partes encajan.
 
 ## Jarvis 7.0: habla primero, se conecta a todo y se ve de película (v7.0)
 
