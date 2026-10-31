@@ -779,7 +779,7 @@
       <div class="range"><input type="range" id="f-cal-notice" min="0" max="60" step="5" data-key="calendar_notice_min" data-unit=" min"><output></output></div>
     </div>
     <div class="field stack">
-      <div class="ft"><label>Crear eventos</label><p>«Agenda una reunión con los padres de Juan el jueves a las 3»: Jarvis entiende la fecha y, cuando lo apruebas, abre tu calendario con el evento listo para guardar.</p></div>
+      <div class="ft"><label>Crear eventos</label><p>«Agenda una reunión con los padres de Juan el jueves a las 3»: Jarvis entiende la fecha y, cuando lo apruebas, abre tu calendario con el evento listo para guardar. <b>Si conectaste tu cuenta de Google</b> (Memoria › Cuenta de Google), el evento queda creado directamente en tu Google Calendar, con enlace de Meet si dices «virtual» o «por Meet», y Jarvis lee tus eventos sin necesidad del enlace .ics.</p></div>
       <div class="seg">
         <label><input type="radio" name="calcreate" value="google" data-key="calendar_create"><span>Google Calendar</span></label>
         <label><input type="radio" name="calcreate" value="ics" data-key="calendar_create"><span>Outlook / Calendario de Windows</span></label>
@@ -852,10 +852,10 @@
       <label class="switch"><input type="checkbox" id="f-sch-warn" data-key="schedule_warn"><span></span></label>
     </div>
 
-    <div class="group">Cuenta de Google (Classroom, Forms y Gmail)</div>
-    <p class="pane-intro">«¿Qué tareas tengo en Classroom de 7A?», «¿quién no ha entregado el taller de fracciones en Classroom de 7A?», «publica en Classroom de 7A que mañana hay examen» (con tu aprobación), «trae las notas de Classroom de 7A». <b>Forms:</b> «pasa el quiz a Forms», «haz un quiz de 10 preguntas de fracciones en Forms para 7A» y luego «trae las notas del formulario». <b>Retroalimentación:</b> «revisa las respuestas del taller en Classroom de 7A» (respuestas cortas: te propone nota y comentario, y guardas las notas solo si apruebas). Si conectaste antes de la 8.1, pulsa «Conectar» otra vez para dar permiso a Forms.</p>
+    <div class="group">Cuenta de Google (Classroom, Forms, Gmail, Calendar y Drive)</div>
+    <p class="pane-intro">«¿Qué tareas tengo en Classroom de 7A?», «¿quién no ha entregado el taller de fracciones en Classroom de 7A?», «publica en Classroom de 7A que mañana hay examen» (con tu aprobación), «trae las notas de Classroom de 7A». <b>Forms:</b> «pasa el quiz a Forms», «haz un quiz de 10 preguntas de fracciones en Forms para 7A» y luego «trae las notas del formulario». <b>Retroalimentación:</b> «revisa las respuestas del taller en Classroom de 7A» (respuestas cortas: te propone nota y comentario, y guardas las notas solo si apruebas). <b>Drive:</b> «sube el taller a Drive», «pásalo a Google Slides», «súbelo a Drive y compártelo» (con tu aprobación). Con el permiso que pide, Jarvis solo ve los archivos que él sube, nunca el resto de tu Drive. Cada vez que una versión nueva pida un permiso nuevo, pulsa «Conectar» otra vez.</p>
     <ol class="steps">
-      <li>Entra a <code>console.cloud.google.com</code>, crea un proyecto y activa la <b>Google Classroom API</b>, la <b>Google Forms API</b> y la <b>Gmail API</b> (solo las que vayas a usar).</li>
+      <li>Entra a <code>console.cloud.google.com</code>, crea un proyecto y activa la <b>Google Classroom API</b>, la <b>Google Forms API</b> y la <b>Gmail API</b>, la <b>Google Calendar API</b> y la <b>Google Drive API</b> (solo las que vayas a usar).</li>
       <li>En «Pantalla de consentimiento de OAuth» elige «Externo», pon tu correo y agrégate como usuario de prueba.</li>
       <li>En «Credenciales» › «Crear credenciales» › «ID de cliente de OAuth» › tipo <b>App de escritorio</b>. Copia el ID y el secreto aquí.</li>
       <li>Pulsa «Conectar»: se abre Google, autorizas y listo. Jarvis guarda solo el permiso, nunca tu contraseña.</li>
@@ -869,6 +869,26 @@
       <button class="btn btn-ghost" type="button" id="btn-cr-disconnect">Desconectar</button>
     </div>
     <p class="status" id="cr-status"></p>
+    <div class="field">
+      <div class="ft"><label for="f-drive-auto">Subir a Drive cada material que cree</label><p>Quices, talleres, planes, informes, presentaciones e imágenes van solos a la carpeta «Jarvis» de tu Drive.</p></div>
+      <label class="switch"><input type="checkbox" id="f-drive-auto" data-key="drive_auto"><span></span></label>
+    </div>
+
+    <div class="group">Exportar notas para Zeti y quices para Kahoot o Quizizz</div>
+    <p class="pane-intro">«Exporta las notas de 7A para Zeti»: una planilla de Excel con cada actividad, la <b>definitiva</b> (1,0 a 5,0), el desempeño y las fallas, y una hoja «Para copiar» con la columna de definitivas lista para pegar en la planilla de Zeti. «Pasa el quiz a Kahoot» o «exporta el quiz a Quizizz»: la hoja con el formato de importación de cada plataforma.</p>
+    <div class="field stack"><div class="ft"><label for="f-zeti-since">Notas desde (inicio del periodo)</label><p>AAAA-MM-DD. Vacío = todas las notas.</p></div>
+      <input class="inp narrow mono" type="text" id="f-zeti-since" data-key="zeti_since" placeholder="2026-08-03"></div>
+    <div class="field stack">
+      <div class="ft"><label>Orden de los estudiantes</label><p>Usa el mismo orden que la lista de Zeti para poder pegar la columna directamente.</p></div>
+      <div class="seg">
+        <label><input type="radio" name="zorder" value="lista" data-key="zeti_order"><span>Como mi lista</span></label>
+        <label><input type="radio" name="zorder" value="apellido" data-key="zeti_order"><span>Por apellido</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-zeti-comma">Coma decimal (4,5)</label></div>
+      <label class="switch"><input type="checkbox" id="f-zeti-comma" data-key="zeti_comma"><span></span></label>
+    </div>
 
     <div class="group">Seguimiento de estudiantes</div>
     <p class="pane-intro">«Ponle 4,5 a Juan Pérez en el quiz de fracciones de 7A», «¿cómo va Juan en 7A?», «¿quiénes están en riesgo en 7A?». Usa la escala de 1,0 a 5,0 y las fallas de la asistencia del aula. Los viernes por la tarde te avisa quién está en riesgo.</p>

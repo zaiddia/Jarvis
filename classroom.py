@@ -33,7 +33,10 @@ SCOPES = ["https://www.googleapis.com/auth/classroom.courses.readonly",
           "https://www.googleapis.com/auth/forms.responses.readonly",
           # 8.5: Gmail (enviar y leer la bandeja sin contraseña de aplicación)
           "https://www.googleapis.com/auth/gmail.send",
-          "https://www.googleapis.com/auth/gmail.readonly"]
+          "https://www.googleapis.com/auth/gmail.readonly",
+          # 8.7: Calendar (crear y leer eventos) y Drive (solo los archivos que sube Jarvis)
+          "https://www.googleapis.com/auth/calendar.events",
+          "https://www.googleapis.com/auth/drive.file"]
 FORMS_API = "https://forms.googleapis.com/v1/"
 
 
@@ -113,6 +116,23 @@ class Client:
             raise ClassroomError(f"Classroom respondió {e.code}: {body[:200]}")
         except urllib.error.URLError as e:
             raise ClassroomError(f"sin conexión con Classroom ({e.reason})")
+
+    def raw(self, method, url, data, content_type):
+        """Para subir archivos (cuerpo binario o multipart). Devuelve el JSON de la respuesta."""
+        req = urllib.request.Request(url, method=method, data=data,
+                                     headers={"Authorization": f"Bearer {self._access()}", "Content-Type": content_type})
+        try:
+            with self.opener(req, timeout=120) as r:
+                txt = r.read().decode()
+                return json.loads(txt) if txt.strip() else {}
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", "replace")
+            if e.code in (401, 403):
+                raise ClassroomError("Google no da permiso: pulsa «Conectar con Google» otra vez y activa la API en tu "
+                                     "proyecto de Google Cloud. " + body[:120])
+            raise ClassroomError(f"Google respondió {e.code}: {body[:200]}")
+        except urllib.error.URLError as e:
+            raise ClassroomError(f"sin conexión con Google ({e.reason})")
 
     def pages(self, path, key, params=None, limit=10):
         out, params = [], dict(params or {})

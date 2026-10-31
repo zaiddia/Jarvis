@@ -36,6 +36,7 @@ class RecentFiles(set):
         self.order.append(path)
         try:
             J.socketio.emit("file_card", file_card(path))
+            J.on_new_file(path)                        # 8.7: subir a Drive, si lo activaste
         except Exception:
             pass
 

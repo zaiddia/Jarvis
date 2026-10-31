@@ -179,3 +179,5 @@ mi horario de mañana => HORARIO
 ¿has tenido errores? => INFORME
 anota en el observador de Juan que hoy participó mucho => OBSERVADOR
 modo proyector => PROYECTOR|abrir :: proyector
+pasa el quiz a Kahoot => EXPORTAR
+exporta las notas de 7A para Zeti => EXPORTAR

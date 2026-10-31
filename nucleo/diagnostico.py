@@ -97,10 +97,10 @@ def system_check():
     if J.settings["telegram_remote"]:
         ok(G, J.tg["ok"], "Telegram conectado: puedes darme órdenes desde el celular.",
            f"Telegram no conecta: {J.tg['error'] or 'revisa el token y el chat id'}.", "ajustes:integraciones")
-    if J._cal_urls():
+    if J.cal_configured():
         ok(G, not J.cal_state.get("missing_lib"), "Calendario conectado.",
            "Falta la librería del calendario (icalendar): vuelve a ejecutar instalar.bat.")
-    if not J.settings["telegram_remote"] and not J._cal_urls():
+    if not J.settings["telegram_remote"] and not J.cal_configured():
         add(G, "info", "Ni Telegram ni calendario configurados (son opcionales).")
 
     out += J.extra_checks()                    # 8.0: seguridad, cada conexión configurada y errores recientes

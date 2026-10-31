@@ -194,6 +194,7 @@ def event_voice(text, t):
     try:
         raw = J.ai_chat([{"role": "user", "content": eventos.parse_prompt(text)}], json_mode=True, max_tokens=300)
         ev = eventos.validate(J._extract_json(raw))
+        ev["meet"] = bool(re.search(r"\b(?:meet|virtual|videollamada|en linea|online|por zoom|videoconferencia)\b", t))
     except Exception as e:
         J.reply(f"No entendí bien el evento ({getattr(e, 'why', e)}). Dímelo con el día y la hora.", "CALENDARIO")
         return True
@@ -204,6 +205,8 @@ def event_voice(text, t):
 
 
 def event_create(ev):
+    if J.gcal_ready() and J.event_create_google(ev):  # 8.7: directo en tu Google Calendar
+        return
     mode = J.settings["calendar_create"]
     if mode == "google":
         webbrowser.open(eventos.google_url(ev))

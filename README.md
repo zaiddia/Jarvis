@@ -157,6 +157,31 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Google Calendar y Drive directos, Kahoot, Quizizz y notas para Zeti (v8.7)
+
+**Google Calendar directo.** Con tu cuenta de Google conectada, «**agenda una reunión con los padres de Juan el
+jueves a las 3**» queda creada en tu Google Calendar en cuanto la apruebas (sin abrir nada), y si dices «virtual» o
+«por Meet», con su enlace de Meet. Jarvis también lee tus eventos de Google para «¿qué tengo hoy?», los avisos y el panel
+«Hoy», sin necesidad del enlace .ics.
+
+**Google Drive y Slides.** «**Sube el taller a Drive**», «**pásalo a Google Slides**» (la presentación queda como
+Presentación de Google), «**súbelo a Drive y compártelo**» (con tu aprobación, enlace de solo lectura). Todo va a una
+carpeta «Jarvis» de tu Drive; también puedes activar que cada material se suba solo. Jarvis usa el permiso más
+limitado de Drive: solo ve los archivos que él mismo sube.
+
+**Kahoot y Quizizz.** «**Pasa el quiz a Kahoot**» o «**exporta el quiz a Quizizz**»: la hoja de Excel con el formato de
+importación de cada plataforma (en Kahoot: Añadir pregunta › Importar hoja de cálculo; en Quizizz/Wayground: Importar
+desde hoja de cálculo). Sirve con cualquier quiz, también los tipo Saber.
+
+**Notas para Zeti.** «**Exporta las notas de 7A para Zeti**»: planilla de Excel con cada actividad, la definitiva
+(1,0 a 5,0), el desempeño (Superior, Alto, Básico, Bajo) y las fallas, y una hoja «Para copiar» con la columna de
+definitivas lista para pegar en la planilla de Zeti. En *Ajustes › Memoria* eliges desde qué fecha cuentan las notas
+(el inicio del periodo), el orden (como tu lista o por apellido) y la coma decimal. Zeti no publica un formato de
+importación; si me compartes una planilla exportada desde Zeti, Jarvis puede generar exactamente ese formato.
+
+Para Calendar y Drive: activa la **Google Calendar API** y la **Google Drive API** en tu proyecto de Google Cloud y
+pulsa «Conectar» otra vez en *Ajustes › Memoria › Cuenta de Google*.
+
 ## El plus del HUD: panel «Hoy», tarjetas, Ctrl+K, sugerencias, subtítulos y modo proyector (v8.6)
 
 **Panel «Hoy».** Al expandir el HUD, a la derecha (o en la pestaña «Hoy» si la ventana es estrecha): la hora y el

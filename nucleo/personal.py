@@ -276,19 +276,23 @@ def _cal_urls():
 
 def cal_refresh(force=False):
     urls = J._cal_urls()
-    if not urls:
+    if not urls and not J.gcal_ready():
         calendario.cache.update(events=[], errors=[], urls=())
         return calendario.cache
-    try:
-        before = calendario.cache["fetched"]
-        c = calendario.refresh(urls, force=force)
-        if c["fetched"] != before:
-            for err in c["errors"]:
-                J.log_terminal(f"Calendario: {err}", "AVISO")
-    except ImportError:
-        if not J.cal_state["missing_lib"]:
-            J.cal_state["missing_lib"] = True
-            J.log_terminal("Para leer el calendario falta un componente: ejecuta instalar.bat otra vez.", "AVISO")
+    if urls:
+        try:
+            before = calendario.cache["fetched"]
+            c = calendario.refresh(urls, force=force)
+            if c["fetched"] != before:
+                for err in c["errors"]:
+                    J.log_terminal(f"Calendario: {err}", "AVISO")
+        except ImportError:
+            if not J.cal_state["missing_lib"]:
+                J.cal_state["missing_lib"] = True
+                J.log_terminal("Para leer el calendario falta un componente: ejecuta instalar.bat otra vez.", "AVISO")
+    else:
+        calendario.cache.update(events=[], errors=[], urls=())
+    J.gcal_merge(force)                                # 8.7: también tu Google Calendar, si conectaste Google
     return calendario.cache
 
 
@@ -296,7 +300,7 @@ def _cal_worker():
     """Actualiza el calendario cada 10 minutos y avisa antes de cada evento."""
     while True:
         try:
-            if J._cal_urls():
+            if J.cal_configured():
                 J.cal_refresh()
                 for ev, mins in calendario.due_alerts(before_min=J.settings["calendar_notice_min"]):
                     J.hud_show()
@@ -322,7 +326,7 @@ def agenda(scope, with_day=True):
               "semana": (today, today + datetime.timedelta(days=7))}[scope]
     items = [((n["fecha"] or "9999"), (n.get("hora") or "99:99"), notas.spoken(n, with_day=with_day))
              for n in notas.listing(scope)]
-    if J._cal_urls():
+    if J.cal_configured():
         J.cal_refresh()
         for ev in calendario.between(d1, d2):
             hora = "00:00" if ev["todo_el_dia"] else ev["inicio"][11:16]
@@ -345,7 +349,7 @@ def _say_agenda(scope, vacio, titulo):
 def calendar_voice(text, t):
     """«¿cuál es mi próxima clase?», «¿qué sigue?», «actualiza el calendario». True si era para esto."""
     if re.search(r"\b(?:actualiza|recarga|refresca|sincroniza)\b.*\bcalendario\b", t):
-        if not J._cal_urls():
+        if not J.cal_configured():
             J.reply("Aún no conectaste tu calendario. En Ajustes, sección Memoria, pega su dirección iCal.", "CALENDARIO")
             return True
         c = J.cal_refresh(force=True)
@@ -358,7 +362,7 @@ def calendar_voice(text, t):
                           r"hay|tengo|eventos?|pendientes?|programado)\b", t)
             and not re.search(r"\bproxim[ao]\b", t)):
         scope = "manana" if re.search(r"\bmanana\b", t) else "semana" if re.search(r"\bsemana\b", t) else "hoy"
-        if not J._cal_urls():
+        if not J.cal_configured():
             J.reply("Aún no conectaste tu calendario. En Ajustes, sección Memoria, pega la «dirección secreta "
                   "en formato iCal» de Google Calendar (o el enlace ICS de Outlook) y pulsa Probar.", "CALENDARIO")
             return True
@@ -372,7 +376,7 @@ def calendar_voice(text, t):
                   r"|\bque (?:sigue|me toca|tengo ahora)\b|\bque (?:hay|tengo) en (?:el|mi) calendario\b", t)
     if not m:
         return False
-    if not J._cal_urls():
+    if not J.cal_configured():
         if "calendario" in t or m.group(1):
             J.reply("Aún no conectaste tu calendario. En Ajustes, sección Memoria, pega la «dirección secreta "
                   "en formato iCal» de Google Calendar (o el enlace ICS de Outlook).", "CALENDARIO")
@@ -605,7 +609,7 @@ def _notes_ctx():
     if not J.settings["notes_ai_context"]:
         return ""
     ctx = notas.context_for_ai()
-    if J._cal_urls():
+    if J.cal_configured():
         ctx += calendario.context_for_ai(notas.when_spoken)
     return ctx
 
@@ -677,7 +681,7 @@ def notes_voice(text, t):
         items = notas.listing(scope)
         J._say_list(items, vacio, titulo or (f"Tienes {len(items)} pendiente" + ("s" if len(items) != 1 else "")),
                   with_day=True)
-        if J._cal_urls():
+        if J.cal_configured():
             nx = calendario.upcoming(limit=1)
             if nx:
                 J.reply(f"Y en tu calendario, lo próximo: {J._event_line(nx[0])}.", "AGENDA")

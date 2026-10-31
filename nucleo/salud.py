@@ -173,6 +173,10 @@ def extra_checks():
                 add(G, "ok", f"Classroom conectado: {n} clase(s).")
             except Exception as e:
                 add(G, "fallo", f"Classroom no responde: {e}", "ajustes:memoria")
+            missing = [n for n, ok in (("Gmail", J.gmail_ready()), ("Calendar", J.gcal_ready()), ("Drive", J.gdrive_ready())) if not ok]
+            if missing:                                # 8.7: permisos que llegaron con versiones nuevas
+                add(G, "info", "Tu conexión con Google aún no tiene permiso para " + ", ".join(missing) +
+                    ": pulsa «Conectar» otra vez en Memoria › Cuenta de Google si quieres usarlos.", "ajustes:memoria")
     if s["email_read"] and s["email_address"]:
         r = J.handle_mail_test()
         add(G, "ok" if r.get("ok") else "fallo", f"Correo: leo tu bandeja ({r.get('n', 0)} recientes)." if r.get("ok") else

@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "8.6"
+VERSION = "8.7"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -365,6 +365,8 @@ import horario
 import formularios
 import informes
 import gmail
+import exportar
+import gservicios
 import secreto
 
 
@@ -717,6 +719,11 @@ DEFAULT_SETTINGS = {
     "update_night": True,          # 8.3: instalar de noche las versiones nuevas (con copia de seguridad)
     "google_scopes": "",           # 8.5: permisos que diste al conectar tu cuenta de Google (Gmail, Classroom, Forms)
     "hud_subtitles": True,         # 8.6: subtítulos de lo que dice Jarvis, palabra por palabra
+    "drive_auto": False,           # 8.7: subir a tu Drive cada material que Jarvis cree
+    "drive_folder_id": "",
+    "zeti_since": "",              # 8.7: notas desde esta fecha (AAAA-MM-DD), p. ej. el inicio del periodo
+    "zeti_order": "lista",         # «lista» (como está el curso en Jarvis) o «apellido»
+    "zeti_comma": True,            # definitivas con coma decimal (4,5)
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -781,7 +788,10 @@ def _validate(key, value):
         return round(max(lo, min(hi, v)), 2)
 
     v = str(value).strip()[:6000]
+    if key == "zeti_since" and v:                     # 8.7: una fecha AAAA-MM-DD
+        v = datetime.date.fromisoformat(v[:10]).isoformat()
     choices = {"theme": THEMES, "ai_provider": tuple(PROVIDERS),
+               "zeti_order": ("lista", "apellido"),
                "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
                "tts_backend": ("edge", "piper", "gemini"), "stt_backend": ("vosk", "whisper"),
@@ -1444,6 +1454,10 @@ def process_command(text):
         learn_note("temporizador", {"segundos": int(_dur)})
         return
 
+    if export_voice(text, t):                          # «pasa el quiz a Kahoot», «exporta las notas de 7A para Zeti»
+        return
+    if drive_voice(text, t):                           # «sube el taller a Drive», «pásalo a Google Slides»
+        return
     if projector_voice(text, t):                       # «modo proyector»
         return
     if recurring_project(text, t):                     # «cada domingo a las 6 prepárame la semana de 7A sobre…»
@@ -1781,6 +1795,13 @@ from nucleo.gcorreo import *  # noqa: F401,F403,E402
 # → nucleo/tablero.py (páginas: templates/hud.html y templates/proyector.html)
 # =============================================================================
 from nucleo.tablero import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
+# 8.7 · GOOGLE CALENDAR Y DRIVE DIRECTOS, Y EXPORTAR A KAHOOT, QUIZIZZ Y ZETI
+# → nucleo/gintegra.py (lógica en gservicios.py y exportar.py)
+# =============================================================================
+from nucleo.gintegra import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
