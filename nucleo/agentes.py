@@ -151,7 +151,7 @@ def run_step(st, step):
             raise RuntimeError(out.get("msg") or "no encontré fuentes")
         return {"archivo": out["path"], "resumen": out.get("resumen", "")}
     if tipo in aula.KINDS:
-        prompt = aula.build_prompt(tipo, pedido, aula.detect_count(step["pedido"]), "", "")
+        prompt = aula.build_prompt(tipo, pedido, aula.detect_count(step["pedido"]), "", "") + J.lessons_ctx()
         last = None
         for _ in range(2):
             try:

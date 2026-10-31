@@ -157,6 +157,24 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Lecciones de tus correcciones, vigilante de páginas web y modo tutor socrático (v9.4)
+
+**Jarvis aprende de ti.** Las reglas que dices se guardan al momento: «**de ahora en adelante los quices con 5
+preguntas**», «**cuando digo 7A me refiero a matemáticas de séptimo A**», «**nunca uses la palabra alumnos**». Cuando lo
+corriges («no, me refería a…», «eso no es lo que pedí»), atiende la corrección y además te propone una lección para la
+próxima, que solo se guarda si la apruebas. Las usa en cada respuesta y al preparar material. «**¿Qué lecciones
+tienes?**», «**olvida la lección de los quices**»; también se ven y se quitan en *Ajustes › Agente*.
+
+**Vigilante de páginas web.** «**Avísame cuando publiquen algo nuevo en https://…**» (circulares de la Secretaría de
+Educación, convocatorias, noticias del colegio): Jarvis revisa la página cada 6 horas (se ajusta) y, si aparece algo
+nuevo, te avisa con un resumen (los cambios de fechas o contadores no cuentan). «**¿Qué páginas estás vigilando?**»,
+«**deja de vigilar la página de…**».
+
+**Modo tutor socrático.** «**Activa el modo tutor de matemáticas para séptimo**»: Jarvis guía a los estudiantes con
+preguntas y pistas, sin darles la respuesta, con lenguaje sencillo y redirigiendo lo que no es de la clase. Con el «modo
+proyector» abierto, la pregunta y la pista se ven en grande en el televisor. En el HUD aparece «🎓 TUTOR». «**Desactiva el
+modo tutor**» para volver a lo normal.
+
 ## ¿Qué necesita mi atención?, compromisos, lectura nivelada y material desde un enlace (v9.3)
 
 Ideas tomadas de otros asistentes (OpenJarvis, Vellum, Slashy, Diffit, Brisk), adaptadas a Jarvis.

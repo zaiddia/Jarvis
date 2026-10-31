@@ -143,7 +143,7 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
 
     def work():
         try:
-            prompt = aula.build_prompt(kind, request, count or aula.detect_count(request), grade, topic)
+            prompt = aula.build_prompt(kind, request, count or aula.detect_count(request), grade, topic) + J.lessons_ctx()
             m, last_err = None, None
             for _ in range(2):                         # un reintento si la IA devuelve algo mal formado
                 try:

@@ -21,6 +21,7 @@
   let native = true;                // ¿ventana propia (pywebview) o navegador?
   let hasMessages = false;
 
+  let tutorOn = false;                                     // 9.4: modo tutor socrático
   const MODES = { idle: "EN ESPERA", awaiting: "TE ESCUCHO…", thinking: "PROCESANDO", speaking: "RESPONDIENDO" };
   let dictating = false;
 
@@ -155,7 +156,7 @@
     st = { ...st, ...s };
     body.dataset.state = st.mode || "idle";
     if (dictating) { el.mode.textContent = "✎ DICTANDO"; } else
-    el.mode.textContent = (st.resting ? "· DESCANSANDO · " : st.viewing ? (st.viewing === "camara" ? "◉ VIENDO CÁMARA · " : "◉ VIENDO PANTALLA · ")
+    el.mode.textContent = (tutorOn ? "🎓 TUTOR · " : "") + (st.resting ? "· DESCANSANDO · " : st.viewing ? (st.viewing === "camara" ? "◉ VIENDO CÁMARA · " : "◉ VIENDO PANTALLA · ")
       : st.live && st.mode !== "speaking" ? "● EN VIVO · " : "") + (MODES[st.mode] || MODES.idle);
     led("#led-mic", { on: "on", off: "off", error: "err" }[st.mic] || "off");
     led("#led-ai", { ok: "on", warn: "warn", error: "err" }[st.ai] || "off");
@@ -719,6 +720,8 @@
 
   socket.on("connect", () => { poke(); refreshDash(); placeDash(); placePreview(); });
   socket.on("dashboard", renderDash);
+  socket.on("tutor", (d) => { tutorOn = !!(d && d.on); applyState({}); });
+  socket.on("connect", () => socket.emit("tutor_state", {}, (d) => { tutorOn = !!(d && d.on); applyState({}); }));
   socket.on("file_card", (c) => { addFileCard(c); poke(); });
   socket.on("disconnect", () => { setPreview("Sin enlace con el motor de Jarvis…", "dim"); led("#led-ai", "err"); });
   socket.on("bootstrap", (data) => {

@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "9.3"
+VERSION = "9.4"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -372,6 +372,8 @@ import diarioclase
 import datos
 import compromisos
 import atencion
+import lecciones
+import paginas
 import secreto
 
 
@@ -745,6 +747,8 @@ DEFAULT_SETTINGS = {
     "attention_to": 19,
     "attention_weekend": False,
     "attention_phone": False,      # …y mandarlo también al celular
+    "lessons_learn": True,         # 9.4: proponer lecciones cuando corriges a Jarvis
+    "watch_hours": 6,              # 9.4: cada cuántas horas revisar las páginas vigiladas
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -778,7 +782,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -1019,6 +1023,10 @@ def push_chat(role, text, source=""):
     recuerdos.log(role, text)                         # 7.4: historial buscable (sin claves ni contraseñas)
     orb_feed.update(seq=orb_feed["seq"] + 1, msg=str(text)[:400], role=role)
     socketio.emit("chat", item)
+    try:
+        tutor_relay(item)                              # 9.4: en modo tutor, también al proyector
+    except NameError:
+        pass
 
 
 # =============================================================================
@@ -1412,6 +1420,12 @@ def process_command(text):
     if attention_voice(text, t):                       # 9.3: «¿qué necesita mi atención?»
         return
     if commitments_voice(text, t):                     # 9.3: «quedé en…», «¿qué compromisos tengo?», «ya le envié…»
+        return
+    if tutor_voice(text, t):                           # 9.4: «activa el modo tutor de matemáticas»
+        return
+    if page_watch_voice(text, t):                      # 9.4: «avísame cuando publiquen algo nuevo en https://…»
+        return
+    if lessons_voice(text, t):                         # 9.4: «de ahora en adelante…», «¿qué lecciones tienes?»
         return
     if _CHECK_RE.search(t):                            # «prueba completa», «revisa todo»
         if getattr(_tl, "remote", False):
@@ -1865,6 +1879,13 @@ from nucleo.atento import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 9.4 · LECCIONES DE TUS CORRECCIONES, VIGILANTE DE PÁGINAS WEB Y MODO TUTOR SOCRÁTICO
+# → nucleo/maestro.py (lógica en lecciones.py y paginas.py)
+# =============================================================================
+from nucleo.maestro import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1995,6 +2016,7 @@ def main():
         class_plus_start()                # 8.8: diario de clase y quiz en vivo
         students_start()                  # 8.9: abre los datos de estudiantes cifrados (con la clave ya leída)
         attention_start()                 # 9.3: compromisos y pulso de atención
+        teacher_plus_start()              # 9.4: lecciones y vigilante de páginas
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

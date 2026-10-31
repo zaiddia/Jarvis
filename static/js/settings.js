@@ -902,6 +902,24 @@
   });
   socket.on("connect", () => socket.emit("classroom_status", {}, renderCr));
 
+  // 9.4: lecciones y páginas vigiladas
+  function listInto(ul, items, label, onDel, empty) {
+    ul.innerHTML = "";
+    if (!items.length) { ul.innerHTML = `<li class="empty">${empty}</li>`; return; }
+    items.forEach((x) => {
+      const li = document.createElement("li");
+      const s = document.createElement("span"); s.textContent = label(x);
+      const b = document.createElement("button"); b.type = "button"; b.className = "text-btn"; b.textContent = "Quitar";
+      b.addEventListener("click", () => onDel(x));
+      li.append(s, b); ul.appendChild(li);
+    });
+  }
+  const renderLessons = (r) => listInto($("#ls-list"), (r && r.items) || [], (x) => `${x.texto} · ${x.origen} · ${x.fecha}`,
+    (x) => socket.emit("lessons", { delete: x.id }, renderLessons), "Aún no hay lecciones.");
+  const renderPages = (r) => listInto($("#pg-list"), (r && r.items) || [], (x) => `${x.nombre} · cada ${x.horas} h` + (x.cambio ? ` · último cambio ${x.cambio.replace("T", " ")}` : ""),
+    (x) => socket.emit("pages", { delete: x.id }, renderPages), "No hay páginas vigiladas.");
+  socket.on("connect", () => { socket.emit("lessons", {}, renderLessons); socket.emit("pages", {}, renderPages); });
+
   // 8.9: datos de estudiantes cifrados
   function renderStudents(r) {
     if (!r) return;
