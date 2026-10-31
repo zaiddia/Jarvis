@@ -158,6 +158,8 @@ def ticket_voice(text, t):
         res = ticket.close()
         J.socketio.emit("ticket", {"open": False, "results": res})
         _learn_from(res)
+        if res["tipo"] == "saber":                     # 10.6: mini simulacro → programa Saber
+            J.saber_from_ticket()
         if res["curso"] and res["n"] and res["tipo"] == "semaforo" and res["semaforo"]:
             ent = diarioclase.entries(res["curso"])
             if ent:

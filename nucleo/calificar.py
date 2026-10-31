@@ -262,6 +262,10 @@ def close_grading(say=True):
         return None
     examenes.close(ex["code"])
     a = analysis(ex)
+    try:
+        J.saber_from_exam(ex)                          # 10.6: si es un simulacro Saber, al programa
+    except Exception as e:
+        J.note_error("SABER", e)
     path = analysis_docx(ex, a) if a["n"] else ""
     _emit()
     sess.update(code=None)

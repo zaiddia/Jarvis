@@ -34,6 +34,7 @@ FILES = {
     "registro_clase.json": ("registro", "Diario de clase y mallas"),
     "periodos.json": ("periodos", "Valoraciones de los periodos anteriores"),
     "examenes.json": ("examenes", "Evaluaciones con hoja de respuestas"),
+    "saber.json": ("saber", "Programa Saber: simulacros por competencia"),
     "compromisos.json": ("compromisos", "Compromisos y correos por responder"),
     "lecciones.json": ("lecciones", "Lecciones que le enseñaste a Jarvis"),
     "paginas_vigiladas.json": ("paginas", "Páginas web vigiladas"),

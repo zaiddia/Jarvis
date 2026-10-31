@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "10.5"
+VERSION = "10.6"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1487,6 +1487,8 @@ def process_command(text):
         return
     if zeti_open_voice(text, t):                       # 10.1: «abre Zeti»
         return
+    if saber_voice(text, t):                           # 10.6: «haz un simulacro Saber para 11A», «lanza el mini simulacro», «¿cómo va 11A en el Saber?»
+        return
     if sheets_voice(text, t):                          # 10.5: «prepara las hojas de respuesta del quiz para 7A»
         return
     if grading_voice(text, t):                         # 10.5: «califica las hojas», «terminé de calificar», «prepara el refuerzo»
@@ -2012,6 +2014,10 @@ from nucleo.areas import *  # noqa: F401,F403,E402
 # → nucleo/calificar.py (lógica en omr.py y examenes.py; página del celular: templates/calificar.html)
 from nucleo.calificar import *  # noqa: F401,F403,E402
 
+# ── 10.6: programa Saber 11 y Saber 9 (simulacros, mini simulacros, planes, tablero e informe)
+# → nucleo/icfes.py (lógica en saber.py)
+from nucleo.icfes import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2154,6 +2160,7 @@ def main():
         zeti_apply()                      # 10.1: pesos y escala de la institución
         year_start()                      # 10.2: valoraciones de los periodos anteriores
         grading_start()                   # 10.5: evaluaciones con hoja de respuestas
+        saber_start()                     # 10.6: programa Saber
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

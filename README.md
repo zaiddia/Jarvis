@@ -157,6 +157,22 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Programa Saber 11 y Saber 9 (v10.6)
+
+- «**Haz un simulacro Saber de 20 preguntas para 11A**»: preguntas tipo ICFES con contexto, repartidas entre las
+  competencias de Matemáticas (Saber 11: interpretación y representación, formulación y ejecución, argumentación;
+  Saber 9 para 6° a 9°: comunicación/representación/modelación, razonamiento y argumentación, planteamiento y
+  resolución de problemas). Sale el **cuadernillo en Word y las hojas de respuesta**; se califican con el celular
+  (v10.5) y el resultado entra solo al programa Saber del curso.
+- «**Lanza el mini simulacro de 11A**»: 5 preguntas cortas que los estudiantes responden en su celular con el QR del
+  proyector (como el ticket de salida); al cerrar, también entran al programa.
+- «**¿Cómo va 11A en el Saber?**»: el % de acierto por competencia en el último simulacro, cuánto ha subido desde el
+  primero y la competencia más floja del curso; abre el **tablero de evolución** (gráfica por competencia y la tabla
+  de cada estudiante con lo que debe reforzar).
+- «**Haz los planes de estudio Saber de 11A**»: una guía para cada estudiante con sus dos competencias más flojas,
+  qué evalúan, estrategias y preguntas de práctica.
+- «**Haz el informe Saber de 11A**»: el informe para coordinación con la evolución del curso y de cada estudiante.
+
 ## Calificar con el celular: hojas de respuesta, análisis y refuerzo a la medida (v10.5)
 
 1. «**Prepara las hojas de respuesta del quiz para 7A**» (el último quiz que hiciste o uno del banco: «…del quiz de
