@@ -210,7 +210,9 @@ def morning_report():
     J.notes_today_summary(speak_it=True)
     if J.settings["morning_news"]:
         J.reply(J.news_text(), "NOTICIAS")
-    if J.settings["telegram_alerts"] and J.settings["telegram_remote"]:
+    if J.settings["morning_voice_note"] and J.telegram_ready():      # 9.5: el resumen como nota de voz
+        threading.Thread(target=J.send_morning_voice, daemon=True, name="resumen-voz").start()
+    elif J.settings["telegram_alerts"] and J.settings["telegram_remote"]:
         resumen = [f"☀️ Buenos días. Hoy es {hoy}."]
         if J.settings["weather_city"].strip():
             resumen.append(J.weather_text())

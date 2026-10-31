@@ -902,6 +902,15 @@
   });
   socket.on("connect", () => socket.emit("classroom_status", {}, renderCr));
 
+  // 9.5: tu estilo al escribir
+  function renderStyle(r) {
+    const st = $("#sty-status");
+    st.className = "status" + (r && r.perfil ? " ok" : "");
+    st.textContent = r && r.perfil ? "Así escribes: " + r.perfil : `Aún aprendiendo: ${(r && r.n) || 0} de 3 textos tuyos.`;
+  }
+  $("#btn-sty-forget").addEventListener("click", () => { if (confirm("¿Olvidar tu estilo de escritura?")) socket.emit("style_info", { forget: true }, renderStyle); });
+  socket.on("connect", () => socket.emit("style_info", {}, renderStyle));
+
   // 9.4: lecciones y páginas vigiladas
   function listInto(ul, items, label, onDel, empty) {
     ul.innerHTML = "";

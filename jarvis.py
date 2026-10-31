@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "9.4"
+VERSION = "9.5"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -374,6 +374,7 @@ import compromisos
 import atencion
 import lecciones
 import paginas
+import estilo
 import secreto
 
 
@@ -749,6 +750,8 @@ DEFAULT_SETTINGS = {
     "attention_phone": False,      # …y mandarlo también al celular
     "lessons_learn": True,         # 9.4: proponer lecciones cuando corriges a Jarvis
     "watch_hours": 6,              # 9.4: cada cuántas horas revisar las páginas vigiladas
+    "morning_voice_note": True,    # 9.5: el reporte de la mañana también como nota de voz en Telegram
+    "style_learn": True,           # 9.5: aprender tu forma de escribir de lo que envías con Jarvis
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -1427,6 +1430,12 @@ def process_command(text):
         return
     if lessons_voice(text, t):                         # 9.4: «de ahora en adelante…», «¿qué lecciones tienes?»
         return
+    if text_feedback_voice(text, t):                   # 9.5: «retroalimenta este texto de Juan de 7A: …»
+        return
+    if style_voice(text, t):                           # 9.5: «aprende mi estilo con este texto: …», «¿cómo escribo?»
+        return
+    if morning_voice(text, t):                         # 9.5: «mándame el resumen de la mañana en audio»
+        return
     if _CHECK_RE.search(t):                            # «prueba completa», «revisa todo»
         if getattr(_tl, "remote", False):
             reply(check_report(run_system_check(speak_it=False)), "PRUEBA")
@@ -1886,6 +1895,13 @@ from nucleo.maestro import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 9.5 · RESUMEN DE LA MAÑANA EN NOTA DE VOZ, TU ESTILO AL ESCRIBIR Y RETROALIMENTACIÓN DE TEXTOS
+# → nucleo/pulido.py (lógica en estilo.py)
+# =============================================================================
+from nucleo.pulido import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -2017,6 +2033,7 @@ def main():
         students_start()                  # 8.9: abre los datos de estudiantes cifrados (con la clave ya leída)
         attention_start()                 # 9.3: compromisos y pulso de atención
         teacher_plus_start()              # 9.4: lecciones y vigilante de páginas
+        polish_start()                    # 9.5: tu estilo al escribir
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

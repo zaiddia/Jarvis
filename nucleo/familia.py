@@ -110,7 +110,7 @@ def family_voice(text, t):
             for start in range(0, len(facts), 8):
                 part = facts[start:start + 8]
                 raw = J.ai_chat([{"role": "user", "content": informes.letter_prompt(part, J.settings["aula_docente"],
-                                                                                     J.settings["aula_institucion"])}],
+                                                                                     J.settings["aula_institucion"]) + J.style_ctx()}],
                                 json_mode=True, max_tokens=8000)
                 texts.update({start + i: v for i, v in informes.letter_validate(J._extract_json(raw), len(part)).items()})
         except J.AIError as e:

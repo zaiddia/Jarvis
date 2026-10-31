@@ -35,6 +35,7 @@ FILES = {
     "compromisos.json": ("compromisos", "Compromisos y correos por responder"),
     "lecciones.json": ("lecciones", "Lecciones que le enseñaste a Jarvis"),
     "paginas_vigiladas.json": ("paginas", "Páginas web vigiladas"),
+    "estilo.json": ("estilo", "Tu estilo al escribir"),
     "formularios.json": ("formularios", "Formularios de Google Forms"),
     "banco_preguntas.json": ("banco", "Banco de preguntas"),
 }

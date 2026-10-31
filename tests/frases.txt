@@ -186,3 +186,4 @@ hoy en 7A vimos fracciones equivalentes => DIARIO DE CLASE
 ¿qué compromisos tengo? => COMPROMISOS
 activa el modo tutor de matemáticas => TUTOR
 ¿qué lecciones tienes? => LECCIONES
+¿cómo escribo? => ESTILO

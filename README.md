@@ -157,6 +157,21 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Resumen de la mañana en audio, tu estilo al escribir y retroalimentación de textos (v9.5)
+
+**Resumen de la mañana como nota de voz.** Con Telegram conectado, el reporte de la mañana te llega también en audio,
+para escucharlo camino al colegio: el clima, tus clases de hoy, la agenda, los compromisos del día y lo que necesita tu
+atención. Cuando quieras: «**mándame el resumen de la mañana en audio**». Se apaga en *Ajustes › Rutinas*.
+
+**Tu estilo al escribir.** Jarvis aprende de los correos y respuestas que envías con él para que lo que redacta (correos,
+respuestas, informes para padres) suene como tú: tu saludo, tu despedida, tu tono y tu firma. También: «**aprende mi
+estilo con este texto: …**», «**¿cómo escribo?**», «**olvida mi estilo**». Todo queda en tu equipo.
+
+**Retroalimentación de textos.** «**Retroalimenta este texto de Juan de 7A: …**» (pegas el escrito en la barra del HUD):
+fortalezas, aspectos por mejorar, los errores de ortografía y gramática con su corrección, un comentario para el
+estudiante y una nota sugerida, en un Word. Si dices de quién es, Jarvis te pregunta si guarda la nota en el
+seguimiento. También «… con la rúbrica: …».
+
 ## Lecciones de tus correcciones, vigilante de páginas web y modo tutor socrático (v9.4)
 
 **Jarvis aprende de ti.** Las reglas que dices se guardan al momento: «**de ahora en adelante los quices con 5

@@ -349,6 +349,8 @@ def restore_backup(name, parts):
         J.lecciones.load()
     if "paginas" in done:
         J.paginas.load()
+    if "estilo" in done:                               # 9.5
+        J.estilo.load()
     if "memoria" in done:
         J.load_memory()
     if "perfil" in done:

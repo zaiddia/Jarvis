@@ -152,7 +152,7 @@ def email_voice(text, t):
 
     def work():
         try:
-            prompt = correo.prompt(f"Para {dest[0] or dest[1]}: {mensaje}", J.settings["email_sender_name"])
+            prompt = correo.prompt(f"Para {dest[0] or dest[1]}: {mensaje}", J.settings["email_sender_name"]) + J.style_ctx()
             raw = J.ai_chat([{"role": "user", "content": prompt}], json_mode=True, max_tokens=900)
             m = correo.validate(J._extract_json(raw))
         except J.AIError as e:
@@ -179,6 +179,7 @@ def _email_confirm_pending(t):
         J.email_pending.update(to=None, expires=0)
         try:
             J.mail_send(dest[1], asunto, cuerpo)
+            J.learn_style(cuerpo, "correo")            # 9.5: aprende tu forma de escribir
             J.reply(f"Correo enviado a {dest[0] or dest[1]}.", "CORREO")
         except Exception as e:
             J.reply(f"No pude enviarlo: {e}", "CORREO")

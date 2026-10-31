@@ -160,7 +160,7 @@ def mail_reply(m, instruction):
         J.reply("Para redactar la respuesta necesito la IA conectada.", "CORREO")
         return
     try:
-        raw = J.ai_chat([{"role": "user", "content": bandeja.reply_prompt(m, instruction, J.settings["email_sender_name"])}],
+        raw = J.ai_chat([{"role": "user", "content": bandeja.reply_prompt(m, instruction, J.settings["email_sender_name"]) + J.style_ctx()}],
                         json_mode=True, max_tokens=900)
         cuerpo = str(J._extract_json(raw).get("cuerpo", "")).strip()
     except Exception as e:
@@ -175,6 +175,7 @@ def mail_reply(m, instruction):
         try:
             J.mail_send(m["de"], asunto, cuerpo, in_reply_to=m.get("msgid", ""))
             J.compromisos.mark_answered(m)            # 9.3: ya no aparece como «por responder»
+            J.learn_style(cuerpo, "respuesta")        # 9.5: aprende tu forma de escribir
             J.reply(f"Respuesta enviada a {m['de_nombre']}.", "CORREO")
             diario.log("orden", f"respondí el correo de {m['de_nombre']}")
         except RuntimeError as e:

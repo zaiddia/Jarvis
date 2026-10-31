@@ -674,6 +674,10 @@
       <div class="ft"><label for="f-morning-news">Noticias en el reporte de la mañana</label><p>Jarvis resume los titulares del día. Di «noticias» o «noticias de educación» cuando quieras.</p></div>
       <label class="switch"><input type="checkbox" id="f-morning-news" data-key="morning_news"><span></span></label>
     </div>
+    <div class="field">
+      <div class="ft"><label for="f-morning-voice">Mandarme el reporte como nota de voz</label><p>Con Telegram conectado, el reporte de la mañana te llega también en audio: el clima, tus clases, la agenda, los compromisos del día y lo que necesita tu atención. Cuando quieras: «mándame el resumen de la mañana en audio».</p></div>
+      <label class="switch"><input type="checkbox" id="f-morning-voice" data-key="morning_voice_note"><span></span></label>
+    </div>
     <div class="field stack">
       <div class="ft"><label for="f-news-feeds">Fuentes de noticias (opcional)</label><p>Una dirección RSS por línea. Vacío = Google Noticias Colombia y BBC Mundo.</p></div>
       <textarea class="inp mono" id="f-news-feeds" rows="2" data-key="news_feeds" placeholder="https://www.ejemplo.com/rss"></textarea>
@@ -1071,6 +1075,15 @@
     <div class="field">
       <div class="ft"><label for="f-att-ph">Mandarlo también al celular</label></div>
       <label class="switch"><input type="checkbox" id="f-att-ph" data-key="attention_phone"><span></span></label>
+    </div>
+
+    <div class="group">Tu estilo al escribir</div>
+    <p class="pane-intro">Jarvis aprende de los correos y respuestas que envías con él (y de los textos que le pases con «aprende mi estilo con este texto: …») para que lo que redacta suene como tú: tu saludo, tu despedida, tu tono. Todo queda en tu equipo.</p>
+    <p class="status" id="sty-status"></p>
+    <div class="row-btns"><button class="text-btn" type="button" id="btn-sty-forget">Olvidar mi estilo</button></div>
+    <div class="field">
+      <div class="ft"><label for="f-sty-on">Aprender mi forma de escribir</label></div>
+      <label class="switch"><input type="checkbox" id="f-sty-on" data-key="style_learn"><span></span></label>
     </div>
 
     <div class="group">Lecciones que le enseñaste</div>
