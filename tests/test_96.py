@@ -70,6 +70,7 @@ def test_ticket_de_salida(jv, aula7a, monkeypatch):
     monkeypatch.setattr(jv.socketio, "emit", lambda ev, data=None, **k: events.append((ev, data)))
     monkeypatch.setitem(jv.mobile, "server", object())                 # el panel del celular está encendido
     monkeypatch.setattr(jv, "lan_ip", lambda: "192.168.1.20")
+    monkeypatch.setattr(jv.banco, "build_quiz", lambda tema, n=10, grado="": None)   # que use el último quiz
     jv.remember_quiz({"titulo": "q", "preguntas": [
         {"enunciado": "¿2/4 = 1/2?", "opciones": ["Sí", "No", "A veces", "Nunca"], "respuesta": "a"},
         {"enunciado": "¿1/3 = 2/6?", "opciones": ["No", "Sí", "A veces", "Nunca"], "respuesta": "b"}]})
