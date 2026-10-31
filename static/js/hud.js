@@ -580,6 +580,16 @@
   document.addEventListener("dragover", (e) => e.preventDefault());
   document.addEventListener("drop", (e) => {
     e.preventDefault(); dragDepth = 0; body.classList.remove("dropping");
+    if (grading.open) {                                                          // 10.5: hojas de respuesta → a calificar
+      const imgs = [...(e.dataTransfer?.files || [])].filter((x) => /^image\//.test(x.type));
+      (async () => {
+        for (const f of imgs) {
+          const data = await new Promise((ok) => { const rd = new FileReader(); rd.onload = () => ok(rd.result); rd.readAsDataURL(f); });
+          await new Promise((ok) => socket.emit("grade_upload", { data }, (r) => { setPreview(r && r.ok ? r.msg : `${f.name}: ${(r && r.msg) || "no se pudo"}`, r && r.ok ? "" : "dim"); ok(); }));
+        }
+      })();
+      return;
+    }
     const f = [...(e.dataTransfer?.files || [])].find((x) => /^image\//.test(x.type));
     if (!f) { setPreview("Suelta una imagen (foto del trabajo) para revisarla.", "dim"); return; }
     if (f.size > 15 * 1024 * 1024) { setPreview("La imagen es muy grande (máximo 15 MB).", "dim"); return; }
@@ -617,6 +627,35 @@
     $('.xtab[data-view="chat"]').click();
     who.focus();
   }
+
+  /* 10.5: calificar hojas de respuesta (QR para el celular y avance en vivo) */
+  const grading = { open: false, card: null };
+  function renderGrading(d) {
+    grading.open = !!(d && d.open);
+    if (!d) return;
+    if (!grading.card || !grading.card.isConnected) {
+      $(".empty", el.chat)?.remove();
+      grading.card = mk("div", "msg jarvis file");
+      el.chat.appendChild(grading.card);
+    }
+    const m = grading.card; m.textContent = "";
+    const b = mk("div", "msg-body fcard");
+    if (d.url && d.open) { const im = mk("img", "fthumb qr"); im.src = `/calificar-qr.png?t=${Date.now()}`; im.alt = "Escanéame con tu celular"; b.append(im); }
+    const info = mk("div", "finfo");
+    info.append(mk("b", "", `${d.titulo} · ${String(d.curso || "").replace(" · ", ", ")}`),
+      mk("span", "dmeta", d.open ? `${d.n}${d.esperados ? " de " + d.esperados : ""} hojas calificadas` + (d.url ? " · escanea el código con tu celular o arrastra fotos aquí" : " · arrastra las fotos aquí")
+        : `Terminado: ${d.n} hojas`));
+    (d.ultimos || []).slice().reverse().forEach((x) => info.append(mk("span", "dmeta", `${x.nombre}: ${String(Number(x.nota).toFixed(1)).replace(".", ",")}`)));
+    if (d.open) {
+      const btns = mk("div", "dbtns"), done = mk("button", "mini ok", "Terminé de calificar"); done.type = "button";
+      done.addEventListener("click", () => run("terminé de calificar")); btns.append(done); info.append(btns);
+    }
+    b.append(info);
+    m.append(mk("div", "msg-meta", "JARVIS · CALIFICAR HOJAS"), b);
+    el.viewChat.scrollTop = el.viewChat.scrollHeight;
+  }
+  socket.on("grading", (d) => { renderGrading(d); poke(); });
+  socket.on("connect", () => socket.emit("grading_state", {}, (r) => { grading.open = !!(r && r.open); }));
 
   /* 9.0: atajos de teclado */
   document.addEventListener("keydown", (e) => {

@@ -33,6 +33,7 @@ FILES = {
     "observador.json": ("observador", "Observador de los estudiantes"),
     "registro_clase.json": ("registro", "Diario de clase y mallas"),
     "periodos.json": ("periodos", "Valoraciones de los periodos anteriores"),
+    "examenes.json": ("examenes", "Evaluaciones con hoja de respuestas"),
     "compromisos.json": ("compromisos", "Compromisos y correos por responder"),
     "lecciones.json": ("lecciones", "Lecciones que le enseñaste a Jarvis"),
     "paginas_vigiladas.json": ("paginas", "Páginas web vigiladas"),

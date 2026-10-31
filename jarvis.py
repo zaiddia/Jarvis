@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "10.4"
+VERSION = "10.5"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1487,6 +1487,10 @@ def process_command(text):
         return
     if zeti_open_voice(text, t):                       # 10.1: «abre Zeti»
         return
+    if sheets_voice(text, t):                          # 10.5: «prepara las hojas de respuesta del quiz para 7A»
+        return
+    if grading_voice(text, t):                         # 10.5: «califica las hojas», «terminé de calificar», «prepara el refuerzo»
+        return
     if subject_voice(text, t):                         # 10.4: «estamos en tecnología», «¿en qué asignatura estamos?»
         return
     if year_voice(text, t):                            # 10.2: «¿cuánto necesita Juan de 7A para pasar?», «¿quiénes pueden perder el año?»
@@ -2004,6 +2008,10 @@ from nucleo.acumulado import *  # noqa: F401,F403,E402
 # → nucleo/areas.py (lógica en asignaturas.py)
 from nucleo.areas import *  # noqa: F401,F403,E402
 
+# ── 10.5: calificar con el celular (hojas de respuesta), análisis de la evaluación y refuerzo a la medida
+# → nucleo/calificar.py (lógica en omr.py y examenes.py; página del celular: templates/calificar.html)
+from nucleo.calificar import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2145,6 +2153,7 @@ def main():
         colleagues_start()                # 10.0: retoma un acta abierta
         zeti_apply()                      # 10.1: pesos y escala de la institución
         year_start()                      # 10.2: valoraciones de los periodos anteriores
+        grading_start()                   # 10.5: evaluaciones con hoja de respuestas
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

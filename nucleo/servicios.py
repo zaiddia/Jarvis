@@ -345,6 +345,8 @@ def restore_backup(name, parts):
         J.diarioclase.load()
     if "periodos" in done:                             # 10.2
         J.periodos.load()
+    if "examenes" in done:                             # 10.5
+        J.examenes.load()
     if "compromisos" in done:                          # 9.3
         J.compromisos.load()
     if "lecciones" in done:                            # 9.4

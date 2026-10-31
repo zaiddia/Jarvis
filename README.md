@@ -157,6 +157,22 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Calificar con el celular: hojas de respuesta, análisis y refuerzo a la medida (v10.5)
+
+1. «**Prepara las hojas de respuesta del quiz para 7A**» (el último quiz que hiciste o uno del banco: «…del quiz de
+   fracciones…»). Para un simulacro o examen impreso aparte: «…del simulacro para 11A, la clave es a, c, b, d…».
+   Sale un PDF con **una hoja por estudiante** (con su nombre, en el orden de tu lista) y 3 en blanco.
+2. Los estudiantes rellenan las burbujas. «**Califica las hojas**»: en el HUD aparece un código QR; lo escaneas con
+   tu celular (en la misma wifi) y le tomas **foto a cada hoja**: Jarvis la endereza, lee las burbujas y te dice la
+   nota al instante (aciertos, cuáles erró, doble marca). Sin internet ni IA (si una foto sale muy mal y tienes la IA,
+   la lee con visión). También puedes **arrastrar las fotos al HUD**. Si te equivocaste en la clave: «la clave es…»
+   y recalifica todo.
+3. «**Terminé de calificar**»: el **análisis de la evaluación** (promedio, quiénes bajo 3,0, las preguntas más
+   difíciles y la opción errada que más marcaron) en voz y en Word, y te propone **anotar las notas** en su
+   asignatura (dimensión Conocer), listas para Zeti.
+4. «**Prepara el refuerzo**»: la clase de refuerzo para todo el curso y una **guía personal para cada estudiante**
+   con la explicación y ejercicios de solo las preguntas que falló (las respuestas, al final, para ti).
+
 ## Áreas y asignaturas: Matemáticas y Tecnología e Informática (v10.4)
 
 - **Escoge el área o la asignatura:** en Ajustes › Memoria › Áreas y asignaturas pones tus áreas («Matemáticas:
