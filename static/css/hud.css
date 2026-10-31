@@ -66,6 +66,11 @@ body.dim .shell:hover, body.dim .shell:focus-within { opacity: 1; }
   filter: drop-shadow(0 0 calc(6px + var(--lvl, 0) * 16px) rgba(var(--a-rgb), calc(.45 + var(--lvl, 0) * .55)));
   transition: filter .12s linear, color .4s; }
 
+/* 9.9: color del día (cargado, urgente, celebración) */
+.reactor[data-mood="cargado"] { --a: #ffb02e; --a-rgb: 255, 176, 46; color: var(--a); }
+.reactor[data-mood="urgente"] { --a: #ff6b4a; --a-rgb: 255, 107, 74; color: var(--a); }
+.reactor[data-mood="celebracion"] { --a: #5fd38a; --a-rgb: 95, 211, 138; color: var(--a); }
+
 /* ---------- Cabecera ---------- */
 .head { grid-area: head; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .titles { display: flex; align-items: baseline; gap: 8px; flex: 1; min-width: 0; height: 100%; cursor: grab; }

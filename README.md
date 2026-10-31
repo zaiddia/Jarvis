@@ -157,6 +157,22 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Personalidad según el momento, color del día y retrospectiva del año (v9.9)
+
+**Personalidad según el momento.** Jarvis ajusta su forma de hablar con tu horario: **en clase** responde breve y
+claro, pensando en que lo escuchan los estudiantes; **en la jornada** va al grano; **en la tarde, la noche y el fin de
+semana** es más cálido y relajado (y no te recuerda pendientes si no preguntas). A mano por 3 horas: «**ponte
+relajado**», «**ponte serio**», «**personalidad de clase**»; «**personalidad automática**» para volver. «¿En qué modo estás?».
+
+**Color del día.** El reactor del HUD y el orbe de la barra de tareas cambian de color según cómo viene tu día: el de
+tu tema si está tranquilo, **ámbar** si está cargado, **coral** si hay algo urgente (un compromiso vencido, una reunión
+en minutos) y **verde** para celebrar (felicitaste a alguien hoy, cerraste el periodo). Pasa el ratón por el reactor
+para ver por qué, o pregunta «**¿cómo viene mi día?**».
+
+**Retrospectiva del año.** «**Haz mi retrospectiva del año**» (y Jarvis te la propone a fin de año escolar): los temas
+que diste en cada curso, las notas y felicitaciones, los proyectos que preparamos, **los estudiantes que más
+avanzaron** y **las actividades que mejor funcionaron**, con una carta para ti, en un Word.
+
 ## La semana lista el domingo, cierre de periodo y bandeja limpia (v9.8)
 
 **Semana lista.** El domingo en la tarde Jarvis mira tu horario y, por cada curso, el siguiente tema de la malla del

@@ -775,6 +775,19 @@
   socket.on("connect", () => socket.emit("tutor_state", {}, (d) => { tutorOn = !!(d && d.on); applyState({}); }));
   socket.on("file_card", (c) => { addFileCard(c); poke(); });
   socket.on("student_card", (c) => { addStudentCard(c); poke(); });
+  /* 9.9: color del día del reactor y personalidad del momento */
+  let persona = "";
+  function setMood(d) {
+    if (!d) return;
+    const r = $("#reactor");
+    if (d.mood) { if (d.mood === "tranquilo") delete r.dataset.mood; else r.dataset.mood = d.mood; }
+    if (d.persona !== undefined) persona = d.persona;
+    $("#orb").title = (d.label ? d.label.charAt(0).toUpperCase() + d.label.slice(1) + (d.why ? `: ${d.why}` : "") : "") +
+      (persona ? ` · modo ${persona}` : "") + " · arrastra para mover · doble clic para cambiar de tamaño";
+  }
+  socket.on("day_mood", setMood);
+  socket.on("persona", (d) => { persona = (d && d.label) || ""; });
+  socket.on("connect", () => socket.emit("day_mood", {}, setMood));
   socket.on("disconnect", () => { setPreview("Sin enlace con el motor de Jarvis…", "dim"); led("#led-ai", "err"); });
   socket.on("bootstrap", (data) => {
     native = !!data.native;

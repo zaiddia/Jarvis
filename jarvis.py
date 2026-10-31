@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "9.8"
+VERSION = "9.9"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -768,6 +768,9 @@ DEFAULT_SETTINGS = {
     "inbox_hour": 6,               # 9.8: desde qué hora de la mañana
     "inbox_max": 5,                # 9.8: máximo de respuestas por mañana
     "inbox_last": "",
+    "persona_auto": True,          # 9.9: personalidad según el momento (breve en clase, concentrado, relajado)
+    "orb_day_color": True,         # 9.9: el reactor cambia de color según cómo viene el día
+    "retro_year": "",              # 9.9: año en que ya propuso la retrospectiva
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -1460,6 +1463,12 @@ def process_command(text):
         return
     if inbox_voice(text, t):                           # 9.8: «redacta las respuestas de mis correos», «limpia mi bandeja»
         return
+    if persona_voice(text, t):                         # 9.9: «ponte relajado», «personalidad automática»
+        return
+    if mood_voice(text, t):                            # 9.9: «¿cómo viene mi día?»
+        return
+    if retro_voice(text, t):                           # 9.9: «haz mi retrospectiva del año»
+        return
     if lessons_voice(text, t):                         # 9.4: «de ahora en adelante…», «¿qué lecciones tienes?»
         return
     if text_feedback_voice(text, t):                   # 9.5: «retroalimenta este texto de Juan de 7A: …»
@@ -1947,6 +1956,10 @@ from nucleo.estudiantes import *  # noqa: F401,F403,E402
 # → nucleo/semanal.py (lógica en semana.py)
 from nucleo.semanal import *  # noqa: F401,F403,E402
 
+# ── 9.9: personalidad según el momento, color del día del reactor y retrospectiva del año
+# → nucleo/animado.py (lógica en animo.py y retro.py)
+from nucleo.animado import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2084,6 +2097,7 @@ def main():
         live_class_start()                # 9.6: clase en vivo y banco de actividades
         students_plus_start()             # 9.7: alertas tempranas y celebraciones
         routines98_start()                # 9.8: semana lista, cierre de periodo y bandeja limpia
+        mood_start()                      # 9.9: personalidad y color del día
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

@@ -170,7 +170,7 @@ def api_orb():
             "alert_seq": f["alert_seq"], "alert": f["alert"],
             "agenda": _orb_agenda(), "approvals": len(J.aprobaciones.pending()),
             "approval": (J.aprobaciones.latest() or {}).get("titulo", "")[:120],
-            "approval_id": (J.aprobaciones.latest() or {}).get("id", 0), "accent": "%02x%02x%02x" % J.THEMES.get(J.settings["theme"], J.THEMES["cyan"])[1],
+            "approval_id": (J.aprobaciones.latest() or {}).get("id", 0), "accent": J.mood_accent(), "mood": J._mood["mood"],
             "version": J.VERSION, **_orb_project()}
 
 
