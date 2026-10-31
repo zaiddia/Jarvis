@@ -127,7 +127,7 @@ def _period_courses():
 
 
 def _period_names(course):
-    names = list(aula.data.get("cursos", {}).get(course, []))
+    names = list(aula.students(course))
     return names + [n for n in seguimiento.data.get(course, {}) if n not in names]
 
 

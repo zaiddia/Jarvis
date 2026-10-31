@@ -106,7 +106,7 @@ def card_voice(text, t):
         return False
     if "ficha" not in t:                               # «muéstrame a …»: solo si de verdad es un estudiante
         course, name, _c = J._split_student(who)
-        if not (course and name and (name in seguimiento.data.get(course, {}) or name in aula.data.get("cursos", {}).get(course, []))):
+        if not (course and name and (name in seguimiento.data.get(course, {}) or name in aula.students(course))):
             return False
     else:
         course, name = J._student_or_ask(who, "FICHA")

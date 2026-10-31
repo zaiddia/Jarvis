@@ -8,6 +8,7 @@ import threading
 import time
 import webbrowser
 
+import asignaturas
 import aula
 import calendario
 import classroom
@@ -188,25 +189,39 @@ def export_voice(text, t):
     if not course:
         J.reply("¿De qué curso? Por ejemplo: «exporta las notas de 7A para Zeti».", "EXPORTAR")
         return True
-    names = list(aula.data.get("cursos", {}).get(course, []))
-    names += [n for n in seguimiento.data.get(course, {}) if n not in names]
-    if not names:
+    J.zeti_apply()
+    # 10.4: si das varias asignaturas en ese curso, una planilla por asignatura (o solo la que nombres)
+    keys = J.keys_of(course)
+    if len(keys) > 1:
+        one = J.grade_key(course, t, ask=False) if asignaturas.find(t, J.subjects_for(course), J._subjects_text()) else None
+        keys = [one] if one in keys else keys
+    made = [x for x in (_zeti_one(k) for k in keys) if x]
+    if not made:
         J.reply(f"No tengo estudiantes ni notas de {course}.", "EXPORTAR")
         return True
-    J.zeti_apply()
-    materia = next((x.get("materia", "") for x in horario.items if x.get("curso") == course and x.get("materia")), "")
-    path, n, acts = exportar.zeti_xlsx(course, names, seguimiento.data.get(course, {}), J._absences(course),
-                                      J.settings["output_dir"], J.settings["zeti_since"], J.settings["zeti_order"],
-                                      J.settings["zeti_comma"], J.settings["aula_institucion"], J.settings["aula_docente"],
-                                      materia, zeti.WEIGHTS, J.year_map(course))
-    J.generated_files.add(path)
-    opened = J._open_doc(path)
+    opened = J._open_doc(made[0][0])
     w = zeti.WEIGHTS
-    J.reply(f"Listo, las Valoraciones de {course}{(' en ' + materia) if materia else ''} como en Zeti: {n} estudiantes y {acts} "
-            f"actividades repartidas en Conocer ({w['conocer']} %), Hacer ({w['hacer']} %), Ser ({w['ser']} %) y Autoevaluación "
+    J.reply(f"Listo, las Valoraciones de " + " y ".join(f"{lab} ({n} estudiantes, {acts} actividades)" for _p, n, acts, lab in made) +
+            f" como en Zeti: Conocer ({w['conocer']} %), Hacer ({w['hacer']} %), Ser ({w['ser']} %) y Autoevaluación "
             f"({w['auto']} %), con Val y letra" + (". La abrí" if opened else "") + ". En la hoja «Para copiar» va cada actividad en "
             "su columna, lista para pegar en la misma actividad de Zeti. Di «abre Zeti» y te abro la página de calificaciones.", "EXPORTAR")
     return True
+
+
+def _zeti_one(key):
+    """Exporta una clave de notas (curso o «curso · asignatura»). → (ruta, estudiantes, actividades, etiqueta) o None."""
+    names = list(aula.students(key))
+    names += [n for n in seguimiento.data.get(key, {}) if n not in names]
+    if not names or not seguimiento.data.get(key):
+        return None
+    base, subj = asignaturas.split(key)
+    materia = subj or next((x.get("materia", "") for x in horario.items if aula.course_key(x.get("curso", "")) == aula.course_key(base)
+                            and x.get("materia")), "")
+    path, n, acts = exportar.zeti_xlsx(base, names, seguimiento.data[key], J._absences(base), J.settings["output_dir"],
+                                      J.settings["zeti_since"], J.settings["zeti_order"], J.settings["zeti_comma"],
+                                      J.settings["aula_institucion"], J.settings["aula_docente"], materia, zeti.WEIGHTS, J.year_map(key))
+    J.generated_files.add(path)
+    return path, n, acts, base + (f" en {materia}" if materia else "")
 
 
 def zeti_export_all():
@@ -214,17 +229,10 @@ def zeti_export_all():
     J.zeti_apply()
     done, folder = [], ""
     for course in sorted(seguimiento.data, key=aula.course_sort_key):
-        names = list(aula.data.get("cursos", {}).get(course, []))
-        names += [n for n in seguimiento.data.get(course, {}) if n not in names]
-        if not names or not seguimiento.data.get(course):
-            continue
-        materia = next((x.get("materia", "") for x in horario.items if x.get("curso") == course and x.get("materia")), "")
-        path, n, _a = exportar.zeti_xlsx(course, names, seguimiento.data[course], J._absences(course), J.settings["output_dir"],
-                                         J.settings["zeti_since"], J.settings["zeti_order"], J.settings["zeti_comma"],
-                                         J.settings["aula_institucion"], J.settings["aula_docente"], materia, zeti.WEIGHTS, J.year_map(course))
-        J.generated_files.add(path)
-        folder = os.path.dirname(path)
-        done.append(f"{course}{(' ' + materia) if materia else ''} ({n})")
+        r = _zeti_one(course)
+        if r:
+            folder = os.path.dirname(r[0])
+            done.append(f"{r[3]} ({r[1]})")
     if not done:
         J.reply("No tengo notas de ningún curso todavía.", "EXPORTAR")
         return True
@@ -255,5 +263,5 @@ def zeti_open_voice(text, t):
 __all__ = [
     '_DRIVE_RE', '_GAME_RE', '_SHARE_RE', '_ZETI_RE', '_gcal', '_last_file', 'cal_configured', 'drive_upload',
     'drive_voice', 'event_create_google', 'export_voice', 'gcal_merge', 'gcal_ready', 'gdrive_ready',
-    'on_new_file', '_ZETI_OPEN', 'zeti_apply', 'zeti_export_all', 'zeti_open_voice',
+    'on_new_file', '_ZETI_OPEN', '_zeti_one', 'zeti_apply', 'zeti_export_all', 'zeti_open_voice',
 ]

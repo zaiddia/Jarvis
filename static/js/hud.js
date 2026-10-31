@@ -600,14 +600,17 @@
     info.append(mk("b", "", "Trabajo listo para revisar"));
     const who = mk("input", "rv-in"); who.placeholder = "¿De quién es? (opcional)";
     const what = mk("input", "rv-in"); what.placeholder = "¿Qué actividad? (opcional)";
+    const subj = mk("select", "rv-in");                                          // 10.4: área o asignatura
+    subj.append(new Option("Asignatura: automática", ""));
+    socket.emit("subjects_info", {}, (r) => (r && r.choices || []).forEach((c) => subj.append(new Option(c, c))));
     const go = mk("button", "mini ok", "Revisar"); go.type = "button";
     go.addEventListener("click", () => {
-      socket.emit("review_run", { estudiante: who.value.trim(), que: what.value.trim() }, (r) => {
+      socket.emit("review_run", { estudiante: who.value.trim(), que: what.value.trim(), asignatura: subj.value }, (r) => {
         go.disabled = true; go.textContent = r && r.ok ? "Revisando…" : "Error";
         if (r && !r.ok) setPreview(r.error || "No pude revisarlo.", "dim");
       });
     });
-    info.append(who, what, go); b.append(info);
+    info.append(who, what, subj, go); b.append(info);
     m.append(mk("div", "msg-meta", "JARVIS · REVISAR TRABAJO"), b);
     el.chat.appendChild(m);
     el.viewChat.scrollTop = el.viewChat.scrollHeight;

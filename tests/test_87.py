@@ -143,7 +143,7 @@ def test_planilla_para_zeti(jv, monkeypatch, tmp_path):
         "Ana Gómez": [{"actividad": "Quiz 1", "nota": 4.6, "fecha": "2026-09-01"}]}})
     jv._rec.clear()
     jv.process_command("exporta las notas de 7A para Zeti")
-    assert "3 estudiantes y 2 actividades" in jv._rec.said() and "Conocer (35 %)" in jv._rec.said()
+    assert "(3 estudiantes, 2 actividades)" in jv._rec.said() and "Conocer (35 %)" in jv._rec.said()
     path = next((tmp_path / "Exportaciones").glob("Zeti 7A*.xlsx"))
     wb = load_workbook(path)
     ws = wb["Valoraciones"]

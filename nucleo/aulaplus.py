@@ -12,6 +12,7 @@ import urllib.parse
 import webbrowser
 
 import aprendizaje
+import asignaturas
 import aula
 import banco
 import classroom
@@ -228,6 +229,7 @@ def classroom_voice(text, t):
 
 # ============================================================================ SEGUIMIENTO POR ESTUDIANTE
 def _absences(course):
+    course = str(course).split(" · ")[0]               # 10.4: la asistencia es del grupo, no de la asignatura
     out = {}
     for day, lst in aula.data.get("asistencia", {}).get(course, {}).items():
         for n in lst:
@@ -237,6 +239,18 @@ def _absences(course):
 
 def _resolve_course(spoken):
     if spoken:
+        sp = spoken.strip()
+        if sp in seguimiento.data or sp in aula.data.get("cursos", {}):                # 10.4: la clave exacta («7A · Tecnología…»)
+            return sp
+        if " · " in sp:
+            base = _resolve_course(sp.split(" · ")[0])
+            return f"{base} · {sp.split(' · ', 1)[1]}" if base else ""
+        subj = asignaturas.find(sp, J.subject_choices(), J._subjects_text())
+        if subj:                                       # «7a tecnologia» → la clave de esa asignatura en 7A
+            rest = re.sub(r"\s+", " ", re.sub(rf"\b(?:de|en)?\s*{re.escape(asignaturas.norm(subj).split()[0])}\w*.*$", "", asignaturas.norm(sp))).strip()
+            base = _resolve_course(rest) if rest else ""
+            if base:
+                return J.grade_key(base, sp, ask=False) or base
         c = aula.find_course(spoken)
         if c:
             return c
@@ -263,7 +277,11 @@ def student_voice(text, t):
         if not course:
             J.reply("¿De qué curso? Dímelo al final, por ejemplo «de 7A».", "AULA")
             return True
-        names = aula.data.get("cursos", {}).get(course, [])
+        key = J.grade_key(course, t, ask=True, origin="AULA")          # 10.4: la asignatura, si das varias en ese curso
+        if not key:
+            return True
+        course = key
+        names = aula.students(course)
         name, cands = aula.find_student(quien, names) if names else (quien.title(), [])
         if not name and len(cands) > 1:
             J.reply(f"¿A cuál? " + ", ".join(cands[:4]) + ".", "AULA")
@@ -277,7 +295,7 @@ def student_voice(text, t):
     if _RISK_RE.search(t):
         m = re.search(r"\ben\s+(.+)$", t)
         course = _resolve_course(m.group(1) if m else "")
-        names = sorted(set(aula.data.get("cursos", {}).get(course, [])) | set(seguimiento.data.get(course, {})))
+        names = sorted(set(aula.students(course)) | set(seguimiento.data.get(course, {})))
         if not names:
             J.reply("No tengo estudiantes ni notas de ese curso todavía.", "AULA")
             return True
@@ -287,7 +305,7 @@ def student_voice(text, t):
     m = _STUDENT_RE.match(t)
     if m:
         course = _resolve_course(m.group(2) or "")
-        names = sorted(set(aula.data.get("cursos", {}).get(course, [])) | set(seguimiento.data.get(course, {})))
+        names = sorted(set(aula.students(course)) | set(seguimiento.data.get(course, {})))
         name, _ = aula.find_student(m.group(1), names) if names else (None, [])
         if not name:
             return False                               # no es un estudiante: que lo atienda otro
@@ -308,7 +326,7 @@ def risk_check(now=None):
     _risk_state["week"] = week
     msgs = []
     for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
-        names = sorted(set(aula.data.get("cursos", {}).get(course, [])) | set(seguimiento.data.get(course, {})))
+        names = sorted(set(aula.students(course)) | set(seguimiento.data.get(course, {})))
         risk = seguimiento.at_risk(course, names, _absences(course), J.settings["risk_grade"], J.settings["risk_absences"])
         if risk:
             msgs.append(seguimiento.spoken_risk(course, risk))

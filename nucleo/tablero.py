@@ -275,7 +275,7 @@ def dashboard(now=None):
     out["correos"] = {"n": len(imp), "de": [m["de_nombre"][:30] for m in imp[:3]]} if imp else None
     risk = []
     for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
-        names = sorted(set(aula.data.get("cursos", {}).get(course, [])) | set(seguimiento.data.get(course, {})))
+        names = sorted(set(aula.students(course)) | set(seguimiento.data.get(course, {})))
         r = seguimiento.at_risk(course, names, J._absences(course), J.settings["risk_grade"], J.settings["risk_absences"])
         if r:
             risk.append({"curso": course, "n": len(r), "nombres": [n for n, _ in r[:3]]})

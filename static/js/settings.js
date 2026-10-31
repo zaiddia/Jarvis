@@ -929,6 +929,11 @@
     (x) => socket.emit("pages", { delete: x.id }, renderPages), "No hay páginas vigiladas.");
   socket.on("connect", () => { socket.emit("lessons", {}, renderLessons); socket.emit("pages", {}, renderPages); });
 
+  // 10.4: áreas y asignaturas
+  socket.on("connect", () => socket.emit("subjects_info", {}, (r) => {
+    if (r) $("#subj-list").innerHTML = (r.choices || []).map((c) => `<option value="${c.replace(/"/g, "")}">`).join("");
+  }));
+
   // 10.2: periodos anteriores (pegar la tabla de Zeti)
   function renderPeriods(r) {
     if (!r) return;

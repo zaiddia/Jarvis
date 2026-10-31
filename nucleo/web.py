@@ -332,7 +332,8 @@ def handle_review_run(data):
     if not J.review_state["path"]:
         return {"ok": False, "error": "Primero toma una foto, captura la pantalla o sube una imagen."}
     J.start_review("actual", estudiante=str(d.get("estudiante") or "")[:80], que=str(d.get("que") or "")[:200],
-                 clave=str(d.get("clave") or "")[:3000], grado=str(d.get("grado") or "")[:40])
+                 clave=str(d.get("clave") or "")[:3000], grado=str(d.get("grado") or "")[:40],
+                 asignatura=str(d.get("asignatura") or "")[:60], curso=str(d.get("curso") or "")[:60])
     return {"ok": True}
 
 

@@ -157,6 +157,22 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Áreas y asignaturas: Matemáticas y Tecnología e Informática (v10.4)
+
+- **Escoge el área o la asignatura:** en Ajustes › Memoria › Áreas y asignaturas pones tus áreas («Matemáticas:
+  Aritmética, Álgebra, Geometría, Estadística, Trigonometría, Cálculo», «Tecnología e Informática: Tecnología,
+  Informática, Sistemas») y, si no están en tu horario, qué asignaturas das en cada curso. Por voz: «**estamos en
+  tecnología**», «**¿en qué asignatura estamos?**». En clase, Jarvis toma la de tu horario.
+- **Notas aparte por asignatura** cuando en un grupo das más de una (Matemáticas y Tecnología en 7A): «ponle 4 a Juan
+  en el taller de tecnología de 7A» va a «7A · Tecnología e Informática»; si no dices cuál, usa la escogida o te
+  pregunta. La lista de estudiantes y la asistencia son las del grupo. La planilla de Zeti, el acumulado del año y
+  «¿quiénes pueden perder el año?» salen **por asignatura**.
+- **Revisar y corregir trabajos (1,0 a 5,0) según el área:** en el tablero del aula y en el HUD (arrastrando la foto)
+  escoges el área o asignatura. En Matemáticas revisa operaciones y procedimiento; en Tecnología e Informática, el
+  procedimiento, las herramientas, la lógica (algoritmos, diagramas, programación) y la presentación. Usa el grado del
+  curso, y al terminar te propone **anotar la nota en su asignatura** (solo con tu «sí»; la puedes corregir).
+- El material de clase también sale con la asignatura del momento cuando no la dices.
+
 ## Varios grados, de sexto a undécimo (v10.3)
 
 - **Cursos con cualquier nombre:** «6A», «Séptimo», «10-2», «11 Física», «Décimo B». Jarvis entiende «undécimo»,

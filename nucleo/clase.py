@@ -135,6 +135,13 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
         act = aula.data.get("activo") or ""             # 10.3: sin grado en la petición, el del curso activo
         if aula.grade_of(act):
             grade = f"{aula.grade_of(act)}° (curso {act})"
+    act = aula.data.get("activo") or ""
+    if not J.asignaturas.find(request, J.subject_choices(), J._subjects_text()):     # 10.4: la asignatura del momento
+        subs = J.subjects_for(act) if act else []
+        cur = J.current_subject(act)
+        subj = (J.asignaturas.find(cur, subs, J._subjects_text()) if subs and cur else cur if not subs else "") or (subs[0] if len(subs) == 1 else "")
+        if subj:
+            request = f"{request} (asignatura: {subj})"
     label = aula.KINDS[kind][0]
     lo = {"quiz": "la evaluación", "taller": "el taller", "rubrica": "la rúbrica", "plan": "el plan de clase",
           "saber": "las preguntas tipo Saber", "malla": "la malla curricular", "piar": "los ajustes razonables",
@@ -398,12 +405,12 @@ def load_uploaded_image(data_url):
     return path
 
 
-def review_work(path, estudiante="", que="", clave="", grado=""):
+def review_work(path, estudiante="", que="", clave="", grado="", asignatura=""):
     """Revisa el trabajo de la imagen. Devuelve (resultado, ruta del Word o "")."""
     cfg, err = J._vision_cfg()
     if not cfg:
         raise ValueError(err)
-    prompt = revision.build_prompt(que, clave, grado, estudiante)
+    prompt = revision.build_prompt(que, clave, grado, estudiante) + J.area_hint(asignatura) + J.lessons_ctx()   # 10.4: según el área
     msgs = [{"role": "user", "content": prompt}]
     J.thinking += 1
     J.refresh_mode()
@@ -430,7 +437,7 @@ def review_work(path, estudiante="", que="", clave="", grado=""):
     return res, doc
 
 
-def start_review(source="actual", estudiante="", que="", clave="", grado="", voice=False):
+def start_review(source="actual", estudiante="", que="", clave="", grado="", voice=False, asignatura="", curso=""):
     """Captura (si hace falta) y revisa en segundo plano. El resultado va al tablero y se dice."""
     if J.review_state["busy"]:
         J.reply("Ya estoy revisando un trabajo; espera un momento.", "REVISION")
@@ -451,12 +458,18 @@ def start_review(source="actual", estudiante="", que="", clave="", grado="", voi
             if voice:
                 J._maybe_open_board("revisar")
             J.aula_emit({"type": "review", "status": "working", "preview": J._preview_b64(path), "view": "revisar"})
-            res, doc = J.review_work(path, estudiante, que, clave, grado)
+            course = J._resolve_course(curso) if curso else (aula.data.get("activo") or "")
+            subj = asignatura or (J.current_subject(course) if course and len(J.subjects_for(course)) >= 2 else "") or \
+                (J.subjects_for(course)[0] if course and J.subjects_for(course) else J.settings["subject_current"])
+            grade = grado or (f"{aula.grade_of(course)}°" if aula.grade_of(course) else "")
+            res, doc = J.review_work(path, estudiante, que, clave, grade, subj)
             J.aula_emit({"type": "review", "status": "done", "result": res, "doc": doc,
                        "docname": os.path.basename(doc) if doc else "", "estudiante": estudiante})
             J.reply(revision.spoken_summary(res, estudiante), "REVISION")
             if res["legible"] and res["retroalimentacion"]:
                 J.push_chat("jarvis", "📝 " + res["retroalimentacion"], "REVISION")
+            if res["legible"] and res.get("nota") is not None and estudiante and course:     # 10.4: anotarla en su asignatura
+                J.propose_review_grade(course, estudiante, que or res.get("que_es", ""), res["nota"], subj)
         except J.AIError as e:
             J.aula_emit({"type": "review", "status": "error", "error": e.why})
             J.reply(J.ai_error_reply(e), "REVISION")

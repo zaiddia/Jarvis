@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "10.3"
+VERSION = "10.4"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -742,6 +742,9 @@ DEFAULT_SETTINGS = {
     "scale_superior": 4.5,         # 10.1: escala de desempeño de la institución
     "scale_alto": 4.0,
     "scale_basico": 3.0,
+    "subjects": "Matemáticas: Matemáticas, Aritmética, Álgebra, Geometría, Estadística, Trigonometría, Cálculo\nTecnología e Informática: Tecnología e Informática, Tecnología, Informática, Sistemas",  # 10.4: tus áreas y asignaturas
+    "course_subjects": "",         # 10.4: «7A: Matemáticas, Tecnología e Informática» (si no, se toma del horario)
+    "subject_current": "",         # 10.4: la asignatura escogida («estamos en tecnología»)
     "period_current": 1,           # 10.2: periodo en curso (para el acumulado del año)
     "zeti_period_weights": "34,33,33",  # 10.2: peso de cada periodo en el año (%)
     "zeti_comma": True,            # definitivas con coma decimal (4,5)
@@ -1484,6 +1487,8 @@ def process_command(text):
         return
     if zeti_open_voice(text, t):                       # 10.1: «abre Zeti»
         return
+    if subject_voice(text, t):                         # 10.4: «estamos en tecnología», «¿en qué asignatura estamos?»
+        return
     if year_voice(text, t):                            # 10.2: «¿cuánto necesita Juan de 7A para pasar?», «¿quiénes pueden perder el año?»
         return
     if meeting_voice(text, t):                         # 10.0: «prepara la agenda de la reunión de área», «empieza el acta»
@@ -1994,6 +1999,10 @@ from nucleo.colegas import *  # noqa: F401,F403,E402
 # ── 10.2: acumulado del año (VF) y lo que falta para aprobar (VRA), como en Zeti
 # → nucleo/acumulado.py (lógica en zeti.py y periodos.py)
 from nucleo.acumulado import *  # noqa: F401,F403,E402
+
+# ── 10.4: áreas y asignaturas (notas aparte por asignatura y revisión según el área)
+# → nucleo/areas.py (lógica en asignaturas.py)
+from nucleo.areas import *  # noqa: F401,F403,E402
 
 
 # =============================================================================

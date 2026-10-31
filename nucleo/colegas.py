@@ -150,7 +150,7 @@ def _meeting_ctx():
     if left is not None and left >= 0:
         parts.append(f"faltan {left} días para cerrar el periodo")
     for c in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
-        names = sorted(set(aula.data.get("cursos", {}).get(c, [])) | set(seguimiento.data.get(c, {})))
+        names = sorted(set(aula.students(c)) | set(seguimiento.data.get(c, {})))
         r = seguimiento.at_risk(c, names, J._absences(c), J.settings["risk_grade"], J.settings["risk_absences"])
         if r:
             parts.append(f"{len(r)} estudiantes en riesgo en {c}")

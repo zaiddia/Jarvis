@@ -911,6 +911,16 @@
       <div class="row"><input class="inp mono" type="password" id="st-paste" autocomplete="off" placeholder="44 caracteres…">
         <button class="btn btn-ghost" type="button" id="btn-st-unlock">Abrir los datos</button></div></div>
 
+    <div class="group">Áreas y asignaturas</div>
+    <p class="pane-intro">Las áreas y asignaturas que das. Si en un mismo grupo das más de una (por ejemplo Matemáticas y Tecnología en 7A), las notas, la planilla de Zeti y el acumulado del año van <b>aparte por asignatura</b>, con la misma lista de estudiantes. Jarvis sabe la asignatura por lo que dices («ponle 4 a Juan en el taller de tecnología de 7A»), por la que escogiste («estamos en tecnología») o por tu horario si estás en clase. Al revisar un trabajo, revisa con los criterios del área y te propone anotar la nota (1,0 a 5,0) en su asignatura.</p>
+    <div class="field stack"><div class="ft"><label for="f-subjects">Mis áreas y asignaturas</label><p>Una área por línea: «Área: asignatura, asignatura».</p></div>
+      <textarea class="inp mono" id="f-subjects" rows="3" data-key="subjects"></textarea></div>
+    <div class="field stack"><div class="ft"><label for="f-csubj">Asignaturas por curso</label><p>Solo si no están en tu horario. Una línea por curso: «7A: Matemáticas, Tecnología e Informática».</p></div>
+      <textarea class="inp mono" id="f-csubj" rows="3" data-key="course_subjects" placeholder="6A: Matemáticas&#10;7A: Matemáticas, Tecnología e Informática&#10;10A: Trigonometría"></textarea></div>
+    <div class="field stack"><div class="ft"><label for="f-subj-cur">Asignatura escogida ahora</label><p>Vacío = la de tu horario cuando estás en clase.</p></div>
+      <input class="inp" type="text" id="f-subj-cur" data-key="subject_current" list="subj-list" placeholder="Matemáticas">
+      <datalist id="subj-list"></datalist></div>
+
     <div class="group">Exportar notas para Zeti y quices para Kahoot o Quizizz</div>
     <p class="pane-intro">«Exporta las notas de 7A para Zeti»: las <b>Valoraciones Periódicas de Desempeño</b> con la misma forma que en Zeti: cada actividad en su dimensión (Conocer, Hacer, Ser y Autoevaluación), los promedios DC, DH, DS y AEE, los porcentajes, la <b>Val</b> y la letra (S, A, B, Bj), calculadas igual que Zeti. La hoja «Para copiar» trae una columna por actividad para pegar en Zeti. Jarvis deduce la dimensión por el nombre de la actividad (quiz o evaluación → Conocer; taller, proyecto, exposición → Hacer; actitud, participación, convivencia → Ser), o dísela: «ponle 4 a Juan en ser de 7A». «Abre Zeti» abre la página de calificaciones. «Pasa el quiz a Kahoot» o «exporta el quiz a Quizizz»: la hoja con el formato de importación de cada plataforma.</p>
     <div class="field stack"><div class="ft"><label for="f-zeti-since">Notas desde (inicio del periodo)</label><p>AAAA-MM-DD. Vacío = todas las notas.</p></div>

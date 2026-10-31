@@ -159,6 +159,14 @@ def find_course(spoken):
     return keys[m[0]] if m else None
 
 
+def students(course):
+    """10.4: la lista del curso; para «7A · Tecnología» es la de 7A."""
+    c = data["cursos"].get(course)
+    if c is None and " · " in str(course):
+        c = data["cursos"].get(str(course).split(" · ")[0])
+    return c or []
+
+
 def grade_of(course):
     """«7A», «Séptimo», «10-2», «11 Física» → 7, 7, 10, 11 (None si no se sabe)."""
     words = [ORDINALES.get(w, w) for w in normalize(course or "").replace("grado", " ").split()]

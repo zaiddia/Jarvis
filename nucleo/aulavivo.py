@@ -29,7 +29,7 @@ def recovery_voice(text, t):
     whole = (not target) or aula.find_course(target) or (target.upper() in seguimiento.data and target.upper())
     if whole:
         course = J._resolve_course(target if target else "")
-        names = sorted(set(aula.data.get("cursos", {}).get(course, [])) | set(seguimiento.data.get(course, {})))
+        names = sorted(set(aula.students(course)) | set(seguimiento.data.get(course, {})))
         risk = seguimiento.at_risk(course, names, J._absences(course), J.settings["risk_grade"], J.settings["risk_absences"])
         names = [n for n, _ in risk]
         if not names:

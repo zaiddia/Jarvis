@@ -45,7 +45,7 @@ def year_status(curso, est):
 
 
 def course_year(curso):
-    names = sorted(set(aula.data.get("cursos", {}).get(curso, [])) | set(seguimiento.data.get(curso, {})) | set(periodos.data.get(curso, {})))
+    names = sorted(set(aula.students(curso)) | set(seguimiento.data.get(curso, {})) | set(periodos.data.get(curso, {})))
     return {n: J.year_status(curso, n) for n in names}
 
 
@@ -120,28 +120,8 @@ def year_voice(text, t):
         if not course:
             J.reply("¿De qué curso? Por ejemplo: «¿quiénes pueden perder el año en 7A?».", "ACUMULADO")
             return True
-        st = J.course_year(course)
-        if all(s["vf"] is None for s in st.values()):
-            J.reply(f"Aún no tengo las valoraciones de los periodos anteriores de {course}. Pega la tabla de Zeti de cada periodo en "
-                    "Ajustes › Memoria › Periodos anteriores.", "ACUMULADO")
-            return True
-        if "gan" in t or "aprob" in t:
-            ok = [n for n, s in st.items() if s["aprobo"]]
-            J.reply(f"En {course} ya aprobaron el año {len(ok)}: " + ", ".join(ok[:12]) + "." if ok else f"En {course} nadie ha asegurado el año todavía.",
-                    "ACUMULADO")
-            return True
-        lose = sorted(((n, s) for n, s in st.items() if s["pierde"]), key=lambda x: -(x[1]["vra"] or 0))
-        watch = [(n, s) for n, s in st.items() if not s["pierde"] and s["vra"] is not None and s["vra"] >= 3.5]
-        if not lose and not watch:
-            J.reply(f"En {course} nadie está en peligro de perder el año. 👌", "ACUMULADO")
-            return True
-        txt = ""
-        if lose:
-            txt += f"En {course} pueden perder el año {len(lose)}: " + "; ".join(
-                f"{n} (necesita {_yf(s['vra'])}" + (f", va en {_yf(s['actual'])})" if s["actual"] is not None else ")") for n, s in lose[:8]) + ". "
-        if watch:
-            txt += "Para estar pendiente: " + "; ".join(f"{n} (necesita {_yf(s['vra'])})" for n, s in watch[:6]) + "."
-        J.reply(txt.strip() + " Si quieres, «haz los planes de recuperación de " + course + "».", "ACUMULADO")
+        ks = [course] if course in J.keys_of(course) or len(J.keys_of(course)) == 1 else J.keys_of(course)   # 10.4: cada asignatura
+        J.reply(" ".join(J._year_report(k, t) for k in ks), "ACUMULADO")
         return True
     m = _NEED_RE.search(t)
     if m:
@@ -150,6 +130,28 @@ def year_voice(text, t):
             J.reply(J.spoken_status(course, name, J.year_status(course, name)), "ACUMULADO")
         return True
     return False
+
+
+def _year_report(course, t=""):
+    """El reporte de un curso (o curso · asignatura): quién puede perder el año y quién está en la cuerda floja."""
+    st = J.course_year(course)
+    if all(s["vf"] is None for s in st.values()):
+        return (f"Aún no tengo las valoraciones de los periodos anteriores de {course}. Pega la tabla de Zeti de cada periodo en "
+                "Ajustes › Memoria › Periodos anteriores.")
+    if "gan" in t or "aprob" in t:
+        ok = [n for n, s in st.items() if s["aprobo"]]
+        return (f"En {course} ya aprobaron el año {len(ok)}: " + ", ".join(ok[:12]) + ".") if ok else f"En {course} nadie ha asegurado el año todavía."
+    lose = sorted(((n, s) for n, s in st.items() if s["pierde"]), key=lambda x: -(x[1]["vra"] or 0))
+    watch = [(n, s) for n, s in st.items() if not s["pierde"] and s["vra"] is not None and s["vra"] >= 3.5]
+    if not lose and not watch:
+        return f"En {course} nadie está en peligro de perder el año. 👌"
+    txt = ""
+    if lose:
+        txt += f"En {course} pueden perder el año {len(lose)}: " + "; ".join(
+            f"{n} (necesita {_yf(s['vra'])}" + (f", va en {_yf(s['actual'])})" if s["actual"] is not None else ")") for n, s in lose[:8]) + ". "
+    if watch:
+        txt += "Para estar pendiente: " + "; ".join(f"{n} (necesita {_yf(s['vra'])})" for n, s in watch[:6]) + "."
+    return txt.strip() + " Si quieres, «haz los planes de recuperación de " + course + "»."
 
 
 def year_attention():
@@ -167,7 +169,7 @@ def save_period_vals():
     cur = int(J.settings["period_current"])
     n = 0
     for c in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
-        names = set(aula.data.get("cursos", {}).get(c, [])) | set(seguimiento.data.get(c, {}))
+        names = set(aula.students(c)) | set(seguimiento.data.get(c, {}))
         for e in names:
             v = J.current_val(c, e)
             if v is not None:
@@ -190,7 +192,7 @@ def paste_periods(curso, periodo, text, apply=True):
     curso = J._resolve_course(curso) or str(curso).strip().upper()
     if not curso:
         return {"ok": False, "msg": "Escoge el curso."}
-    names = aula.data.get("cursos", {}).get(curso, [])
+    names = aula.students(curso)
     creado = False
     if not names and apply:                            # sin lista en Jarvis: se crea con la de Zeti, en su orden
         aula.save_course(curso, "\n".join(r["nombre"] for r in rows))
@@ -235,6 +237,6 @@ def year_start():
     periodos.configure(J.CONFIG_DIR)
 
 
-__all__ = ['_LOSE_RE', '_NEED_RE', '_ORD', '_PER_RE', 'course_year', 'current_val', 'handle_periods_info', 'handle_periods_paste',
+__all__ = ['_year_report', '_LOSE_RE', '_NEED_RE', '_ORD', '_PER_RE', 'course_year', 'current_val', 'handle_periods_info', 'handle_periods_paste',
            'paste_periods', 'periodos', 'pweights', 'save_period_vals', 'spoken_status', 'year_attention', 'year_map', 'year_start',
            'year_status', 'year_voice']

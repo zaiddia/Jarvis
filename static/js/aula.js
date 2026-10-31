@@ -307,7 +307,7 @@
   $("#rv-run").addEventListener("click", () => {
     socket.emit("review_run", {
       estudiante: $("#rv-student").value, que: $("#rv-que").value,
-      grado: $("#rv-grado").value, clave: $("#rv-clave").value,
+      grado: $("#rv-grado").value, clave: $("#rv-clave").value, asignatura: $("#rv-subj").value,
     }, (r) => { if (r && r.ok === false) setRvStatus(r.error, "err"); });
   });
   let reviewDoc = "";
@@ -411,6 +411,14 @@
 
   /* ---------------- Enlace con Jarvis ---------------- */
   const socket = io();
+  // 10.4: área o asignatura de la revisión
+  socket.on("connect", () => socket.emit("subjects_info", {}, (r) => {
+    if (!r) return;
+    const sel = $("#rv-subj"), keep = sel.value;
+    sel.innerHTML = '<option value="">Automática (la escogida o la del horario)</option>' +
+      (r.choices || []).map((c) => `<option>${c.replace(/</g, "&lt;")}</option>`).join("");
+    sel.value = keep;
+  }));
   socket.on("connect", () => {
     socket.emit("aula_get", {}, (r) => {
       apply(r);
