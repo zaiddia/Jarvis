@@ -195,7 +195,7 @@ def forms_voice(text, t):
     if capture is not None:
         work()
     else:
-        threading.Thread(target=work, daemon=True, name="forms").start()
+        J.start_job("Creando el formulario de Google Forms", work, "forms")
     return True
 
 
@@ -306,7 +306,7 @@ def feedback_voice(text, t):
     if capture is not None:
         work()
     else:
-        threading.Thread(target=work, daemon=True, name="retroalimentacion").start()
+        J.start_job("Revisando entregas de Classroom", work, "retroalimentacion")
     return True
 
 

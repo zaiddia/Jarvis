@@ -120,7 +120,7 @@ def after_backup(res):
         except (classroom.ClassroomError, OSError) as e:
             J.note_error("RESPALDO", e)
             J.log_terminal(f"No pude subir la copia a Drive: {e}", "AVISO")
-    threading.Thread(target=work, daemon=True, name="respaldo-drive").start()
+    J.start_job("Subiendo la copia a Drive", work, "respaldo-drive")
 
 
 _BK_RE = re.compile(r"\b(?:haz|hazme|crea|guarda|sube)\b.*\b(?:copia|respaldo|backup)\b.*\bdrive\b|\b(?:respalda|respaldame)\b.*\bdrive\b")

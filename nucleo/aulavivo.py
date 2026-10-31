@@ -75,7 +75,7 @@ def recovery_voice(text, t):
     if capture is not None:
         work()
     else:
-        threading.Thread(target=work, daemon=True, name="recuperacion").start()
+        J.start_job("Preparando planes de recuperación", work, "recuperacion")
     return True
 
 

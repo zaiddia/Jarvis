@@ -180,7 +180,7 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
             J.reply(f"No me salió bien {lo}. Inténtalo otra vez, quizá con un tema más concreto.", "AULA")
         finally:
             J.material_job["busy"] = False
-    threading.Thread(target=work, daemon=True, name="material").start()
+    J.start_job("Preparando material de clase", work, "material")
 
 
 _AULA_VERB = r"\b(?:crea|creame|haz|hazme|prepara|preparame|genera|generame|disena|disename|elabora|elaborame|redacta|arma|armame|adapta|adaptame)\b"
@@ -459,7 +459,7 @@ def start_review(source="actual", estudiante="", que="", clave="", grado="", voi
             J.reply("No pude revisar el trabajo. Inténtalo de nuevo.", "REVISION")
         finally:
             J.review_state["busy"] = False
-    threading.Thread(target=work, daemon=True, name="revision").start()
+    J.start_job("Revisando el trabajo", work, "revision")
 
 
 _REVIEW_RE = re.compile(

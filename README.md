@@ -157,6 +157,23 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## HUD expandido, segunda vuelta (v9.0)
+
+- **«Trabajando…»**: encima de la conversación, una franja con lo que Jarvis está haciendo en segundo plano (material
+  de clase, informes, planes de recuperación, formularios, imágenes, subidas a Drive, el proyecto en marcha) y cuánto
+  lleva. El núcleo del reactor late mientras trabaja, y si algo falla queda en el registro de errores.
+- **Respuestas más legibles**: negritas, listas y código; las órdenes que Jarvis sugiere entre `comillas de código` se
+  copian a la barra con un clic; botón «Copiar» en cada respuesta; los tres puntos mientras piensa; y el botón
+  «↓ Nuevos mensajes» si estabas leyendo más arriba.
+- **Barra de órdenes**: ↑ y ↓ recorren tus órdenes anteriores.
+- **Panel «Hoy»**: barra de avance de la clase actual; la agenda dice «en 12 min» (y resalta lo que empieza pronto); los
+  pendientes tienen casilla para marcarlos hechos; el clima con su icono; cada tarjeta se pliega con un clic (y se
+  recuerda); y el botón del panel lo oculta para que la conversación ocupe todo el ancho.
+- **Registro**: filtros «Errores» y «Avisos» y búsqueda.
+- **Arrastra una foto al HUD** (la del taller o el examen de un estudiante): aparece una tarjeta para decir de quién es y
+  pulsar «Revisar».
+- **Atajos**: Ctrl+1 conversación, Ctrl+2 panel «Hoy», Ctrl+3 registro, Ctrl+L escribir, Ctrl+K paleta de órdenes.
+
 ## Datos de estudiantes cifrados y copias de seguridad en Drive (v8.9)
 
 **Datos de estudiantes protegidos.** En *Ajustes › Memoria › Datos de estudiantes*, «Proteger los datos de

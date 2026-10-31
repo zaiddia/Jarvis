@@ -126,7 +126,7 @@
 
   function setPreview(text, cls = "") {
     el.preview.className = `preview ${cls}`;
-    el.preview.textContent = text;
+    el.preview.textContent = String(text).replace(/\*\*|`/g, "").replace(/\n\s*(?:[-•*]|\d+[.)])\s+/g, " · ").replace(/\s*\n\s*/g, " ");
     void el.preview.offsetWidth;
     el.preview.classList.add("flash");
   }
@@ -202,14 +202,65 @@
     meta.append(t);
     const b = document.createElement("div");
     b.className = "msg-body";
-    b.textContent = item.text;
+    if (isUser) b.textContent = item.text; else b.innerHTML = md(item.text);
     m.append(meta, b);
+    if (!isUser) {                                          // 9.0: copiar la respuesta
+      const cp = document.createElement("button");
+      cp.type = "button"; cp.className = "copy"; cp.title = "Copiar"; cp.textContent = "Copiar";
+      cp.addEventListener("click", () => navigator.clipboard.writeText(item.text).then(() => { cp.textContent = "✓ Copiado"; setTimeout(() => (cp.textContent = "Copiar"), 1400); }, () => {}));
+      meta.append(cp);
+    }
+    $(".msg.typing", el.chat)?.remove();
     const stick = nearBottom(el.viewChat);
     el.chat.appendChild(m);
+    if (!stick && !isUser && live) newBelow(true);
     while (el.chat.children.length > 160) el.chat.firstChild.remove();
     if (stick || isUser) el.viewChat.scrollTop = el.viewChat.scrollHeight;
     if (live) setPreview(isUser ? `› ${item.text}` : item.text, isUser ? "user" : "");
   }
+
+  /* 9.0: formato ligero (negritas, cursivas, código y listas) sobre texto ya escapado: nunca se inserta HTML ajeno */
+  function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  function inline(s) {
+    return s.replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/(^|[\s(«])\*([^*\n]+)\*(?=[\s.,;:!?)»]|$)/g, "$1<i>$2</i>").replace(/(^|[\s(«])_([^_\n]+)_(?=[\s.,;:!?)»]|$)/g, "$1<i>$2</i>");
+  }
+  function md(text) {
+    const lines = esc(text).split("\n");
+    let out = "", list = "";
+    const close = () => { if (list) { out += `</${list}>`; list = ""; } };
+    lines.forEach((ln) => {
+      let m;
+      if ((m = ln.match(/^\s*(?:[-•*]|·)\s+(.*)$/))) { if (list !== "ul") { close(); out += "<ul>"; list = "ul"; } out += `<li>${inline(m[1])}</li>`; }
+      else if ((m = ln.match(/^\s*\d+[.)]\s+(.*)$/))) { if (list !== "ol") { close(); out += "<ol>"; list = "ol"; } out += `<li>${inline(m[1])}</li>`; }
+      else { close(); out += ln.trim() ? `<p>${inline(ln)}</p>` : ""; }
+    });
+    close();
+    return out;
+  }
+  function showTyping(on) {
+    const cur = $(".msg.typing", el.chat);
+    if (!on) { cur?.remove(); return; }
+    if (cur) return;
+    const m = document.createElement("div");
+    m.className = "msg jarvis typing";
+    m.innerHTML = '<div class="msg-meta">JARVIS</div><div class="msg-body"><i></i><i></i><i></i></div>';
+    const stick = nearBottom(el.viewChat);
+    el.chat.appendChild(m);
+    if (stick) el.viewChat.scrollTop = el.viewChat.scrollHeight;
+  }
+  const btnNew = document.createElement("button");
+  btnNew.type = "button"; btnNew.className = "newbelow"; btnNew.textContent = "↓ Nuevos mensajes"; btnNew.hidden = true;
+  btnNew.addEventListener("click", () => { el.viewChat.scrollTop = el.viewChat.scrollHeight; newBelow(false); });
+  el.viewChat.after(btnNew);
+  function newBelow(on) { btnNew.hidden = !on; }
+  // Las órdenes sugeridas en una respuesta (en `código`) se copian a la barra con un clic
+  el.chat.addEventListener("click", (e) => {
+    const c = e.target.closest(".msg.jarvis code");
+    if (!c) return;
+    el.input.value = c.textContent; el.input.focus();
+  });
+  el.viewChat.addEventListener("scroll", () => { if (nearBottom(el.viewChat)) newBelow(false); }, { passive: true });
 
   function emptyChat() {
     el.chat.innerHTML = '<div class="empty">Canal abierto.<br>Prueba: «abre la calculadora», «volumen al 30», «busca recetas de arepas».</div>';
@@ -230,6 +281,9 @@
     d.className = logClass(line);
     d.textContent = line;
     const stick = nearBottom(el.viewLog);
+    const lq = document.getElementById("log-q"), lf = document.querySelector(".lf.active");
+    if (lf && lf.dataset.f !== "all" && !d.classList.contains(lf.dataset.f)) d.hidden = true;
+    if (lq && lq.value && !d.textContent.toLowerCase().includes(lq.value.toLowerCase())) d.hidden = true;
     el.log.appendChild(d);
     while (el.log.children.length > 400) el.log.firstChild.remove();
     if (stick) el.viewLog.scrollTop = el.viewLog.scrollHeight;
@@ -242,7 +296,27 @@
   /* ================= 8.6: panel «Hoy», tarjetas de archivos, sugerencias, paleta y subtítulos ================= */
   const dash = $("#dash"), viewHoy = $("#view-hoy"), chips = $("#chips"), xtabHoy = $("#xtab-hoy");
   function mk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-  function card(title, extraCls = "") { const c = mk("section", "dcard " + extraCls); c.append(mk("h4", "", title)); return c; }
+  let collapsed = {};
+  try { collapsed = JSON.parse(localStorage.getItem("hud-collapsed") || "{}"); } catch (e) { collapsed = {}; }
+  function card(title, extraCls = "", key = "") {
+    const c = mk("section", "dcard " + extraCls);
+    const h = mk("h4", "", title);
+    key = key || title.split(" ·")[0];
+    if (collapsed[key]) c.classList.add("folded");
+    h.title = "Clic para plegar o desplegar";
+    h.addEventListener("click", () => {
+      c.classList.toggle("folded");
+      collapsed[key] = c.classList.contains("folded");
+      try { localStorage.setItem("hud-collapsed", JSON.stringify(collapsed)); } catch (e) { /* sin almacenamiento */ }
+    });
+    c.append(h);
+    return c;
+  }
+  function weatherIcon(t) {
+    const s = plain(t);
+    return /tormenta|electric/.test(s) ? "⛈" : /lluv|llovizna|chubasc/.test(s) ? "🌧" : /nublado|nubes|cubierto/.test(s) ? "☁" :
+      /niebla|bruma/.test(s) ? "🌫" : /parcial|algunas nubes/.test(s) ? "⛅" : /despejado|soleado|sol/.test(s) ? "☀" : "🌡";
+  }
 
   function placeDash() {
     const wide = body.dataset.size === "expandido" && el.shell.clientWidth >= 640;
@@ -259,12 +333,16 @@
     dash.innerHTML = "";
     const top = mk("div", "dtop");
     top.append(mk("span", "dclock", d.hora), mk("span", "ddate", d.fecha));
-    if (d.clima) top.append(mk("span", "dweather", d.clima));
+    if (d.clima) top.append(mk("span", "dweather", weatherIcon(d.clima) + "  " + d.clima));
     dash.append(top);
+    renderJobs(d.trabajos || []);
     const c = d.clase || {};
     if (c.ahora || c.siguiente) {
       const k = card("Clase");
-      if (c.ahora) { const r = mk("div", "drow now"); r.append(mk("b", "", c.ahora), mk("span", "dmeta", `faltan ${c.falta} min · hasta ${c.hasta}`)); k.append(r); }
+      if (c.ahora) {
+        const r = mk("div", "drow now"); r.append(mk("b", "", c.ahora), mk("span", "dmeta", `faltan ${c.falta} min · hasta ${c.hasta}`)); k.append(r);
+        if (c.progreso != null) { const bar = mk("div", "dbar cls"); const i = mk("i"); i.style.width = `${Math.round(c.progreso * 100)}%`; bar.append(i); k.append(bar); }
+      }
       if (c.siguiente) { const r = mk("div", "drow"); r.append(mk("span", "", (c.ahora ? "Luego: " : "Siguiente: ") + c.siguiente),
         mk("span", "dmeta", c.en != null ? (c.en <= 0 ? "ahora" : `en ${c.en} min`) : (c.hoy ? c.a_las : `${c.a_las} · otro día`))); k.append(r); }
       dash.append(k);
@@ -291,12 +369,22 @@
     }
     if (d.agenda && d.agenda.length) {
       const k = card("Agenda");
-      d.agenda.forEach((e) => { const r = mk("div", "drow"); r.append(mk("span", "", e.t), mk("span", "dmeta", e.h)); k.append(r); });
+      d.agenda.forEach((e) => {
+        const soon = e.en != null && e.en >= 0 && e.en <= 15;
+        const r = mk("div", "drow" + (soon ? " soon" : ""));
+        const when = e.en != null && e.en >= 0 && e.en < 120 ? `en ${e.en} min` : (e.hoy ? e.h : `${e.d.slice(8, 10)}/${e.d.slice(5, 7)} ${e.h}`);
+        r.append(mk("span", "", e.t), mk("span", "dmeta", when)); k.append(r);
+      });
       dash.append(k);
     }
     if (d.pendientes && d.pendientes.length) {
       const k = card(`Pendientes · ${d.n_pendientes}`);
-      d.pendientes.forEach((t) => k.append(mk("div", "drow", "· " + t)));
+      d.pendientes.forEach((p) => {
+        const r = mk("label", "drow todo");
+        const cb = mk("input"); cb.type = "checkbox"; cb.title = "Marcar como hecho";
+        cb.addEventListener("change", () => { r.classList.add("done"); socket.emit("notes_done", { id: p.id, done: true }, () => setTimeout(refreshDash, 500)); });
+        r.append(cb, mk("span", "", p.t)); k.append(r);
+      });
       dash.append(k);
     }
     if (d.correos) {
@@ -332,6 +420,118 @@
     el.input.setSelectionRange(pos, pos);
   }
   function refreshDash() { socket.emit("dashboard", {}, renderDash); }
+
+  /* 9.0: franja «Trabajando…» con lo que Jarvis hace en segundo plano */
+  const jobsBox = $("#jobs");
+  let jobsData = [], jobsAt = Date.now();
+  function renderJobs(list) {
+    jobsData = list || []; jobsAt = Date.now();
+    jobsBox.hidden = !jobsData.length;
+    jobsBox.innerHTML = "";
+    jobsData.forEach((j) => {
+      const r = mk("div", "job");
+      r.append(mk("span", "spin"), mk("span", "jt", j.t));
+      if (j.s >= 0) { const s = mk("span", "js"); s.dataset.s = j.s; r.append(s); }
+      jobsBox.append(r);
+    });
+    tickJobs();
+    body.classList.toggle("working", jobsData.length > 0);
+  }
+  function tickJobs() {
+    $$(".js", jobsBox).forEach((s) => { const v = Number(s.dataset.s) + Math.round((Date.now() - jobsAt) / 1000); s.textContent = v >= 60 ? `${Math.floor(v / 60)} min ${v % 60} s` : `${v} s`; });
+  }
+  setInterval(tickJobs, 1000);
+  socket.on("jobs", ({ jobs }) => renderJobs(jobs));
+
+  /* 9.0: ocultar o mostrar el panel «Hoy» (el chat ocupa todo el ancho) */
+  const btnDash = $("#btn-dash");
+  let dashHidden = false;
+  try { dashHidden = localStorage.getItem("hud-dash-hidden") === "1"; } catch (e) { dashHidden = false; }
+  function applyDashHidden() { body.classList.toggle("dash-hidden", dashHidden); btnDash.classList.toggle("off", dashHidden); btnDash.title = dashHidden ? "Mostrar el panel Hoy" : "Ocultar el panel Hoy"; }
+  btnDash.addEventListener("click", () => { dashHidden = !dashHidden; try { localStorage.setItem("hud-dash-hidden", dashHidden ? "1" : "0"); } catch (e) { /* sin almacenamiento */ } applyDashHidden(); });
+  applyDashHidden();
+
+  /* 9.0: historial de órdenes con ↑ y ↓ en la barra */
+  let hist = [], hpos = -1, draft = "";
+  try { hist = JSON.parse(localStorage.getItem("hud-history") || "[]"); } catch (e) { hist = []; }
+  function remember(cmd) {
+    hist = [cmd, ...hist.filter((x) => x !== cmd)].slice(0, 60); hpos = -1;
+    try { localStorage.setItem("hud-history", JSON.stringify(hist)); } catch (e) { /* sin almacenamiento */ }
+  }
+  el.input.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp" && hist.length && (el.input.value === "" || hpos >= 0)) {
+      e.preventDefault(); if (hpos < 0) draft = el.input.value; hpos = Math.min(hist.length - 1, hpos + 1); el.input.value = hist[hpos];
+    } else if (e.key === "ArrowDown" && hpos >= 0) {
+      e.preventDefault(); hpos -= 1; el.input.value = hpos >= 0 ? hist[hpos] : draft;
+    }
+  });
+
+  /* 9.0: registro con filtro y búsqueda */
+  const logQ = $("#log-q");
+  let logFilter = "all";
+  function applyLogFilter() {
+    const q = plain(logQ.value);
+    $$("div", el.log).forEach((d) => {
+      const okType = logFilter === "all" || d.classList.contains(logFilter);
+      d.hidden = !(okType && (!q || plain(d.textContent).includes(q)));
+    });
+  }
+  $$(".lf").forEach((b) => b.addEventListener("click", () => { logFilter = b.dataset.f; $$(".lf").forEach((x) => x.classList.toggle("active", x === b)); applyLogFilter(); }));
+  logQ.addEventListener("input", applyLogFilter);
+
+  /* 9.0: arrastra una foto al HUD para revisar el trabajo de un estudiante */
+  let dragDepth = 0;
+  document.addEventListener("dragenter", (e) => { if ([...(e.dataTransfer?.types || [])].includes("Files")) { dragDepth++; body.classList.add("dropping"); } });
+  document.addEventListener("dragleave", () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) body.classList.remove("dropping"); });
+  document.addEventListener("dragover", (e) => e.preventDefault());
+  document.addEventListener("drop", (e) => {
+    e.preventDefault(); dragDepth = 0; body.classList.remove("dropping");
+    const f = [...(e.dataTransfer?.files || [])].find((x) => /^image\//.test(x.type));
+    if (!f) { setPreview("Suelta una imagen (foto del trabajo) para revisarla.", "dim"); return; }
+    if (f.size > 15 * 1024 * 1024) { setPreview("La imagen es muy grande (máximo 15 MB).", "dim"); return; }
+    const rd = new FileReader();
+    rd.onload = () => socket.emit("review_upload", { data: rd.result }, (r) => {
+      if (!r || !r.ok) { setPreview((r && r.error) || "No pude abrir la imagen.", "dim"); return; }
+      if (body.dataset.size !== "expandido") setSize("expandido");
+      addReviewCard(r.preview);
+    });
+    rd.readAsDataURL(f);
+  });
+  function addReviewCard(preview) {
+    $(".empty", el.chat)?.remove();
+    const m = mk("div", "msg jarvis file");
+    const b = mk("div", "msg-body fcard");
+    if (preview) { const im = mk("img", "fthumb"); im.src = preview; im.alt = "Trabajo para revisar"; b.append(im); }
+    const info = mk("div", "finfo");
+    info.append(mk("b", "", "Trabajo listo para revisar"));
+    const who = mk("input", "rv-in"); who.placeholder = "¿De quién es? (opcional)";
+    const what = mk("input", "rv-in"); what.placeholder = "¿Qué actividad? (opcional)";
+    const go = mk("button", "mini ok", "Revisar"); go.type = "button";
+    go.addEventListener("click", () => {
+      socket.emit("review_run", { estudiante: who.value.trim(), que: what.value.trim() }, (r) => {
+        go.disabled = true; go.textContent = r && r.ok ? "Revisando…" : "Error";
+        if (r && !r.ok) setPreview(r.error || "No pude revisarlo.", "dim");
+      });
+    });
+    info.append(who, what, go); b.append(info);
+    m.append(mk("div", "msg-meta", "JARVIS · REVISAR TRABAJO"), b);
+    el.chat.appendChild(m);
+    el.viewChat.scrollTop = el.viewChat.scrollHeight;
+    $('.xtab[data-view="chat"]').click();
+    who.focus();
+  }
+
+  /* 9.0: atajos de teclado */
+  document.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const k = e.key.toLowerCase();
+    const tabs = { "1": "chat", "2": "hoy", "3": "log" };
+    if (tabs[k]) {
+      e.preventDefault();
+      if (k === "2" && body.classList.contains("wide")) { dashHidden = false; applyDashHidden(); return; }
+      $(`.xtab[data-view="${tabs[k]}"]`)?.click();
+    } else if (k === "l") { e.preventDefault(); el.input.focus(); el.input.select(); }
+  });
 
   function addFileCard(c) {
     $(".empty", el.chat)?.remove();
@@ -445,7 +645,7 @@
   });
   socket.on("terminal_log", ({ data }) => addLog(data));
   socket.on("chat", (item) => { if (item.role !== "user") lastJarvis = item.text; addChat(item); poke(); });
-  socket.on("state", (s) => { const was = st.mode; applyState(s); if (st.mode === "speaking" && was !== "speaking") startSubs(); else if (st.mode !== "speaking" && was === "speaking") stopSubs(); });
+  socket.on("state", (s) => { const was = st.mode; applyState(s); showTyping(st.mode === "thinking"); if (st.mode === "speaking" && was !== "speaking") startSubs(); else if (st.mode !== "speaking" && was === "speaking") stopSubs(); });
   socket.on("mic_level", ({ v }) => { if (st.mode !== "speaking") setLevel(v); });
   socket.on("heard", ({ text }) => { if (st.mode === "idle" || st.mode === "awaiting") setPreview(`«${text}»`, "dim"); });
   socket.on("settings_updated", applySettings);
@@ -505,6 +705,7 @@
     const text = el.input.value.trim();
     if (!text) return;
     socket.emit("manual_command", { command: text });
+    remember(text);
     el.input.value = "";
   });
   el.input.addEventListener("keydown", (e) => { if (e.key === "Escape") el.input.blur(); });
@@ -514,6 +715,7 @@
     el.viewChat.hidden = tab.dataset.view !== "chat";
     el.viewLog.hidden = tab.dataset.view !== "log";
     viewHoy.hidden = tab.dataset.view !== "hoy";
+    body.classList.toggle("logview", tab.dataset.view === "log");
     if (tab.dataset.view === "hoy") refreshDash();
     const v = tab.dataset.view === "chat" ? el.viewChat : el.viewLog;
     v.scrollTop = v.scrollHeight;

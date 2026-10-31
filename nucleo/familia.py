@@ -135,7 +135,7 @@ def family_voice(text, t):
     if capture is not None:
         work()
     else:
-        threading.Thread(target=work, daemon=True, name="informes").start()
+        J.start_job("Redactando informes para padres", work, "informes")
     return True
 
 

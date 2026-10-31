@@ -156,7 +156,7 @@ def web_search(query):
         fuentes = buscar.sources(results)
         if fuentes:
             J.log_terminal("Fuentes: " + " · ".join(f"{s['titulo']} ({s['fuente']})" for s in fuentes), "INTERNET")
-    threading.Thread(target=work, daemon=True, name="buscar").start()
+    J.start_job("Buscando en la web", work, "buscar")
 
 
 # =============================================================================

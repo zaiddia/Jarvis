@@ -756,7 +756,7 @@ def board_voice(text, t):
         except Exception as e:
             J.log_terminal(f"Tablero: {e}", "ERROR")
             J.reply("No pude leerlo esta vez. Inténtalo de nuevo con más luz.", "TABLERO")
-    threading.Thread(target=work, daemon=True, name="tablero").start()
+    J.start_job("Leyendo el tablero", work, "tablero")
     return True
 
 

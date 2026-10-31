@@ -571,7 +571,7 @@ def office_voice(text, t):
             J.notify(f"No me salió bien {what}. Inténtalo otra vez, quizá con un tema más concreto.", "AULA")
         finally:
             J.office_job["busy"] = False
-    threading.Thread(target=work, daemon=True, name="oficina").start()
+    J.start_job("Creando el documento", work, "oficina")
     return True
 
 

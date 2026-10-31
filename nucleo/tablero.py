@@ -95,6 +95,55 @@ def recent_image(idx):
     return send_file(path, max_age=60)
 
 
+# ============================================================================ TRABAJOS EN SEGUNDO PLANO (9.0)
+jobs = {}                       # id → {"t": etiqueta, "start": hora}
+_job_seq = [0]
+_job_lock = threading.Lock()
+
+
+def jobs_list():
+    """Lo que Jarvis está haciendo ahora mismo (para la franja «Trabajando…» del HUD)."""
+    now = time.time()
+    out = [{"t": j["t"], "s": int(now - j["start"])} for j in list(jobs.values())]
+    if J.project_run["busy"] and J.project_run.get("st"):
+        pr = J._orb_project()
+        out.append({"t": f"Proyecto «{pr['project_name']}» · {pr['project_done']}/{pr['project_total']} pasos", "s": -1})
+    if J.upd["busy"]:
+        out.append({"t": "Actualizando Jarvis", "s": -1})
+    if J.check_state.get("busy"):
+        out.append({"t": "Haciendo la prueba completa", "s": -1})
+    return out
+
+
+def _emit_jobs():
+    try:
+        J.socketio.emit("jobs", {"jobs": jobs_list()})
+    except Exception:
+        pass
+
+
+def start_job(label, fn, name="trabajo"):
+    """Corre fn en segundo plano y lo muestra en el HUD mientras dura."""
+    with _job_lock:
+        _job_seq[0] += 1
+        jid = _job_seq[0]
+        jobs[jid] = {"t": label, "start": time.time()}
+    _emit_jobs()
+
+    def run():
+        try:
+            fn()
+        except Exception as e:                         # que un fallo no quede mudo: al registro de errores
+            J.note_error(name.upper()[:40], e)
+            J.log_terminal(f"{label}: falló ({e})", "ERROR")
+        finally:
+            jobs.pop(jid, None)
+            _emit_jobs()
+    t = threading.Thread(target=run, daemon=True, name=name)
+    t.start()
+    return t
+
+
 # ============================================================================ PANEL «HOY»
 _weather = {"t": 0.0, "text": ""}
 
@@ -124,19 +173,29 @@ def dashboard(now=None):
     out = {"hora": now.strftime("%H:%M"), "fecha": now.strftime("%d/%m")}
     x = horario.now_class(now)
     nx, day = horario.next_class(now)
-    out["clase"] = {"ahora": horario.label(x) if x else "", "hasta": x["fin"] if x else "",
+    prog = None
+    if x:
+        a, b = _mins_until(x["inicio"], now), _mins_until(x["fin"], now)
+        prog = round(min(1.0, max(0.0, -a / max(1, b - a))), 3)
+    out["clase"] = {"ahora": horario.label(x) if x else "", "hasta": x["fin"] if x else "", "progreso": prog,
                     "falta": _mins_until(x["fin"], now) if x else None,
                     "siguiente": horario.label(nx) if nx else "", "a_las": nx["inicio"] if nx else "",
                     "hoy": bool(nx and day == now.date()),
                     "en": _mins_until(nx["inicio"], now) if nx and day == now.date() else None}
     try:
         evs = calendario.upcoming(limit=3)
-        out["agenda"] = [{"t": e["titulo"][:60], "h": e["inicio"][11:16], "d": e["inicio"][:10]} for e in evs]
+        out["agenda"] = []
+        for e in evs:
+            en = None
+            if not e["todo_el_dia"] and e["inicio"][:10] == now.date().isoformat():
+                en = int((datetime.datetime.fromisoformat(e["inicio"]).replace(tzinfo=None) - now).total_seconds() // 60)
+            out["agenda"].append({"t": e["titulo"][:60], "h": e["inicio"][11:16], "d": e["inicio"][:10],
+                                  "hoy": e["inicio"][:10] == now.date().isoformat(), "en": en})
     except Exception:
         out["agenda"] = []
     out["clima"] = _weather_short()
     pend = notas.pending()
-    out["pendientes"] = [notas.what(n)[:80] for n in pend[:5]]
+    out["pendientes"] = [{"id": n.get("id"), "t": notas.what(n)[:80]} for n in pend[:6]]
     out["n_pendientes"] = len(pend)
     out["aprobar"] = [{"id": a["id"], "t": a["titulo"][:90]} for a in aprobaciones.pending()[:4]]
     pr = J._orb_project()
@@ -154,6 +213,7 @@ def dashboard(now=None):
         if r:
             risk.append({"curso": course, "n": len(r), "nombres": [n for n, _ in r[:3]]})
     out["riesgo"] = risk
+    out["trabajos"] = jobs_list()
     out["sugerencias"] = suggestions(now, out)
     return out
 
@@ -298,7 +358,7 @@ def hud_plus_start():
 
 
 __all__ = [
-    'RecentFiles', '_IMG', '_KINDS', '_PROJ_OFF', '_PROJ_RE', '_allowed', '_dashboard_worker', '_mins_until',
+    'RecentFiles', '_IMG', '_emit_jobs', '_job_lock', '_job_seq', 'jobs', 'jobs_list', 'start_job', '_KINDS', '_PROJ_OFF', '_PROJ_RE', '_allowed', '_dashboard_worker', '_mins_until',
     '_open_projector', '_weather', '_weather_short', 'dashboard', 'file_card', 'handle_dashboard', 'handle_file_open',
     'handle_palette', 'handle_projector_state', 'hud_plus_start', 'projector_page', 'projector_state',
     'projector_voice', 'recent_image', 'suggestions',

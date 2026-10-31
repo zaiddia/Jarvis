@@ -96,7 +96,7 @@ def on_new_file(path):
             J.log_terminal(f"Subido a tu Drive: {os.path.basename(path)}", "DRIVE")
         except (classroom.ClassroomError, OSError) as e:
             J.note_error("DRIVE", e)
-    threading.Thread(target=work, daemon=True, name="drive").start()
+    J.start_job("Subiendo a Drive", work, "drive")
 
 
 _DRIVE_RE = re.compile(r"\b(?:sube|subelo|subela|guarda|guardalo|guardala|pasa|pasalo|pasala|ponlo|ponla|convierte|conviertelo|"
@@ -146,7 +146,7 @@ def drive_voice(text, t):
     if getattr(J._tl, "capture", None) is not None:
         work()
     else:
-        threading.Thread(target=work, daemon=True, name="drive").start()
+        J.start_job("Subiendo a Drive", work, "drive")
     return True
 
 

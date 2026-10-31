@@ -258,7 +258,7 @@ def image_voice(text, t):
     if getattr(J._tl, "capture", None) is not None:
         work()
     else:
-        threading.Thread(target=work, daemon=True, name="imagen").start()
+        J.start_job("Creando la imagen", work, "imagen")
     return True
 
 

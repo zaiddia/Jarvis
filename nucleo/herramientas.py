@@ -376,7 +376,7 @@ def research(topic, sync=False, folder=None, full=False):
     if sync:
         work()
         return out if full else out.get("msg", "")
-    threading.Thread(target=work, daemon=True, name="investigacion").start()
+    J.start_job("Investigando", work, "investigacion")
     return ""
 
 

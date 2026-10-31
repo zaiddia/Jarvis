@@ -164,7 +164,7 @@ def email_voice(text, t):
             return
         J.email_pending.update(to=dest, asunto=m["asunto"], cuerpo=m["cuerpo"], expires=time.time() + 180)
         J.reply(correo.spoken_preview(dest[0], dest[1], m["asunto"], m["cuerpo"]), "CORREO")
-    threading.Thread(target=work, daemon=True, name="correo").start()
+    J.start_job("Redactando el correo", work, "correo")
     return True
 
 
