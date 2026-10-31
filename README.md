@@ -157,6 +157,21 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Alertas tempranas, ficha del estudiante y felicitaciones (v9.7)
+
+**Alertas tempranas.** Jarvis ya no espera a que alguien quede en riesgo: cada tarde de semana mira la *tendencia* de
+cada estudiante. Te avisa en la campana si alguien **viene bajando** (iba bien y sus dos últimas notas cayeron) o
+**está faltando seguido** (2 fallas en la última semana, o siempre el mismo día de la semana). También aparecen en
+«¿qué necesita mi atención?». Pregúntale cuando quieras: «**¿quién viene bajando?**», «**¿quiénes están faltando?**».
+
+**Ficha del estudiante en el HUD.** «**Muéstrame a Juan de 7A**» o «**ficha de Juan Pérez de 7A**»: una tarjeta con su
+promedio y desempeño, la minigráfica de sus notas (la línea punteada es el 3,0), sus fallas, lo último del
+observador, sus alertas y tus compromisos con él, y botones para sacar el observador o el informe para padres.
+
+**Felicitaciones.** Cuando alguien **mejora** claramente, Jarvis te propone anotarle una felicitación en el observador
+(solo con tu «sí»). «**¿A quién debo felicitar?**» te dice quiénes van subiendo. Se apaga en Ajustes › Aula › Alertas
+tempranas y felicitaciones.
+
 ## Clase en vivo, ticket de salida con el celular y actividades que funcionaron (v9.6)
 
 **Clase en vivo.** «**Empieza la clase de fracciones**» (o solo «empieza la clase», y Jarvis toma la materia de tu

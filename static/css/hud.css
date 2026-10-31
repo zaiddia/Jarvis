@@ -231,6 +231,23 @@ body.wide .dash { border-top: 1px solid var(--line); border-left: 1px solid var(
 .finfo b { font-size: 11.5px; overflow-wrap: anywhere; }
 .finfo .dbtns { margin: 4px 0 0; }
 
+/* 9.7: ficha del estudiante */
+.msg.student { max-width: 94%; }
+.scard { display: flex; flex-direction: column; gap: 4px; }
+.shead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.shead b { font-size: 12.5px; }
+.sbadge { font-size: 10.5px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--a); color: var(--a); white-space: nowrap; }
+.sbadge.risk { border-color: #ff6b6b; color: #ff8f8f; }
+.spark { width: 100%; height: 46px; }
+.spark-base { stroke: rgba(255, 107, 107, .35); stroke-dasharray: 3 3; stroke-width: 1; }
+.spark-line { fill: none; stroke: var(--a); stroke-width: 1.6; }
+.spark-dot { fill: var(--a); }
+.spark-dot.low { fill: #ff6b6b; }
+.salert { font-size: 10.5px; color: #ffc46b; }
+.sobs { font-size: 10.5px; color: var(--dim, #9fb3c8); border-left: 2px solid var(--line); padding-left: 6px; }
+.sobs.pos { border-left-color: #5fd38a; }
+.scard .dbtns { margin: 4px 0 0; }
+
 .pal { position: absolute; left: 12px; right: 12px; top: 60px; z-index: 20; max-height: calc(100% - 110px); display: flex; flex-direction: column;
   border: 1px solid var(--line-strong); border-radius: 10px; background: rgba(4, 9, 16, .98);
   box-shadow: 0 16px 40px rgba(0, 0, 0, .6), 0 0 24px rgba(var(--a-rgb), .18); animation: rise .16s ease-out; }

@@ -648,6 +648,57 @@
     if (stick) el.viewChat.scrollTop = el.viewChat.scrollHeight;
   }
 
+  /* 9.7: ficha del estudiante (notas con minigráfica, fallas, observador, alertas) */
+  function sparkline(vals) {
+    const NS = "http://www.w3.org/2000/svg", W = 520, H = 46, n = vals.length;
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("class", "spark");
+    const y = (v) => H - 4 - ((v - 1) / 4) * (H - 8), x = (i) => n < 2 ? W / 2 : 4 + i * ((W - 8) / (n - 1));
+    const base = document.createElementNS(NS, "line");
+    base.setAttribute("x1", 0); base.setAttribute("x2", W); base.setAttribute("y1", y(3)); base.setAttribute("y2", y(3));
+    base.setAttribute("class", "spark-base"); svg.append(base);
+    const pl = document.createElementNS(NS, "polyline");
+    pl.setAttribute("points", vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" "));
+    pl.setAttribute("class", "spark-line"); svg.append(pl);
+    vals.forEach((v, i) => {
+      const c = document.createElementNS(NS, "circle");
+      c.setAttribute("cx", x(i)); c.setAttribute("cy", y(v)); c.setAttribute("r", 2.6);
+      c.setAttribute("class", v < 3 ? "spark-dot low" : "spark-dot"); svg.append(c);
+    });
+    return svg;
+  }
+  function addStudentCard(c) {
+    $(".empty", el.chat)?.remove();
+    hasMessages = true;
+    const m = mk("div", "msg jarvis student");
+    const meta = mk("div", "msg-meta", `JARVIS · FICHA · ${c.curso}`);
+    const b = mk("div", "msg-body scard");
+    const head = mk("div", "shead");
+    const avg = c.promedio == null ? "—" : String(c.promedio).replace(".", ",");
+    head.append(mk("b", "", c.nombre), mk("span", "sbadge" + (c.riesgo ? " risk" : ""), `${avg}${c.desempeno ? " · " + c.desempeno : ""}`));
+    b.append(head);
+    if ((c.notas || []).length) {
+      b.append(sparkline(c.notas.map((x) => x.n)));
+      const last = c.notas.slice(-3).reverse().map((x) => `${x.a}: ${String(x.n).replace(".", ",")}`).join(" · ");
+      b.append(mk("div", "dmeta", "Últimas: " + last));
+    } else b.append(mk("div", "dmeta", "Sin notas registradas."));
+    b.append(mk("div", "dmeta", `${c.fallas} falla${c.fallas === 1 ? "" : "s"}` + ((c.ultimas_fallas || []).length ? ` (última ${c.ultimas_fallas.slice(-1)[0]})` : "")));
+    (c.alertas || []).forEach((a) => b.append(mk("div", "salert", "⚠ " + a)));
+    (c.observador || []).slice(-3).reverse().forEach((o) => b.append(mk("div", "sobs " + (o.t === "positiva" ? "pos" : ""), `${o.f} · ${o.x}`)));
+    (c.compromisos || []).forEach((x) => b.append(mk("div", "dmeta", "Compromiso: " + x)));
+    const btns = mk("div", "dbtns");
+    [["Observador", `genera el observador de ${c.nombre} de ${c.curso}`], ["Informe padres", `haz el informe para los padres de ${c.nombre} de ${c.curso}`]].forEach(([l, cmd]) => {
+      const bt = mk("button", "mini", l); bt.type = "button";
+      bt.addEventListener("click", () => run(cmd));
+      btns.append(bt);
+    });
+    b.append(btns);
+    m.append(meta, b);
+    const stick = nearBottom(el.viewChat);
+    el.chat.appendChild(m);
+    if (stick) el.viewChat.scrollTop = el.viewChat.scrollHeight;
+  }
+
   /* Paleta de órdenes */
   const pal = { box: $("#pal"), q: $("#pal-q"), list: $("#pal-list"), items: [], sel: 0 };
   const plain = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -723,6 +774,7 @@
   socket.on("tutor", (d) => { tutorOn = !!(d && d.on); applyState({}); });
   socket.on("connect", () => socket.emit("tutor_state", {}, (d) => { tutorOn = !!(d && d.on); applyState({}); }));
   socket.on("file_card", (c) => { addFileCard(c); poke(); });
+  socket.on("student_card", (c) => { addStudentCard(c); poke(); });
   socket.on("disconnect", () => { setPreview("Sin enlace con el motor de Jarvis…", "dim"); led("#led-ai", "err"); });
   socket.on("bootstrap", (data) => {
     native = !!data.native;

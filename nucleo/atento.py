@@ -67,6 +67,13 @@ def attention_items(now=None):
         r = seguimiento.at_risk(course, names, J._absences(course), J.settings["risk_grade"], J.settings["risk_absences"])
         if r:
             out.append({"k": f"ri:{course}:{len(r)}", "p": 3, "t": f"{len(r)} en riesgo en {course}", "cmd": f"¿quiénes están en riesgo en {course}?"})
+    try:
+        for a in J.early_alerts(today) if J.settings.get("early_alerts", True) else []:
+            if a["tipo"] != "mejora":
+                out.append({"k": "ea:" + a["k"], "p": 2, "t": f"{a['estudiante']} ({a['curso']}) {a['detalle']}"[:110],
+                            "cmd": f"muéstrame a {a['estudiante']} de {a['curso']}"})
+    except Exception:
+        pass
     day_ago = (now - datetime.timedelta(days=1)).isoformat()
     errs = [e for e in errores.recent(50) if e["t"] >= day_ago and e["nivel"] == "error"]
     if errs:

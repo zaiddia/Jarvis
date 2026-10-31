@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "9.6"
+VERSION = "9.7"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -754,6 +754,8 @@ DEFAULT_SETTINGS = {
     "watch_hours": 6,              # 9.4: cada cuántas horas revisar las páginas vigiladas
     "morning_voice_note": True,    # 9.5: el reporte de la mañana también como nota de voz en Telegram
     "style_learn": True,           # 9.5: aprender tu forma de escribir de lo que envías con Jarvis
+    "early_alerts": True,          # 9.7: alertas tempranas (quién viene bajando o faltando) y celebraciones
+    "early_last": "",              # 9.7: último día en que avisó de las tendencias
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -1436,6 +1438,10 @@ def process_command(text):
         return
     if page_watch_voice(text, t):                      # 9.4: «avísame cuando publiquen algo nuevo en https://…»
         return
+    if early_voice(text, t):                           # 9.7: «¿quién viene bajando?», «¿a quién debo felicitar?»
+        return
+    if card_voice(text, t):                            # 9.7: «muéstrame a Juan de 7A», «ficha de Juan»
+        return
     if lessons_voice(text, t):                         # 9.4: «de ahora en adelante…», «¿qué lecciones tienes?»
         return
     if text_feedback_voice(text, t):                   # 9.5: «retroalimenta este texto de Juan de 7A: …»
@@ -1915,6 +1921,10 @@ from nucleo.pulido import *  # noqa: F401,F403,E402
 # =============================================================================
 from nucleo.enclase import *  # noqa: F401,F403,E402
 
+# ── 9.7: alertas tempranas, ficha del estudiante y celebraciones
+# → nucleo/estudiantes.py (lógica en tendencias.py)
+from nucleo.estudiantes import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2050,6 +2060,7 @@ def main():
         teacher_plus_start()              # 9.4: lecciones y vigilante de páginas
         polish_start()                    # 9.5: tu estilo al escribir
         live_class_start()                # 9.6: clase en vivo y banco de actividades
+        students_plus_start()             # 9.7: alertas tempranas y celebraciones
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()
