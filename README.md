@@ -157,6 +157,19 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Más HUD: línea del día, mapa del curso, modo clase, barra del año y avisos con botones (v10.9)
+
+- **Línea del día:** tus clases de hoy en una franja; la que estás dando se va llenando y, al tocar una, salen sus
+  botones: preparar, empezar la clase, asistencia, ticket de salida, práctica y calificar hojas.
+- **Mapa del curso:** al tocar un curso en la tarjeta Cursos, una cuadrícula estudiantes × actividades coloreada por
+  desempeño (S, A, B, Bj) con la Val de cada uno, los más bajos arriba; las actividades con el color de su dimensión.
+  Tocar un nombre abre su ficha; botones para «en riesgo» y la planilla de Zeti.
+- **Modo clase:** mientras conduces una clase o hay un QR activo (ticket, práctica, calificación), arriba aparece la
+  tarjeta «En clase» con el momento, una cuenta regresiva grande y cuántos han respondido o escaneado.
+- **Barra del año:** en qué semana y periodo vas, si vas al día con la planeación y cuántos días faltan para el cierre.
+- **Avisos con botones:** cada aprobación nueva sale como notificación con «Sí», «No» y «Ver»; las alertas
+  importantes también, con «Ver».
+
 ## El año escolar planeado solo (v10.8)
 
 - «**Planea mi año**»: la planeación de **todo el año** de cada curso y asignatura (por ejemplo 7A Matemáticas,

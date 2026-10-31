@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "10.8"
+VERSION = "10.9"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -2033,6 +2033,10 @@ from nucleo.tutoria import *  # noqa: F401,F403,E402
 # ── 10.8: la planeación del año completo (cada grado y asignatura, con los DBA o tu plan de área)
 # → nucleo/planeacion.py (lógica en anual.py)
 from nucleo.planeacion import *  # noqa: F401,F403,E402
+
+# ── 10.9: más HUD (línea del día, mapa del curso, modo clase, barra del año, avisos con botones)
+# → nucleo/hudplus.py (y static/js/hud.js)
+from nucleo.hudplus import *  # noqa: F401,F403,E402
 
 
 # =============================================================================

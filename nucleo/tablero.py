@@ -288,6 +288,10 @@ def dashboard(now=None):
     out["cursos"] = courses_summary()
     out["favoritos"] = favorites()
     out["avisos_sin_leer"] = notices_unread()
+    try:                                               # 10.9: línea del día, barra del año y modo clase
+        J.hud_extras(now, out)
+    except Exception as e:
+        J.note_error("HUD", e)
     out["sugerencias"] = suggestions(now, out)
     return out
 

@@ -430,3 +430,68 @@ body.wide.dash-hidden[data-size="expandido"] .shell { grid-template-columns: 44p
 .reactor.ping { animation: reactorping .9s ease-out; }
 @keyframes reactorping { 30% { filter: drop-shadow(0 0 18px rgba(var(--a2-rgb), .95)) brightness(1.6); } }
 @media (prefers-reduced-motion: reduce) { .holo::before, .holo.in, .holo.out { animation: none; } }
+
+/* ---------- 10.9: barra del año ---------- */
+.ybar { display: flex; flex-direction: column; gap: 3px; padding: 0 1px 2px; }
+.ybar.click { cursor: pointer; }
+.ytrack { position: relative; display: flex; gap: 2px; height: 5px; }
+.yseg { border-radius: 2px; background: rgba(var(--a-rgb), .12); }
+.yseg.done { background: rgba(var(--a-rgb), .35); }
+.yseg.cur { background: rgba(var(--a-rgb), .22); box-shadow: inset 0 0 0 1px rgba(var(--a-rgb), .5); }
+.ymark { position: absolute; top: -2px; width: 3px; height: 9px; margin-left: -1px; border-radius: 2px; background: var(--a); box-shadow: 0 0 8px var(--a); }
+.yinfo { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 9.5px; color: var(--muted); }
+.yinfo .yok { color: var(--ok); } .yinfo .ywarn { color: #ffc46b; } .yinfo .ybad { color: #ff8f8f; }
+
+/* ---------- 10.9: modo clase ---------- */
+.dcard.live { border-color: rgba(61, 255, 154, .55); background: rgba(61, 255, 154, .06); }
+.dcard.live h4 { color: var(--ok); }
+.lc-tema { font-size: 12px; font-weight: 700; }
+.lc-mom { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.lc-clock { font-family: var(--hud); font-size: 30px; letter-spacing: .06em; color: var(--ok); text-shadow: 0 0 14px rgba(61, 255, 154, .5); margin: 4px 0 0; }
+.lc-clock.end { color: #ffb02e; text-shadow: 0 0 14px rgba(255, 176, 46, .6); animation: tmrpulse 1s steps(2) infinite; }
+.lc-qr { align-items: center; }
+.lc-qr b { color: var(--ok); }
+body.inclass .dcard:not(.live):not(.att) { opacity: .72; }
+body.inclass .dcard:not(.live):hover { opacity: 1; }
+
+/* ---------- 10.9: línea del día ---------- */
+.tline { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+.tline::-webkit-scrollbar { height: 3px; }
+.tblk { position: relative; flex: 1 0 64px; min-width: 64px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px 6px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 1px; overflow: hidden; background: rgba(var(--a-rgb), .03); transition: border-color .15s, background .15s; }
+.tblk:hover { border-color: rgba(var(--a-rgb), .6); }
+.tblk .th { font-size: 9px; color: var(--muted); font-family: var(--hud); letter-spacing: .08em; }
+.tblk b { font-size: 11.5px; }
+.tblk .tm { font-size: 9.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tblk .tprog { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--a); box-shadow: 0 0 6px var(--a); }
+.tblk.pasada { opacity: .5; }
+.tblk.pasada .tprog { background: rgba(var(--a-rgb), .4); box-shadow: none; }
+.tblk.ahora { border-color: var(--a); background: rgba(var(--a-rgb), .12); }
+.tblk.sel { box-shadow: 0 0 0 1px var(--a) inset; }
+.tacts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.tacts:empty { display: none; }
+
+/* ---------- 10.9: mapa del curso ---------- */
+.cmap { position: absolute; left: 12px; right: 12px; top: 60px; bottom: 60px; z-index: 21; display: flex; flex-direction: column; gap: 8px; padding: 10px;
+  border: 1px solid var(--line-strong); border-radius: 10px; background: rgba(4, 9, 16, .98); box-shadow: 0 16px 40px rgba(0, 0, 0, .6); animation: rise .16s ease-out; }
+.cmap-h { display: flex; align-items: center; gap: 8px; }
+.cmap-h b { font-size: 13px; color: var(--a); }
+.cmap-h .dmeta { flex: 1; }
+.cmap-g { display: grid; gap: 2px; overflow: auto; font-size: 10.5px; align-content: start; }
+.cmap-g .ch { position: sticky; top: 0; background: rgba(4, 9, 16, .98); color: var(--muted); font-size: 9px; text-align: center; padding: 2px 0; }
+.cmap-g .ch:first-child { text-align: left; }
+.cmap-g .ch.act.conocer { color: #8fe3a5; } .cmap-g .ch.act.hacer { color: #c4b2f3; } .cmap-g .ch.act.ser { color: #f3cd8b; } .cmap-g .ch.act.auto { color: #f3e48b; }
+.cmap-g .cn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; padding: 2px 4px 2px 0; }
+.cmap-g .cn:hover { color: var(--a); }
+.cmap-g .cc, .cmap-g .cv { display: grid; place-items: center; border-radius: 3px; font-style: normal; min-height: 18px; }
+.cmap-g .s { background: rgba(61, 255, 154, .32); } .cmap-g .a { background: rgba(61, 200, 255, .28); }
+.cmap-g .b { background: rgba(255, 196, 107, .3); } .cmap-g .x { background: rgba(255, 90, 90, .42); } .cmap-g .e { background: rgba(255, 255, 255, .04); }
+
+/* ---------- 10.9: avisos con botones ---------- */
+.toasts { position: fixed; right: 12px; bottom: 64px; z-index: 40; display: flex; flex-direction: column; gap: 6px; max-width: min(380px, calc(100vw - 24px)); }
+.toast { display: flex; flex-direction: column; gap: 6px; padding: 9px 11px; border: 1px solid rgba(180, 140, 255, .6); border-radius: 9px;
+  background: rgba(10, 8, 22, .97); box-shadow: 0 10px 30px rgba(0, 0, 0, .6), 0 0 18px rgba(180, 140, 255, .2); font-size: 11.5px; animation: rise .2s ease-out; }
+.toast .tt { overflow-wrap: anywhere; }
+.toast .dbtns { justify-content: flex-end; }
+.cmap-g .ch.act { display: flex; flex-direction: column; line-height: 1.15; overflow: hidden; }
+.cmap-g .ch.act b { font-weight: 500; } .cmap-g .ch.act small { font-size: 8px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

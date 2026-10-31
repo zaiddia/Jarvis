@@ -392,6 +392,137 @@
   });
 
 
+  /* ---------- 10.9: barra del año, modo clase, línea del día, mapa del curso y avisos con botones ---------- */
+  const fmtMS = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+  function yearBar(a) {
+    const box = mk("div", "ybar");
+    const track = mk("div", "ytrack");
+    const total = a.total || a.periodos.reduce((x, y) => x + y, 0);
+    a.periodos.forEach((n, i) => {
+      const seg = mk("i", "yseg" + (i + 1 === a.periodo ? " cur" : i + 1 < a.periodo ? " done" : ""));
+      seg.style.flex = String(n); seg.title = `Periodo ${i + 1}: ${n} semanas`;
+      track.append(seg);
+    });
+    if (a.semana) { const mkr = mk("b", "ymark"); mkr.style.left = `${Math.min(100, (a.semana - 0.5) / total * 100)}%`; track.append(mkr); }
+    const info = mk("div", "yinfo");
+    info.append(mk("span", "", a.semana ? `Semana ${a.semana}/${total} · P${a.periodo} (${a.semana_periodo}/${a.periodos[a.periodo - 1]})` : `Periodo ${a.periodo}`));
+    if (a.plan) info.append(mk("span", a.plan.dif < -1 ? "ybad" : a.plan.dif < 0 ? "ywarn" : "yok",
+      a.plan.dif === 0 ? "plan al día" : a.plan.dif > 0 ? `adelantado ${a.plan.dif}` : `atrasado ${-a.plan.dif} (${a.plan.curso})`));
+    if (a.cierre != null && a.cierre >= 0) info.append(mk("span", a.cierre <= 7 ? "ywarn" : "", a.cierre === 0 ? "cierre hoy" : `cierre en ${a.cierre} d`));
+    box.append(track, info);
+    if (a.plan) { box.classList.add("click"); box.title = "¿Cómo voy con la planeación?"; box.addEventListener("click", () => run("¿cómo voy con la planeación?")); }
+    return box;
+  }
+  let lcTimer = null;
+  function inClassCard(e) {
+    const k = card("En clase", "live", "EnClase");
+    clearInterval(lcTimer);
+    if (e.clase) {
+      const cl = e.clase;
+      k.append(mk("div", "lc-tema", `${cl.tema}${cl.curso ? " · " + cl.curso : ""}`));
+      k.append(mk("div", "lc-mom", `${cl.i}/${cl.n} · ${cl.momento}`));
+      const clock = mk("div", "lc-clock" + (cl.left <= 60 ? " end" : ""), fmtMS(cl.left));
+      const t0 = Date.now(), left0 = cl.left;
+      lcTimer = setInterval(() => { const l = Math.max(0, left0 - Math.round((Date.now() - t0) / 1000)); clock.textContent = fmtMS(l); clock.classList.toggle("end", l <= 60); }, 1000);
+      const bar = mk("div", "dbar cls"); const i = mk("i"); i.style.width = `${Math.round(100 * (1 - cl.left / Math.max(1, cl.min * 60)))}%`; bar.append(i);
+      const btns = mk("div", "dbtns");
+      [["Siguiente", "siguiente momento"], ["+5 min", "dame 5 minutos más"], ["Terminar", "termina la clase"]].forEach(([t, cmd]) => {
+        const b = mk("button", "mini" + (t === "Siguiente" ? " ok" : ""), t); b.type = "button"; b.addEventListener("click", () => run(cmd)); btns.append(b);
+      });
+      k.append(clock, bar, btns);
+    }
+    (e.qr || []).forEach((q) => {
+      const r = mk("div", "drow lc-qr"); r.append(mk("span", "", "▣ " + q.t), mk("b", "", q.de ? `${q.n}/${q.de}` : String(q.n)));
+      const b = mk("button", "mini", "Cerrar"); b.type = "button"; b.addEventListener("click", () => run(q.cmd)); r.append(b);
+      k.append(r);
+    });
+    return k;
+  }
+  let dayOpen = null;
+  function dayLine(dia) {
+    const k = card(`Hoy · ${dia.length} clase${dia.length === 1 ? "" : "s"}`, "", "Clase");
+    const tl = mk("div", "tline");
+    const acts = mk("div", "tacts");
+    dia.forEach((x, idx) => {
+      const b = mk("div", "tblk " + x.estado);
+      b.append(mk("span", "th", x.inicio), mk("b", "", x.curso || x.t), mk("span", "tm", x.t.replace(x.curso, "").trim()));
+      const p = mk("i", "tprog"); p.style.width = `${Math.round(x.progreso * 100)}%`; b.append(p);
+      b.title = `${x.t} · ${x.inicio}–${x.fin}`;
+      b.addEventListener("click", () => { dayOpen = dayOpen === idx ? null : idx; showActs(); });
+      tl.append(b);
+    });
+    function showActs() {
+      acts.innerHTML = "";
+      tl.querySelectorAll(".tblk").forEach((b, i) => b.classList.toggle("sel", i === dayOpen));
+      if (dayOpen == null || !dia[dayOpen]) return;
+      dia[dayOpen].acciones.forEach((a) => { const bt = mk("button", "mini", a.t); bt.type = "button"; bt.addEventListener("click", () => run(a.cmd)); acts.append(bt); });
+    }
+    if (dayOpen == null) { const cur = dia.findIndex((x) => x.estado === "ahora"); if (cur >= 0) dayOpen = cur; }
+    showActs();
+    k.append(tl, acts);
+    return k;
+  }
+  // Mapa del curso: estudiantes × actividades coloreado por desempeño
+  const map = { box: null };
+  function openMap(curso) {
+    if (body.dataset.size !== "expandido") setSize("expandido");
+    socket.emit("course_map", { curso }, (r) => {
+      if (!r || !r.rows) return;
+      map.box?.remove();
+      const box = mk("div", "cmap"); map.box = box;
+      const head = mk("div", "cmap-h");
+      head.append(mk("b", "", `Mapa · ${r.curso}`), mk("span", "dmeta", `${r.rows.length} estudiantes · ${r.acts.length} actividades`));
+      const risk = mk("button", "mini", "En riesgo"); risk.type = "button"; risk.addEventListener("click", () => { box.remove(); run(`¿quiénes están en riesgo en ${r.curso}?`); });
+      const zx = mk("button", "mini", "Zeti"); zx.type = "button"; zx.addEventListener("click", () => { box.remove(); run(`exporta las notas de ${r.curso} para Zeti`); });
+      const close = mk("button", "mini", "✕"); close.type = "button"; close.addEventListener("click", () => box.remove());
+      head.append(risk, zx, close);
+      const sc = r.escala || { superior: 4.5, alto: 4.0, basico: 3.0 };
+      const cls = (v) => (v == null ? "e" : v >= sc.superior ? "s" : v >= sc.alto ? "a" : v >= sc.basico ? "b" : "x");
+      const grid = mk("div", "cmap-g");
+      grid.style.gridTemplateColumns = `minmax(120px, 1.6fr) repeat(${r.acts.length}, minmax(22px, 1fr)) 44px`;
+      grid.append(mk("span", "ch", "Estudiante"));
+      r.acts.forEach((a) => { const h = mk("span", "ch act " + a.dim); h.append(mk("b", "", a.f), mk("small", "", a.a.slice(0, 12))); h.title = `${a.a} (${a.dim})`; grid.append(h); });
+      grid.append(mk("span", "ch", "Val"));
+      r.rows.forEach((row) => {
+        const nm = mk("span", "cn", row.n); nm.title = "Ver su ficha"; nm.addEventListener("click", () => { box.remove(); run(`ficha de ${row.n} de ${r.curso}`); });
+        grid.append(nm);
+        row.c.forEach((v, i) => { const c = mk("i", "cc " + cls(v), v == null ? "" : Number(v).toFixed(1).replace(".", ",")); c.title = `${row.n} · ${r.acts[i].a}: ${v == null ? "sin nota" : v}`; grid.append(c); });
+        grid.append(mk("b", "cv " + cls(row.val), row.val == null ? "—" : `${String(row.val).replace(".", ",")} ${row.letra}`));
+      });
+      box.append(head, grid);
+      document.querySelector(".shell").append(box);
+    });
+  }
+  // Avisos con botones: las aprobaciones nuevas salen como notificación con Sí / No / Ver
+  const toastBox = mk("div", "toasts"); document.body.append(toastBox);
+  const toasted = new Set();
+  function toast(text, buttons, ms = 25000) {
+    const t = mk("div", "toast");
+    t.append(mk("span", "tt", text));
+    const bb = mk("div", "dbtns");
+    buttons.forEach(([label, fn, ok]) => { const b = mk("button", "mini" + (ok ? " ok" : ""), label); b.type = "button"; b.addEventListener("click", () => { fn(); t.remove(); }); bb.append(b); });
+    const x = mk("button", "mini", "✕"); x.type = "button"; x.addEventListener("click", () => t.remove()); bb.append(x);
+    t.append(bb); toastBox.append(t);
+    while (toastBox.children.length > 3) toastBox.firstChild.remove();
+    setTimeout(() => t.remove(), ms);
+    poke();
+  }
+  socket.on("approvals", (d) => {
+    (d && d.pending || []).forEach((a) => {
+      if (toasted.has(a.id)) return;
+      toasted.add(a.id);
+      toast(`Por aprobar: ${a.titulo}`, [["Sí", () => socket.emit("approval_resolve", { id: a.id, ok: true }, refreshDash), true],
+        ["No", () => socket.emit("approval_resolve", { id: a.id, ok: false }, refreshDash)],
+        ["Ver", () => { setSize("expandido"); openNotices(); }]]);
+    });
+  });
+  socket.on("connect", () => socket.emit("dashboard", {}, (d) => (d && d.aprobar || []).forEach((a) => toasted.add(a.id))));
+  socket.on("notice", (n) => {                                                     // alertas importantes: también como aviso con botón
+    if (!n || n.kind === "aprobar" || !/^(aviso|alerta|error)$/.test(n.kind || "")) return;
+    if (!/alerta|recordatorio|venc|urgente|riesgo|perder|cierre|novedad/i.test(n.text)) return;
+    toast(n.text.length > 160 ? n.text.slice(0, 157) + "…" : n.text, [["Ver", () => { setSize("expandido"); openNotices(); }, true]], 15000);
+  });
+
   function renderDash(d) {
     if (!d) return;
     dash.innerHTML = "";
@@ -399,6 +530,9 @@
     top.append(mk("span", "dclock", d.hora), mk("span", "ddate", d.fecha));
     if (d.clima) top.append(mk("span", "dweather", weatherIcon(d.clima) + "  " + d.clima));
     dash.append(top);
+    if (d.anio) dash.append(yearBar(d.anio));                // 10.9: barra del año
+    body.classList.toggle("inclass", !!d.en_clase);
+    if (d.en_clase) dash.append(inClassCard(d.en_clase));    // 10.9: modo clase
     renderJobs(d.trabajos || []);
     if (d.atencion && d.atencion.length) {                   // 9.3: lo que necesita tu atención
       const k = card(`Atención · ${d.atencion.length}`, "att", "Atención");
@@ -411,7 +545,8 @@
       dash.append(k);
     }
     const c = d.clase || {};
-    if (c.ahora || c.siguiente) {
+    if (d.dia && d.dia.length) dash.append(dayLine(d.dia));  // 10.9: línea del día
+    else if (c.ahora || c.siguiente) {
       const k = card("Clase");
       if (c.ahora) {
         const r = mk("div", "drow now"); r.append(mk("b", "", c.ahora), mk("span", "dmeta", `faltan ${c.falta} min · hasta ${c.hasta}`)); k.append(r);
@@ -481,7 +616,7 @@
         });
         const top = mk("div", "course-top"); top.append(name, avg);
         row.append(top, bar);
-        row.addEventListener("click", () => run(`¿quiénes están en riesgo en ${c.curso}?`));
+        row.addEventListener("click", () => openMap(c.curso));                        // 10.9: mapa del curso
         k.append(row);
       });
       dash.append(k);
