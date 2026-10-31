@@ -295,7 +295,11 @@
       showLiveProvider(res.settings.live_provider);
       renderTelegram();
       renderProfile(res.profile);
-      if (meta && meta.email_info) { const e=$("#email-status"); if (e && !meta.email_info.sender_ok) { e.textContent="Pon tu correo y una contraseña de aplicación para enviar correos por voz."; e.className="status"; } }
+      if (meta && meta.email_info) {
+        const e = $("#email-status"), g = $("#email-google-status");
+        if (meta.email_info.google && g) { g.textContent = "✓ Conectado con tu cuenta de Google: no necesitas contraseña de aplicación."; g.className = "status ok"; }
+        else if (e && !meta.email_info.sender_ok && !meta.email_info.pass) { e.textContent = "Conecta el correo con una de las dos formas para enviar correos por voz."; e.className = "status"; }
+      }
       loadBackups();
       loadMics(res.settings.mic_device);
       loadModels(false);
@@ -433,7 +437,8 @@
   $("#btn-email-test") && $("#btn-email-test").addEventListener("click", () => {
     const btn = $("#btn-email-test"), st = $("#email-status");
     btn.disabled = true; st.textContent = "Probando la conexión…"; st.className = "status";
-    socket.emit("email_test", (res) => { btn.disabled = false; st.textContent = res.msg; st.className = "status" + (res.ok ? " ok" : " err"); });
+    socket.emit("email_test", { address: $("#f-email-addr").value.trim(), password: $("#f-email-pass").value },
+      (res) => { btn.disabled = false; st.textContent = res.msg; st.className = "status" + (res.ok ? " ok" : " err"); if (res.ok) $("#f-email-pass").value = ""; });
   });
   $("#btn-weather-test") && $("#btn-weather-test").addEventListener("click", () => {
     const btn = $("#btn-weather-test"), st = $("#weather-status");
@@ -885,7 +890,16 @@
   }
   $("#btn-cr-connect").addEventListener("click", () => { $("#cr-status").textContent = "Se abrió Google en tu navegador: autoriza a Jarvis…"; socket.emit("classroom_connect", {}); });
   $("#btn-cr-disconnect").addEventListener("click", () => socket.emit("classroom_disconnect", {}, renderCr));
-  socket.on("classroom_done", (d) => { toast(d.msg, "info", 6000); socket.emit("classroom_status", {}, renderCr); });
+  socket.on("classroom_done", (d) => {
+    toast(d.msg, "info", 6000); socket.emit("classroom_status", {}, renderCr);
+    const g = $("#email-google-status"); if (g) { g.textContent = d.msg; g.className = "status" + (/Gmail \(/.test(d.msg) ? " ok" : ""); }
+  });
+  $("#btn-email-google").addEventListener("click", () => {
+    const g = $("#email-google-status");
+    g.className = "status";
+    g.textContent = "Se abrió Google en tu navegador: elige tu cuenta y autoriza a Jarvis… (si dice que falta el ID de cliente, configúralo en Memoria › Cuenta de Google)";
+    socket.emit("classroom_connect", {});
+  });
   socket.on("connect", () => socket.emit("classroom_status", {}, renderCr));
 
   // 8.1: horario de clases

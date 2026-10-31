@@ -30,7 +30,10 @@ SCOPES = ["https://www.googleapis.com/auth/classroom.courses.readonly",
           "https://www.googleapis.com/auth/classroom.announcements",
           # 8.1: Google Forms (crear el quiz autocalificable y leer sus respuestas)
           "https://www.googleapis.com/auth/forms.body",
-          "https://www.googleapis.com/auth/forms.responses.readonly"]
+          "https://www.googleapis.com/auth/forms.responses.readonly",
+          # 8.5: Gmail (enviar y leer la bandeja sin contraseña de aplicación)
+          "https://www.googleapis.com/auth/gmail.send",
+          "https://www.googleapis.com/auth/gmail.readonly"]
 FORMS_API = "https://forms.googleapis.com/v1/"
 
 

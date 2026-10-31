@@ -48,7 +48,7 @@ def classroom_connect():
     """Abre Google para autorizar y espera la respuesta en 127.0.0.1 (con PKCE). Devuelve un mensaje."""
     cid, secret = J.settings["classroom_client_id"].strip(), J.settings["classroom_client_secret"].strip()
     if not (cid and secret):
-        return "Primero pega el ID de cliente y el secreto (Ajustes › Aula › Google Classroom)."
+        return "Primero pega el ID de cliente y el secreto (Ajustes › Memoria › Cuenta de Google)."
     verifier, challenge = classroom.pkce()
     state = secrets.token_urlsafe(16)
     box = {}
@@ -64,7 +64,7 @@ def classroom_connect():
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            msg = "Listo: Jarvis ya puede usar tu Google Classroom. Puedes cerrar esta pestaña." if ok else \
+            msg = "Listo: Jarvis ya está conectado con tu cuenta de Google. Puedes cerrar esta pestaña." if ok else \
                 "No se pudo conectar. Vuelve a intentarlo desde Ajustes de Jarvis."
             self.wfile.write(f"<html><body style='font-family:Segoe UI;padding:40px'><h2>{msg}</h2></body></html>".encode())
 
@@ -87,12 +87,23 @@ def classroom_connect():
         tok = classroom.exchange(cid, secret, box["code"], redirect, verifier)
     except classroom.ClassroomError as e:
         return f"Google no aceptó la conexión: {e}"
-    J.apply_settings({"classroom_refresh": tok["refresh_token"]})
+    J.apply_settings({"classroom_refresh": tok["refresh_token"], "google_scopes": str(tok.get("scope", ""))[:2000]})
+    parts = []
+    if J.gmail_ready():                                # 8.5: el correo también queda conectado
+        try:
+            addr = J.gmail.profile(J.classroom_client()).get("emailAddress", "")
+            if addr and not J.settings["email_address"].strip():
+                J.apply_settings({"email_address": addr})
+            parts.append(f"Gmail ({addr or 'tu cuenta'})")
+        except classroom.ClassroomError:
+            parts.append("Gmail (activa la Gmail API en tu proyecto de Google Cloud si falla)")
     try:
         n = len(J.classroom_courses(force=True))
-    except classroom.ClassroomError as e:
-        return f"Conectado, pero no pude leer tus clases: {e}"
-    return f"Conectado a Google Classroom: {n} clase{'s' if n != 1 else ''}."
+        parts.insert(0, f"Classroom: {n} clase{'s' if n != 1 else ''}")
+    except classroom.ClassroomError:
+        if not parts:
+            return "Conectado a Google, pero no pude leer tus clases ni tu correo: activa las APIs en Google Cloud."
+    return "Conectado con Google · " + " · ".join(parts) + "."
 
 
 @J.socketio.on("classroom_connect")
@@ -118,7 +129,7 @@ def handle_classroom_status(data=None):
 
 @J.socketio.on("classroom_disconnect")
 def handle_classroom_disconnect(data=None):
-    J.apply_settings({"classroom_refresh": ""})
+    J.apply_settings({"classroom_refresh_clear": True, "google_scopes": ""})   # (un campo vacío conservaría la clave)
     cr_state.update(client=None, key="", courses=[])
     return {"connected": False}
 

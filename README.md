@@ -157,6 +157,21 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Correo con tu cuenta de Google, sin contraseña de aplicación (v8.5)
+
+**Dos formas de conectar el correo** (*Ajustes › Integraciones › Correo por voz*):
+
+1. **Con tu cuenta de Google (recomendada).** Botón «**Conectar con Google**»: usa la misma conexión de Google que
+   Classroom (se configura una vez en *Ajustes › Memoria › Cuenta de Google*; activa también la **Gmail API** en tu
+   proyecto de Google Cloud). Jarvis envía y lee tu bandeja (solo lectura) con la API de Gmail. Funciona aunque tu
+   cuenta no permita contraseñas de aplicación (por ejemplo, cuentas del colegio o sin verificación en dos pasos).
+2. **Con una contraseña de aplicación**, como antes. Ahora «Probar» usa lo que acabas de escribir (antes había que
+   guardar primero, por eso decía «Falta la contraseña»), acepta la contraseña con o sin espacios, te dice si no tiene
+   16 letras y, si funciona, la guarda sola.
+
+Si conectaste Google antes de la 8.5, pulsa «Conectar con Google» otra vez para dar el permiso de Gmail. «Desconectar»
+ahora sí borra la conexión.
+
 ## Buscador de ajustes, arranque más rápido y proyectos en el reactor (v8.4)
 
 **Buscador en Ajustes.** Arriba a la derecha: escribe «whatsapp», «voz», «clave», «horario»… y aparecen los ajustes

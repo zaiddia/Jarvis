@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "8.4"
+VERSION = "8.5"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -364,6 +364,7 @@ import errores
 import horario
 import formularios
 import informes
+import gmail
 import secreto
 
 
@@ -714,6 +715,7 @@ DEFAULT_SETTINGS = {
     "weekly_hour": 16,
     "weekly_sent": "",
     "update_night": True,          # 8.3: instalar de noche las versiones nuevas (con copia de seguridad)
+    "google_scopes": "",           # 8.5: permisos que diste al conectar tu cuenta de Google (Gmail, Classroom, Forms)
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -1762,6 +1764,13 @@ from nucleo.familia import *  # noqa: F401,F403,E402
 # → nucleo/autonomia.py
 # =============================================================================
 from nucleo.autonomia import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
+# 8.5 · CORREO CON TU CUENTA DE GOOGLE (SIN CONTRASEÑA DE APLICACIÓN)
+# → nucleo/gcorreo.py (lógica en gmail.py)
+# =============================================================================
+from nucleo.gcorreo import *  # noqa: F401,F403,E402
 
 
 # =============================================================================

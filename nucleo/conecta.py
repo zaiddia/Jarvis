@@ -78,14 +78,13 @@ _MAIL_REPLY = re.compile(r"\b(?:contestale|respondele|contesta(?:le)?|responde(?
 
 
 def _mail_ready():
-    return correo.valid_sender(J.settings["email_address"]) and J.settings["email_app_password"].strip()
+    return bool(J.mail_method())                       # 8.5: cuenta de Google o contraseña de aplicación
 
 
 def _mail_fetch(force=False):
     if not force and time.time() - mail_cache["t"] < 300 and mail_cache["msgs"]:
         return mail_cache["msgs"]
-    msgs = bandeja.fetch_recent(J.settings["email_address"], J.settings["email_app_password"].replace(" ", ""),
-                                days=J.settings["email_days"])
+    msgs = J.mail_fetch_recent(days=J.settings["email_days"])
     book = {addr.lower() for _, addr in J._mail_book().values()}
     msgs.sort(key=lambda m: (-bandeja.importance(m, book), m["fecha"]), reverse=False)
     mail_cache.update(t=time.time(), msgs=msgs)
@@ -174,8 +173,7 @@ def mail_reply(m, instruction):
 
     def send():
         try:
-            correo.send(J.settings["email_address"], J.settings["email_app_password"].replace(" ", ""), m["de"], asunto,
-                        cuerpo, J.settings["email_sender_name"], in_reply_to=m.get("msgid", ""))
+            J.mail_send(m["de"], asunto, cuerpo, in_reply_to=m.get("msgid", ""))
             J.reply(f"Respuesta enviada a {m['de_nombre']}.", "CORREO")
             diario.log("orden", f"respondí el correo de {m['de_nombre']}")
         except RuntimeError as e:
@@ -226,7 +224,7 @@ def event_create(ev):
 @J.socketio.on("mail_test")
 def handle_mail_test(data=None):
     if not _mail_ready():
-        return {"ok": False, "error": "Falta tu correo o la contraseña de aplicación."}
+        return {"ok": False, "error": "El correo no está conectado: «Conectar con Google» o contraseña de aplicación."}
     try:
         msgs = _mail_fetch(force=True)
     except RuntimeError as e:

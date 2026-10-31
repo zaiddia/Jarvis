@@ -680,7 +680,13 @@
     </div>
 
     <div class="group">Correo por voz (Gmail)</div>
-    <p class="note">Jarvis redacta el correo, te lo lee y solo lo envía si confirmas. Di «escríbele un correo a la coordinadora diciendo que mañana llego a las 7». Necesita una <b>contraseña de aplicación</b> de tu cuenta de Google (no tu clave normal): se crea en la seguridad de tu cuenta, en «Contraseñas de aplicaciones».</p>
+    <p class="note">Jarvis redacta el correo, te lo lee y solo lo envía si confirmas. Di «escríbele un correo a la coordinadora diciendo que mañana llego a las 7». Hay <b>dos formas</b> de conectarlo:</p>
+    <div class="field">
+      <div class="ft"><label>Forma 1 · Con tu cuenta de Google (recomendada)</label><p>Sin contraseña de aplicación: usa la misma conexión de Google que Classroom. Configúrala una vez en <i>Memoria › Cuenta de Google</i> (ahí están los pasos; activa también la <b>Gmail API</b>) y pulsa «Conectar con Google». Sirve aunque tu cuenta no permita contraseñas de aplicación.</p></div>
+      <button class="btn btn-ghost" type="button" id="btn-email-google"><svg class="i"><use href="#i-plug"/></svg>Conectar con Google</button>
+    </div>
+    <p class="status" id="email-google-status"></p>
+    <p class="note">Forma 2 · Con una <b>contraseña de aplicación</b>: 16 letras que se crean en <code>myaccount.google.com/apppasswords</code> (necesita la verificación en dos pasos activada; tu clave normal no sirve). Pégala con o sin espacios y pulsa «Probar»: si funciona, se guarda sola.</p>
     <div class="field stack">
       <div class="ft"><label for="f-email-addr">Tu dirección de Gmail</label></div>
       <input class="inp" type="text" id="f-email-addr" data-key="email_address" placeholder="tucorreo@gmail.com" autocomplete="off">
@@ -841,10 +847,10 @@
       <label class="switch"><input type="checkbox" id="f-sch-warn" data-key="schedule_warn"><span></span></label>
     </div>
 
-    <div class="group">Google Classroom y Google Forms</div>
+    <div class="group">Cuenta de Google (Classroom, Forms y Gmail)</div>
     <p class="pane-intro">«¿Qué tareas tengo en Classroom de 7A?», «¿quién no ha entregado el taller de fracciones en Classroom de 7A?», «publica en Classroom de 7A que mañana hay examen» (con tu aprobación), «trae las notas de Classroom de 7A». <b>Forms:</b> «pasa el quiz a Forms», «haz un quiz de 10 preguntas de fracciones en Forms para 7A» y luego «trae las notas del formulario». <b>Retroalimentación:</b> «revisa las respuestas del taller en Classroom de 7A» (respuestas cortas: te propone nota y comentario, y guardas las notas solo si apruebas). Si conectaste antes de la 8.1, pulsa «Conectar» otra vez para dar permiso a Forms.</p>
     <ol class="steps">
-      <li>Entra a <code>console.cloud.google.com</code>, crea un proyecto y activa la <b>Google Classroom API</b> y la <b>Google Forms API</b>.</li>
+      <li>Entra a <code>console.cloud.google.com</code>, crea un proyecto y activa la <b>Google Classroom API</b>, la <b>Google Forms API</b> y la <b>Gmail API</b> (solo las que vayas a usar).</li>
       <li>En «Pantalla de consentimiento de OAuth» elige «Externo», pon tu correo y agrégate como usuario de prueba.</li>
       <li>En «Credenciales» › «Crear credenciales» › «ID de cliente de OAuth» › tipo <b>App de escritorio</b>. Copia el ID y el secreto aquí.</li>
       <li>Pulsa «Conectar»: se abre Google, autorizas y listo. Jarvis guarda solo el permiso, nunca tu contraseña.</li>

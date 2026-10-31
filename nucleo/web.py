@@ -502,22 +502,9 @@ def handle_clear_profile(data=None):
 
 @J.socketio.on("email_test")
 def handle_email_test(data=None):
-    addr = J.settings["email_address"].strip()
-    if not correo.valid_sender(addr):
-        return {"ok": False, "msg": "Escribe tu dirección de correo (Gmail) y guarda."}
-    if not J.settings["email_app_password"].strip():
-        return {"ok": False, "msg": "Falta la contraseña de aplicación (16 letras)."}
-    host, port = correo.SMTP.get(addr.split("@")[-1].lower(), ("smtp.gmail.com", 587))
-    import smtplib, ssl
-    try:
-        with smtplib.SMTP(host, port, timeout=20) as sm:
-            sm.ehlo(); sm.starttls(context=ssl.create_default_context())
-            sm.login(addr, J.settings["email_app_password"].strip())
-        return {"ok": True, "msg": f"Conexión correcta con {host}. Ya puedes dictar correos."}
-    except smtplib.SMTPAuthenticationError:
-        return {"ok": False, "msg": "Tu cuenta rechazó la contraseña. Usa una «contraseña de aplicación» de 16 letras, no tu clave normal."}
-    except Exception as e:
-        return {"ok": False, "msg": f"No pude conectar: {e}"}
+    """8.5: prueba con lo que está escrito (aunque no se haya guardado) o con la cuenta de Google conectada."""
+    d = data if isinstance(data, dict) else {}
+    return J.email_test(str(d.get("address") or ""), str(d.get("password") or ""))
 
 
 @J.socketio.on("weather_preview")
@@ -591,7 +578,7 @@ def handle_get_settings():
         "update": J.update_status(),
         "profile": perfil.snapshot(),
         "email_info": {"sender_ok": correo.valid_sender(J.settings["email_address"]),
-                       "pass": bool(J.settings["email_app_password"].strip())},
+                       "pass": bool(J.settings["email_app_password"].strip()), "google": J.gmail_ready()},
         "tg_info": {"ok": J.tg["ok"], "remote": J.settings["telegram_remote"], "error": J.tg["error"],
                     "token": bool(J.settings["telegram_token"].strip()), "chat": bool(J.settings["telegram_chat"].strip())},
         "live_info": {"mode": J.live_mode(), "why": J.live["why"], "ws": J._ws_installed(),

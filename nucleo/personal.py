@@ -128,12 +128,9 @@ def email_voice(text, t):
     """«escríbele un correo a la coordinadora diciendo que mañana llego a las 7»."""
     if not J._MAIL_RE.search(t):
         return False
-    if not correo.valid_sender(J.settings["email_address"]):
-        J.reply("Para enviar correos primero pon tu dirección de Gmail y una «contraseña de aplicación» "
-              "en Ajustes, sección Integraciones.", "CORREO")
-        return True
-    if not J.settings["email_app_password"].strip():
-        J.reply("Falta la contraseña de aplicación de tu correo (Ajustes › Integraciones › Correo).", "CORREO")
+    if not J.mail_method():                            # 8.5: cuenta de Google o contraseña de aplicación
+        J.reply("Para enviar correos conecta tu correo en Ajustes › Integraciones › Correo: con «Conectar con Google» "
+                "o con una contraseña de aplicación.", "CORREO")
         return True
     # ¿a quién?
     m = re.search(r"\b(?:a|para)\s+(.+?)\s+(?:que|diciendo|sobre|acerca de|con el (?:tema|asunto)|:)\b", text, re.I)
@@ -181,8 +178,7 @@ def _email_confirm_pending(t):
         asunto, cuerpo = J.email_pending["asunto"], J.email_pending["cuerpo"]
         J.email_pending.update(to=None, expires=0)
         try:
-            correo.send(J.settings["email_address"].strip(), J.settings["email_app_password"].strip(),
-                        dest[1], asunto, cuerpo, J.settings["email_sender_name"].strip())
+            J.mail_send(dest[1], asunto, cuerpo)
             J.reply(f"Correo enviado a {dest[0] or dest[1]}.", "CORREO")
         except Exception as e:
             J.reply(f"No pude enviarlo: {e}", "CORREO")
