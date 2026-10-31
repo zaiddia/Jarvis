@@ -62,7 +62,7 @@ def attention_items(now=None):
                             "cmd": "¿qué tengo hoy?"})
     except Exception:
         pass
-    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data))[:10]:
+    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
         names = sorted(set(aula.data.get("cursos", {}).get(course, [])) | set(seguimiento.data.get(course, {})))
         r = seguimiento.at_risk(course, names, J._absences(course), J.settings["risk_grade"], J.settings["risk_absences"])
         if r:

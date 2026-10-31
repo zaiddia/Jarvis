@@ -130,6 +130,11 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
         J.reply("No puedo crear documentos: falta instalar python-docx.", "ERROR")
         return
     kind = kind if kind in aula.KINDS else (aula.detect_kind(request) or "taller")
+    if not grade and not re.search(r"\b(?:grado|sexto|septimo|octavo|noveno|decimo|undecimo|once|primaria|bachillerato|preescolar)\b|"
+                                   r"\b(?:para|de|en)\s+(?:el\s+)?\d{1,2}\s?(?:[a-z]\b|°|-\s?\d)", J.normalize(request)):
+        act = aula.data.get("activo") or ""             # 10.3: sin grado en la petición, el del curso activo
+        if aula.grade_of(act):
+            grade = f"{aula.grade_of(act)}° (curso {act})"
     label = aula.KINDS[kind][0]
     lo = {"quiz": "la evaluación", "taller": "el taller", "rubrica": "la rúbrica", "plan": "el plan de clase",
           "saber": "las preguntas tipo Saber", "malla": "la malla curricular", "piar": "los ajustes razonables",

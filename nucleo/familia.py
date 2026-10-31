@@ -21,7 +21,7 @@ _LETTER = re.compile(r"\b(?:haz|hazme|genera|generame|prepara|preparame|redacta|
 
 def _split_student(spoken):
     """«juan perez de 7a» → (curso, nombre del estudiante o "", [candidatos])."""
-    m = re.match(r"^(.+?)\s+(?:de|del|en)\s+((?:\d{1,2}\s?[a-z]?|sexto|septimo|octavo|noveno|decimo|once|quinto)(?:\s+[a-z])?)$", spoken.strip())
+    m = re.match(r"^(.+?)\s+(?:de|del|en)\s+((?:\d{1,2}\s?[a-z]?|sexto|septimo|octavo|noveno|undecimo|decimo|onceavo|once|quinto)(?:\s+[a-z])?)$", spoken.strip())
     who, course_txt = (m.group(1), m.group(2)) if m else (spoken.strip(), "")
     course = J._resolve_course(course_txt)
     names = sorted(set(aula.data.get("cursos", {}).get(course, [])) | set(seguimiento.data.get(course, {}))

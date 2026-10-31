@@ -16,6 +16,7 @@ import calendario
 import horario
 import notas
 import seguimiento
+import zeti
 from nucleo import J
 
 
@@ -199,13 +200,13 @@ def handle_favorite_toggle(data=None):
 def courses_summary():
     """Por curso: promedio, cuántos con notas y cuántos en cada desempeño (para la tarjeta «Cursos»)."""
     out = []
-    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data))[:10]:
+    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
         avgs = [a for a in (seguimiento.average(course, n) for n in seguimiento.data.get(course, {})) if a is not None]
         if not avgs:
             continue
         dist = {"Superior": 0, "Alto": 0, "Básico": 0, "Bajo": 0}
         for a in avgs:
-            dist["Superior" if a >= 4.6 else "Alto" if a >= 4.0 else "Básico" if a >= 3.0 else "Bajo"] += 1
+            dist["Superior" if a >= zeti.SCALE["superior"] else "Alto" if a >= zeti.SCALE["alto"] else "Básico" if a >= zeti.SCALE["basico"] else "Bajo"] += 1
         out.append({"curso": course, "promedio": round(sum(avgs) / len(avgs), 1), "n": len(avgs), "dist": dist})
     return out
 
@@ -273,7 +274,7 @@ def dashboard(now=None):
     imp = [m for m in msgs if not m.get("masivo")]
     out["correos"] = {"n": len(imp), "de": [m["de_nombre"][:30] for m in imp[:3]]} if imp else None
     risk = []
-    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data))[:8]:
+    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
         names = sorted(set(aula.data.get("cursos", {}).get(course, [])) | set(seguimiento.data.get(course, {})))
         r = seguimiento.at_risk(course, names, J._absences(course), J.settings["risk_grade"], J.settings["risk_absences"])
         if r:

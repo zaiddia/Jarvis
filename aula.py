@@ -151,8 +151,26 @@ def find_course(spoken):
     keys = {course_key(c): c for c in data["cursos"]}
     if key in keys:
         return keys[key]
+    if key.isdigit():                                  # 10.3: «de 10» con un solo curso de ese grado («10 Trigonometría», «10-1»)
+        first = lambda c: (ORDINALES.get(w, w) for w in normalize(c).replace("grado", " ").split())
+        same = [c for c in data["cursos"] if re.match(rf"^{key}(?!\d)", next(first(c), ""))]
+        return same[0] if len(same) == 1 else None    # varios del mismo grado: que pregunte cuál
     m = difflib.get_close_matches(key, list(keys), n=1, cutoff=0.75)
     return keys[m[0]] if m else None
+
+
+def grade_of(course):
+    """«7A», «Séptimo», «10-2», «11 Física» → 7, 7, 10, 11 (None si no se sabe)."""
+    words = [ORDINALES.get(w, w) for w in normalize(course or "").replace("grado", " ").split()]
+    m = re.match(r"^(\d{1,2})(?!\d)", words[0]) if words else None
+    g = int(m.group(1)) if m else None
+    return g if g and 1 <= g <= 11 else None
+
+
+def course_sort_key(course):
+    """Orden natural: 6A, 6B, 7A… 10A, 11A (no «10» antes de «6»)."""
+    g = grade_of(course)
+    return (g if g is not None else 99, course_key(course))
 
 
 def set_active(name):
@@ -338,6 +356,10 @@ def build_prompt(kind, request, count=None, grade="", topic=""):
         pedido += f" Tema: {topic}."
     if grade:
         pedido += f" Grado: {grade}."
+        g = grade_of(str(grade))
+        if g and g >= 6:                               # 10.3: bachillerato de 6° a 11°
+            pedido += (f" Ajusta la dificultad, el vocabulario y los ejemplos a {g}° (estudiantes de unos {g + 5} a {g + 6} años) y a "
+                       "los DBA y Estándares Básicos de Competencias del MEN de ese grado.")
     if kind == "quiz":
         schema = ('{"titulo": str, "grado": str, "tema": str, "instrucciones": str, '
                   '"preguntas": [{"enunciado": str, "opciones": [str, str, str, str], '

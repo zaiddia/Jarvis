@@ -212,7 +212,7 @@ def text_feedback_voice(text, t):
         J.reply("Pégame el texto después de los dos puntos, por ejemplo: «retroalimenta este texto de Juan de 7A: …».", "RETROALIMENTACIÓN")
         return True
     head = J.normalize(parts[0])
-    who = re.search(r"\bde\s+(.+?)(?:\s+(?:de|del)\s+((?:\d{1,2}\s?[a-z]?|sexto|septimo|octavo|noveno|decimo|once)(?:\s+[a-z])?))?(?:\s+con\s+la\s+rubrica.*)?$",
+    who = re.search(r"\bde\s+(.+?)(?:\s+(?:de|del)\s+((?:\d{1,2}\s?[a-z]?|sexto|septimo|octavo|noveno|undecimo|decimo|onceavo|once)(?:\s+[a-z])?))?(?:\s+con\s+la\s+rubrica.*)?$",
                     head.split("texto", 1)[-1] if "texto" in head else head)
     estudiante, curso = "", ""
     if who and who.group(1).strip() not in ("un estudiante", "una estudiante", "mi estudiante"):

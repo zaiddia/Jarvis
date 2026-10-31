@@ -142,7 +142,7 @@ _CR_GRADES = re.compile(r"\b(?:trae|importa|sincroniza|pasa)\b.*\bnotas\b")
 
 
 def _course_from(t, courses):
-    m = re.search(r"\b(?:de|del|en|para)\s+((?:\d{1,2}\s?[a-z]\b|sexto|septimo|octavo|noveno|decimo|once|quinto)(?:\s+[a-z]\b)?[\w ]{0,20})", t)
+    m = re.search(r"\b(?:de|del|en|para)\s+((?:\d{1,2}\s?[a-z]\b|sexto|septimo|octavo|noveno|undecimo|decimo|onceavo|once|quinto)(?:\s+[a-z]\b)?[\w ]{0,20})", t)
     return classroom.find_course(courses, m.group(1)) if m else (classroom.find_course(courses, t) if courses else None)
 
 
@@ -242,6 +242,9 @@ def _resolve_course(spoken):
             return c
         if spoken.strip().upper() in seguimiento.data:
             return spoken.strip().upper()
+        g = aula.grade_of(spoken)                      # 10.3: «de 11» con 11-1 y 11-2: mejor preguntar que adivinar
+        if g and sum(1 for c in aula.data.get("cursos", {}) if aula.grade_of(c) == g) > 1:
+            return ""
     try:
         return aula.active()[0]
     except ValueError:
@@ -304,7 +307,7 @@ def risk_check(now=None):
         return None
     _risk_state["week"] = week
     msgs = []
-    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data)):
+    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
         names = sorted(set(aula.data.get("cursos", {}).get(course, [])) | set(seguimiento.data.get(course, {})))
         risk = seguimiento.at_risk(course, names, _absences(course), J.settings["risk_grade"], J.settings["risk_absences"])
         if risk:

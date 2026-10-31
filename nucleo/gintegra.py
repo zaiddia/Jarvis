@@ -181,7 +181,9 @@ def export_voice(text, t):
         return True
     if not _ZETI_RE.search(t):
         return False
-    cm = re.search(r"\b(?:de|del|para el curso)\s+((?:\d{1,2}\s?[a-z]?|sexto|septimo|octavo|noveno|decimo|once|quinto)(?:\s+[a-z])?)\b", t)
+    if re.search(r"\btodos (?:mis|los) cursos\b|\btodos los grados\b|\bde todos\b|\btodas (?:mis|las) notas\b", t):
+        return J.zeti_export_all()
+    cm = re.search(r"\b(?:de|del|para el curso)\s+((?:\d{1,2}\s?[a-z]?|sexto|septimo|octavo|noveno|undecimo|decimo|onceavo|once|quinto)(?:\s+[a-z])?)\b", t)
     course = J._resolve_course(cm.group(1) if cm else "")
     if not course:
         J.reply("¿De qué curso? Por ejemplo: «exporta las notas de 7A para Zeti».", "EXPORTAR")
@@ -207,6 +209,30 @@ def export_voice(text, t):
     return True
 
 
+def zeti_export_all():
+    """10.3: la planilla de Zeti de cada curso con notas, de sexto a undécimo, de una vez."""
+    J.zeti_apply()
+    done, folder = [], ""
+    for course in sorted(seguimiento.data, key=aula.course_sort_key):
+        names = list(aula.data.get("cursos", {}).get(course, []))
+        names += [n for n in seguimiento.data.get(course, {}) if n not in names]
+        if not names or not seguimiento.data.get(course):
+            continue
+        materia = next((x.get("materia", "") for x in horario.items if x.get("curso") == course and x.get("materia")), "")
+        path, n, _a = exportar.zeti_xlsx(course, names, seguimiento.data[course], J._absences(course), J.settings["output_dir"],
+                                         J.settings["zeti_since"], J.settings["zeti_order"], J.settings["zeti_comma"],
+                                         J.settings["aula_institucion"], J.settings["aula_docente"], materia, zeti.WEIGHTS, J.year_map(course))
+        J.generated_files.add(path)
+        folder = os.path.dirname(path)
+        done.append(f"{course}{(' ' + materia) if materia else ''} ({n})")
+    if not done:
+        J.reply("No tengo notas de ningún curso todavía.", "EXPORTAR")
+        return True
+    J.reply(f"Listas {len(done)} planillas para Zeti: " + ", ".join(done) + ". Están en Documentos, Jarvis, Exportaciones, una por curso. "
+            "Di «abre Zeti» y ve pegando cada una en su grado y asignatura.", "EXPORTAR")
+    return True
+
+
 _ZETI_OPEN = re.compile(r"^(?:jarvis\s+)?(?:abre|abreme|entra a|ve a|llevame a)\s+(?:la pagina de\s+)?(?:las\s+)?(?:calificaciones de\s+)?zeti\b")
 
 
@@ -229,5 +255,5 @@ def zeti_open_voice(text, t):
 __all__ = [
     '_DRIVE_RE', '_GAME_RE', '_SHARE_RE', '_ZETI_RE', '_gcal', '_last_file', 'cal_configured', 'drive_upload',
     'drive_voice', 'event_create_google', 'export_voice', 'gcal_merge', 'gcal_ready', 'gdrive_ready',
-    'on_new_file', '_ZETI_OPEN', 'zeti_apply', 'zeti_open_voice',
+    'on_new_file', '_ZETI_OPEN', 'zeti_apply', 'zeti_export_all', 'zeti_open_voice',
 ]

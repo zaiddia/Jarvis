@@ -52,7 +52,7 @@ def weekly_summary(now=None):
     if pend:
         out.append(f"• Pendientes ({len(pend)}): " + "; ".join(notas.what(n) for n in pend[:6]) + ("…" if len(pend) > 6 else ""))
     risk_parts = []
-    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data)):
+    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
         names = sorted(set(aula.data.get("cursos", {}).get(course, [])) | set(seguimiento.data.get(course, {})))
         r = seguimiento.at_risk(course, names, J._absences(course), J.settings["risk_grade"], J.settings["risk_absences"])
         if r:

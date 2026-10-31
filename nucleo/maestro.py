@@ -171,7 +171,7 @@ def _page_watch_worker():
 # ============================================================================ MODO TUTOR SOCRÁTICO
 tutor = {"on": False, "materia": "", "grado": ""}
 _T_ON = re.compile(r"\b(?:activa|activar|pon|inicia|empieza|modo)\s+(?:el\s+)?(?:modo\s+)?tutor(?:\s+socratico)?\b(?:\s+(?:de|en)\s+(.+?))?"
-                   r"(?:\s+(?:para|de)\s+((?:\d{1,2}\s?[a-z]?|sexto|septimo|octavo|noveno|decimo|once|quinto|primaria|bachillerato)\b.*))?$")
+                   r"(?:\s+(?:para|de)\s+((?:\d{1,2}\s?[a-z]?|sexto|septimo|octavo|noveno|undecimo|decimo|onceavo|once|quinto|primaria|bachillerato)\b.*))?$")
 _T_OFF = re.compile(r"\b(?:desactiva|quita|apaga|termina|sal del|salir del|cierra)\s+(?:el\s+)?modo tutor\b|\bmodo normal\b")
 
 TUTOR_RULE = (" MODO TUTOR SOCRÁTICO: ahora hablas con estudiantes de colegio en clase{extra}. NUNCA des la respuesta final de un "

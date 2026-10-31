@@ -157,6 +157,19 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Varios grados, de sexto a undécimo (v10.3)
+
+- **Cursos con cualquier nombre:** «6A», «Séptimo», «10-2», «11 Física», «Décimo B». Jarvis entiende «undécimo»,
+  «once», «11 2», «sexto A»; si dices solo el grado y tienes un único curso de ese grado («de 7»), lo toma; si tienes
+  varios («de 11» con 11-1 y 11-2), **pregunta cuál** en vez de adivinar.
+- **Orden natural** en todas partes: 6°, 7°, 8°… 10°, 11° (antes «10» salía antes que «6»), y hasta 24 cursos en
+  «¿qué necesita mi atención?», la tarjeta Cursos, el resumen semanal y el cierre de periodo.
+- **Material al nivel del grado:** si no dices el grado, Jarvis usa el del curso activo (el de tu horario), y le pide
+  a la IA ajustar dificultad, vocabulario y ejemplos a la edad (6° ≈ 11–12 años … 11° ≈ 16–17) y a los DBA y
+  Estándares del MEN de ese grado.
+- **Todo de una vez:** «**exporta las notas de todos mis cursos para Zeti**» (una planilla por curso, con su
+  asignatura del horario) y «**¿quiénes pueden perder el año?**» (resumen de todos tus cursos).
+
 ## El año completo: acumulado (VF) y lo que falta para aprobar (VRA), como en Zeti (v10.2)
 
 Jarvis ya sabe **cómo va cada estudiante en el año**, con las mismas cuentas de Zeti: el acumulado de los periodos

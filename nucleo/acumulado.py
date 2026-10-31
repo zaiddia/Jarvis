@@ -102,7 +102,21 @@ def year_voice(text, t):
         return True
     m = _LOSE_RE.search(t)
     if m:
-        course = J._resolve_course((m.group(1) or m.group(2) or "").strip())
+        spoken = (m.group(1) or m.group(2) or "").strip()
+        if not spoken and not ("gan" in t or "aprob" in t):  # 10.3: sin curso, todos (de sexto a undécimo)
+            parts = []
+            for c in sorted(set(aula.data.get("cursos", {})) | set(periodos.data), key=aula.course_sort_key):
+                lose = [n for n, s in J.course_year(c).items() if s["pierde"]]
+                if lose:
+                    parts.append(f"{c}: {len(lose)} ({', '.join(lose[:3])}{'…' if len(lose) > 3 else ''})")
+            if not periodos.data:
+                J.reply("Aún no tengo las valoraciones de los periodos anteriores. Pega la tabla de Zeti de cada curso y periodo en "
+                        "Ajustes › Memoria › Periodos anteriores.", "ACUMULADO")
+            else:
+                J.reply(("Pueden perder el año: " + "; ".join(parts) + ". Pregúntame por un curso para ver cuánto necesita cada uno.")
+                        if parts else "En ninguno de tus cursos hay estudiantes en peligro de perder el año. 👌", "ACUMULADO")
+            return True
+        course = J._resolve_course(spoken)
         if not course:
             J.reply("¿De qué curso? Por ejemplo: «¿quiénes pueden perder el año en 7A?».", "ACUMULADO")
             return True
@@ -141,7 +155,7 @@ def year_voice(text, t):
 def year_attention():
     """Para «¿qué necesita mi atención?»: cursos con estudiantes que pueden perder el año."""
     out = []
-    for c in sorted(set(aula.data.get("cursos", {})) | set(periodos.data))[:10]:
+    for c in sorted(set(aula.data.get("cursos", {})) | set(periodos.data), key=aula.course_sort_key)[:24]:
         n = sum(1 for s in J.course_year(c).values() if s["pierde"])
         if n:
             out.append({"k": f"pa:{c}:{n}", "p": 2, "t": f"{n} pueden perder el año en {c}", "cmd": f"¿quiénes pueden perder el año en {c}?"})
@@ -152,7 +166,7 @@ def save_period_vals():
     """Al cerrar el periodo: guarda la Val de cada estudiante y pasa al siguiente periodo. Devuelve cuántas guardó."""
     cur = int(J.settings["period_current"])
     n = 0
-    for c in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data)):
+    for c in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
         names = set(aula.data.get("cursos", {}).get(c, [])) | set(seguimiento.data.get(c, {}))
         for e in names:
             v = J.current_val(c, e)
@@ -212,7 +226,7 @@ def handle_periods_paste(data=None):
 
 @J.socketio.on("periods_info")
 def handle_periods_info(data=None):
-    return {"cursos": sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data)), "periodos": len(pweights()),
+    return {"cursos": sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24], "periodos": len(pweights()),
             "actual": int(J.settings["period_current"]),
             "guardados": {c: sorted({p for e in v.values() for p in e}) for c, v in periodos.data.items()}}
 

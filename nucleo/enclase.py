@@ -19,7 +19,7 @@ from nucleo import J
 # ============================================================================ CLASE EN VIVO
 live_class = {"on": False, "plan": None, "steps": [], "i": 0, "end": 0.0, "tema": "", "curso": "", "hook": ""}
 _LC_START = re.compile(r"^(?:jarvis\s+)?(?:empieza|empecemos|inicia|iniciemos|arranca|comienza|comencemos|vamos con)\s+(?:la\s+)?clase"
-                       r"(?:\s+(?:de|sobre)\s+(.+?))?(?:\s+(?:en|con|para)\s+((?:\d{1,2}\s?[a-z]?|sexto|septimo|octavo|noveno|decimo|once)(?:\s+[a-z])?))?$")
+                       r"(?:\s+(?:de|sobre)\s+(.+?))?(?:\s+(?:en|con|para)\s+((?:\d{1,2}\s?[a-z]?|sexto|septimo|octavo|noveno|undecimo|decimo|onceavo|once)(?:\s+[a-z])?))?$")
 _LC_NEXT = re.compile(r"^(?:siguiente momento|pasemos al siguiente momento|sigue|siguiente actividad|pasa al siguiente momento|continua)$")
 _LC_MORE = re.compile(r"^(?:dame|danos|agrega|pon)\s+(\d{1,2}|un|una|dos|tres|cinco|diez)\s+minutos?\s+mas$")
 _LC_END = re.compile(r"^(?:termina|terminemos|cierra|acaba|finaliza|fin de)\s+(?:la\s+)?clase$")

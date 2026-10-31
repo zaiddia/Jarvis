@@ -123,7 +123,7 @@ def week_voice(text, t):
 
 # ============================================================================ CIERRE DE PERIODO
 def _period_courses():
-    return sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data))
+    return sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]
 
 
 def _period_names(course):

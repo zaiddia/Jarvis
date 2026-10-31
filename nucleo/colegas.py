@@ -149,7 +149,7 @@ def _meeting_ctx():
     left = semana.days_left(J.settings["period_end"]) if J.settings.get("period_end") else None
     if left is not None and left >= 0:
         parts.append(f"faltan {left} días para cerrar el periodo")
-    for c in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data))[:8]:
+    for c in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data), key=aula.course_sort_key)[:24]:
         names = sorted(set(aula.data.get("cursos", {}).get(c, [])) | set(seguimiento.data.get(c, {})))
         r = seguimiento.at_risk(c, names, J._absences(c), J.settings["risk_grade"], J.settings["risk_absences"])
         if r:
