@@ -44,8 +44,17 @@ def _work_area():
         return 0, 0, 1366, 720
 
 
+def hud_dims(size):
+    """Ancho y alto del HUD en ese tamaño (el expandido según Ajustes, sin salirse de la pantalla)."""
+    w, h = J.HUD_EXPANDED.get(J.settings.get("hud_expanded", "amplio"), J.HUD_SIZES[size]) if size == "expandido" else J.HUD_SIZES[size]
+    if size == "expandido":
+        _, _, aw, ah = J._work_area()
+        w, h = int(min(w, aw - 28)), int(min(h, ah - 28))
+    return w, h
+
+
 def _corner_xy(size, corner):
-    w, h = J.HUD_SIZES[size]
+    w, h = J.hud_dims(size)
     ax, ay, aw, ah = J._work_area()
     m = 14
     x = ax + aw - w - m if corner.endswith("der") else ax + m
@@ -150,7 +159,7 @@ def create_hud(start_hidden=False, loader=False):
     """loader=True: el servidor interno aún no responde; la ventana muestra «Iniciando…»
     y entra al HUD en cuanto responde (antes mostraba una página de error)."""
     size = J.settings["hud_start_size"]
-    w, h = J.HUD_SIZES[size]
+    w, h = J.hud_dims(size)
     x, y = J._clamp(*J._initial_xy(size), w, h)
     J.hud.update(size=size, x=x, y=y, w=w, h=h, ignore_moves_until=time.time() + 2)
     solid = not (J.settings["hud_transparent"] and J.hud_transparency_supported())
@@ -174,7 +183,7 @@ def create_hud(start_hidden=False, loader=False):
 
 def _open_browser_hud():
     """Sin pywebview: abre el HUD como ventana de aplicación de Edge (sin barra de direcciones)."""
-    w, h = J.HUD_SIZES["expandido"]
+    w, h = J.hud_dims("expandido")
     if J.IS_WIN:
         try:
             subprocess.Popen(f'start "" msedge --app={J.URL}/?size=expandido --window-size={w},{h}',
@@ -230,7 +239,7 @@ def hud_set_size(size):
     J.socketio.emit("hud_size", {"size": size})
     if win is None:
         return
-    nw, nh = J.HUD_SIZES[size]
+    nw, nh = J.hud_dims(size)
     ax, ay, aw, ah = J._work_area()
     x, y, w, h = J.hud["x"], J.hud["y"], J.hud["w"] or nw, J.hud["h"] or nh
     # Crece hacia el centro de la pantalla: si está a la derecha, crece hacia la izquierda, etc.
@@ -246,7 +255,7 @@ def hud_reposition():
     win = J.hud["window"]
     if win is None or J.settings["hud_position"] == "libre":
         return
-    w, h = J.HUD_SIZES[J.hud["size"]]
+    w, h = J.hud_dims(J.hud["size"])
     x, y = J._corner_xy(J.hud["size"], J.settings["hud_position"])
     J.hud.update(x=x, y=y, w=w, h=h, ignore_moves_until=time.time() + 1.0)
     win.move(x, y)
@@ -487,7 +496,7 @@ __all__ = [
     '_save_pos_timer',
     '_temp_hide',
     '_tray_icon_path',
-    '_work_area',
+    '_work_area', 'hud_dims',
     'close_settings_window',
     'close_welcome_window',
     'create_hud',

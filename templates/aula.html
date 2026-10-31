@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aula · Jarvis</title>
-<link rel="stylesheet" href="/static/css/base.css">
-<link rel="stylesheet" href="/static/css/aula.css">
+<link rel="stylesheet" href="/static/css/base.css?v={{ asset_v }}">
+<link rel="stylesheet" href="/static/css/aula.css?v={{ asset_v }}">
 </head>
 <body data-view="ruleta">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -190,7 +190,7 @@
 </main>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
-<script src="/static/vendor/socket.io.min.js"></script>
-<script src="/static/js/aula.js"></script>
+<script src="/static/vendor/socket.io.min.js?v={{ asset_v }}"></script>
+<script src="/static/js/aula.js?v={{ asset_v }}"></script>
 </body>
 </html>

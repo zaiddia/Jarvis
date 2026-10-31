@@ -157,6 +157,17 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## El HUD expandido ahora es amplio (v9.1)
+
+Las mejoras del HUD de la 8.6 y la 9.0 casi no se veían: el HUD expandido medía 440 px de ancho, así que el panel
+«Hoy» quedaba escondido en una pestaña y la ventana podía seguir usando los archivos de la versión anterior.
+
+- El HUD expandido ahora es **amplio** (940 × 680, ajustado a tu pantalla), con el panel «Hoy» al lado de la
+  conversación. En *Ajustes › HUD › Tamaño del HUD expandido* puedes elegir **estrecho** (como antes), **amplio** o
+  **grande**; cambia al momento.
+- Después de cada actualización, el HUD, Ajustes, el aula y el proyector cargan siempre los archivos nuevos (antes la
+  ventana podía quedarse con los de la versión anterior hasta reiniciar el equipo).
+
 ## HUD expandido, segunda vuelta (v9.0)
 
 - **«Trabajando…»**: encima de la conversación, una franja con lo que Jarvis está haciendo en segundo plano (material

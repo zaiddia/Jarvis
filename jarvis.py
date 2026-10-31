@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "9.0"
+VERSION = "9.1"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -457,6 +457,8 @@ THEMES = {
 }
 
 HUD_SIZES = {"orbe": (96, 96), "compacto": (430, 150), "expandido": (440, 620)}
+# 9.1: el HUD expandido puede ser más ancho, para ver el panel «Hoy» al lado de la conversación
+HUD_EXPANDED = {"estrecho": (440, 620), "amplio": (940, 680), "grande": (1200, 800)}
 HUD_POSITIONS = {
     "inf-der": "Abajo a la derecha", "sup-der": "Arriba a la derecha",
     "inf-izq": "Abajo a la izquierda", "sup-izq": "Arriba a la izquierda",
@@ -722,6 +724,7 @@ DEFAULT_SETTINGS = {
     "update_night": True,          # 8.3: instalar de noche las versiones nuevas (con copia de seguridad)
     "google_scopes": "",           # 8.5: permisos que diste al conectar tu cuenta de Google (Gmail, Classroom, Forms)
     "hud_subtitles": True,         # 8.6: subtítulos de lo que dice Jarvis, palabra por palabra
+    "hud_expanded": "amplio",      # 9.1: tamaño del HUD expandido (estrecho, amplio o grande)
     "drive_auto": False,           # 8.7: subir a tu Drive cada material que Jarvis cree
     "drive_folder_id": "",
     "zeti_since": "",              # 8.7: notas desde esta fecha (AAAA-MM-DD), p. ej. el inicio del periodo
@@ -801,7 +804,7 @@ def _validate(key, value):
     if key == "zeti_since" and v:                     # 8.7: una fecha AAAA-MM-DD
         v = datetime.date.fromisoformat(v[:10]).isoformat()
     choices = {"theme": THEMES, "ai_provider": tuple(PROVIDERS),
-               "zeti_order": ("lista", "apellido"),
+               "zeti_order": ("lista", "apellido"), "hud_expanded": ("estrecho", "amplio", "grande"),
                "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
                "tts_backend": ("edge", "piper", "gemini"), "stt_backend": ("vosk", "whisper"),

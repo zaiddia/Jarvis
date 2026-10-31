@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ajustes · Jarvis</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css', v=asset_v) }}">
 <style>
   .gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
   .gal-card { border: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: border-color .2s, background .2s; }
@@ -137,6 +137,14 @@
         <label><input type="radio" name="hud_start_size" value="orbe" data-key="hud_start_size"><span>Orbe</span></label>
         <label><input type="radio" name="hud_start_size" value="compacto" data-key="hud_start_size"><span>Compacto</span></label>
         <label><input type="radio" name="hud_start_size" value="expandido" data-key="hud_start_size"><span>Expandido</span></label>
+      </div>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label>Tamaño del HUD expandido</label><p><b>Amplio</b> o <b>grande</b> muestran el panel «Hoy» al lado de la conversación (clase, aprobaciones, proyecto, agenda, pendientes y quién está en riesgo). En <b>estrecho</b>, el panel está en la pestaña «Hoy». Se ajusta solo a tu pantalla.</p></div>
+      <div class="seg">
+        <label><input type="radio" name="hud_expanded" value="estrecho" data-key="hud_expanded"><span>Estrecho</span></label>
+        <label><input type="radio" name="hud_expanded" value="amplio" data-key="hud_expanded"><span>Amplio</span></label>
+        <label><input type="radio" name="hud_expanded" value="grande" data-key="hud_expanded"><span>Grande</span></label>
       </div>
     </div>
     <div class="field stack">
@@ -1186,7 +1194,7 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='js/settings.js', v=asset_v) }}"></script>
 </body>
 </html>

@@ -306,9 +306,17 @@ def _orb_mark(resp):
     try:
         if request.path == "/api/orbe" and resp.status_code == 200:
             J.orb_seen["t"] = time.time()
+        if request.path.startswith("/static/") or request.path in ("/", "/ajustes", "/aula", "/proyector", "/bienvenida"):
+            resp.headers["Cache-Control"] = "no-cache"      # 9.1: tras actualizar, el HUD carga siempre lo nuevo
     except Exception:
         pass
     return resp
+
+
+@J.app.context_processor
+def _asset_version():
+    """9.1: ?v=versión en los .css y .js, para que la ventana del HUD no use los de la versión anterior."""
+    return {"asset_v": J.VERSION}
 
 
 @J.socketio.on("open_windhawk_folder")

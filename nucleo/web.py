@@ -92,6 +92,8 @@ def apply_settings(data):
         J.hud["window"].on_top = J.settings["hud_on_top"]
     if "hud_position" in changed:
         J.hud_reposition()
+    if "hud_expanded" in changed and J.hud.get("size") == "expandido":   # 9.1: cambia de tamaño al momento
+        J.hud_set_size("expandido")
     if changed & {"diary_enabled", "diary_days"}:
         diario.configure(J.CONFIG_DIR, J.settings["diary_enabled"], J.settings["diary_days"])
     if "mcp_servers" in changed:

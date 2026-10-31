@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bienvenida · Jarvis</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
 <style>
   html, body { background: var(--bg); color: var(--text); min-height: 100%; }
   body { font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px; display: flex; flex-direction: column; min-height: 100vh;
@@ -126,7 +126,7 @@
   <button class="btn btn-primary" id="next" type="button">Siguiente</button>
 </footer>
 
-<script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
 <script>
 (() => {
   const $ = (s) => document.querySelector(s);

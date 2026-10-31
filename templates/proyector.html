@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jarvis · Proyector</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
 <style>
   html, body { height: 100%; background: #03060c; overflow: hidden; }
   body { font-family: var(--mono); color: var(--text); display: grid; grid-template-rows: auto 1fr auto; cursor: default; }
@@ -67,7 +67,7 @@
   <span>Di «<b>Jarvis, escoge un estudiante</b>», «<b>haz grupos de 4</b>», «<b>pon un temporizador de 10 minutos</b>» o «<b>hazme una ilustración de…</b>»</span>
   <span>F11 · pantalla completa</span>
 </footer>
-<script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
 <script>
 (() => {
   "use strict";
