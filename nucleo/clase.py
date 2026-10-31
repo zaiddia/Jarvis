@@ -155,7 +155,8 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
 
     def work():
         try:
-            prompt = aula.build_prompt(kind, request, count or aula.detect_count(request), grade, topic) + J.lessons_ctx()
+            prompt = aula.build_prompt(kind, request, count or aula.detect_count(request), grade, topic) + J.lessons_ctx() + \
+                J.book_ctx(topic or request, aula.data.get("activo") or "")                                 # 11.5: el libro guía
             if kind == "plan":                                 # 9.6: lo que ya funcionó en este tema
                 prompt += J.clasevivo.worked_ctx(topic or request)
             m, last_err = None, None

@@ -952,6 +952,15 @@
     <div class="field stack"><div class="ft"><label for="f-zeti-url">Página de calificaciones de Zeti</label></div>
       <input class="inp mono" type="text" id="f-zeti-url" data-key="zeti_url" placeholder="https://www.zeti.co/calificaciones/"></div>
 
+    <div class="group">Libro guía del curso</div>
+    <p class="pane-intro">Sube el PDF (o Word, o texto) de tu libro de texto o del plan de área. Jarvis guarda su texto en tu equipo y, al preparar talleres, quices, guías vivas o la planeación, busca las páginas que hablan del tema y las usa como base, citando la página. Solo usa lo que subes aquí. Por voz: «busca en el libro guía: teorema de Pitágoras».</p>
+    <ul class="routines" id="bk-list"></ul>
+    <div class="field stack"><div class="ft"><label for="bk-subj">Asignatura del libro</label></div>
+      <div class="row"><select class="inp narrow" id="bk-subj"><option value="">Todas</option></select>
+        <button class="btn btn-ghost" type="button" id="btn-bk-up">Subir libro…</button>
+        <input type="file" id="bk-file" accept=".pdf,.docx,.txt,.md" hidden></div>
+      <p class="status" id="bk-status"></p></div>
+
     <div class="group">Planeación del año</div>
     <p class="pane-intro">«Planea mi año»: la planeación de todo el año de cada curso y asignatura, semana a semana, con el DBA o estándar y la evaluación de cada tema, en Word. La del periodo en curso pasa sola a tu diario de clase (la usan «¿qué temas me faltan?» y la semana lista del domingo) y cambia sola de periodo. «¿Cómo voy con la planeación de 7A?» compara con lo que registras en el diario; «reajusta la planeación de 7A» reorganiza lo que falta si te atrasaste.</p>
     <div class="field stack"><div class="ft"><label for="f-yr-start">Primer día de clases</label><p>AAAA-MM-DD, para saber en qué semana vas.</p></div>

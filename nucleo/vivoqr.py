@@ -125,7 +125,7 @@ def guide_qr():
 def make_guide(curso, tema):
     g = aula.grade_of(curso)
     raw = J.ai_chat([{"role": "user", "content": guiaviva.guide_prompt(tema, f"{g}°" if g else "bachillerato", J._subject(curso), list(J.LABS))
-                      + J.lessons_ctx()}], json_mode=True, max_tokens=7000)
+                      + J.lessons_ctx() + J.book_ctx(tema, curso)}], json_mode=True, max_tokens=7000)
     guia = guiaviva.clean_guide(J._extract_json(raw), list(J.LABS), graficas.clean)
     code = secrets.token_urlsafe(5)
     guiaviva.data["guias"][code] = {"curso": curso, "tema": tema, "guia": guia, "creado": time.strftime("%Y-%m-%d %H:%M"), "abierta": True,

@@ -40,7 +40,7 @@ FILES = {
     "entregas.json": ("entregas", "Entregas de programación"),
     "retos.json": ("retos", "Retos de la semana y ranking"),
     "tarjetas.json": ("tarjetas", "Tarjetas de memoria y su repaso"),
-    "guias_vivas.json": ("guias", "Guías vivas y podcasts"),
+    "guias_vivas.json": ("guiasvivas", "Guías vivas y podcasts"),
     "compromisos.json": ("compromisos", "Compromisos y correos por responder"),
     "lecciones.json": ("lecciones", "Lecciones que le enseñaste a Jarvis"),
     "paginas_vigiladas.json": ("paginas", "Páginas web vigiladas"),
@@ -51,6 +51,7 @@ FILES = {
 }
 # carpeta -> (parte, descripción, extensión): cada archivo de la carpeta va en la copia
 FOLDERS = {
+    "libros": ("libros", "Libros guía (texto extraído)", ".json"),
     "habilidades": ("habilidades", "Habilidades instaladas", ".json"),
     "diario": ("diario", "Diario", ".jsonl"),
     "historial": ("historial", "Historial de conversaciones", ".jsonl"),

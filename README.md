@@ -157,6 +157,19 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Quiz desde un video de YouTube y libro guía del curso (v11.5)
+
+- **Quiz desde YouTube:** «**haz un quiz de este video https://youtu.be/…**» (o «…de 10 preguntas…»). Jarvis lee los
+  subtítulos del video y arma el quiz con el **minuto exacto** donde está cada respuesta, un resumen y una **guía de
+  pausas** para verlo en clase (el minuto y la pregunta para el curso). Queda en Word y listo para «pásalo a Forms»,
+  «a Kahoot» o «prepara las hojas de respuesta del quiz». Si el video no deja leer sus subtítulos: en YouTube «…más» ›
+  «Mostrar transcripción», cópiala y di «**quiz del video:**» y pégala.
+- **Libro guía:** en Ajustes › Memoria › Libro guía subes el PDF (o Word o texto) del libro de texto o del plan de
+  área, con su asignatura. Al preparar talleres, quices, guías vivas o la planeación anual, Jarvis busca las páginas
+  que hablan del tema y las usa como base, citando la página. «**Busca en el libro guía: teorema de Pitágoras**»,
+  «¿qué libros guía tengo?». Solo usa lo que subes ahí; el texto se guarda en tu equipo (y en la copia de seguridad).
+  Los PDF escaneados como imagen no traen texto: Jarvis te lo dice.
+
 ## Guía viva por QR y podcast de repaso (v11.4)
 
 - **Guía viva:** «**haz una guía viva de funciones lineales para 9A**»: una guía interactiva para el celular (QR en el

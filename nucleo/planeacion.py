@@ -53,7 +53,7 @@ def _plan_area(subject):
 
 def plan_one(key, grado, asignatura):
     wpp = year_weeks()
-    raw = J.ai_chat([{"role": "user", "content": anual.year_prompt(f"{grado}°" if grado else "bachillerato", asignatura, wpp, _plan_area(asignatura))
+    raw = J.ai_chat([{"role": "user", "content": anual.year_prompt(f"{grado}°" if grado else "bachillerato", asignatura, wpp, _plan_area(asignatura) or J.book_ctx(asignatura + " contenidos índice unidades", key))
                       + J.lessons_ctx()}], json_mode=True, max_tokens=14000)
     periodos = anual.validate(J._extract_json(raw), wpp)
     anual.put(key, grado, asignatura, periodos)
