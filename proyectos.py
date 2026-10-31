@@ -28,6 +28,7 @@ TYPES = {
     "saber": "preguntas tipo Saber (ICFES) con contexto y competencia",
     "malla": "la malla curricular o planeación de todo un periodo, semana a semana",
     "piar": "ajustes razonables (PIAR) de un material para un estudiante con una necesidad específica",
+    "lectura": "una lectura en tres niveles (básico, intermedio y avanzado) con vocabulario y preguntas",
 }
 MAX_STEPS = 8
 
@@ -95,7 +96,8 @@ def validate_plan(d, goal=""):
 def spoken_plan(plan):
     names = {"investigar": "investigar", "plan": "plan de clase", "taller": "taller", "quiz": "evaluación",
              "rubrica": "rúbrica", "presentacion": "presentación", "texto": "texto", "imagen": "imagen",
-             "saber": "preguntas tipo Saber", "malla": "malla curricular", "piar": "ajustes razonables"}
+             "saber": "preguntas tipo Saber", "malla": "malla curricular", "piar": "ajustes razonables",
+             "lectura": "lectura nivelada"}
     items = [f"{i + 1}) {names.get(p['tipo'], p['tipo'])}: {p['titulo']}" for i, p in enumerate(plan["pasos"])]
     return f"Proyecto «{plan['nombre']}», {len(items)} pasos: " + "; ".join(items) + "."
 

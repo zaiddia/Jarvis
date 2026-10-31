@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "9.2"
+VERSION = "9.3"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -370,6 +370,8 @@ import gservicios
 import recuperacion
 import diarioclase
 import datos
+import compromisos
+import atencion
 import secreto
 
 
@@ -738,6 +740,11 @@ DEFAULT_SETTINGS = {
     "backup_drive": True,          # 8.9: cada copia de seguridad también a tu Drive (si conectaste Google)
     "drive_backup_folder_id": "",
     "drive_backup_keep": 10,
+    "attention_pulse": True,       # 9.3: cada hora, avisar solo de lo nuevo que necesita tu atención
+    "attention_from": 7,
+    "attention_to": 19,
+    "attention_weekend": False,
+    "attention_phone": False,      # …y mandarlo también al celular
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -771,7 +778,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -1400,6 +1407,12 @@ def process_command(text):
         return
     if live_quiz_voice(text, t):                       # 8.8: «quiz en vivo», y durante el quiz «respuesta», «siguiente»
         return
+    if link_material_voice(text, t):                   # 9.3: «haz un quiz con este artículo https://…», «nivela este texto: …»
+        return
+    if attention_voice(text, t):                       # 9.3: «¿qué necesita mi atención?»
+        return
+    if commitments_voice(text, t):                     # 9.3: «quedé en…», «¿qué compromisos tengo?», «ya le envié…»
+        return
     if _CHECK_RE.search(t):                            # «prueba completa», «revisa todo»
         if getattr(_tl, "remote", False):
             reply(check_report(run_system_check(speak_it=False)), "PRUEBA")
@@ -1845,6 +1858,13 @@ from nucleo.proteccion import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 9.3 · ¿QUÉ NECESITA MI ATENCIÓN?, COMPROMISOS, LECTURA NIVELADA Y MATERIAL DESDE UN ENLACE
+# → nucleo/atento.py (lógica en atencion.py y compromisos.py; la lectura nivelada en aula.py)
+# =============================================================================
+from nucleo.atento import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1974,6 +1994,7 @@ def main():
         hud_plus_start()                  # 8.6: el panel «Hoy» del HUD se actualiza solo
         class_plus_start()                # 8.8: diario de clase y quiz en vivo
         students_start()                  # 8.9: abre los datos de estudiantes cifrados (con la clave ya leída)
+        attention_start()                 # 9.3: compromisos y pulso de atención
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

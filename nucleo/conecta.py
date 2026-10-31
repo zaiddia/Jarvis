@@ -174,6 +174,7 @@ def mail_reply(m, instruction):
     def send():
         try:
             J.mail_send(m["de"], asunto, cuerpo, in_reply_to=m.get("msgid", ""))
+            J.compromisos.mark_answered(m)            # 9.3: ya no aparece como «por responder»
             J.reply(f"Respuesta enviada a {m['de_nombre']}.", "CORREO")
             diario.log("orden", f"respondí el correo de {m['de_nombre']}")
         except RuntimeError as e:

@@ -306,14 +306,17 @@ KINDS = {
                                   r"plan de area|plan de asignatura|planeacion anual|plan anual"),
     "piar": ("Ajustes razonables (PIAR)", r"piar|ajustes razonables|adaptacion curricular|flexibilizacion curricular|"
                                           r"para (?:un|una|el|la) (?:estudiante|alumno|alumna|nino|nina) (?:con|que tiene)"),
+    # 9.3
+    "lectura": ("Lectura nivelada", r"lecturas? nivelada|lecturas? diferenciada|texto nivelado|nivela(?:r|me)? (?:este|el|un|la) (?:texto|lectura|articulo)|"
+                                    r"(?:lectura|texto) (?:en|a) (?:tres|3|varios|distintos) niveles|tres niveles de lectura|niveles de lectura"),
 }
-DEFAULT_COUNT = {"quiz": 10, "taller": 8, "rubrica": 4, "plan": 0, "saber": 8, "malla": 10, "piar": 0}
+DEFAULT_COUNT = {"quiz": 10, "taller": 8, "rubrica": 4, "plan": 0, "saber": 8, "malla": 10, "piar": 0, "lectura": 5}
 NIVELES = ["Superior", "Alto", "Básico", "Bajo"]      # escala de valoración en Colombia
 
 
 def detect_kind(text):
     t = normalize(text)
-    for kind in ("piar", "saber", "malla", "rubrica", "plan", "quiz", "taller"):
+    for kind in ("lectura", "piar", "saber", "malla", "rubrica", "plan", "quiz", "taller"):
         if re.search(rf"\b(?:{KINDS[kind][1]})\b", t):
             return kind
     return None
@@ -374,6 +377,16 @@ def build_prompt(kind, request, count=None, grade="", topic=""):
                 "número solo si lo conoces con certeza; si no, descríbelo sin inventar el número), un desempeño observable, "
                 "actividades sugeridas y cómo se evalúa. Ordena los temas de lo básico a lo complejo. «evidencias» son las "
                 "evidencias de aprendizaje del periodo.")
+    elif kind == "lectura":
+        schema = ('{"titulo": str, "grado": str, "tema": str, "niveles": [{"nivel": "Básico"|"Intermedio"|"Avanzado", '
+                  '"texto": str, "vocabulario": [{"palabra": str, "significado": str}], "resumen": str, '
+                  '"preguntas": [str]}]}')
+        task = (f"Prepara la MISMA lectura en tres niveles (Básico, Intermedio y Avanzado) para estudiantes de un mismo curso con "
+                "distintos niveles de lectura. Si el docente da un texto o contenido fuente, respeta sus ideas y datos (no "
+                "inventes hechos); si solo da un tema, escribe un texto original y correcto. Básico: frases cortas, palabras "
+                "sencillas, 120 a 180 palabras. Intermedio: 200 a 280 palabras. Avanzado: 300 a 400 palabras con vocabulario "
+                f"más rico. Cada nivel trae 4 a 6 palabras de vocabulario con su significado en lenguaje sencillo, un resumen "
+                f"de 2 frases y {n} preguntas de comprensión (literal, inferencial y crítica).")
     elif kind == "piar":
         schema = ('{"titulo": str, "grado": str, "tema": str, "necesidad": str, "barreras": [str], '
                   '"ajustes": [{"tipo": str, "ajuste": str}], "actividad": str, "evaluacion": str, "seguimiento": str}')
@@ -455,6 +468,19 @@ def validate(kind, d, request=""):
             raise ValueError("La IA no generó las semanas del periodo.")
         out.update(periodo=_txt(d.get("periodo"), 60), estandar=_txt(d.get("estandar"), 800), semanas=sem,
                    evidencias=[_txt(x, 400) for x in (d.get("evidencias") or []) if _txt(x)])
+    elif kind == "lectura":
+        lv = []
+        for x in d.get("niveles") or []:
+            if isinstance(x, dict) and _txt(x.get("texto")):
+                lv.append({"nivel": _txt(x.get("nivel"), 30) or ["Básico", "Intermedio", "Avanzado"][min(len(lv), 2)],
+                           "texto": _txt(x["texto"], 6000),
+                           "vocabulario": [{"palabra": _txt(v.get("palabra"), 60), "significado": _txt(v.get("significado"), 300)}
+                                           for v in (x.get("vocabulario") or []) if isinstance(v, dict) and _txt(v.get("palabra"))][:8],
+                           "resumen": _txt(x.get("resumen"), 600),
+                           "preguntas": [_txt(q, 400) for q in (x.get("preguntas") or []) if _txt(q)][:10]})
+        if not lv:
+            raise ValueError("La IA no generó los niveles de la lectura.")
+        out.update(niveles=lv[:3])
     elif kind == "piar":
         aj = [{"tipo": _txt(a.get("tipo"), 60) or "Ajuste", "ajuste": _txt(a.get("ajuste"), 800)}
               for a in (d.get("ajustes") or []) if isinstance(a, dict) and _txt(a.get("ajuste"))]
@@ -599,6 +625,30 @@ def build_docx(kind, m, out_dir, Document, docente="", institucion="", curso="")
             heading("Evidencias de aprendizaje del periodo")
             for e in m["evidencias"]:
                 doc.add_paragraph(e, style="List Bullet")
+    elif kind == "lectura":
+        for k, lv in enumerate(m["niveles"]):
+            if k:
+                doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+            heading(f"Nivel {lv['nivel']}")
+            doc.add_paragraph("Nombre: _______________________________   Curso: ________")
+            for par in [p for p in lv["texto"].split("\n") if p.strip()]:
+                doc.add_paragraph(par.strip())
+            if lv["vocabulario"]:
+                heading("Vocabulario")
+                for v in lv["vocabulario"]:
+                    p = doc.add_paragraph(style="List Bullet")
+                    p.add_run(v["palabra"] + ": ").bold = True
+                    p.add_run(v["significado"])
+            if lv["preguntas"]:
+                heading("Preguntas")
+                for i, q in enumerate(lv["preguntas"], 1):
+                    doc.add_paragraph(f"{i}. {q}")
+                    doc.add_paragraph("_" * 80).paragraph_format.space_after = Pt(0)
+        key_page("Resúmenes (solo para el docente)")
+        for lv in m["niveles"]:
+            p = doc.add_paragraph()
+            p.add_run(f"{lv['nivel']}: ").bold = True
+            p.add_run(lv["resumen"] or "—")
     elif kind == "piar":
         if m.get("necesidad"):
             heading("Situación del estudiante")

@@ -1054,6 +1054,25 @@
       <div class="range"><input type="range" id="f-pj-par" min="1" max="4" step="1" data-key="project_parallel"><output></output></div>
     </div>
 
+    <div class="group">¿Qué necesita mi atención?</div>
+    <p class="pane-intro">«¿Qué necesita mi atención?» junta en una lista lo urgente: aprobaciones, compromisos que vencen, correos que te toca responder, pendientes atrasados, la próxima clase, eventos que empiezan pronto y estudiantes en riesgo. También aparece arriba en el panel «Hoy». Compromisos: «quedé en enviarle el taller a la coordinadora el viernes», «¿qué compromisos tengo?», «ya le envié el taller».</p>
+    <div class="field">
+      <div class="ft"><label for="f-att-on">Pulso cada hora</label><p>Revisa todo cada hora y te avisa solo de lo nuevo e importante (en la campana del HUD y en la conversación).</p></div>
+      <label class="switch"><input type="checkbox" id="f-att-on" data-key="attention_pulse"><span></span></label>
+    </div>
+    <div class="field"><div class="ft"><label for="f-att-from">Desde la hora</label></div>
+      <div class="range"><input type="range" id="f-att-from" min="0" max="23" step="1" data-key="attention_from"><output></output></div></div>
+    <div class="field"><div class="ft"><label for="f-att-to">Hasta la hora</label></div>
+      <div class="range"><input type="range" id="f-att-to" min="1" max="24" step="1" data-key="attention_to"><output></output></div></div>
+    <div class="field">
+      <div class="ft"><label for="f-att-we">También fines de semana</label></div>
+      <label class="switch"><input type="checkbox" id="f-att-we" data-key="attention_weekend"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-att-ph">Mandarlo también al celular</label></div>
+      <label class="switch"><input type="checkbox" id="f-att-ph" data-key="attention_phone"><span></span></label>
+    </div>
+
     <div class="group">Resumen de la semana</div>
     <p class="pane-intro">Lo que hiciste, lo que quedó pendiente, quién está en riesgo y lo que viene la próxima semana, a tu celular (Telegram o WhatsApp) o al HUD. También: «Jarvis, dame el resumen semanal». Y para repetir un proyecto: «cada domingo a las 6 de la tarde prepárame la semana de 7A sobre fracciones» (te pide aprobación cada vez).</p>
     <div class="field">

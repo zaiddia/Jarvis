@@ -280,6 +280,10 @@ def dashboard(now=None):
             risk.append({"curso": course, "n": len(r), "nombres": [n for n, _ in r[:3]]})
     out["riesgo"] = risk
     out["trabajos"] = jobs_list()
+    try:                                               # 9.3: lo que necesita tu atención (sin aprobaciones: tienen su tarjeta)
+        out["atencion"] = [x for x in J.attention_items(now) if not x["k"].startswith("ap:")][:5]
+    except Exception:
+        out["atencion"] = []
     out["cursos"] = courses_summary()
     out["favoritos"] = favorites()
     out["avisos_sin_leer"] = notices_unread()

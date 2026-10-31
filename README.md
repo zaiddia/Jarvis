@@ -157,6 +157,32 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## ¿Qué necesita mi atención?, compromisos, lectura nivelada y material desde un enlace (v9.3)
+
+Ideas tomadas de otros asistentes (OpenJarvis, Vellum, Slashy, Diffit, Brisk), adaptadas a Jarvis.
+
+**«¿Qué necesita mi atención?»** junta en una sola lista priorizada lo que no puede esperar: aprobaciones, compromisos
+que vencen hoy o ya se vencieron, correos que te toca responder, pendientes atrasados, la clase que empieza en menos de
+una hora, eventos próximos, estudiantes en riesgo y errores de Jarvis. Aparece también arriba en el panel «Hoy» (clic en
+cada cosa para atenderla). Y el **pulso**: cada hora, en tu horario de trabajo, Jarvis revisa todo y te avisa solo de lo
+**nuevo** e importante (en la campana y, si quieres, en el celular). Se ajusta en *Ajustes › Agente*.
+
+**Compromisos.** «**Quedé en enviarle el taller a la coordinadora el viernes**», «me comprometí a llamar a la mamá de
+Juan mañana»: Jarvis los anota con su fecha y te los recuerda el día antes (desde las 5 p. m.) y el mismo día.
+«**¿Qué compromisos tengo?**», «**ya le envié el taller a la coordinadora**» (lo marca cumplido).
+
+**Correos por responder.** Los correos importantes que te piden algo («quedo atenta», «¿podría…?», «por favor
+confirme») quedan como pendientes hasta que los contestas con Jarvis. «**¿Qué correos debo responder?**», «**ese correo
+de la coordinadora no necesita respuesta**».
+
+**Lectura nivelada.** «**Haz una lectura nivelada sobre los volcanes para sexto**» o «**nivela este texto: …**» (pegas
+el texto): la misma lectura en tres niveles (básico, intermedio y avanzado), cada uno con vocabulario, preguntas de
+comprensión literal, inferencial y crítica, y los resúmenes para ti. También en la página del aula y en los proyectos.
+
+**Material desde un enlace.** «**Haz un quiz con este artículo https://…**», «**haz un taller con esta página https://…**»,
+«**nivela esta lectura https://…**»: Jarvis lee la página y arma el material sobre ese contenido (no sobre algo
+genérico). Si la página pide iniciar sesión, copia el texto y pégalo.
+
 ## HUD: campana de avisos, favoritos, cursos y encabezado compacto (v9.2)
 
 - **Encabezado compacto**: en el HUD expandido el reactor, el título, la última línea y los controles van en una sola

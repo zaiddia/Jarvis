@@ -353,6 +353,11 @@ body.wide.dash-hidden[data-size="expandido"] .shell { grid-template-columns: 44p
 .dist i { display: block; height: 100%; }
 .dist i.s { background: var(--ok); } .dist i.a { background: var(--a); } .dist i.b { background: var(--a2); } .dist i.x { background: var(--err); }
 
+.dcard.att { border-color: rgba(var(--a2-rgb), .5); background: rgba(var(--a2-rgb), .06); }
+.dcard.att h4 { color: var(--a2); }
+.drow.hot span { color: #fff; }
+.drow.hot span::first-letter { color: var(--a2); }
+
 .preview.subs { color: var(--muted); -webkit-line-clamp: 3; }
 .preview.subs b { color: var(--text); font-weight: 700; text-shadow: 0 0 8px rgba(var(--a-rgb), .6); }
 [data-size="expandido"] .preview.subs { font-size: 12px; }

@@ -399,6 +399,16 @@
     if (d.clima) top.append(mk("span", "dweather", weatherIcon(d.clima) + "  " + d.clima));
     dash.append(top);
     renderJobs(d.trabajos || []);
+    if (d.atencion && d.atencion.length) {                   // 9.3: lo que necesita tu atención
+      const k = card(`Atención · ${d.atencion.length}`, "att", "Atención");
+      d.atencion.forEach((x) => {
+        const r = mk("div", "drow click" + (x.p === 1 ? " hot" : ""));
+        r.append(mk("span", "", (x.p === 1 ? "● " : "○ ") + x.t));
+        r.addEventListener("click", () => (/\s$/.test(x.cmd) ? fill(x.cmd) : run(x.cmd)));
+        k.append(r);
+      });
+      dash.append(k);
+    }
     const c = d.clase || {};
     if (c.ahora || c.siguiente) {
       const k = card("Clase");

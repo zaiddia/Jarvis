@@ -182,3 +182,5 @@ modo proyector => PROYECTOR|abrir :: proyector
 pasa el quiz a Kahoot => EXPORTAR
 exporta las notas de 7A para Zeti => EXPORTAR
 hoy en 7A vimos fracciones equivalentes => DIARIO DE CLASE
+¿qué necesita mi atención? => ATENCIÓN
+¿qué compromisos tengo? => COMPROMISOS
