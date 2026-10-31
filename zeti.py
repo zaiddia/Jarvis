@@ -140,8 +140,9 @@ def table(names, grades, since="", order="lista", sort_key=None, weights=None):
 
 
 def xlsx(curso, names, grades, absences, path, since="", order="lista", comma=True, institucion="", docente="", sort_key=None,
-         weights=None, asignatura=""):
-    """La planilla con la misma forma que «Valoraciones Periódicas de Desempeño» de Zeti."""
+         weights=None, asignatura="", year=None):
+    """La planilla con la misma forma que «Valoraciones Periódicas de Desempeño» de Zeti.
+    year (10.2): {estudiante: (VF, VRA)} para las columnas del acumulado del año."""
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
     from openpyxl.utils import get_column_letter
@@ -178,11 +179,13 @@ def xlsx(curso, names, grades, absences, path, since="", order="lista", comma=Tr
             ws.merge_cells(start_row=4, end_row=4, start_column=first, end_column=col - 1)
         spans[d] = (first, col - 1)
     tail = col
-    for i, h in enumerate(("Val", "VL", "Fallas", "Observación")):
+    heads = ["Val", "VL"] + (["VF", "VRA"] if year is not None else []) + ["Fallas", "Observación"]
+    k = len(heads) - 4                                 # columnas extra (VF y VRA) antes de Fallas
+    for i, h in enumerate(heads):
         ws.cell(row=4, column=tail + i, value=h)
         ws.merge_cells(start_row=4, end_row=5, start_column=tail + i, end_column=tail + i)
     for r in (4, 5):
-        for c in range(1, tail + 4):
+        for c in range(1, tail + 4 + k):
             cell = ws.cell(row=r, column=c)
             cell.font = Font(bold=True)
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -208,19 +211,25 @@ def xlsx(curso, names, grades, absences, path, since="", order="lista", comma=Tr
         ws.cell(row=r, column=tail, value=v["val"]).number_format = "0.0"
         ws.cell(row=r, column=tail, value=v["val"]).font = Font(bold=True, color="C00000" if v["val"] is not None and v["val"] < PASS else "000000")
         ws.cell(row=r, column=tail + 1, value=v["letra"]).font = Font(bold=True)
-        ws.cell(row=r, column=tail + 2, value=absences.get(row["nombre"], 0) or None)
+        if year is not None:
+            vf, need = year.get(row["nombre"], (None, None))
+            ws.cell(row=r, column=tail + 2, value=vf).number_format = "0.0"
+            ws.cell(row=r, column=tail + 3, value=need if need is not None else ("✓" if vf is not None else None)).number_format = "0.0"
+            if need is not None:
+                ws.cell(row=r, column=tail + 3).font = Font(bold=True, color="7030A0")
+        ws.cell(row=r, column=tail + 2 + k, value=absences.get(row["nombre"], 0) or None)
         miss = [dict((x, y) for x, y, _ in DIMS)[d] for d in v["faltan"] if d != "auto" or acts["auto"]]
         if v["val"] is not None and miss:
-            ws.cell(row=r, column=tail + 3, value="Sin notas de " + ", ".join(miss) + " (el peso se repartió)")
-        for c in range(1, tail + 4):
+            ws.cell(row=r, column=tail + 3 + k, value="Sin notas de " + ", ".join(miss) + " (el peso se repartió)")
+        for c in range(1, tail + 4 + k):
             ws.cell(row=r, column=c).border = box
-            if c > 2 and c < tail + 3:
+            if c > 2 and c < tail + 3 + k:
                 ws.cell(row=r, column=c).alignment = Alignment(horizontal="center")
     ws.column_dimensions["A"].width = 5
     ws.column_dimensions["B"].width = 38
-    for c in range(3, tail + 3):
+    for c in range(3, tail + 3 + k):
         ws.column_dimensions[get_column_letter(c)].width = 9
-    ws.column_dimensions[get_column_letter(tail + 3)].width = 30
+    ws.column_dimensions[get_column_letter(tail + 3 + k)].width = 30
     for d, _, _ in dims:                               # las columnas de actividades, más anchas
         a, b = spans[d]
         for c in range(a, b - 1):

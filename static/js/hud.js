@@ -683,6 +683,12 @@
       b.append(mk("div", "dmeta", "Últimas: " + last));
     } else b.append(mk("div", "dmeta", "Sin notas registradas."));
     b.append(mk("div", "dmeta", `${c.fallas} falla${c.fallas === 1 ? "" : "s"}` + ((c.ultimas_fallas || []).length ? ` (última ${c.ultimas_fallas.slice(-1)[0]})` : "")));
+    const y = c.anio || {};                                                     // 10.2: acumulado del año (VF) y lo que falta (VRA)
+    if (y.vf != null) {
+      const f = (x) => String(x).replace(".", ",");
+      b.append(mk("div", y.pierde ? "salert" : "dmeta", y.aprobo ? `Año: lleva ${f(y.vf)}, ya aprobó ✓` :
+        `Año: lleva ${f(y.vf)} · necesita ${f(y.vra)} en lo que queda` + (y.pierde ? " — puede perder el año" : "")));
+    }
     (c.alertas || []).forEach((a) => b.append(mk("div", "salert", "⚠ " + a)));
     (c.observador || []).slice(-3).reverse().forEach((o) => b.append(mk("div", "sobs " + (o.t === "positiva" ? "pos" : ""), `${o.f} · ${o.x}`)));
     (c.compromisos || []).forEach((x) => b.append(mk("div", "dmeta", "Compromiso: " + x)));

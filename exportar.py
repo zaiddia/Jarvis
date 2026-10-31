@@ -141,7 +141,7 @@ def zeti_table(names, grades, absences, since="", order="lista"):
 
 
 def zeti_xlsx(curso, names, grades, absences, out_dir, since="", order="lista", comma=True, institucion="", docente="",
-              asignatura="", weights=None):
+              asignatura="", weights=None, year=None):
     """10.1: la planilla con la forma de «Valoraciones Periódicas de Desempeño» de Zeti. → (ruta, estudiantes, actividades)."""
     import zeti
     folder = os.path.join(out_dir, "Exportaciones")
@@ -149,5 +149,5 @@ def zeti_xlsx(curso, names, grades, absences, out_dir, since="", order="lista", 
     title = " ".join(x for x in (curso, asignatura) if x)
     path = os.path.join(folder, f"{_safe('Zeti ' + title)} {datetime.date.today():%Y-%m-%d}.xlsx")
     n, acts, _rows = zeti.xlsx(curso, names, grades, absences, path, since, order, comma, institucion, docente, surname_key, weights,
-                               asignatura)
+                               asignatura, year)
     return path, n, acts

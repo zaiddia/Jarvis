@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "10.1"
+VERSION = "10.2"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -742,6 +742,8 @@ DEFAULT_SETTINGS = {
     "scale_superior": 4.5,         # 10.1: escala de desempeño de la institución
     "scale_alto": 4.0,
     "scale_basico": 3.0,
+    "period_current": 1,           # 10.2: periodo en curso (para el acumulado del año)
+    "zeti_period_weights": "34,33,33",  # 10.2: peso de cada periodo en el año (%)
     "zeti_comma": True,            # definitivas con coma decimal (4,5)
     "recovery_days": 10,           # 8.8: plazo de los planes de recuperación
     "live_quiz_secs": 30,          # 8.8: segundos por pregunta en el quiz en vivo
@@ -809,7 +811,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "period_current": (1, 6), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -846,6 +848,11 @@ def _validate(key, value):
         nums = [int(x) for x in re.findall(r"\d{1,3}", v)]
         if len(nums) != 4 or sum(nums) != 100:
             raise ValueError("escribe 4 porcentajes que sumen 100, por ejemplo 35,30,30,5")
+        v = ",".join(map(str, nums))
+    if key == "zeti_period_weights":                   # 10.2: los pesos de los periodos suman 100
+        nums = [int(x) for x in re.findall(r"\d{1,3}", v)]
+        if not 2 <= len(nums) <= 6 or sum(nums) != 100:
+            raise ValueError("escribe el peso de cada periodo y que sumen 100, por ejemplo 34,33,33")
         v = ",".join(map(str, nums))
     if key == "zeti_url" and v and not v.startswith("https://"):
         raise ValueError("la dirección debe empezar por https://")
@@ -1477,6 +1484,8 @@ def process_command(text):
         return
     if zeti_open_voice(text, t):                       # 10.1: «abre Zeti»
         return
+    if year_voice(text, t):                            # 10.2: «¿cuánto necesita Juan de 7A para pasar?», «¿quiénes pueden perder el año?»
+        return
     if meeting_voice(text, t):                         # 10.0: «prepara la agenda de la reunión de área», «empieza el acta»
         return
     if kit_voice(text, t):                             # 10.0: «exporta mi kit para colegas»
@@ -1982,6 +1991,10 @@ from nucleo.animado import *  # noqa: F401,F403,E402
 # → nucleo/colegas.py (lógica en kit.py y reunion.py)
 from nucleo.colegas import *  # noqa: F401,F403,E402
 
+# ── 10.2: acumulado del año (VF) y lo que falta para aprobar (VRA), como en Zeti
+# → nucleo/acumulado.py (lógica en zeti.py y periodos.py)
+from nucleo.acumulado import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2122,6 +2135,7 @@ def main():
         mood_start()                      # 9.9: personalidad y color del día
         colleagues_start()                # 10.0: retoma un acta abierta
         zeti_apply()                      # 10.1: pesos y escala de la institución
+        year_start()                      # 10.2: valoraciones de los periodos anteriores
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

@@ -157,6 +157,22 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## El año completo: acumulado (VF) y lo que falta para aprobar (VRA), como en Zeti (v10.2)
+
+Jarvis ya sabe **cómo va cada estudiante en el año**, con las mismas cuentas de Zeti: el acumulado de los periodos
+cerrados (**VF**, con los pesos 34 %, 33 % y 33 %) y lo que le falta en promedio en lo que queda del año para llegar
+a 3,0 (**VRA**).
+
+- **Periodos anteriores:** al cerrar un periodo con Jarvis, la Val de cada estudiante se guarda sola. Para los que ya
+  pasaron: en Zeti abre «Valoraciones Periódicas de Desempeño» de ese periodo, copia la tabla y pégala en Ajustes ›
+  Memoria › Periodos anteriores. Jarvis lee la Val de cada fila y la empareja con tu lista (si el curso no tiene lista
+  en Jarvis, la crea con la de Zeti, en su orden). «**Estamos en el tercer periodo**» le dice en qué periodo vas.
+- «**¿Quiénes pueden perder el año en 10A?**»: quién no alcanza con lo que lleva en este periodo y cuánto necesita;
+  «**¿cuánto necesita Juan de 10A para pasar?**»; «**¿quiénes ya ganaron el año en 10A?**».
+- Aparece en «¿qué necesita mi atención?» («3 pueden perder el año en 10A»), en la **ficha del estudiante** y en la
+  **planilla para Zeti**, que ahora trae las columnas **VF** y **VRA** (✓ si ya aprobó).
+- Son datos de estudiantes: van cifrados con los demás si lo activaste, y en la copia de seguridad.
+
 ## Notas como en Zeti: Valoraciones Periódicas de Desempeño (v10.1)
 
 Jarvis calcula las notas **igual que la planilla de Zeti** (zeti.co/calificaciones): cada actividad va en su dimensión,
@@ -172,7 +188,7 @@ pondera con dos decimales y la suma es la **Val** del periodo con su letra (**S*
   una columna por actividad, para pegar en la misma actividad de Zeti.
 - «**Abre Zeti**» abre la página de calificaciones.
 - El promedio que Jarvis usa en todas partes (riesgo, ficha, informes, cierre de periodo) es ahora esta valoración.
-- En Ajustes › Aula: los pesos, la escala de desempeño y el orden «Alfabético» (para listas ya escritas «Apellidos
+- En Ajustes › Memoria: los pesos, la escala de desempeño y el orden «Alfabético» (para listas ya escritas «Apellidos
   Nombres», como en Zeti).
 
 ## Kit para colegas y reuniones de área (v10.0)
@@ -216,7 +232,7 @@ corta** de cada curso, junto con lo que viene (compromisos de la semana y estudi
 Con tu «sí» lo hace como un proyecto y te deja todo en una carpeta. Cuando quieras: «**prepárame la semana**»,
 «**¿cómo viene la semana?**».
 
-**Cierre de periodo.** «**El periodo termina el 28 de noviembre**» (o en Ajustes › Aula). Una semana y tres días antes
+**Cierre de periodo.** «**El periodo termina el 28 de noviembre**» (o en Ajustes › Memoria). Una semana y tres días antes
 te avisa cómo va cada curso: promedio, quién está en riesgo, quién no tiene notas y qué temas de la malla faltan. Ese
 día te propone el cierre: un **consolidado en Word** de todos tus cursos y las **planillas para Zeti**; luego «Notas
 desde» pasa sola al periodo siguiente. También: «**cierra el periodo**», «**¿cuánto falta para cerrar el periodo?**».
@@ -237,7 +253,7 @@ promedio y desempeño, la minigráfica de sus notas (la línea punteada es el 3,
 observador, sus alertas y tus compromisos con él, y botones para sacar el observador o el informe para padres.
 
 **Felicitaciones.** Cuando alguien **mejora** claramente, Jarvis te propone anotarle una felicitación en el observador
-(solo con tu «sí»). «**¿A quién debo felicitar?**» te dice quiénes van subiendo. Se apaga en Ajustes › Aula › Alertas
+(solo con tu «sí»). «**¿A quién debo felicitar?**» te dice quiénes van subiendo. Se apaga en Ajustes › Memoria › Alertas
 tempranas y felicitaciones.
 
 ## Clase en vivo, ticket de salida con el celular y actividades que funcionaron (v9.6)

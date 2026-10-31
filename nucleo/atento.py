@@ -74,6 +74,10 @@ def attention_items(now=None):
                             "cmd": f"muéstrame a {a['estudiante']} de {a['curso']}"})
     except Exception:
         pass
+    try:
+        out += J.year_attention()                      # 10.2: quién puede perder el año
+    except Exception:
+        pass
     day_ago = (now - datetime.timedelta(days=1)).isoformat()
     errs = [e for e in errores.recent(50) if e["t"] >= day_ago and e["nivel"] == "error"]
     if errs:

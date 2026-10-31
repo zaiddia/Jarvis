@@ -12,11 +12,12 @@ import datos
 import diarioclase
 import gservicios
 import informes
+import periodos
 import seguimiento
 from nucleo import J
 
 STUDENT_FILES = {"aula.json": aula, "notas_estudiantes.json": seguimiento, "observador.json": informes,
-                 "registro_clase.json": diarioclase}
+                 "registro_clase.json": diarioclase, "periodos.json": periodos}
 
 
 # ============================================================================ DATOS DE ESTUDIANTES CIFRADOS

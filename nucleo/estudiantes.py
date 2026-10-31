@@ -93,6 +93,7 @@ def student_card(course, name):
             "fallas": len(faltas), "ultimas_fallas": sorted(faltas)[-3:],
             "observador": [{"f": x["fecha"], "t": x["tipo"], "x": x["texto"][:160]} for x in informes.entries(course, name)[-4:]],
             "alertas": [a["detalle"] for a in al], "compromisos": comp,
+            "anio": J.year_status(course, name),
             "riesgo": bool(seguimiento.at_risk(course, [name], {name: len(faltas)}, J.settings["risk_grade"], J.settings["risk_absences"]))}
 
 

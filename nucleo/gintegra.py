@@ -196,7 +196,7 @@ def export_voice(text, t):
     path, n, acts = exportar.zeti_xlsx(course, names, seguimiento.data.get(course, {}), J._absences(course),
                                       J.settings["output_dir"], J.settings["zeti_since"], J.settings["zeti_order"],
                                       J.settings["zeti_comma"], J.settings["aula_institucion"], J.settings["aula_docente"],
-                                      materia, zeti.WEIGHTS)
+                                      materia, zeti.WEIGHTS, J.year_map(course))
     J.generated_files.add(path)
     opened = J._open_doc(path)
     w = zeti.WEIGHTS
@@ -211,7 +211,7 @@ _ZETI_OPEN = re.compile(r"^(?:jarvis\s+)?(?:abre|abreme|entra a|ve a|llevame a)\
 
 
 def zeti_apply():
-    """10.1: los pesos y la escala de tu institución (Ajustes › Aula › Zeti)."""
+    """10.1: los pesos y la escala de tu institución (Ajustes › Memoria › Zeti)."""
     zeti.WEIGHTS.update(zeti.parse_weights(J.settings["zeti_weights"]))
     zeti.SCALE.update(superior=J.settings["scale_superior"], alto=J.settings["scale_alto"], basico=J.settings["scale_basico"])
 

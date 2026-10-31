@@ -158,8 +158,10 @@ def close_period(say=True):
         if names and seguimiento.data.get(s["curso"]):
             p, _n, _a = exportar.zeti_xlsx(s["curso"], names, seguimiento.data.get(s["curso"], {}), J._absences(s["curso"]),
                                            J.settings["output_dir"], J.settings["zeti_since"], J.settings["zeti_order"],
-                                           J.settings["zeti_comma"], J.settings["aula_institucion"], J.settings["aula_docente"])
+                                           J.settings["zeti_comma"], J.settings["aula_institucion"], J.settings["aula_docente"],
+                                           year=J.year_map(s["curso"]))
             paths.append(p)
+    J.save_period_vals()                               # 10.2: la Val de cada uno queda para el acumulado del año
     for p in paths:
         J.generated_files.add(p)
     J._open_doc(paths[0])

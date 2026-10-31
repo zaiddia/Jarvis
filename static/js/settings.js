@@ -929,6 +929,22 @@
     (x) => socket.emit("pages", { delete: x.id }, renderPages), "No hay páginas vigiladas.");
   socket.on("connect", () => { socket.emit("lessons", {}, renderLessons); socket.emit("pages", {}, renderPages); });
 
+  // 10.2: periodos anteriores (pegar la tabla de Zeti)
+  function renderPeriods(r) {
+    if (!r) return;
+    $("#per-courses").innerHTML = (r.cursos || []).map((c) => `<option value="${c.replace(/"/g, "")}">`).join("");
+    const sel = $("#per-num"); const keep = sel.value;
+    sel.innerHTML = Array.from({ length: r.periodos || 3 }, (_, i) => `<option value="${i + 1}">Periodo ${i + 1}</option>`).join("");
+    sel.value = keep || String(Math.max(1, (r.actual || 1) - 1));
+    const g = Object.entries(r.guardados || {}).map(([c, ps]) => `${c}: ${ps.join(", ")}`).join(" · ");
+    if (g && !$("#per-status").textContent) $("#per-status").textContent = "Guardados — " + g;
+  }
+  const perSend = (preview) => socket.emit("periods_paste", { curso: $("#per-course").value, periodo: $("#per-num").value, text: $("#per-text").value, preview },
+    (r) => { const st = $("#per-status"); st.className = "status" + (r && r.ok ? " ok" : " err"); st.textContent = r ? r.msg : ""; if (r && r.ok && !preview) { $("#per-text").value = ""; socket.emit("periods_info", {}, renderPeriods); } });
+  $("#btn-per-check").addEventListener("click", () => perSend(true));
+  $("#btn-per-save").addEventListener("click", () => perSend(false));
+  socket.on("connect", () => socket.emit("periods_info", {}, renderPeriods));
+
   // 10.0: kit para colegas
   let kitText = "";
   const kitSay = (r, okCls) => { const st = $("#kit-status"); st.className = "status" + (r && r.ok ? (okCls ? " ok" : "") : " err"); st.textContent = r ? (r.ok ? r.summary : "No se pudo: " + r.error) : ""; };
