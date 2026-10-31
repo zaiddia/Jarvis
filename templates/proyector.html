@@ -35,6 +35,22 @@
   .idle-clock { white-space: nowrap; font-family: var(--hud); font-weight: 700; font-size: clamp(90px, 20vw, 320px); color: var(--a); text-shadow: 0 0 50px rgba(var(--a-rgb), .4); font-variant-numeric: tabular-nums; }
   footer { font-size: clamp(11px, 1.1vw, 16px); color: var(--muted); }
   footer b { color: var(--a); font-weight: 400; }
+  /* 8.8: quiz en vivo */
+  .lq { width: 100%; max-width: 1500px; display: flex; flex-direction: column; gap: 2.4vh; text-align: left; }
+  .lq-top { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--hud); letter-spacing: .2em;
+    text-transform: uppercase; color: var(--muted); font-size: clamp(12px, 1.4vw, 22px); }
+  .lq-ctx { font-size: clamp(14px, 1.6vw, 26px); line-height: 1.45; color: #a9c3d8; border-left: 3px solid var(--line-strong); padding-left: 1.2vw; max-height: 22vh; overflow: auto; }
+  .lq-q { font-size: clamp(22px, 3.2vw, 56px); line-height: 1.25; font-weight: 700; }
+  .lq-ops { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6vw; }
+  .lq-op { display: flex; gap: 1.2vw; align-items: center; padding: 2vh 1.6vw; border: 2px solid rgba(var(--a-rgb), .35); border-radius: 14px;
+    background: rgba(var(--a-rgb), .06); font-size: clamp(18px, 2.3vw, 40px); transition: all .35s; }
+  .lq-op b { font-family: var(--hud); color: var(--a); min-width: 1.4em; }
+  .lq-op.ok { border-color: var(--ok); background: rgba(61, 255, 154, .16); box-shadow: 0 0 30px rgba(61, 255, 154, .3); }
+  .lq-op.ok b { color: var(--ok); }
+  .lq-op.no { opacity: .35; }
+  .lq-exp { font-size: clamp(16px, 1.8vw, 30px); color: var(--ok); line-height: 1.4; }
+  .lq-bar { height: 8px; border-radius: 4px; background: rgba(var(--a2-rgb), .15); overflow: hidden; }
+  .lq-bar i { display: block; height: 100%; background: var(--a2); box-shadow: 0 0 14px var(--a2); transition: width 1s linear; }
   @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
   @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 100% { transform: none; opacity: 1; } }
   @keyframes blink { 50% { opacity: .5; } }
@@ -58,6 +74,7 @@
   const $ = (s) => document.querySelector(s);
   const stage = $("#stage");
   let st = { timers: [], last: null, imagen: -1, clase: "", hasta: "" };
+  let live = { on: false }, liveEnd = 0, liveDone = 0;
   let show = "idle", shownAt = 0, lastTick = Date.now();
   const p2 = (n) => String(n).padStart(2, "0");
   const hhmm = () => { const d = new Date(); return `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
@@ -72,7 +89,26 @@
     stage.innerHTML = "";
     const box = node("div", "stage-in");
     const t = st.timers[0];
-    if (t && t.remaining > 0) {
+    if (live.on) {
+      const q = node("div", "lq");
+      const top = node("div", "lq-top");
+      top.append(node("span", "", `Pregunta ${live.n} de ${live.total}`), node("span", "", live.phase === "pregunta" ? "" : "Respuesta"));
+      q.append(top);
+      if (live.contexto) q.append(node("div", "lq-ctx", live.contexto));
+      q.append(node("div", "lq-q", live.enunciado));
+      const ops = node("div", "lq-ops");
+      (live.opciones || []).forEach((o, k) => {
+        const op = node("div", "lq-op" + (live.correcta >= 0 ? (k === live.correcta ? " ok" : " no") : ""));
+        op.append(node("b", "", "ABCD"[k]), node("span", "", o));
+        ops.append(op);
+      });
+      q.append(ops);
+      if (live.phase === "pregunta") { const bar = node("div", "lq-bar"); const i = node("i"); i.id = "lqbar"; bar.append(i); q.append(bar); }
+      if (live.explicacion) q.append(node("div", "lq-exp", "✓ " + live.explicacion));
+      box.append(q);
+    } else if (Date.now() - liveDone < 8000) {
+      box.append(node("div", "kicker", "Fin del quiz"), node("div", "name", "¡Buen trabajo!"));
+    } else if (t && t.remaining > 0) {
       const big = node("div", "big-timer" + (t.remaining <= 10 ? " urgent" : ""), fmt(t.remaining));
       big.id = "bigt";
       box.append(big);
@@ -101,6 +137,8 @@
     if (b && st.timers[0]) { b.textContent = fmt(st.timers[0].remaining); b.classList.toggle("urgent", st.timers[0].remaining <= 10);
       const r = document.getElementById("ringi"); if (r) r.style.width = `${100 * st.timers[0].remaining / (st.timers[0].total || 1)}%`; }
     else if (b || (show === "idle" && now % 60000 < 1000)) render();
+    const lb = document.getElementById("lqbar");
+    if (lb && live.on) lb.style.width = `${Math.max(0, 100 * (liveEnd - now) / 1000 / (live.secs || 30))}%`;
   }
   setInterval(tick, 500);
 
@@ -111,6 +149,13 @@
   socket.on("file_card", (c) => { if (c.image && c.id >= 0) { st.imagen = c.id; show = "image"; shownAt = Date.now(); render(); } });
   socket.on("settings_updated", (s) => { if (s && s.theme) document.documentElement.dataset.theme = s.theme; });
   socket.on("projector", (d) => { if (d && d.close) window.close(); });
+  socket.on("live_quiz", (d) => {
+    if (d && d.done) liveDone = Date.now();
+    live = d || { on: false };
+    liveEnd = Date.now() + (live.left || 0) * 1000;
+    render();
+  });
+  socket.on("connect", () => socket.emit("live_quiz_state", {}));
 })();
 </script>
 </body>

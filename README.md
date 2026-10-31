@@ -157,6 +157,24 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Planes de recuperación, diario de clase y quiz en vivo en el proyector (v8.8)
+
+**Planes de recuperación.** «**Haz los planes de recuperación de 7A**» (para todos los que están en riesgo) o «**plan
+de recuperación para Juan**»: con las actividades que perdió cada estudiante, la IA propone 3 o 4 actividades de
+nivelación concretas, qué debe entregar, cómo se valora (1,0 a 5,0) y una recomendación para la familia, en el marco
+del Decreto 1290. Un estudiante por página, con la carta al acudiente y los espacios para las firmas. El plazo se ajusta
+en *Ajustes › Memoria*.
+
+**Diario de clase.** Al terminar la clase: «**hoy en 7A vimos fracciones equivalentes**» (o solo «hoy vimos…», y
+Jarvis usa la clase de tu horario). Luego: «**¿qué vimos en 7A?**», «**¿qué temas me faltan del periodo en 7A?**» (lo
+compara con la malla curricular que te preparó para ese curso) y «**exporta el registro de clase de 7A**» (Excel para
+la plataforma del colegio).
+
+**Quiz en vivo en el proyector.** «**Quiz en vivo**» (con el último quiz) o «**quiz en vivo de fracciones**» (con tu
+banco): las preguntas salen una a una en el televisor, con sus cuatro opciones y una barra de tiempo. Al acabar el tiempo
+(o al decir «**respuesta**») se ilumina la correcta con su explicación; «**siguiente**» pasa a la otra y «**termina el
+quiz**» lo cierra. En el HUD aparecen los botones para controlarlo. Los segundos por pregunta se ajustan en Ajustes.
+
 ## Google Calendar y Drive directos, Kahoot, Quizizz y notas para Zeti (v8.7)
 
 **Google Calendar directo.** Con tu cuenta de Google conectada, «**agenda una reunión con los padres de Juan el

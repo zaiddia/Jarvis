@@ -161,6 +161,9 @@ def dashboard(now=None):
 def suggestions(now, d):
     """Botones rápidos según el momento: [{"t": texto del botón, "cmd": orden, "fill": True si hay que completarla}]."""
     s = []
+    if J.live_quiz["on"]:                               # 8.8: durante el quiz en vivo, sus controles primero
+        s += [{"t": "Mostrar respuesta", "cmd": "respuesta", "kind": "aprobar"}, {"t": "Siguiente", "cmd": "siguiente"},
+              {"t": "Terminar quiz", "cmd": "termina el quiz"}]
     for a in d["aprobar"][:1]:
         s.append({"t": f"✓ Aprobar: {a['t'][:28]}", "cmd": f"sí {a['id']}", "kind": "aprobar"})
     c = d["clase"]

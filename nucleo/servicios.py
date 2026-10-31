@@ -339,6 +339,8 @@ def restore_backup(name, parts):
         J.horario.load()
     if "observador" in done:                           # 8.2
         J.informes.load()
+    if "registro" in done:                             # 8.8
+        J.diarioclase.load()
     if "memoria" in done:
         J.load_memory()
     if "perfil" in done:

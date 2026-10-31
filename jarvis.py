@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "8.7"
+VERSION = "8.8"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -367,6 +367,8 @@ import informes
 import gmail
 import exportar
 import gservicios
+import recuperacion
+import diarioclase
 import secreto
 
 
@@ -724,6 +726,8 @@ DEFAULT_SETTINGS = {
     "zeti_since": "",              # 8.7: notas desde esta fecha (AAAA-MM-DD), p. ej. el inicio del periodo
     "zeti_order": "lista",         # «lista» (como está el curso en Jarvis) o «apellido»
     "zeti_comma": True,            # definitivas con coma decimal (4,5)
+    "recovery_days": 10,           # 8.8: plazo de los planes de recuperación
+    "live_quiz_secs": 30,          # 8.8: segundos por pregunta en el quiz en vivo
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -757,7 +761,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -1380,6 +1384,8 @@ def process_command(text):
         return
     if approvals_answer(t):                            # «sí», «sí 3», «no 2» a una aprobación pendiente
         return
+    if live_quiz_voice(text, t):                       # 8.8: «quiz en vivo», y durante el quiz «respuesta», «siguiente»
+        return
     if _CHECK_RE.search(t):                            # «prueba completa», «revisa todo»
         if getattr(_tl, "remote", False):
             reply(check_report(run_system_check(speak_it=False)), "PRUEBA")
@@ -1471,6 +1477,10 @@ def process_command(text):
     if mail_voice(text, t):                            # «¿qué correos importantes tengo?», «contéstale que sí»
         return
     if event_voice(text, t):                           # «agenda una reunión con los padres de Juan el jueves a las 3»
+        return
+    if recovery_voice(text, t):                        # «haz los planes de recuperación de 7A»
+        return
+    if class_diary_voice(text, t):                     # «hoy en 7A vimos fracciones equivalentes», «¿qué temas me faltan…?»
         return
     if family_voice(text, t):                          # «anota en el observador de Juan que…», «informe para los padres de 7A»
         return
@@ -1805,6 +1815,13 @@ from nucleo.gintegra import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 8.8 · PLANES DE RECUPERACIÓN, DIARIO DE CLASE Y QUIZ EN VIVO EN EL PROYECTOR
+# → nucleo/aulavivo.py (lógica en recuperacion.py y diarioclase.py)
+# =============================================================================
+from nucleo.aulavivo import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1932,6 +1949,7 @@ def main():
         family_start()                    # 8.2: observador del estudiante
         autonomy_start()                  # 8.3: resumen semanal, actualización de noche y vuelta atrás
         hud_plus_start()                  # 8.6: el panel «Hoy» del HUD se actualiza solo
+        class_plus_start()                # 8.8: diario de clase y quiz en vivo
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

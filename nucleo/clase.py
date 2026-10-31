@@ -148,6 +148,8 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
                 try:
                     raw = J.ai_chat([{"role": "user", "content": prompt}], json_mode=True, max_tokens=8000)
                     m = aula.validate(kind, J._extract_json(raw), request)
+                    if kind == "malla":                        # 8.8: para «¿qué temas me faltan del periodo?»
+                        J.diarioclase.set_malla(aula.data.get("activo") or m.get("grado") or "curso", m)
                     if kind in ("quiz", "saber"):
                         J.banco.add_quiz(m)                    # 7.8: banco de preguntas
                         J.remember_quiz(m)                     # 8.1: «pásalo a Forms»

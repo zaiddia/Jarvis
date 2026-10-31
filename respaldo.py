@@ -29,6 +29,7 @@ FILES = {
     "notas_estudiantes.json": ("seguimiento", "Notas de los estudiantes"),
     "horario.json": ("horario", "Horario de clases"),
     "observador.json": ("observador", "Observador de los estudiantes"),
+    "registro_clase.json": ("registro", "Diario de clase y mallas"),
     "formularios.json": ("formularios", "Formularios de Google Forms"),
     "banco_preguntas.json": ("banco", "Banco de preguntas"),
 }
