@@ -36,6 +36,7 @@ FILES = {
     "examenes.json": ("examenes", "Evaluaciones con hoja de respuestas"),
     "saber.json": ("saber", "Programa Saber: simulacros por competencia"),
     "practica.json": ("practica", "Práctica con el tutor personal"),
+    "planeacion_anual.json": ("planeacion", "Planeación anual"),
     "compromisos.json": ("compromisos", "Compromisos y correos por responder"),
     "lecciones.json": ("lecciones", "Lecciones que le enseñaste a Jarvis"),
     "paginas_vigiladas.json": ("paginas", "Páginas web vigiladas"),

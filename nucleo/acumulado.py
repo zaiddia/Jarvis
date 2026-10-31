@@ -93,6 +93,7 @@ def year_voice(text, t):
             J.reply(f"Tu año tiene {len(pweights())} periodos (Ajustes › Memoria).", "ACUMULADO")
             return True
         J.settings["period_current"] = p
+        J.on_new_period(p)                             # 10.8: la malla del periodo pasa al diario de clase
         try:
             J.save_settings_file()
         except OSError:
@@ -177,6 +178,7 @@ def save_period_vals():
                 n += 1
     if cur < len(pweights()):
         J.settings["period_current"] = cur + 1
+        J.on_new_period(cur + 1)
         try:
             J.save_settings_file()
         except OSError:

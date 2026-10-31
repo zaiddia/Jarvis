@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "10.7"
+VERSION = "10.8"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -748,6 +748,9 @@ DEFAULT_SETTINGS = {
     "practice_goal": 20,           # 10.7: puntos de práctica con el tutor para el 5,0 (acertar a la primera = 1, con pista = ½)         # 10.4: la asignatura escogida («estamos en tecnología»)
     "period_current": 1,           # 10.2: periodo en curso (para el acumulado del año)
     "zeti_period_weights": "34,33,33",  # 10.2: peso de cada periodo en el año (%)
+    "school_weeks": 40,            # 10.8: semanas de clase del año
+    "year_start": "",              # 10.8: primer día de clases (AAAA-MM-DD), para saber en qué semana vas
+    "area_plan": "",               # 10.8: el plan de área de tu institución (opcional), base de la planeación anual
     "zeti_comma": True,            # definitivas con coma decimal (4,5)
     "recovery_days": 10,           # 8.8: plazo de los planes de recuperación
     "live_quiz_secs": 30,          # 8.8: segundos por pregunta en el quiz en vivo
@@ -815,7 +818,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "period_current": (1, 6), "practice_goal": (5, 200), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "school_weeks": (20, 52), "period_current": (1, 6), "practice_goal": (5, 200), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -846,7 +849,7 @@ def _validate(key, value):
         return round(max(lo, min(hi, v)), 2)
 
     v = str(value).strip()[:6000]
-    if key in ("zeti_since", "period_end") and v:                     # 8.7: una fecha AAAA-MM-DD
+    if key in ("zeti_since", "period_end", "year_start") and v:                     # 8.7: una fecha AAAA-MM-DD
         v = datetime.date.fromisoformat(v[:10]).isoformat()
     if key == "zeti_weights":                          # 10.1: cuatro porcentajes que suman 100
         nums = [int(x) for x in re.findall(r"\d{1,3}", v)]
@@ -1488,6 +1491,8 @@ def process_command(text):
         return
     if zeti_open_voice(text, t):                       # 10.1: «abre Zeti»
         return
+    if planning_voice(text, t):                        # 10.8: «planea mi año», «¿cómo voy con la planeación de 7A?», «reajusta la planeación»
+        return
     if practice_voice(text, t):                        # 10.7: «activa la práctica de 7A», «¿quién ha practicado?», «anota la práctica»
         return
     if saber_voice(text, t):                           # 10.6: «haz un simulacro Saber para 11A», «lanza el mini simulacro», «¿cómo va 11A en el Saber?»
@@ -2025,6 +2030,10 @@ from nucleo.icfes import *  # noqa: F401,F403,E402
 # → nucleo/tutoria.py (lógica en practica.py; página del estudiante: templates/practica.html)
 from nucleo.tutoria import *  # noqa: F401,F403,E402
 
+# ── 10.8: la planeación del año completo (cada grado y asignatura, con los DBA o tu plan de área)
+# → nucleo/planeacion.py (lógica en anual.py)
+from nucleo.planeacion import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2169,6 +2178,7 @@ def main():
         grading_start()                   # 10.5: evaluaciones con hoja de respuestas
         saber_start()                     # 10.6: programa Saber
         practice_start()                  # 10.7: tutor personal
+        planning_start()                  # 10.8: planeación anual
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

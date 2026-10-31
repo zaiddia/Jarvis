@@ -952,6 +952,15 @@
     <div class="field stack"><div class="ft"><label for="f-zeti-url">Página de calificaciones de Zeti</label></div>
       <input class="inp mono" type="text" id="f-zeti-url" data-key="zeti_url" placeholder="https://www.zeti.co/calificaciones/"></div>
 
+    <div class="group">Planeación del año</div>
+    <p class="pane-intro">«Planea mi año»: la planeación de todo el año de cada curso y asignatura, semana a semana, con el DBA o estándar y la evaluación de cada tema, en Word. La del periodo en curso pasa sola a tu diario de clase (la usan «¿qué temas me faltan?» y la semana lista del domingo) y cambia sola de periodo. «¿Cómo voy con la planeación de 7A?» compara con lo que registras en el diario; «reajusta la planeación de 7A» reorganiza lo que falta si te atrasaste.</p>
+    <div class="field stack"><div class="ft"><label for="f-yr-start">Primer día de clases</label><p>AAAA-MM-DD, para saber en qué semana vas.</p></div>
+      <input class="inp narrow mono" type="text" id="f-yr-start" data-key="year_start" placeholder="2026-01-26"></div>
+    <div class="field"><div class="ft"><label for="f-yr-weeks">Semanas de clase del año</label></div>
+      <div class="range"><input type="range" id="f-yr-weeks" min="20" max="52" step="1" data-key="school_weeks"><output></output></div></div>
+    <div class="field stack"><div class="ft"><label for="f-area-plan">Plan de área de la institución (opcional)</label><p>Pégalo y la planeación respeta sus temas y su orden. Si das varias áreas, pon el nombre del área como título de cada parte («Matemáticas:», «Tecnología:»).</p></div>
+      <textarea class="inp" id="f-area-plan" rows="4" data-key="area_plan"></textarea></div>
+
     <div class="group">Periodos anteriores (acumulado del año)</div>
     <p class="pane-intro">Con la valoración de los periodos ya cerrados, Jarvis calcula como Zeti el acumulado del año (<b>VF</b>) y lo que le falta a cada estudiante para llegar a 3,0 (<b>VRA</b>); te avisa quién puede perder el año y lo pone en la ficha y en la planilla. Al cerrar un periodo con Jarvis se guarda solo. Para los periodos que ya pasaron: en Zeti abre «Valoraciones Periódicas de Desempeño» de ese periodo, selecciona la tabla desde el primer estudiante hasta el último, cópiala (Ctrl+C) y pégala aquí. Si el curso no tiene lista en Jarvis, se crea con la de Zeti.</p>
     <div class="field stack"><div class="ft"><label for="f-per-cur">Periodo en curso</label></div>

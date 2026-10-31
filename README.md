@@ -157,6 +157,22 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## El año escolar planeado solo (v10.8)
+
+- «**Planea mi año**»: la planeación de **todo el año** de cada curso y asignatura (por ejemplo 7A Matemáticas,
+  7A Tecnología e Informática, 10A Trigonometría), semana a semana, con el tema, el **DBA o estándar del MEN** y la
+  evaluación de cada semana, repartida en los periodos con sus pesos (14, 13 y 13 semanas en un año de 40). Si pegas
+  el **plan de área** de tu institución, respeta sus temas y su orden. Queda en Word, en Documentos, Jarvis,
+  Planeación anual. También uno solo: «haz la planeación anual de 10A».
+- La planeación del periodo en curso **pasa sola a tu diario de clase**: la usan «¿qué temas me faltan?» y la
+  **semana lista del domingo**, y cambia sola cuando pasas de periodo.
+- «**¿Cómo voy con la planeación de 7A?**» (o «¿qué me toca esta semana?»): el tema de esta semana y si vas al día,
+  adelantado o atrasado, comparando con lo que anotas en el diario de clase. Si vas atrasado 2 temas o más, aparece
+  en «¿qué necesita mi atención?».
+- «**Reajusta la planeación de 7A**»: reorganiza los temas que faltan en las semanas que quedan, priorizando lo
+  esencial, y sugiere qué dejar como trabajo autónomo.
+- En Ajustes › Memoria › Planeación del año: el primer día de clases, las semanas del año y el plan de área.
+
 ## Tutor personal para cada estudiante (v10.7)
 
 - «**Activa la práctica de 7A**»: en el proyector aparece un código QR. Cada estudiante lo escanea con su celular (en

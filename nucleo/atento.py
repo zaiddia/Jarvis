@@ -76,6 +76,7 @@ def attention_items(now=None):
         pass
     try:
         out += J.year_attention()                      # 10.2: quién puede perder el año
+        out += J.plan_attention()                      # 10.8: dónde vas atrasado con la planeación
     except Exception:
         pass
     day_ago = (now - datetime.timedelta(days=1)).isoformat()
