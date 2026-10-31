@@ -324,7 +324,7 @@ body.working .reactor .core-dot { animation: tmrpulse 1.2s steps(2) infinite; }
 .drow.todo.done span { text-decoration: line-through; color: var(--muted); }
 .rv-in { height: 24px; padding: 0 7px; font-size: 11px; background: rgba(0, 0, 0, .35); border: 1px solid var(--line); border-radius: 5px; outline: none; color: var(--text); text-shadow: none; user-select: text; -webkit-user-select: text; }
 body.dropping .shell { border-color: var(--a2); box-shadow: 0 0 0 2px rgba(var(--a2-rgb), .6), 0 0 40px rgba(var(--a2-rgb), .35); }
-body.dropping .shell::after { content: "Suelta la foto del trabajo para revisarlo"; position: absolute; inset: auto 0 45% 0; width: auto; height: auto; border: none;
+body.dropping .shell::after { content: "Suelta aquí tus archivos o imágenes"; position: absolute; inset: auto 0 45% 0; width: auto; height: auto; border: none;
   text-align: center; font-family: var(--hud); font-size: 12px; letter-spacing: .2em; color: var(--a2); opacity: 1; text-transform: uppercase; }
 
 /* ---------- 9.2: encabezado compacto, vúmetro, campana, favoritos, cursos y búsqueda ---------- */
@@ -495,3 +495,16 @@ body.inclass .dcard:not(.live):hover { opacity: 1; }
 .toast .dbtns { justify-content: flex-end; }
 .cmap-g .ch.act { display: flex; flex-direction: column; line-height: 1.15; overflow: hidden; }
 .cmap-g .ch.act b { font-weight: 500; } .cmap-g .ch.act small { font-size: 8px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 11.6: archivos subidos al chat */
+.acard { align-items: flex-start; }
+.acard .fthumb { cursor: zoom-in; }
+.acard .aico { width: 56px; height: 64px; border-radius: 6px; border: 1px solid var(--line); flex-shrink: 0; display: grid; place-items: center;
+  font: 700 10px/1 var(--mono, monospace); letter-spacing: .06em; color: var(--a2); background: rgba(var(--a2-rgb), .08); }
+.acard .finfo { flex: 1; }
+.acard .dmeta { overflow-wrap: anywhere; }
+.acard .dbtns { display: flex; flex-wrap: wrap; gap: 4px; }
+.acard .mini.conv { border-style: dashed; }
+.acard .aq { display: flex; gap: 4px; margin-top: 4px; }
+.acard .aq .rv-in { flex: 1; min-width: 0; }
+.acard .astat { font-size: 10.5px; opacity: .75; }

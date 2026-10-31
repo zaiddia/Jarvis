@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "11.5"
+VERSION = "11.6"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1469,6 +1469,8 @@ def process_command(text):
         return
     if activities_voice(text, t):                      # 9.6: «¿qué actividades funcionaron en fracciones?»
         return
+    if attachment_voice(text, t):                      # 11.6: «¿qué dice este PDF?», «pásalo a Word», «únelos en un PDF» (lo que subiste al chat)
+        return
     if video_voice(text, t):                           # 11.5: «haz un quiz de este video https://youtu.be/…», «quiz del video: …» (antes del enlace general)
         return
     if link_material_voice(text, t):                   # 9.3: «haz un quiz con este artículo https://…», «nivela este texto: …»
@@ -2074,6 +2076,10 @@ from nucleo.vivoqr import *  # noqa: F401,F403,E402
 # → nucleo/fuentes.py (lógica en videos.py y libro.py)
 from nucleo.fuentes import *  # noqa: F401,F403,E402
 
+# ── 11.6: archivos e imágenes que subes al chat: leerlos, preguntarles y convertirlos
+# → nucleo/adjuntar.py (lógica en adjuntos.py y conversiones.py)
+from nucleo.adjuntar import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2223,6 +2229,7 @@ def main():
         mastery_start()                   # 11.2: ruta de dominio y tarjetas
         live_guide_start()                # 11.4: guías vivas y podcasts
         sources_start()                   # 11.5: libros guía
+        attach_start()                    # 11.6: archivos subidos al chat
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

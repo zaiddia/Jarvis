@@ -725,17 +725,81 @@
       })();
       return;
     }
-    const f = [...(e.dataTransfer?.files || [])].find((x) => /^image\//.test(x.type));
-    if (!f) { setPreview("Suelta una imagen (foto del trabajo) para revisarla.", "dim"); return; }
-    if (f.size > 15 * 1024 * 1024) { setPreview("La imagen es muy grande (máximo 15 MB).", "dim"); return; }
-    const rd = new FileReader();
-    rd.onload = () => socket.emit("review_upload", { data: rd.result }, (r) => {
+    sendFiles([...(e.dataTransfer?.files || [])]);                             // 11.6: cualquier archivo o imagen al chat
+  });
+  function reviewImage(dataUrl) {                                                // 9.0: revisar la foto como trabajo de un estudiante
+    socket.emit("review_upload", { data: dataUrl }, (r) => {
       if (!r || !r.ok) { setPreview((r && r.error) || "No pude abrir la imagen.", "dim"); return; }
       if (body.dataset.size !== "expandido") setSize("expandido");
       addReviewCard(r.preview);
     });
-    rd.readAsDataURL(f);
+  }
+
+  /* 11.6: subir archivos al chat (clip, arrastrar o pegar): leerlos, preguntarles y convertirlos */
+  const OK_EXT = /\.(png|jpe?g|webp|gif|bmp|tiff?|pdf|docx|xlsx|xlsm|csv|tsv|pptx|txt|md|json|html?|xml)$/i;
+  const readUrl = (f) => new Promise((ok, no) => { const rd = new FileReader(); rd.onload = () => ok(rd.result); rd.onerror = no; rd.readAsDataURL(f); });
+  async function sendFiles(list) {
+    const files = list.filter((f) => OK_EXT.test(f.name || "") || /^image\//.test(f.type)).slice(0, 10);
+    const bad = list.length - files.length;
+    if (!files.length) { setPreview("Ese tipo de archivo no lo puedo leer (imágenes, PDF, Word, Excel, CSV, PowerPoint o texto).", "dim"); return; }
+    const big = files.filter((f) => f.size > 18 * 1024 * 1024);
+    if (big.length) setPreview(`${big.map((f) => f.name).join(", ")}: muy grande (máximo 18 MB).`, "dim");
+    const ids = [], urls = {}, errs = [];
+    let last = null;
+    setPreview(`Subiendo ${files.length > 1 ? files.length + " archivos" : files[0].name}…`, "dim");
+    for (const f of files.filter((x) => x.size <= 18 * 1024 * 1024)) {
+      const name = f.name && f.name !== "image.png" ? f.name : `imagen pegada ${new Date().toLocaleTimeString("es-CO").replace(/:/g, ".")}.png`;
+      let data;
+      try { data = await readUrl(f); } catch (_) { errs.push(name); continue; }
+      const r = await new Promise((ok) => socket.emit("attach", { files: [{ name, data }] }, ok));
+      if (r && r.ok) { ids.push(...r.ids); urls[r.ids[0]] = /^image\//.test(f.type) ? data : ""; last = r; }
+      else errs.push(`${name}: ${(r && r.error) || "no se pudo"}`);
+    }
+    if (errs.length || bad) setPreview([...errs, bad ? `${bad} archivo(s) de un tipo que no leo` : ""].filter(Boolean).join(" · "), "dim");
+    else if (ids.length) setPreview("Listo. Pregúntale algo o elige qué hacer con " + (ids.length > 1 ? "los archivos." : "el archivo."), "dim");
+    if (!ids.length) return;
+    const card = ids.length === 1 ? last : await new Promise((ok) => socket.emit("attach_card", { ids }, ok));
+    if (card && card.ok) addAttachCard(card, urls);
+  }
+  el.clip = $("#btn-clip"); el.fileIn = $("#file-in");
+  el.clip.addEventListener("click", () => el.fileIn.click());
+  el.fileIn.addEventListener("change", () => { sendFiles([...el.fileIn.files]); el.fileIn.value = ""; });
+  el.input.addEventListener("paste", (e) => {                                    // pegar una captura (Ctrl+V)
+    const fs = [...(e.clipboardData?.files || [])];
+    if (fs.length) { e.preventDefault(); sendFiles(fs); }
   });
+  function addAttachCard(c, urls) {
+    $(".empty", el.chat)?.remove();
+    hasMessages = true;
+    const m = mk("div", "msg user file");
+    const b = mk("div", "msg-body fcard acard");
+    if (c.preview) { const im = mk("img", "fthumb"); im.src = c.preview; im.alt = c.nombres[0]; b.append(im); }
+    else { const ext = (c.nombres[0].split(".").pop() || "").toUpperCase().slice(0, 4); b.append(mk("div", "aico", c.nombres.length > 1 ? `×${c.nombres.length}` : ext)); }
+    const info = mk("div", "finfo");
+    info.append(mk("b", "", c.nombres.length > 1 ? `${c.nombres.length} archivos` : c.nombres[0]), mk("span", "dmeta", c.desc));
+    const stat = mk("span", "astat");
+    const act = (a, label, extra) => {
+      if (a === "revisar") { reviewImage(urls[c.ids[0]]); return; }
+      stat.textContent = `${label}…`;
+      socket.emit("attach_action", { ids: c.ids, action: a, pregunta: extra || "" }, (r) => { if (r && !r.ok) stat.textContent = r.error || "No se pudo."; });
+    };
+    const btns = mk("div", "dbtns");
+    (c.acciones || []).forEach((x) => {
+      if (x.a === "revisar" && !urls[c.ids[0]]) return;
+      const bt = mk("button", "mini" + (x.a.startsWith("conv:") ? " conv" : x === c.acciones[0] ? " ok" : ""), x.t); bt.type = "button";
+      bt.addEventListener("click", () => act(x.a, x.t.replace(/^→ /, "Convirtiendo a ")));
+      btns.append(bt);
+    });
+    const q = mk("form", "aq"), qi = mk("input", "rv-in"), qb = mk("button", "mini ok", "Preguntar");
+    qi.placeholder = c.nombres.length > 1 ? "Pregúntale algo a estos archivos…" : "Pregúntale algo a este archivo…"; qb.type = "submit";
+    q.addEventListener("submit", (e) => { e.preventDefault(); const v = qi.value.trim(); if (!v) return; act("pregunta", "Leyendo", v); qi.value = ""; });
+    q.append(qi, qb);
+    info.append(btns, q, stat); b.append(info);
+    m.append(mk("div", "msg-meta", "TÚ · ARCHIVO" + (c.nombres.length > 1 ? "S" : "")), b);
+    el.chat.appendChild(m);
+    el.viewChat.scrollTop = el.viewChat.scrollHeight;
+    $('.xtab[data-view="chat"]').click();
+  }
   function addReviewCard(preview) {
     $(".empty", el.chat)?.remove();
     const m = mk("div", "msg jarvis file");

@@ -157,6 +157,17 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Leer los archivos que subes y convertirlos (v11.6)
+
+- **Sube cualquier archivo al chat**: con el botón del clip, arrastrándolo al HUD o pegando una captura (Ctrl+V). Sirven imágenes, PDF, Word (.docx), Excel (.xlsx), CSV, PowerPoint (.pptx) y texto, hasta 18 MB, y varios a la vez. Cada uno aparece en el chat con su miniatura, lo que es y botones con lo que puedes hacer.
+- **Pregúntale**: escribe en la tarjeta o dime «¿de qué trata este documento?», «resúmelo», «¿cuántas preguntas tiene?», «¿qué dice la foto que te subí?». Jarvis lee el texto (con el número de página o la hoja) y, si es una foto o un PDF escaneado, lo mira con la IA con visión.
+- **Sacar el texto** de un PDF, una presentación o incluso de una foto o un escaneo («sácale el texto»), en un .txt.
+- **Tabla a Excel**: «pasa la lista de esta foto a Excel» lee las tablas de una foto, un PDF o un Word y las deja en una hoja de cálculo (revisa los números si vienen de una foto).
+- **Conversiones**: imágenes a PDF (varias en uno: «únelos en un solo PDF»), imagen a JPG, PNG o WEBP, «comprímela»; PDF a Word, a imágenes o a texto; unir PDF, «déjame solo las páginas 2 a 5», «gíralo»; Word, PowerPoint o Excel a PDF; Excel a CSV y CSV a Excel. Quedan en Documentos › Jarvis › Conversiones.
+- Word, PowerPoint y Excel a PDF (y el PDF a Word con su diseño exacto) los hace tu Microsoft Office o, si no lo tienes, LibreOffice. Sin ninguno, el PDF a Word sale con el texto, editable.
+- «Revisar trabajo» en la tarjeta de una foto la revisa como el trabajo de un estudiante, como antes al arrastrarla. «Hacer un quiz» arma un quiz con el contenido de un PDF o un Word.
+- Jarvis solo trabaja con los archivos que tú subes al chat. Se guardan en tu equipo y se borran solos a los 7 días.
+
 ## Quiz desde un video de YouTube y libro guía del curso (v11.5)
 
 - **Quiz desde YouTube:** «**haz un quiz de este video https://youtu.be/…**» (o «…de 10 preguntas…»). Jarvis lee los

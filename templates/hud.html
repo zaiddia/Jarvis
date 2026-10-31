@@ -22,6 +22,7 @@
   <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><path d="M20 11.5l-8.2 8.2a5 5 0 0 1-7.1-7.1l8.6-8.6a3.4 3.4 0 0 1 4.8 4.8l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></symbol>
   <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v11H3z"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
@@ -128,6 +129,8 @@
   <form class="bar" id="bar" autocomplete="off">
     <button type="button" class="bar-btn" id="btn-mic" title="Pausar micrófono"><svg class="i"><use href="#i-mic"/></svg></button>
     <button type="button" class="bar-btn" id="btn-pal" title="Buscar una orden (Ctrl+K)"><svg class="i"><use href="#i-search"/></svg></button>
+    <button type="button" class="bar-btn" id="btn-clip" title="Subir un archivo o una imagen (también puedes arrastrarlo o pegarlo)"><svg class="i"><use href="#i-clip"/></svg></button>
+    <input type="file" id="file-in" multiple hidden accept="image/*,.pdf,.docx,.xlsx,.xlsm,.csv,.tsv,.pptx,.txt,.md,.json,.html,.htm,.xml">
     <input type="text" id="input" maxlength="1000" placeholder="Escribe una orden…  (Ctrl+K busca · ↑ repite)" aria-label="Orden para Jarvis">
     <button type="submit" class="bar-btn send" id="btn-send" title="Enviar"><svg class="i"><use href="#i-send"/></svg></button>
     <button type="button" class="bar-btn stop" id="btn-stop" title="Detener voz"><svg class="i"><use href="#i-stop"/></svg></button>

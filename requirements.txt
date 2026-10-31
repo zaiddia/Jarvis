@@ -36,3 +36,5 @@ pywin32
 cryptography
 # 11.5: leer el PDF del libro guía del curso
 pypdf
+# 11.6: ver las páginas de un PDF como imágenes (PDF escaneados, PDF a imágenes)
+pypdfium2
