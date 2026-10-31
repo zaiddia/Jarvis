@@ -62,7 +62,7 @@ def _font(size, bold=False):
         return ImageFont.load_default()
 
 
-def draw_sheet(code, student, n_q, n_opt, title="", course="", name="", institution="", fill=None):
+def draw_sheet(code, student, n_q, n_opt, title="", course="", name="", institution="", fill=None, version=""):
     """Una hoja como imagen PIL. fill: {pregunta: opción} para pruebas (burbujas rellenas)."""
     from PIL import Image, ImageDraw
     n_q, n_opt = max(1, min(MAX_Q, n_q)), max(2, min(5, n_opt))
@@ -73,7 +73,13 @@ def draw_sheet(code, student, n_q, n_opt, title="", course="", name="", institut
     f_t, f_n, f_s, f_b = _font(34, True), _font(30, True), _font(22), _font(18, True)
     d.text((M + F + 30, M + 4), (institution or "Hoja de respuestas")[:60], font=f_s, fill=0)
     d.text((M + F + 30, M + 36), (title or "Evaluación")[:48], font=f_t, fill=0)
-    d.text((150, 230), f"Estudiante: {name}" if name else "Estudiante: _______________________________", font=f_n, fill=0)
+    if version:                                        # 11.0: la versión, bien grande (lejos de los cuadros de las esquinas)
+        fv = _font(36, True)
+        tw = d.textlength(f"VERSIÓN {version}", font=fv)
+        d.rectangle([W - 140 - tw - 36, 214, W - 140, 286], outline=0, width=4)
+        d.text((W - 140 - tw - 18, 228), f"VERSIÓN {version}", font=fv, fill=0)
+    d.text((150, 230), (f"Estudiante: {name}"[:40 if version else 70]) if name else
+           ("Estudiante: ______________________" if version else "Estudiante: _______________________________"), font=f_n, fill=0)
     d.text((150, 285), f"Curso: {course}" + (f"     N.º {student:02d}" if student else ""), font=f_s, fill=0)
     d.text((150, 330), "Rellena por completo un solo círculo por pregunta, con lápiz o lapicero oscuro. No dobles la hoja.",
            font=f_s, fill=0)
@@ -95,10 +101,18 @@ def draw_sheet(code, student, n_q, n_opt, title="", course="", name="", institut
     return im
 
 
-def sheets_pdf(path, code, students, n_q, n_opt, title="", course="", institution="", extra_blank=3):
-    """PDF con una hoja por estudiante [(número, nombre)] y algunas en blanco (con el número 0 para escribir el nombre)."""
-    pages = [draw_sheet(code, num, n_q, n_opt, title, course, name, institution).convert("RGB") for num, name in students]
-    pages += [draw_sheet(code, 0, n_q, n_opt, title, course, "", institution).convert("RGB") for _ in range(extra_blank)]
+def sheets_pdf(path, code, students, n_q, n_opt, title="", course="", institution="", extra_blank=3, vmap=None):
+    """PDF con una hoja por estudiante [(número, nombre)] y algunas en blanco (con el número 0 para escribir el nombre).
+    vmap (11.0): {número: letra de la versión}; con versiones, las hojas en blanco llevan número propio (para saber su versión)."""
+    vmap = vmap or {}
+    pages = [draw_sheet(code, num, n_q, n_opt, title, course, name, institution, version=vmap.get(str(num), "")).convert("RGB")
+             for num, name in students]
+    if vmap:
+        top = max([n for n, _ in students] + [0])
+        blanks = [n for n in sorted(int(k) for k in vmap) if n > top][:extra_blank * 4]
+        pages += [draw_sheet(code, n, n_q, n_opt, title, course, "", institution, version=vmap[str(n)]).convert("RGB") for n in blanks]
+    else:
+        pages += [draw_sheet(code, 0, n_q, n_opt, title, course, "", institution).convert("RGB") for _ in range(extra_blank)]
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     pages[0].save(path, "PDF", resolution=150, save_all=True, append_images=pages[1:])
     return path

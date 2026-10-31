@@ -157,6 +157,21 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Evaluaciones en versiones A, B, C, D y material con gráficas y figuras (v11.0)
+
+**Versiones.** «**Prepara las hojas de respuesta del quiz para 7A en 4 versiones**» (o «…con versiones»; también 2 o
+3): del mismo quiz salen versiones con las preguntas y las opciones en otro orden. Recibes un Word con el cuadernillo
+de cada versión y, al final, la tabla de claves por versión; y el PDF de hojas de respuesta, cada una con su
+**VERSIÓN** bien visible y repartidas en el orden de la lista (los vecinos quedan con versiones distintas), más una en
+blanco por versión. Al tomar la foto, Jarvis reconoce la versión sola, califica con su clave y te dice las preguntas
+malas con la numeración de su cuadernillo; el análisis de la evaluación y el refuerzo salen unificados, en el orden
+original.
+
+**Gráficas y figuras.** Los quices, talleres y preguntas tipo Saber traen, cuando ayuda, su figura dibujada en el
+Word: gráficas de funciones (una o dos), puntos y polígonos en el plano cartesiano, triángulos con lados, ángulos y
+ángulo recto (para trigonometría), círculos, rectángulos, diagramas de barras y de torta. Se dibujan en tu equipo,
+sin internet; también aparecen en los cuadernillos por versiones.
+
 ## Más HUD: línea del día, mapa del curso, modo clase, barra del año y avisos con botones (v10.9)
 
 - **Línea del día:** tus clases de hoy en una franja; la que estás dando se va llenando y, al tocar una, salen sus

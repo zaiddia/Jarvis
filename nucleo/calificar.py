@@ -13,7 +13,9 @@ import tempfile
 import aula
 import banco
 import examenes
+import graficas
 import omr
+import versiones
 import seguimiento
 from nucleo import J
 
@@ -21,15 +23,22 @@ sess = {"code": None, "token": ""}
 
 
 # ============================================================================ CREAR LA EVALUACIÓN Y LAS HOJAS
-def exam_from_quiz(quiz, course, titulo=""):
+def exam_from_quiz(quiz, course, titulo="", versions=1):
     qs = [q for q in (quiz.get("preguntas") or []) if q.get("opciones")]
     clave = ["abcde".index(str(q.get("respuesta", "a"))[:1].lower()) if str(q.get("respuesta", "a"))[:1].lower() in "abcde" else 0 for q in qs]
     n_opt = max(2, min(5, max((len(q["opciones"]) for q in qs), default=4)))
     names = aula.students(course)
-    return examenes.new(titulo or quiz.get("titulo") or "Evaluación", course, clave, n_opt,
-                        [{"enunciado": q.get("enunciado", "")[:500], "opciones": list(q["opciones"])[:5], "competencia": q.get("competencia", ""),
-                          "explicacion": q.get("explicacion", "")[:300]} for q in qs],
+    ex = examenes.new(titulo or quiz.get("titulo") or "Evaluación", course, clave, n_opt,
+                        [dict({"enunciado": q.get("enunciado", "")[:500], "opciones": list(q["opciones"])[:5], "competencia": q.get("competencia", ""),
+                               "explicacion": q.get("explicacion", "")[:300]}, **({"grafica": q["grafica"]} if q.get("grafica") else {})) for q in qs],
                         {i + 1: n for i, n in enumerate(names)}, quiz.get("tema", ""))
+    if versions > 1 and len(qs) >= 2:                  # 11.0: versiones A, B, C, D
+        k = min(4, versions)
+        ex["versiones"] = versiones.make([len(q["opciones"]) for q in ex["preguntas"]], k, seed=ex["code"])
+        nums = list(range(1, len(names) + 1)) + list(range(len(names) + 1, len(names) + 1 + k))   # + una en blanco por versión
+        ex["vmap"] = versiones.assign(nums, k)
+        examenes.save()
+    return ex
 
 
 def make_sheets(ex):
@@ -38,8 +47,13 @@ def make_sheets(ex):
     path = os.path.join(folder, f"{safe} - {ex['code']}.pdf")
     studs = sorted(((int(k), v) for k, v in ex["estudiantes"].items()), key=lambda x: x[0])
     omr.sheets_pdf(path, ex["code"], studs, len(ex["clave"]), ex["n_opt"], ex["titulo"], ex["curso"].replace(" · ", " – "),
-                   J.settings["aula_institucion"], extra_blank=3)
+                   J.settings["aula_institucion"], extra_blank=3, vmap=ex.get("vmap"))
     J.generated_files.add(path)
+    if ex.get("versiones") and J.Document is not None:   # 11.0: el cuadernillo de cada versión y sus claves
+        vdoc = versiones.docx(ex, J.settings["output_dir"], J.Document, J.settings["aula_docente"], J.settings["aula_institucion"],
+                              picture=graficas.add_to_docx)
+        J.generated_files.add(vdoc)
+        ex["_doc_versiones"] = vdoc
     return path
 
 
@@ -80,10 +94,18 @@ def sheets_voice(text, t):
             J.reply("Primero prepárame el quiz («haz un quiz de 10 preguntas de fracciones para 7A») o dime la clave: «hojas de "
                     "respuesta de 20 preguntas para 11A, la clave es a, c, b, d…».", "CALIFICAR")
             return True
-        ex = exam_from_quiz(quiz, course)
+        vm = re.search(r"\b(?:en|con)\s+(\d|dos|tres|cuatro)\s+versiones\b", t)
+        k = ({"dos": 2, "tres": 3, "cuatro": 4}.get(vm.group(1)) or int(vm.group(1))) if vm else (4 if re.search(r"\bversiones\b", t) else 1)
+        ex = exam_from_quiz(quiz, course, versions=k)
     path = make_sheets(ex)
     J._open_doc(path)
     n = len(ex["estudiantes"])
+    if ex.get("versiones"):
+        J.reply(f"Listas {len(ex['versiones'])} versiones ({', '.join(v['v'] for v in ex['versiones'])}) de «{ex['titulo']}» para {course}: "
+                f"el cuadernillo de cada versión (con las claves al final) y {n} hojas de respuesta con nombre, cada una con su versión "
+                "(los vecinos de lista quedan con versiones distintas), más una en blanco por versión. Reparte a cada estudiante el "
+                "cuadernillo de la versión que dice su hoja. Al calificar, Jarvis reconoce la versión sola.", "CALIFICAR")
+        return True
     J.reply(f"Listas las hojas de respuesta de «{ex['titulo']}» para {course}: {n} con nombre" + (" (en el orden de tu lista)" if n else "") +
             f" y 3 en blanco, {len(ex['clave'])} preguntas. Imprímelas; cuando las recojas, di «califica las hojas» y les tomas foto con el "
             "celular, o arrástralas al HUD.", "CALIFICAR")
@@ -149,13 +171,27 @@ def grade_photo(img_bytes):
     if sess["code"] != ex["code"]:
         sess["code"] = ex["code"]
     n_q = len(ex["clave"])
-    g = omr.grade(r["answers"][:n_q], ex["clave"])
-    res = examenes.add_result(ex["code"], r["student"], r["answers"][:n_q], g, origen=origen)
-    malas = [i + 1 for i, x in enumerate(g["detalle"]) if x is False]
+    ver = None
+    if ex.get("versiones"):                            # 11.0: se califica con la clave de su versión
+        letra = (ex.get("vmap") or {}).get(str(r["student"]), "A")
+        ver = next((v for v in ex["versiones"] if v["v"] == letra), ex["versiones"][0])
+    ans = r["answers"][:n_q]
+    if ver:
+        gv = omr.grade(ans, versiones.key_for(ver, ex["clave"]))
+        base = versiones.to_base(ans, ver)
+        g = omr.grade(base, ex["clave"])
+        nombre = ex["estudiantes"].get(str(r["student"])) or (f"Hoja sin nombre (N.º {r['student']}, versión {ver['v']})" if r["student"] else "")
+        res = examenes.add_result(ex["code"], r["student"], base, g, nombre=nombre, origen=origen)
+        malas = [i + 1 for i, x in enumerate(gv["detalle"]) if x is False]       # con la numeración de su versión
+    else:
+        g = omr.grade(ans, ex["clave"])
+        res = examenes.add_result(ex["code"], r["student"], ans, g, origen=origen)
+        malas = [i + 1 for i, x in enumerate(g["detalle"]) if x is False]
     multi = [i + 1 for i, a in enumerate(r["answers"][:n_q]) if a == "multi"]
     out = {"ok": True, "nombre": res["nombre"], "nota": g["nota"], "aciertos": g["aciertos"], "total": g["total"], "malas": malas,
            "multi": multi, "n": len(ex["resultados"]), "titulo": ex["titulo"], "origen": origen,
-           "msg": f"{res['nombre']}: {g['aciertos']} de {g['total']} → {str(g['nota']).replace('.', ',')}"}
+           "version": ver["v"] if ver else "",
+           "msg": f"{res['nombre']}" + (f" (versión {ver['v']})" if ver else "") + f": {g['aciertos']} de {g['total']} → {str(g['nota']).replace('.', ',')}"}
     _emit()
     return out
 

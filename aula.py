@@ -437,11 +437,31 @@ def build_prompt(kind, request, count=None, grade="", topic=""):
                 "Alinéalo con los Derechos Básicos de Aprendizaje (DBA) y los Estándares Básicos de Competencias "
                 "del MEN de Colombia para ese grado y área: en «competencias» nombra el DBA o estándar que se "
                 "trabaja (con su número si lo conoces con certeza; si no, descríbelo sin inventar el número).")
+    if kind in ("quiz", "taller", "saber"):           # 11.0: figuras y gráficas
+        import graficas
+        task += graficas.PROMPT
     return (base + pedido + " " + task + " Responde SOLO con un objeto JSON con esta forma: " + schema)
 
 
 def _txt(v, limit=2000):
     return re.sub(r"\s+", " ", str(v or "")).strip()[:limit]
+
+
+def _graph(spec):
+    """11.0: la figura de una pregunta, limpia (o None)."""
+    if not spec:
+        return None
+    import graficas
+    return graficas.clean(spec)
+
+
+def _picture(doc, item):
+    if item.get("grafica"):
+        import graficas
+        try:
+            graficas.add_to_docx(doc, item["grafica"])
+        except Exception:
+            pass
 
 
 def validate(kind, d, request=""):
@@ -460,6 +480,9 @@ def validate(kind, d, request=""):
             if _txt(q.get("enunciado")) and len(opts) == 4 and all(opts) and ans in "abcd" and ans:
                 qs.append({"enunciado": _txt(q["enunciado"], 800), "opciones": opts, "respuesta": ans,
                            "explicacion": _txt(q.get("explicacion"), 400)})
+                g = _graph(q.get("grafica"))
+                if g:
+                    qs[-1]["grafica"] = g
                 if kind == "saber":
                     qs[-1].update(contexto=_txt(q.get("contexto"), 2500), competencia=_txt(q.get("competencia"), 200))
         if not qs:
@@ -467,7 +490,8 @@ def validate(kind, d, request=""):
         out.update(instrucciones=_txt(d.get("instrucciones"), 500) or
                    "Lee cada pregunta y marca con una X la única respuesta correcta.", preguntas=qs)
     elif kind == "taller":
-        ej = [{"enunciado": _txt(e.get("enunciado"), 800), "respuesta": _txt(e.get("respuesta"), 800)}
+        ej = [dict({"enunciado": _txt(e.get("enunciado"), 800), "respuesta": _txt(e.get("respuesta"), 800)},
+                   **({"grafica": _graph(e.get("grafica"))} if _graph(e.get("grafica")) else {}))
               for e in (d.get("ejercicios") or []) if isinstance(e, dict) and _txt(e.get("enunciado"))]
         if not ej:
             raise ValueError("La IA no generó ejercicios válidos.")
@@ -601,6 +625,7 @@ def build_docx(kind, m, out_dir, Document, docente="", institucion="", curso="")
             p.paragraph_format.keep_with_next = True
             p.add_run(f"{i}. ").bold = True
             p.add_run(q["enunciado"])
+            _picture(doc, q)
             for letter, opt in zip("abcd", q["opciones"]):
                 op = doc.add_paragraph(f"{letter}) {opt}")
                 op.paragraph_format.left_indent = Cm(0.8)
@@ -624,6 +649,7 @@ def build_docx(kind, m, out_dir, Document, docente="", institucion="", curso="")
             p.paragraph_format.keep_with_next = True
             p.add_run(f"{i}. ").bold = True
             p.add_run(q["enunciado"])
+            _picture(doc, q)
             for letter, opt in zip("ABCD", q["opciones"]):
                 op = doc.add_paragraph(f"{letter}. {opt}")
                 op.paragraph_format.left_indent = Cm(0.8)
@@ -721,6 +747,7 @@ def build_docx(kind, m, out_dir, Document, docente="", institucion="", curso="")
             p.paragraph_format.space_before = Pt(8)
             p.add_run(f"{i}. ").bold = True
             p.add_run(e["enunciado"])
+            _picture(doc, e)
             for _ in range(3):                               # espacio para responder
                 doc.add_paragraph("_" * 80).paragraph_format.space_after = Pt(0)
         key_page("Soluciones (solo para el docente)")
