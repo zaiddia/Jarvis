@@ -157,6 +157,18 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Guía viva por QR y podcast de repaso (v11.4)
+
+- **Guía viva:** «**haz una guía viva de funciones lineales para 9A**»: una guía interactiva para el celular (QR en el
+  proyector) con explicación con un ejemplo cotidiano, ejemplo resuelto paso a paso, figura, un laboratorio para
+  explorar, tarjetas para voltear y un mini quiz. El quiz se responde con nombre y PIN y **suma a la práctica y a la
+  ruta de dominio** de cada uno. «**¿Quién ha leído la guía?**» (quién la terminó, % de aciertos y quién falta) y
+  «cierra la guía».
+- **Podcast de repaso:** «**haz un podcast de repaso de fracciones para 7A**»: un guion de unos 4 minutos donde Laura y
+  Mateo conversan sobre el tema (pregunta curiosa, ejemplo cotidiano, un ejercicio en voz alta, el error típico y un
+  reto), grabado con las voces de Edge en MP3. Los estudiantes lo escuchan con el QR (con el guion para leer) y el MP3
+  queda en Documentos, Jarvis, Podcasts, para compartirlo por WhatsApp.
+
 ## Solucionario verificado con SymPy y laboratorio interactivo (v11.3)
 
 - **Solucionario paso a paso verificado:** «**resuelve paso a paso: 2x + 3 = 7; x² − 5x + 6 = 0**» o «**haz el

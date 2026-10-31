@@ -359,6 +359,8 @@ def restore_backup(name, parts):
         J.retos.load()
     if "tarjetas" in done:                             # 11.2
         J.dominio.load()
+    if "guias" in done:                                # 11.4
+        J.guiaviva.load()
     if "compromisos" in done:                          # 9.3
         J.compromisos.load()
     if "lecciones" in done:                            # 9.4

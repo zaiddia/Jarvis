@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "11.3"
+VERSION = "11.4"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1491,6 +1491,8 @@ def process_command(text):
         return
     if zeti_open_voice(text, t):                       # 10.1: «abre Zeti»
         return
+    if live_guide_voice(text, t):                      # 11.4: «haz una guía viva de … para 9A», «haz un podcast de repaso de …»
+        return
     if solver_voice(text, t):                          # 11.3: «resuelve paso a paso: …», «haz el solucionario del taller»
         return
     if lab_voice(text, t):                             # 11.3: «abre el laboratorio de la parábola»
@@ -2060,6 +2062,10 @@ from nucleo.maestria import *  # noqa: F401,F403,E402
 # → nucleo/solucion.py (lógica en verificar.py; página: templates/lab.html)
 from nucleo.solucion import *  # noqa: F401,F403,E402
 
+# ── 11.4: guía viva por QR y podcast de repaso
+# → nucleo/vivoqr.py (lógica en guiaviva.py; página: templates/guia.html)
+from nucleo.vivoqr import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2207,6 +2213,7 @@ def main():
         planning_start()                  # 10.8: planeación anual
         tecno_start()                     # 11.1: entregas y retos
         mastery_start()                   # 11.2: ruta de dominio y tarjetas
+        live_guide_start()                # 11.4: guías vivas y podcasts
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()
