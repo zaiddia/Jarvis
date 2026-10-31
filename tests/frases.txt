@@ -178,3 +178,4 @@ genera una imagen de una célula animal para sexto => IMAGEN :: célula animal
 mi horario de mañana => HORARIO
 ¿has tenido errores? => INFORME
 anota en el observador de Juan que hoy participó mucho => OBSERVADOR
+modo proyector => PROYECTOR|abrir :: proyector

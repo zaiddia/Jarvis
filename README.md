@@ -157,6 +157,30 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## El plus del HUD: panel «Hoy», tarjetas, Ctrl+K, sugerencias, subtítulos y modo proyector (v8.6)
+
+**Panel «Hoy».** Al expandir el HUD, a la derecha (o en la pestaña «Hoy» si la ventana es estrecha): la hora y el
+clima, la clase actual con cuántos minutos le quedan y la siguiente, la agenda, tus pendientes, **lo que espera tu
+aprobación con los botones Aprobar/No**, el proyecto en marcha con su barra de pasos, los correos importantes y quién
+está en riesgo en cada curso. Se actualiza solo cada 30 segundos.
+
+**Tarjetas de archivos.** Cada material, informe o imagen que Jarvis crea aparece en la conversación como una tarjeta
+con su miniatura (si es imagen) y los botones «Abrir» y «Carpeta».
+
+**Paleta de órdenes (Ctrl+K o la lupa).** Escribe y aparecen las órdenes que coinciden: lo que has pedido últimamente
+y los ejemplos de todo lo que sabe hacer. Enter la envía; las que tienen un hueco («informe para los padres de …») se
+copian a la barra para que las completes.
+
+**Sugerencias según el momento.** Botones encima de la barra: en clase, «Llamar a lista», «Escoger estudiante»,
+«Temporizador 10 min» y «Modo proyector»; antes de una clase, «Preparar…»; si algo espera tu aprobación, «✓ Aprobar»;
+el viernes por la tarde, «Resumen semanal».
+
+**Subtítulos.** Mientras Jarvis habla, el HUD muestra lo que dice palabra por palabra (se apaga en *Ajustes › HUD*).
+
+**Modo proyector.** «**Jarvis, modo proyector**» abre una pantalla para el televisor del salón (F11 para pantalla
+completa): el temporizador gigante con su barra, el estudiante escogido en grande, los grupos, la última imagen que te
+preparó o un reloj grande. «Cierra el proyector» para quitarla.
+
 ## Correo con tu cuenta de Google, sin contraseña de aplicación (v8.5)
 
 **Dos formas de conectar el correo** (*Ajustes › Integraciones › Correo por voz*):

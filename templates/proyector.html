@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jarvis · Proyector</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<style>
+  html, body { height: 100%; background: #03060c; overflow: hidden; }
+  body { font-family: var(--mono); color: var(--text); display: grid; grid-template-rows: auto 1fr auto; cursor: default; }
+  body::before { content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(90% 70% at 50% 40%, rgba(var(--a-rgb), .10), transparent 70%),
+                repeating-linear-gradient(0deg, rgba(var(--a-rgb), .035) 0 1px, transparent 1px 34px),
+                repeating-linear-gradient(90deg, rgba(var(--a-rgb), .03) 0 1px, transparent 1px 34px); }
+  header, footer { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 2vw; padding: 2.2vh 3vw; }
+  .who { font-family: var(--hud); font-size: clamp(16px, 2.4vw, 34px); letter-spacing: .18em; color: var(--a); text-transform: uppercase; }
+  .sub { font-size: clamp(12px, 1.3vw, 20px); color: var(--muted); margin-top: .4vh; }
+  .clock { font-family: var(--hud); font-weight: 700; font-size: clamp(22px, 3.6vw, 56px); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+  main { position: relative; display: grid; place-items: center; padding: 2vh 4vw; min-height: 0; }
+  .stage { width: 100%; height: 100%; display: grid; place-items: center; text-align: center; animation: rise .35s ease-out; }
+  .big-timer { font-family: var(--hud); font-weight: 700; font-size: clamp(80px, 22vw, 360px); line-height: 1; letter-spacing: .02em;
+    color: var(--a2); text-shadow: 0 0 40px rgba(var(--a2-rgb), .45); font-variant-numeric: tabular-nums; }
+  .big-timer.urgent { color: var(--err); text-shadow: 0 0 50px rgba(255, 77, 94, .6); animation: blink 1s steps(2) infinite; }
+  .label { font-size: clamp(18px, 3vw, 46px); color: var(--text); margin-top: 2vh; }
+  .ring { width: min(60vh, 60vw); height: 6px; margin: 3vh auto 0; background: rgba(var(--a2-rgb), .15); border-radius: 3px; overflow: hidden; }
+  .ring i { display: block; height: 100%; background: var(--a2); box-shadow: 0 0 14px var(--a2); transition: width 1s linear; }
+  .kicker { font-family: var(--hud); font-size: clamp(14px, 1.8vw, 26px); letter-spacing: .3em; color: var(--muted); text-transform: uppercase; }
+  .name { font-family: var(--hud); font-weight: 700; font-size: clamp(48px, 11vw, 200px); line-height: 1.05; color: var(--a);
+    text-shadow: 0 0 40px rgba(var(--a-rgb), .5); margin-top: 2vh; animation: pop .6s cubic-bezier(.2, .9, .3, 1.3); }
+  .groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(30vw, 320px), 1fr)); gap: 2vw; width: 100%; max-height: 100%; overflow: auto; }
+  .group { border: 1px solid rgba(var(--a-rgb), .4); background: rgba(var(--a-rgb), .06); border-radius: 14px; padding: 2vh 1.6vw; text-align: left; }
+  .group h3 { font-family: var(--hud); font-size: clamp(14px, 1.7vw, 26px); letter-spacing: .2em; color: var(--a); margin-bottom: 1vh; }
+  .group p { font-size: clamp(16px, 2vw, 32px); line-height: 1.45; }
+  .img { max-width: 100%; max-height: 74vh; border-radius: 14px; box-shadow: 0 0 60px rgba(var(--a-rgb), .25); }
+  .idle-clock { white-space: nowrap; font-family: var(--hud); font-weight: 700; font-size: clamp(90px, 20vw, 320px); color: var(--a); text-shadow: 0 0 50px rgba(var(--a-rgb), .4); font-variant-numeric: tabular-nums; }
+  footer { font-size: clamp(11px, 1.1vw, 16px); color: var(--muted); }
+  footer b { color: var(--a); font-weight: 400; }
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 100% { transform: none; opacity: 1; } }
+  @keyframes blink { 50% { opacity: .5; } }
+  @media (prefers-reduced-motion: reduce) { .stage, .name { animation: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div><div class="who" id="who">Jarvis</div><div class="sub" id="sub"></div></div>
+  <div class="clock" id="clock">--:--</div>
+</header>
+<main><div class="stage" id="stage"></div></main>
+<footer>
+  <span>Di «<b>Jarvis, escoge un estudiante</b>», «<b>haz grupos de 4</b>», «<b>pon un temporizador de 10 minutos</b>» o «<b>hazme una ilustración de…</b>»</span>
+  <span>F11 · pantalla completa</span>
+</footer>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const stage = $("#stage");
+  let st = { timers: [], last: null, imagen: -1, clase: "", hasta: "" };
+  let show = "idle", shownAt = 0, lastTick = Date.now();
+  const p2 = (n) => String(n).padStart(2, "0");
+  const hhmm = () => { const d = new Date(); return `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
+  const fmt = (s) => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h}:${p2(m)}:${p2(s % 60)}` : `${m}:${p2(s % 60)}`; };
+  function node(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function header() {
+    $("#who").textContent = st.clase || "Jarvis";
+    $("#sub").textContent = [st.institucion, st.hasta ? `hasta las ${st.hasta}` : ""].filter(Boolean).join(" · ");
+  }
+  function render() {
+    stage.innerHTML = "";
+    const box = node("div", "stage-in");
+    const t = st.timers[0];
+    if (t && t.remaining > 0) {
+      const big = node("div", "big-timer" + (t.remaining <= 10 ? " urgent" : ""), fmt(t.remaining));
+      big.id = "bigt";
+      box.append(big);
+      if (t.label) box.append(node("div", "label", t.label));
+      const r = node("div", "ring"); const i = node("i"); i.style.width = `${Math.max(0, 100 * t.remaining / (t.total || 1))}%`; i.id = "ringi"; r.append(i); box.append(r);
+    } else if (show === "pick" && st.last && st.last.type === "pick") {
+      box.append(node("div", "kicker", "Le toca a"), node("div", "name", st.last.name));
+    } else if (show === "groups" && st.last && st.last.type === "groups") {
+      const g = node("div", "groups");
+      (st.last.groups || []).forEach((grp, k) => { const c = node("div", "group"); c.append(node("h3", "", `Grupo ${k + 1}`), node("p", "", grp.join(" · "))); g.append(c); });
+      box.append(g);
+    } else if (show === "image" && st.imagen >= 0) {
+      const im = node("img", "img"); im.src = `/archivo/${st.imagen}?t=${shownAt}`; im.alt = "Imagen de la clase"; box.append(im);
+    } else {
+      box.append(node("div", "idle-clock", hhmm()));
+    }
+    stage.append(box);
+    header();
+  }
+  function tick() {
+    const now = Date.now(), dt = (now - lastTick) / 1000; lastTick = now;
+    st.timers.forEach((t) => { t.remaining = Math.max(0, t.remaining - dt); });
+    st.timers = st.timers.filter((t) => t.remaining > 0);
+    $("#clock").textContent = hhmm();
+    const b = document.getElementById("bigt");
+    if (b && st.timers[0]) { b.textContent = fmt(st.timers[0].remaining); b.classList.toggle("urgent", st.timers[0].remaining <= 10);
+      const r = document.getElementById("ringi"); if (r) r.style.width = `${100 * st.timers[0].remaining / (st.timers[0].total || 1)}%`; }
+    else if (b || (show === "idle" && now % 60000 < 1000)) render();
+  }
+  setInterval(tick, 500);
+
+  const socket = io();
+  socket.on("connect", () => socket.emit("projector_state", {}, (s) => { st = Object.assign(st, s); if (s.theme) document.documentElement.dataset.theme = s.theme; if (st.last) show = st.last.type === "pick" ? "pick" : "groups"; render(); }));
+  socket.on("timers", ({ timers }) => { st.timers = timers || []; lastTick = Date.now(); render(); });
+  socket.on("aula", (e) => { if (e.type === "pick" || e.type === "groups") { st.last = e; show = e.type === "pick" ? "pick" : "groups"; shownAt = Date.now(); render(); } });
+  socket.on("file_card", (c) => { if (c.image && c.id >= 0) { st.imagen = c.id; show = "image"; shownAt = Date.now(); render(); } });
+  socket.on("settings_updated", (s) => { if (s && s.theme) document.documentElement.dataset.theme = s.theme; });
+  socket.on("projector", (d) => { if (d && d.close) window.close(); });
+})();
+</script>
+</body>
+</html>

@@ -239,7 +239,191 @@
   if (typeof io === "undefined") { setPreview("No se pudo cargar Socket.IO.", "dim"); return; }
   const socket = io();
 
-  socket.on("connect", () => poke());
+  /* ================= 8.6: panel «Hoy», tarjetas de archivos, sugerencias, paleta y subtítulos ================= */
+  const dash = $("#dash"), viewHoy = $("#view-hoy"), chips = $("#chips"), xtabHoy = $("#xtab-hoy");
+  function mk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function card(title, extraCls = "") { const c = mk("section", "dcard " + extraCls); c.append(mk("h4", "", title)); return c; }
+
+  function placeDash() {
+    const wide = body.dataset.size === "expandido" && el.shell.clientWidth >= 640;
+    body.classList.toggle("wide", wide);
+    if (wide) { if (dash.parentNode !== el.shell) el.shell.insertBefore(dash, chips); }
+    else if (dash.parentNode !== viewHoy) viewHoy.appendChild(dash);
+    xtabHoy.hidden = wide;
+    if (wide && !viewHoy.hidden) $('.xtab[data-view="chat"]').click();
+  }
+  window.addEventListener("resize", placeDash);
+
+  function renderDash(d) {
+    if (!d) return;
+    dash.innerHTML = "";
+    const top = mk("div", "dtop");
+    top.append(mk("span", "dclock", d.hora), mk("span", "ddate", d.fecha));
+    if (d.clima) top.append(mk("span", "dweather", d.clima));
+    dash.append(top);
+    const c = d.clase || {};
+    if (c.ahora || c.siguiente) {
+      const k = card("Clase");
+      if (c.ahora) { const r = mk("div", "drow now"); r.append(mk("b", "", c.ahora), mk("span", "dmeta", `faltan ${c.falta} min · hasta ${c.hasta}`)); k.append(r); }
+      if (c.siguiente) { const r = mk("div", "drow"); r.append(mk("span", "", (c.ahora ? "Luego: " : "Siguiente: ") + c.siguiente),
+        mk("span", "dmeta", c.en != null ? (c.en <= 0 ? "ahora" : `en ${c.en} min`) : (c.hoy ? c.a_las : `${c.a_las} · otro día`))); k.append(r); }
+      dash.append(k);
+    }
+    if (d.aprobar && d.aprobar.length) {
+      const k = card("Por aprobar", "warn");
+      d.aprobar.forEach((a) => {
+        const r = mk("div", "drow ap"); r.append(mk("span", "", a.t));
+        const ok = mk("button", "mini ok", "Aprobar"), no = mk("button", "mini", "No");
+        ok.type = no.type = "button";
+        ok.addEventListener("click", () => socket.emit("approval_resolve", { id: a.id, ok: true }, refreshDash));
+        no.addEventListener("click", () => socket.emit("approval_resolve", { id: a.id, ok: false }, refreshDash));
+        const b = mk("span", "dbtns"); b.append(ok, no); r.append(b); k.append(r);
+      });
+      dash.append(k);
+    }
+    if (d.proyecto) {
+      const p = d.proyecto, k = card(`Proyecto · ${p.hechos}/${p.total}`);
+      k.append(mk("div", "drow", p.nombre));
+      const bar = mk("div", "dbar"); const i = mk("i"); i.style.width = `${Math.round(100 * p.hechos / Math.max(1, p.total))}%`; bar.append(i); k.append(bar);
+      const steps = mk("div", "dsteps");
+      (p.pasos || []).forEach((s) => { const x = mk("i", { hecho: "done", "en marcha": "now", error: "bad", omitido: "bad" }[s.e] || ""); x.title = `${s.t} · ${s.e}`; steps.append(x); });
+      k.append(steps); dash.append(k);
+    }
+    if (d.agenda && d.agenda.length) {
+      const k = card("Agenda");
+      d.agenda.forEach((e) => { const r = mk("div", "drow"); r.append(mk("span", "", e.t), mk("span", "dmeta", e.h)); k.append(r); });
+      dash.append(k);
+    }
+    if (d.pendientes && d.pendientes.length) {
+      const k = card(`Pendientes · ${d.n_pendientes}`);
+      d.pendientes.forEach((t) => k.append(mk("div", "drow", "· " + t)));
+      dash.append(k);
+    }
+    if (d.correos) {
+      const k = card(`Correos importantes · ${d.correos.n}`);
+      k.append(mk("div", "drow", d.correos.de.join(", ")));
+      k.classList.add("click"); k.addEventListener("click", () => run("¿qué correos importantes tengo?"));
+      dash.append(k);
+    }
+    if (d.riesgo && d.riesgo.length) {
+      const k = card("En riesgo", "bad");
+      d.riesgo.forEach((r) => { const row = mk("div", "drow click"); row.append(mk("b", "", r.curso), mk("span", "dmeta", `${r.n}: ${r.nombres.join(", ")}${r.n > r.nombres.length ? "…" : ""}`));
+        row.addEventListener("click", () => run(`¿quiénes están en riesgo en ${r.curso}?`)); k.append(row); });
+      dash.append(k);
+    }
+    if (dash.children.length === 1) dash.append(mk("p", "dempty", "Nada urgente. Escribe tu horario en Ajustes › Memoria para ver aquí tus clases."));
+    renderChips(d.sugerencias || []);
+  }
+  function renderChips(list) {
+    chips.innerHTML = "";
+    list.forEach((s) => {
+      const b = mk("button", "chip" + (s.kind === "aprobar" ? " hot" : ""), s.t); b.type = "button";
+      b.title = s.fill ? "Completa la orden y pulsa Enter" : s.cmd;
+      b.addEventListener("click", () => s.fill ? fill(s.cmd) : run(s.cmd));
+      chips.append(b);
+    });
+  }
+  function run(cmd) { socket.emit("manual_command", { command: cmd }); poke(); }
+  function fill(cmd) {
+    el.input.value = cmd;
+    el.input.focus();
+    const gap = cmd.indexOf("  ");
+    const pos = gap >= 0 ? gap + 1 : cmd.length;
+    el.input.setSelectionRange(pos, pos);
+  }
+  function refreshDash() { socket.emit("dashboard", {}, renderDash); }
+
+  function addFileCard(c) {
+    $(".empty", el.chat)?.remove();
+    hasMessages = true;
+    const m = mk("div", "msg jarvis file");
+    const meta = mk("div", "msg-meta", "JARVIS · ARCHIVO");
+    const b = mk("div", "msg-body fcard");
+    if (c.image && c.id >= 0) { const im = mk("img", "fthumb"); im.src = `/archivo/${c.id}?t=${Date.now()}`; im.alt = c.name; b.append(im); }
+    const info = mk("div", "finfo");
+    info.append(mk("b", "", c.name), mk("span", "dmeta", `${c.kind} · ${c.folder}`));
+    const btns = mk("div", "dbtns");
+    const o = mk("button", "mini ok", "Abrir"), f = mk("button", "mini", "Carpeta");
+    o.type = f.type = "button";
+    o.addEventListener("click", () => socket.emit("file_open", { path: c.path }));
+    f.addEventListener("click", () => socket.emit("file_open", { path: c.path, folder: true }));
+    btns.append(o, f); info.append(btns); b.append(info);
+    m.append(meta, b);
+    const stick = nearBottom(el.viewChat);
+    el.chat.appendChild(m);
+    if (stick) el.viewChat.scrollTop = el.viewChat.scrollHeight;
+  }
+
+  /* Paleta de órdenes */
+  const pal = { box: $("#pal"), q: $("#pal-q"), list: $("#pal-list"), items: [], sel: 0 };
+  const plain = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  function openPal() {
+    if (body.dataset.size !== "expandido") setSize("expandido");
+    pal.box.hidden = false; pal.q.value = el.input.value || ""; pal.sel = 0;
+    socket.emit("palette", {}, (r) => {
+      pal.items = (r.recent || []).map((t) => ({ t, g: "Reciente" })).concat(r.examples || []);
+      drawPal();
+    });
+    setTimeout(() => pal.q.focus(), 30);
+  }
+  function closePal() { pal.box.hidden = true; el.input.focus(); }
+  function palMatches() {
+    const w = plain(pal.q.value).split(/\s+/).filter(Boolean);
+    const seen = new Set();
+    return pal.items.filter((x) => { const k = plain(x.t); if (seen.has(k)) return false; seen.add(k); return w.every((y) => k.includes(y) || plain(x.g).includes(y)); }).slice(0, 40);
+  }
+  function drawPal() {
+    const list = palMatches();
+    pal.sel = Math.min(pal.sel, Math.max(0, list.length - 1));
+    pal.list.innerHTML = "";
+    if (pal.q.value.trim()) list.unshift({ t: pal.q.value.trim(), g: "Enviar tal cual" });
+    list.forEach((x, i) => {
+      const r = mk("div", "pal-item" + (i === pal.sel ? " sel" : ""));
+      r.append(mk("span", "", x.t), mk("span", "pal-g", x.g));
+      r.addEventListener("mousedown", (e) => { e.preventDefault(); choose(x); });
+      pal.list.append(r);
+    });
+    pal.shown = list;
+  }
+  function choose(x) {
+    closePal();
+    if (/\s{2}|\s$/.test(x.t) && x.g !== "Enviar tal cual") fill(x.t.replace(/\s+$/, " ")); else run(x.t);
+  }
+  pal.q.addEventListener("input", () => { pal.sel = 0; drawPal(); });
+  pal.q.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); closePal(); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); pal.sel = Math.min(pal.sel + 1, (pal.shown || []).length - 1); drawPal(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); pal.sel = Math.max(0, pal.sel - 1); drawPal(); }
+    else if (e.key === "Enter") { e.preventDefault(); const x = (pal.shown || [])[pal.sel]; if (x) choose(x); }
+  });
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); pal.box.hidden ? openPal() : closePal(); }
+  });
+  $("#btn-pal").addEventListener("click", () => (pal.box.hidden ? openPal() : closePal()));
+
+  /* Subtítulos: lo que dice Jarvis, palabra por palabra mientras habla */
+  let subTimer = null, lastJarvis = "";
+  function startSubs() {
+    clearInterval(subTimer);
+    const words = lastJarvis.split(/\s+/).filter(Boolean);
+    if (words.length < 4 || !current.hud_subtitles) return;
+    const wps = 2.6 * (1 + (Number(current.tts_rate) || 0) / 100);
+    let i = 0;
+    el.preview.classList.add("subs");
+    subTimer = setInterval(() => {
+      i = Math.min(words.length, i + 1);
+      el.preview.textContent = "";
+      const from = Math.max(0, i - 16);
+      el.preview.append(words.slice(from, i - 1).join(" ") + " ");
+      el.preview.append(mk("b", "", words[i - 1] || ""));
+      if (i >= words.length) clearInterval(subTimer);
+    }, 1000 / Math.max(1.2, wps));
+  }
+  function stopSubs() { clearInterval(subTimer); subTimer = null; if (el.preview.classList.contains("subs")) { el.preview.classList.remove("subs"); if (lastJarvis) setPreview(lastJarvis); } }
+
+  socket.on("connect", () => { poke(); refreshDash(); placeDash(); });
+  socket.on("dashboard", renderDash);
+  socket.on("file_card", (c) => { addFileCard(c); poke(); });
   socket.on("disconnect", () => { setPreview("Sin enlace con el motor de Jarvis…", "dim"); led("#led-ai", "err"); });
   socket.on("bootstrap", (data) => {
     native = !!data.native;
@@ -260,12 +444,12 @@
     el.viewChat.scrollTop = el.viewChat.scrollHeight;
   });
   socket.on("terminal_log", ({ data }) => addLog(data));
-  socket.on("chat", (item) => { addChat(item); poke(); });
-  socket.on("state", applyState);
+  socket.on("chat", (item) => { if (item.role !== "user") lastJarvis = item.text; addChat(item); poke(); });
+  socket.on("state", (s) => { const was = st.mode; applyState(s); if (st.mode === "speaking" && was !== "speaking") startSubs(); else if (st.mode !== "speaking" && was === "speaking") stopSubs(); });
   socket.on("mic_level", ({ v }) => { if (st.mode !== "speaking") setLevel(v); });
   socket.on("heard", ({ text }) => { if (st.mode === "idle" || st.mode === "awaiting") setPreview(`«${text}»`, "dim"); });
   socket.on("settings_updated", applySettings);
-  socket.on("hud_size", ({ size }) => { body.dataset.size = size; updateSizeButton(); poke(); });
+  socket.on("hud_size", ({ size }) => { body.dataset.size = size; updateSizeButton(); placeDash(); poke(); });
   socket.on("timers", ({ timers }) => { setTimers(timers || []); });
   socket.on("card", (c) => showCard(c));
   socket.on("focus_input", () => setTimeout(() => { try { window.focus(); el.input.focus(); } catch (e) {} }, 200));
@@ -280,7 +464,7 @@
   /* ---------------- Controles ---------------- */
   function setSize(size) {
     if (native) socket.emit("hud_set_size", { size });
-    else { body.dataset.size = size; updateSizeButton(); }
+    else { body.dataset.size = size; updateSizeButton(); placeDash(); }
   }
   el.btnSize.addEventListener("click", () => setSize(body.dataset.size === "expandido" ? "compacto" : "expandido"));
   $("#btn-orb").addEventListener("click", () => setSize("orbe"));
@@ -329,6 +513,8 @@
     $$(".xtab").forEach((t) => t.classList.toggle("active", t === tab));
     el.viewChat.hidden = tab.dataset.view !== "chat";
     el.viewLog.hidden = tab.dataset.view !== "log";
+    viewHoy.hidden = tab.dataset.view !== "hoy";
+    if (tab.dataset.view === "hoy") refreshDash();
     const v = tab.dataset.view === "chat" ? el.viewChat : el.viewLog;
     v.scrollTop = v.scrollHeight;
   }));

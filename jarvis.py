@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "8.5"
+VERSION = "8.6"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -716,6 +716,7 @@ DEFAULT_SETTINGS = {
     "weekly_sent": "",
     "update_night": True,          # 8.3: instalar de noche las versiones nuevas (con copia de seguridad)
     "google_scopes": "",           # 8.5: permisos que diste al conectar tu cuenta de Google (Gmail, Classroom, Forms)
+    "hud_subtitles": True,         # 8.6: subtítulos de lo que dice Jarvis, palabra por palabra
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -1443,6 +1444,8 @@ def process_command(text):
         learn_note("temporizador", {"segundos": int(_dur)})
         return
 
+    if projector_voice(text, t):                       # «modo proyector»
+        return
     if recurring_project(text, t):                     # «cada domingo a las 6 prepárame la semana de 7A sobre…»
         return
     if weekly_voice(text, t):                          # «dame el resumen semanal»
@@ -1774,6 +1777,13 @@ from nucleo.gcorreo import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 8.6 · EL PLUS DEL HUD: PANEL «HOY», TARJETAS, PALETA (CTRL+K), SUGERENCIAS Y MODO PROYECTOR
+# → nucleo/tablero.py (páginas: templates/hud.html y templates/proyector.html)
+# =============================================================================
+from nucleo.tablero import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1900,6 +1910,7 @@ def main():
         classroom_plus_start()            # 8.1: horario de clases
         family_start()                    # 8.2: observador del estudiante
         autonomy_start()                  # 8.3: resumen semanal, actualización de noche y vuelta atrás
+        hud_plus_start()                  # 8.6: el panel «Hoy» del HUD se actualiza solo
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()
