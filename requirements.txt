@@ -32,3 +32,5 @@ python-pptx
 openpyxl
 qrcode
 pywin32
+# 8.9: cifrado de los datos de estudiantes (notas, observador, cursos y diario de clase)
+cryptography

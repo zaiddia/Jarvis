@@ -12,6 +12,8 @@ import csv
 import datetime
 import difflib
 import json
+
+import datos
 import math
 import os
 import random
@@ -56,26 +58,28 @@ def configure(config_dir):
     load()
 
 
+locked = False      # 8.9: el archivo está cifrado con otra clave: no se lee ni se sobrescribe
+
+
 def load():
+    global locked
     try:
-        with open(_path, encoding="utf-8") as f:
-            d = json.load(f)
+        d = datos.read_json(_path)
+        locked = False
         if isinstance(d, dict):
             for k in data:
                 if isinstance(d.get(k), type(data[k])):
                     data[k] = d[k]
-    except (FileNotFoundError, ValueError, TypeError, OSError):
+    except datos.DataLocked:
+        locked = True
+    except (ValueError, TypeError, OSError):
         pass
 
 
 def save():
-    if not _path:
+    if not _path or locked:
         return
-    os.makedirs(os.path.dirname(_path), exist_ok=True)
-    tmp = _path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=1)
-    os.replace(tmp, _path)
+    datos.write_json(_path, data)
 
 
 def snapshot():

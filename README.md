@@ -157,6 +157,20 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Datos de estudiantes cifrados y copias de seguridad en Drive (v8.9)
+
+**Datos de estudiantes protegidos.** En *Ajustes › Memoria › Datos de estudiantes*, «Proteger los datos de
+estudiantes»: las notas, el observador, los cursos con asistencia y el diario de clase (datos de menores, Ley 1581)
+se guardan **cifrados** en tu equipo, en las copias de seguridad y en la carpeta de sincronización. La clave se guarda a
+su vez con la protección de Windows. La **clave de recuperación** (botón «Ver la clave de recuperación») sirve para
+abrir esos datos en tu otro computador o al restaurar una copia en un equipo nuevo: guárdala en un lugar seguro. Si un
+archivo está cifrado con otra clave, Jarvis no lo lee ni lo sobrescribe hasta que pegues la correcta, así nunca se
+pierde nada por un error de clave. La prueba completa te avisa si los datos están sin cifrar o bloqueados.
+
+**Copias de seguridad en Drive.** Con tu cuenta de Google conectada, cada copia de seguridad (la automática de cada
+semana y las que pidas) también se sube a «Jarvis › Respaldos» de tu Drive, y se guardan las 10 últimas. Cuando
+quieras: «**haz una copia de seguridad en Drive**». La clave de recuperación nunca va dentro de la copia.
+
 ## Planes de recuperación, diario de clase y quiz en vivo en el proyector (v8.8)
 
 **Planes de recuperación.** «**Haz los planes de recuperación de 7A**» (para todos los que están en riesgo) o «**plan

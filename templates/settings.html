@@ -873,6 +873,23 @@
       <div class="ft"><label for="f-drive-auto">Subir a Drive cada material que cree</label><p>Quices, talleres, planes, informes, presentaciones e imágenes van solos a la carpeta «Jarvis» de tu Drive.</p></div>
       <label class="switch"><input type="checkbox" id="f-drive-auto" data-key="drive_auto"><span></span></label>
     </div>
+    <div class="field">
+      <div class="ft"><label for="f-bk-drive">Copias de seguridad también en Drive</label><p>Cada copia (la automática de cada semana y las que pidas) se sube a «Jarvis › Respaldos» de tu Drive; se guardan las últimas 10. También: «Jarvis, haz una copia de seguridad en Drive».</p></div>
+      <label class="switch"><input type="checkbox" id="f-bk-drive" data-key="backup_drive"><span></span></label>
+    </div>
+
+    <div class="group">Datos de estudiantes</div>
+    <p class="pane-intro">Notas, observador, cursos con asistencia y diario de clase son datos de menores de edad (Ley 1581 de 2012). Al protegerlos, se guardan <b>cifrados</b> en tu equipo y en las copias de seguridad. La <b>clave de recuperación</b> sirve para abrirlos en otro equipo (por ejemplo, con la sincronización) o al restaurar una copia en un equipo nuevo: guárdala en un lugar seguro. Sin ella, Jarvis no puede leer esos datos en otro equipo.</p>
+    <p class="status" id="st-status"></p>
+    <div class="row-btns">
+      <button class="btn btn-primary" type="button" id="btn-st-on">Proteger los datos de estudiantes</button>
+      <button class="btn btn-ghost" type="button" id="btn-st-key">Ver la clave de recuperación</button>
+      <button class="btn btn-ghost" type="button" id="btn-st-off">Dejar de cifrar</button>
+    </div>
+    <p class="status mono" id="st-key" hidden></p>
+    <div class="field stack"><div class="ft"><label for="st-paste">¿Vienes de otro equipo o restauraste una copia? Pega aquí la clave de recuperación</label></div>
+      <div class="row"><input class="inp mono" type="password" id="st-paste" autocomplete="off" placeholder="44 caracteres…">
+        <button class="btn btn-ghost" type="button" id="btn-st-unlock">Abrir los datos</button></div></div>
 
     <div class="group">Exportar notas para Zeti y quices para Kahoot o Quizizz</div>
     <p class="pane-intro">«Exporta las notas de 7A para Zeti»: una planilla de Excel con cada actividad, la <b>definitiva</b> (1,0 a 5,0), el desempeño y las fallas, y una hoja «Para copiar» con la columna de definitivas lista para pegar en la planilla de Zeti. «Pasa el quiz a Kahoot» o «exporta el quiz a Quizizz»: la hoja con el formato de importación de cada plataforma.</p>

@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "8.8"
+VERSION = "8.9"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -369,6 +369,7 @@ import exportar
 import gservicios
 import recuperacion
 import diarioclase
+import datos
 import secreto
 
 
@@ -728,6 +729,11 @@ DEFAULT_SETTINGS = {
     "zeti_comma": True,            # definitivas con coma decimal (4,5)
     "recovery_days": 10,           # 8.8: plazo de los planes de recuperación
     "live_quiz_secs": 30,          # 8.8: segundos por pregunta en el quiz en vivo
+    "protect_students": False,     # 8.9: cifrar notas, observador, cursos y diario de clase
+    "data_key": "",                # 8.9: clave de esos datos (se guarda cifrada con la protección de Windows)
+    "backup_drive": True,          # 8.9: cada copia de seguridad también a tu Drive (si conectaste Google)
+    "drive_backup_folder_id": "",
+    "drive_backup_keep": 10,
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -747,7 +753,7 @@ for _pid, _sp in PROVIDERS.items():
 API_KEY_FIELDS = tuple(k for k in DEFAULT_SETTINGS if k.endswith("_api_key"))
 # Nunca salen hacia las páginas (solo «guardado sí/no»): claves y el enlace secreto del calendario
 SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls", "telegram_token", "email_app_password", "mobile_token",
-                                   "classroom_client_secret", "classroom_refresh", "whatsapp_apikey") + (
+                                   "classroom_client_secret", "classroom_refresh", "whatsapp_apikey", "data_key") + (
     ("spotify_client_secret",) if "spotify_client_secret" in DEFAULT_SETTINGS else ())
 AI_SETTING_KEYS = ({"ai_provider", "ollama_host", "ollama_model", "openai_base_url"}
                    | set(API_KEY_FIELDS) | {f"{p}_model" for p in PROVIDERS})
@@ -761,7 +767,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -1460,6 +1466,8 @@ def process_command(text):
         learn_note("temporizador", {"segundos": int(_dur)})
         return
 
+    if backup_drive_voice(text, t):                    # «haz una copia de seguridad en Drive»
+        return
     if export_voice(text, t):                          # «pasa el quiz a Kahoot», «exporta las notas de 7A para Zeti»
         return
     if drive_voice(text, t):                           # «sube el taller a Drive», «pásalo a Google Slides»
@@ -1822,6 +1830,13 @@ from nucleo.aulavivo import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 8.9 · DATOS DE ESTUDIANTES CIFRADOS Y COPIA DE SEGURIDAD EN DRIVE
+# → nucleo/proteccion.py (lógica en datos.py)
+# =============================================================================
+from nucleo.proteccion import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -1950,6 +1965,7 @@ def main():
         autonomy_start()                  # 8.3: resumen semanal, actualización de noche y vuelta atrás
         hud_plus_start()                  # 8.6: el panel «Hoy» del HUD se actualiza solo
         class_plus_start()                # 8.8: diario de clase y quiz en vivo
+        students_start()                  # 8.9: abre los datos de estudiantes cifrados (con la clave ya leída)
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

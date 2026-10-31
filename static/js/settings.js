@@ -902,6 +902,27 @@
   });
   socket.on("connect", () => socket.emit("classroom_status", {}, renderCr));
 
+  // 8.9: datos de estudiantes cifrados
+  function renderStudents(r) {
+    if (!r) return;
+    const st = $("#st-status");
+    const names = { "aula.json": "cursos y asistencia", "notas_estudiantes.json": "notas", "observador.json": "observador", "registro_clase.json": "diario de clase" };
+    if (!r.available) { st.className = "status err"; st.textContent = "Falta la librería «cryptography»: ejecuta instalar.bat para poder cifrar."; }
+    else if (r.locked && r.locked.length) { st.className = "status err"; st.textContent = "Bloqueados (cifrados con otra clave): " + r.locked.map((f) => names[f] || f).join(", ") + ". Pega la clave de recuperación."; }
+    else if (r.on) { st.className = "status ok"; st.textContent = "✓ Protegidos: " + Object.entries(r.files || {}).filter(([, v]) => v === "cifrado").map(([f]) => names[f] || f).join(", ") + "."; }
+    else { st.className = "status"; st.textContent = "Sin cifrar."; }
+    $("#btn-st-on").hidden = !!r.on; $("#btn-st-off").hidden = !r.on; $("#btn-st-key").hidden = !r.has_key;
+    if (r.msg) toast(r.msg, r.ok ? "ok" : "err", 7000);
+  }
+  $("#btn-st-on").addEventListener("click", () => socket.emit("students_protect", { on: true }, renderStudents));
+  $("#btn-st-off").addEventListener("click", () => { if (confirm("¿Guardar los datos de estudiantes sin cifrar?")) socket.emit("students_protect", { on: false }, renderStudents); });
+  $("#btn-st-key").addEventListener("click", () => socket.emit("students_info", { reveal: true }, (r) => {
+    const k = $("#st-key"); k.hidden = !r.key; k.textContent = "Clave de recuperación: " + (r.key || "");
+    if (r.key) navigator.clipboard.writeText(r.key).then(() => toast("Clave copiada: guárdala en un lugar seguro.", "ok"), () => {});
+  }));
+  $("#btn-st-unlock").addEventListener("click", () => { socket.emit("students_protect", { key: $("#st-paste").value }, renderStudents); $("#st-paste").value = ""; });
+  socket.on("connect", () => socket.emit("students_info", {}, renderStudents));
+
   // 8.1: horario de clases
   socket.on("connect", () => socket.emit("schedule_get", {}, (r) => { $("#sch-text").value = r.text || ""; }));
   $("#btn-sch-save").addEventListener("click", () => socket.emit("schedule_save", { text: $("#sch-text").value }, (r) => {

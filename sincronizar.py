@@ -56,8 +56,11 @@ def plan(local, remote):
 def _valid(path):
     if path.endswith(".json"):
         try:
-            with open(path, encoding="utf-8") as f:
-                json.load(f)
+            with open(path, "rb") as f:
+                raw = f.read()
+            if raw.startswith(b"JVENC1:"):                 # 8.9: datos de estudiantes cifrados (completos)
+                return len(raw) > 60
+            json.loads(raw.decode("utf-8"))
         except (OSError, ValueError):
             return False
     return True

@@ -14,6 +14,8 @@ import platform
 import re
 import zipfile
 
+import datos
+
 MANIFEST = "jarvis_respaldo.json"
 MAX_BYTES = 20 * 1024 * 1024
 # archivo -> (parte, descripción)
@@ -102,10 +104,22 @@ def create(config_dir, dest_dir, settings, secret_fields=(), include_secrets=Fal
                 continue
             src = os.path.join(config_dir, fname)
             try:
-                with open(src, encoding="utf-8") as f:
-                    data = json.load(f)
-            except (OSError, ValueError):
-                continue                                   # no existe o está dañado: se omite
+                with open(src, "rb") as f:
+                    raw = f.read()
+            except OSError:
+                continue                                   # no existe: se omite
+            if datos.is_encrypted(raw):                    # 8.9: datos de estudiantes cifrados: van cifrados
+                z.writestr(fname, raw)
+                included.append(part)
+                try:
+                    counts[part] = _count(part, datos.loads(raw))
+                except (datos.DataLocked, ValueError):
+                    counts[part] = 0
+                continue
+            try:
+                data = json.loads(raw.decode("utf-8"))
+            except ValueError:
+                continue                                   # dañado: se omite
             z.writestr(fname, json.dumps(data, ensure_ascii=False, indent=1))
             included.append(part)
             counts[part] = _count(part, data)
@@ -199,8 +213,17 @@ def restore(path, config_dir, parts):
         for fname, (part, _) in FILES.items():
             if part not in parts or part == "ajustes" or fname not in names:
                 continue
+            raw = z.read(fname)
+            if datos.is_encrypted(raw):                    # 8.9: se restaura tal cual (se abre con la clave de recuperación)
+                dest = os.path.join(config_dir, fname)
+                os.makedirs(config_dir, exist_ok=True)
+                with open(dest + ".tmp", "wb") as f:
+                    f.write(raw)
+                os.replace(dest + ".tmp", dest)
+                done.append(part)
+                continue
             try:
-                data = json.loads(z.read(fname).decode("utf-8"))
+                data = json.loads(raw.decode("utf-8"))
             except ValueError:
                 continue
             if part in ("aula", "seguimiento") and not isinstance(data, dict):

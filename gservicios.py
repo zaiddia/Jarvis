@@ -115,6 +115,30 @@ def upload(client, path, folder_id, convert=False):
     return client.raw("POST", UPLOAD + "?uploadType=multipart&fields=id,name,webViewLink,mimeType", body, ctype)
 
 
+def ensure_subfolder(client, parent, name, folder_id=""):
+    if folder_id:
+        try:
+            f = client.call("GET", f"files/{folder_id}", {"fields": "id,trashed"}, base=DRIVE_API)
+            if not f.get("trashed"):
+                return folder_id
+        except Exception:
+            pass
+    f = client.call("POST", "files", {"fields": "id"}, body={"name": name, "parents": [parent],
+                                                              "mimeType": "application/vnd.google-apps.folder"}, base=DRIVE_API)
+    return f["id"]
+
+
+def list_folder(client, folder_id):
+    """Los archivos (que subió Jarvis) de una carpeta, más nuevos primero."""
+    d = client.call("GET", "files", {"q": f"'{folder_id}' in parents and trashed=false", "orderBy": "createdTime desc",
+                                     "fields": "files(id,name,createdTime,size)", "pageSize": 100}, base=DRIVE_API)
+    return d.get("files") or []
+
+
+def delete(client, file_id):
+    client.call("DELETE", f"files/{file_id}", base=DRIVE_API)
+
+
 def share_link(client, file_id):
     """Cualquiera con el enlace puede verlo (solo lectura)."""
     client.call("POST", f"files/{file_id}/permissions", body={"role": "reader", "type": "anyone"}, base=DRIVE_API)

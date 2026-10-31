@@ -11,6 +11,8 @@ import re
 import threading
 import unicodedata
 
+import datos
+
 _lock = threading.Lock()
 _path = None
 data = {"registro": {}, "mallas": {}}     # registro: {curso: [{"fecha", "tema", "nota"}]}; mallas: {curso: malla}
@@ -29,12 +31,16 @@ def configure(config_dir):
     load()
 
 
+locked = False      # 8.9: cifrado con otra clave: no se lee ni se sobrescribe
+
+
 def load():
-    global data
+    global data, locked
     try:
-        with open(_path, encoding="utf-8") as f:
-            d = json.load(f)
-        data = d if isinstance(d, dict) else {}
+        d = datos.read_json(_path)
+        data, locked = (d if isinstance(d, dict) else {}), False
+    except datos.DataLocked:
+        data, locked = {}, True
     except (OSError, ValueError, TypeError):
         data = {}
     data.setdefault("registro", {})
@@ -42,13 +48,10 @@ def load():
 
 
 def save():
-    if not _path:
+    if not _path or locked:
         return
     try:
-        os.makedirs(os.path.dirname(_path), exist_ok=True)
-        with open(_path + ".tmp", "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=1)
-        os.replace(_path + ".tmp", _path)
+        datos.write_json(_path, data)
     except OSError:
         pass
 

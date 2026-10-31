@@ -259,6 +259,8 @@ def make_backup(kind="manual", include_secrets=None):
         if kind in ("auto", "antes"):
             respaldo.prune(J.backup_folder(), J.BACKUP_KEEP_AUTO, kind)
     J.log_terminal(f"Copia de seguridad guardada: {res['path']}", "RESPALDO")
+    if kind in ("auto", "manual"):
+        J.after_backup(res)                            # 8.9: también a tu Drive
     return res
 
 

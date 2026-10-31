@@ -155,6 +155,20 @@ def extra_checks():
         add(G, "ok", f"Tus {n_keys} clave(s) están cifradas: solo tu usuario de Windows puede abrirlas.")
     elif secreto.available():
         add(G, "aviso", "Tus claves se guardan sin cifrar.", "ajustes:acerca")
+    try:                                               # 8.9: datos de estudiantes
+        si = J.students_info()
+        if si["locked"]:
+            add(G, "fallo", "Hay datos de estudiantes cifrados con otra clave: " + ", ".join(si["locked"]) +
+                ". Pega la clave de recuperación en Memoria › Datos de estudiantes.", "ajustes:memoria")
+        elif si["on"]:
+            add(G, "ok", "Los datos de estudiantes (notas, observador, cursos, diario) están cifrados.")
+        elif J.PORTABLE:
+            pass
+        else:
+            add(G, "aviso", "Los datos de estudiantes se guardan sin cifrar (son datos de menores): actívalo en Memoria › "
+                "Datos de estudiantes.", "ajustes:memoria")
+    except Exception:
+        pass
     if secrets_lost:
         add(G, "fallo", "No pude abrir estas claves (¿copiaste Jarvis de otro equipo?): " + ", ".join(secrets_lost) +
             ". Vuelve a escribirlas en Ajustes.", "ajustes:ia")
