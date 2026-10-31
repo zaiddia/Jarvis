@@ -25,6 +25,11 @@
   .msg { color: var(--a2); font-size: 14px; min-height: 20px; margin-bottom: 8px; }
   .topics span { display: inline-block; font-size: 13px; border: 1px solid #2a4458; border-radius: 999px; padding: 3px 10px; margin: 0 6px 6px 0; }
   .chat { margin-top: 6px; } .chat p { font-size: 14px; margin-bottom: 8px; } .chat p.me { color: var(--muted); }
+  .route { list-style: none; } .route li { display: flex; gap: 8px; align-items: baseline; font-size: 14px; padding: 5px 0; border-bottom: 1px solid #12263a; }
+  .route li b { width: 20px; } .route .dominado { color: var(--ok); } .route .actual { color: var(--a); font-weight: 700; } .route .bloqueado { color: #4c6275; }
+  .flash { min-height: 150px; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+  .flash .q { font-size: 19px; } .flash .back { color: var(--ok); font-size: 18px; font-weight: 600; margin-top: 10px; white-space: pre-wrap; }
+  .row2 { display: flex; gap: 8px; } .row2 button { margin: 0; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -42,6 +47,15 @@
 <section id="home" hidden>
   <div class="card"><p id="hola" class="q"></p><div class="tag">Vas a practicar</div><div class="topics" id="temas"></div></div>
   <button id="go">Practicar</button>
+  <button class="ghost" id="cardsb" hidden>Repasar tarjetas</button>
+  <div class="card" id="rutabox" hidden><div class="tag">Tu ruta del periodo (avanzas cuando dominas cada tema)</div><ol class="route" id="ruta"></ol></div>
+</section>
+
+<section id="cards" hidden>
+  <div class="card flash"><div class="tag" id="ctag"></div><p class="q" id="cfront"></p><p class="back" id="cback" hidden></p></div>
+  <button id="cshow">Ver respuesta</button>
+  <div class="row2" id="cbtns" hidden><button class="ghost" id="cno">No lo sabía</button><button id="cyes">¡Lo sabía!</button></div>
+  <button class="ghost" id="cexit">Volver</button>
 </section>
 
 <section id="ex" hidden>
@@ -77,6 +91,13 @@
       k = r.k; $("#login").hidden = true; $("#home").hidden = false;
       $("#hola").textContent = `¡Hola, ${r.nombre}! ` + (r.ej ? `Llevas ${r.ej} ejercicios.` : "Empecemos.") + (r.msg ? " " + r.msg : "");
       $("#temas").innerHTML = ""; r.temas.forEach((t) => { const s = document.createElement("span"); s.textContent = t.replace("Saber: ", "Saber · "); $("#temas").appendChild(s); });
+      if (r.ruta && r.ruta.length) {
+        $("#rutabox").hidden = false; $("#ruta").innerHTML = "";
+        r.ruta.forEach((x) => { const li = document.createElement("li"); li.className = x.estado;
+          li.innerHTML = `<b>${x.estado === "dominado" ? "✔" : x.estado === "actual" ? "▶" : "🔒"}</b>`; const sp = document.createElement("span");
+          sp.textContent = x.tema + (x.estado === "actual" && x.nivel ? ` (nivel ${x.nivel})` : ""); li.append(sp); $("#ruta").append(li); });
+      }
+      if (r.tarjetas) { $("#cardsb").hidden = false; $("#cardsb").textContent = `Repasar tarjetas (${r.tarjetas})`; }
     });
   });
   function load() {
@@ -111,6 +132,18 @@
     });
   }
   $("#go").addEventListener("click", load);
+  let card = null;
+  function showCard(r) {
+    if (!r.ok) { $("#cfront").textContent = r.msg; return; }
+    if (r.fin) { card = null; $("#ctag").textContent = ""; $("#cfront").textContent = r.msg; $("#cback").hidden = true; $("#cshow").hidden = true; $("#cbtns").hidden = true; $("#cardsb").hidden = true; return; }
+    card = r; $("#ctag").textContent = `${r.tema} · quedan ${r.quedan}`; $("#cfront").textContent = r.frente; $("#cback").textContent = r.reverso;
+    $("#cback").hidden = true; $("#cshow").hidden = false; $("#cbtns").hidden = true;
+  }
+  $("#cardsb").addEventListener("click", () => { $("#home").hidden = true; $("#cards").hidden = false; post("/tarjetas").then(showCard); });
+  $("#cshow").addEventListener("click", () => { $("#cback").hidden = false; $("#cshow").hidden = true; $("#cbtns").hidden = false; });
+  $("#cyes").addEventListener("click", () => card && post("/tarjeta", { id: card.id, sabia: true }).then(showCard));
+  $("#cno").addEventListener("click", () => card && post("/tarjeta", { id: card.id, sabia: false }).then(showCard));
+  $("#cexit").addEventListener("click", () => { $("#cards").hidden = true; $("#home").hidden = false; });
   $("#next").addEventListener("click", load);
   $("#askb").addEventListener("click", () => {
     const t = $("#ask").value.trim(); if (!t) return;

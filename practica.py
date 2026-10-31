@@ -113,6 +113,8 @@ def record(curso, est, tema, first_try, tries):
         else:
             s["puntos"] += 0.5 if tries <= 3 else 0.0
             t["racha"] = min(-1, t["racha"] - 1) if t["racha"] <= 0 else -1
+        if t["nivel"] >= 3 and t["racha"] >= 2:        # 11.2: dominado (ruta de dominio)
+            t["dom"] = True
         if t["racha"] >= 2 and t["nivel"] < 3:
             t["nivel"] += 1
             t["racha"] = 0

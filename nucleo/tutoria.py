@@ -42,6 +42,12 @@ def focus_for(curso, est):
             if bad:
                 q = ex["preguntas"][bad[0]]
                 add(ex.get("tema") or ex["titulo"], q.get("enunciado", ""))
+    try:                                               # 11.2: el tema abierto de su ruta de dominio
+        r = J.route_current(curso, est)
+        if r:
+            add(r)
+    except Exception:
+        pass
     prof = saber.profile(curso).get(est) if curso in saber.data["cursos"] else None
     if prof:
         w = saber.weakest(prof)
@@ -146,7 +152,11 @@ def practice_enter(code):
     k = secrets.token_urlsafe(12)
     ps["tokens"][k] = {"est": est, "chat": 0, "t": time.time()}
     s = practica.student(ps["curso"], est)
-    return {"ok": True, "k": k, "msg": msg, "nombre": est.split()[0], "ej": s["ej"],
+    try:
+        extra = {"ruta": J.route_status(ps["curso"], est), "tarjetas": len(J.dominio.due(ps["curso"], est))}     # 11.2
+    except Exception:
+        extra = {}
+    return {"ok": True, "k": k, "msg": msg, "nombre": est.split()[0], "ej": s["ej"], **extra,
             "temas": [f["tema"] for f in focus_for(ps["curso"], est)]}
 
 

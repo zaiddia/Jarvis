@@ -157,6 +157,17 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Ruta de dominio y tarjetas de memoria con repaso espaciado (v11.2)
+
+- **Ruta de dominio:** los temas del periodo, en el orden de tu planeación anual (o de la malla del periodo), son la
+  ruta de cada estudiante. En la práctica del celular ve su ruta (✔ dominado, ▶ el que está trabajando, 🔒 lo que
+  sigue) y **no avanza hasta dominar** cada tema: dominarlo es llegar al nivel avanzado y acertar dos seguidos a la
+  primera. Lo que falló en evaluaciones sigue apareciendo como repaso. «**¿Cómo va la ruta de 7A?**» te dice cuántos
+  dominan cada tema y abre el mapa de la ruta (estudiantes × temas).
+- **Tarjetas de memoria:** «**haz tarjetas de fracciones para 7A**» o «**haz las tarjetas de la ruta de 7A**». En la
+  práctica aparece «Repasar tarjetas»: si la sabía, la tarjeta vuelve en 1, 3, 7, 14 y 30 días; si no, mañana (repaso
+  espaciado). «**¿Cómo van las tarjetas de 7A?**» y «**exporta las tarjetas de 7A a Anki**» (o a Quizlet).
+
 ## Entregas de programación revisadas por la IA y el reto matemático de la semana (v11.1)
 
 **Entregas de programación (Tecnología e Informática).** «**Recibe los programas de 8A, la tarea es: un programa que

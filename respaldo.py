@@ -39,6 +39,7 @@ FILES = {
     "planeacion_anual.json": ("planeacion", "Planeación anual"),
     "entregas.json": ("entregas", "Entregas de programación"),
     "retos.json": ("retos", "Retos de la semana y ranking"),
+    "tarjetas.json": ("tarjetas", "Tarjetas de memoria y su repaso"),
     "compromisos.json": ("compromisos", "Compromisos y correos por responder"),
     "lecciones.json": ("lecciones", "Lecciones que le enseñaste a Jarvis"),
     "paginas_vigiladas.json": ("paginas", "Páginas web vigiladas"),

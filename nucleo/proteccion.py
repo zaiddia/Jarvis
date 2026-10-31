@@ -10,6 +10,7 @@ import aula
 import classroom
 import datos
 import diarioclase
+import dominio
 import gservicios
 import informes
 import examenes
@@ -23,7 +24,7 @@ from nucleo import J
 
 STUDENT_FILES = {"aula.json": aula, "notas_estudiantes.json": seguimiento, "observador.json": informes,
                  "registro_clase.json": diarioclase, "periodos.json": periodos, "examenes.json": examenes, "saber.json": saber, "practica.json": practica,
-                 "entregas.json": entregas, "retos.json": retos}
+                 "entregas.json": entregas, "retos.json": retos, "tarjetas.json": dominio}
 
 
 # ============================================================================ DATOS DE ESTUDIANTES CIFRADOS

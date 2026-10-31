@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "11.1"
+VERSION = "11.2"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1491,6 +1491,8 @@ def process_command(text):
         return
     if zeti_open_voice(text, t):                       # 10.1: «abre Zeti»
         return
+    if mastery_voice(text, t):                         # 11.2: «¿cómo va la ruta de 7A?», «haz tarjetas de fracciones para 7A», «exporta las tarjetas a Anki»
+        return
     if code_voice(text, t):                            # 11.1: «recibe los programas de 8A, la tarea es: …», «anota las entregas»
         return
     if challenge_voice(text, t):                       # 11.1: «lanza el reto de la semana para 7A», «cierra el reto», «muestra el ranking»
@@ -2046,6 +2048,10 @@ from nucleo.hudplus import *  # noqa: F401,F403,E402
 # → nucleo/tecnoreto.py (lógica en entregas.py y retos.py; páginas: templates/entrega.html y templates/reto.html)
 from nucleo.tecnoreto import *  # noqa: F401,F403,E402
 
+# ── 11.2: ruta de dominio y tarjetas de memoria con repaso espaciado
+# → nucleo/maestria.py (lógica en dominio.py)
+from nucleo.maestria import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2192,6 +2198,7 @@ def main():
         practice_start()                  # 10.7: tutor personal
         planning_start()                  # 10.8: planeación anual
         tecno_start()                     # 11.1: entregas y retos
+        mastery_start()                   # 11.2: ruta de dominio y tarjetas
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()
