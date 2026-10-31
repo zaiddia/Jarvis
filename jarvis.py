@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "9.9"
+VERSION = "10.0"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1463,6 +1463,10 @@ def process_command(text):
         return
     if inbox_voice(text, t):                           # 9.8: «redacta las respuestas de mis correos», «limpia mi bandeja»
         return
+    if meeting_voice(text, t):                         # 10.0: «prepara la agenda de la reunión de área», «empieza el acta»
+        return
+    if kit_voice(text, t):                             # 10.0: «exporta mi kit para colegas»
+        return
     if persona_voice(text, t):                         # 9.9: «ponte relajado», «personalidad automática»
         return
     if mood_voice(text, t):                            # 9.9: «¿cómo viene mi día?»
@@ -1960,6 +1964,10 @@ from nucleo.semanal import *  # noqa: F401,F403,E402
 # → nucleo/animado.py (lógica en animo.py y retro.py)
 from nucleo.animado import *  # noqa: F401,F403,E402
 
+# ── 10.0: kit para colegas y reuniones de área (agenda y acta)
+# → nucleo/colegas.py (lógica en kit.py y reunion.py)
+from nucleo.colegas import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2098,6 +2106,7 @@ def main():
         students_plus_start()             # 9.7: alertas tempranas y celebraciones
         routines98_start()                # 9.8: semana lista, cierre de periodo y bandeja limpia
         mood_start()                      # 9.9: personalidad y color del día
+        colleagues_start()                # 10.0: retoma un acta abierta
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

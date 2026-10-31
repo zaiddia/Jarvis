@@ -929,6 +929,23 @@
     (x) => socket.emit("pages", { delete: x.id }, renderPages), "No hay páginas vigiladas.");
   socket.on("connect", () => { socket.emit("lessons", {}, renderLessons); socket.emit("pages", {}, renderPages); });
 
+  // 10.0: kit para colegas
+  let kitText = "";
+  const kitSay = (r, okCls) => { const st = $("#kit-status"); st.className = "status" + (r && r.ok ? (okCls ? " ok" : "") : " err"); st.textContent = r ? (r.ok ? r.summary : "No se pudo: " + r.error) : ""; };
+  $("#btn-kit-export").addEventListener("click", () => socket.emit("kit", { export: true }, (r) => {
+    kitSay(r, true);
+    if (r && r.ok) $("#kit-status").textContent += " Guardado en: " + r.path;
+  }));
+  $("#btn-kit-import").addEventListener("click", () => $("#kit-file").click());
+  $("#kit-file").addEventListener("change", (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { kitText = String(rd.result || ""); socket.emit("kit", { preview: kitText }, (r) => { kitSay(r, false); $("#btn-kit-ok").hidden = !(r && r.ok); }); };
+    rd.readAsText(f); e.target.value = "";
+  });
+  $("#btn-kit-ok").addEventListener("click", () => socket.emit("kit", { import: kitText }, (r) => { kitSay(r, true); $("#btn-kit-ok").hidden = true; kitText = ""; socket.emit("lessons", {}, renderLessons); }));
+  socket.on("connect", () => socket.emit("kit", {}, (r) => { if (r && r.ok) $("#kit-status").textContent = "Tu kit hoy: " + r.summary.replace(/^Kit[^:]*: /, ""); }));
+
   // 8.9: datos de estudiantes cifrados
   function renderStudents(r) {
     if (!r) return;

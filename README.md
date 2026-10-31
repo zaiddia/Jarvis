@@ -157,6 +157,23 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Kit para colegas y reuniones de área (v10.0)
+
+**Kit para colegas.** «**Exporta mi kit para colegas**» (o Ajustes › Agente › Kit para colegas): un archivo con lo que
+le enseñaste a Jarvis —tus rutinas, habilidades, lecciones, planes de clase, las actividades que mejor te funcionaron
+y las preguntas de tu banco— para compartirlo con otro docente por correo o WhatsApp. **Nunca lleva datos de tus
+estudiantes**, ajustes ni claves (si un archivo los trae, Jarvis no lo importa). Tu colega lo importa en el mismo
+lugar: primero ve qué trae y luego se suma a lo suyo, sin repetir lo que ya tenía; las rutinas ajenas nunca se lanzan
+solas.
+
+**Reuniones de área.** «**Prepara la agenda de la reunión de área sobre notas del periodo y salida pedagógica**»: el
+orden del día (con tiempos y con tus datos útiles, como cuánto falta para cerrar el periodo o cuántos estudiantes
+están en riesgo), en Word. En la reunión, «**empieza el acta**» y le vas dictando: «**asistentes:** Ana, Luis y
+Marta», «**anota en el acta que** se revisaron los resultados», «**acuerdo:** la salida será el 20», «**tarea para
+Luis:** la circular», «**yo me encargo de** consolidar el informe para el lunes». Jarvis no graba la reunión: solo
+anota lo que le dices. Con «**termina el acta**» redacta el acta formal en Word (asistentes, orden del día,
+desarrollo, acuerdos y tabla de compromisos con firmas) y tus compromisos quedan en «¿qué compromisos tengo?».
+
 ## Personalidad según el momento, color del día y retrospectiva del año (v9.9)
 
 **Personalidad según el momento.** Jarvis ajusta su forma de hablar con tu horario: **en clase** responde breve y

@@ -1108,6 +1108,16 @@
       <label class="switch"><input type="checkbox" id="f-sty-on" data-key="style_learn"><span></span></label>
     </div>
 
+    <div class="group">Kit para colegas</div>
+    <p class="pane-intro">Comparte con otro docente lo que le enseñaste a Jarvis: tus rutinas, habilidades, lecciones, planes de clase, las actividades que funcionaron y las preguntas de tu banco. <b>Nunca lleva datos de tus estudiantes</b>, ajustes ni claves. Al importar un kit, primero ves qué trae y luego se suma a lo tuyo (las rutinas ajenas nunca se lanzan solas). Por voz: «exporta mi kit para colegas».</p>
+    <p class="status" id="kit-status"></p>
+    <div class="row-btns">
+      <button class="btn btn-ghost" type="button" id="btn-kit-export">Exportar mi kit</button>
+      <button class="btn btn-ghost" type="button" id="btn-kit-import">Importar un kit…</button>
+      <button class="btn" type="button" id="btn-kit-ok" hidden>Sumar este kit</button>
+      <input type="file" id="kit-file" accept=".json,application/json" hidden>
+    </div>
+
     <div class="group">Lecciones que le enseñaste</div>
     <p class="pane-intro">«De ahora en adelante los quices con 5 preguntas», «cuando digo 7A me refiero a matemáticas de séptimo A», «nunca uses la palabra alumnos»: se guardan al momento. Cuando corriges una respuesta («no, me refería a…»), Jarvis te propone una lección y solo la guarda si la apruebas. Las usa en cada respuesta y al preparar material.</p>
     <ul class="routines" id="ls-list"></ul>
