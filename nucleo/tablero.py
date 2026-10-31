@@ -56,7 +56,7 @@ def file_card(path):
     idx = list(J.generated_files.order).index(path) if path in getattr(J.generated_files, "order", ()) else -1
     return {"path": path, "name": os.path.basename(path), "folder": os.path.basename(os.path.dirname(path)),
             "kind": "Imagen" if ext in _IMG else _KINDS.get(ext, ext.lstrip(".").upper() or "Archivo"),
-            "image": ext in _IMG, "size": size, "id": idx}
+            "image": ext in _IMG, "size": size, "id": idx, "estudio": J.studio_info(path) if ext in _IMG else None}
 
 
 def _allowed(path):

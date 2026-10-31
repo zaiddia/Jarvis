@@ -157,6 +157,15 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Estudio de imágenes (v11.7)
+
+- **Crea imágenes a partir de lo que pides**: «hazme una ilustración del ciclo del agua para quinto», «crea tres opciones de un afiche del día del idioma en acuarela», «dibújame un triángulo rectángulo para colorear», «genera una imagen horizontal de la célula animal para proyectar», «hazme un logo para el club de matemáticas».
+- **Estilos**: ilustración (por defecto), caricatura, realista, acuarela, plano, 3D, para colorear (líneas negras, lista para imprimir), pixel art, boceto, diagrama y cómic. **Formato**: horizontal para proyectar o diapositivas, vertical para afiches y portadas, cuadrada para logos. **Varias opciones**: hasta 4 («tres opciones de…»).
+- **Sigue trabajándola**: «otra versión», «cámbiale el fondo a azul», «quítale el texto», «conviértela en caricatura», «hazla horizontal», «imprímela» (en una hoja tamaño carta en PDF). La imagen aparece grande en el chat con esos botones y una casilla para pedir cambios.
+- **Edita tus fotos**: sube una imagen al chat y pulsa «Editar con IA» («ponle un fondo de tablero verde»).
+- La crean **Gemini o ChatGPT** con tu clave (Ajustes › Agente › Imágenes para la clase: «Automático», «Gemini» o «ChatGPT»). Con ChatGPT usa el modelo de imágenes más nuevo de tu cuenta (por ejemplo gpt-image-2). Crear imágenes puede tener costo según tu cuenta.
+- Se guardan en Documentos › Jarvis › Imágenes.
+
 ## Leer los archivos que subes y convertirlos (v11.6)
 
 - **Sube cualquier archivo al chat**: con el botón del clip, arrastrándolo al HUD o pegando una captura (Ctrl+V). Sirven imágenes, PDF, Word (.docx), Excel (.xlsx), CSV, PowerPoint (.pptx) y texto, hasta 18 MB, y varios a la vez. Cada uno aparece en el chat con su miniatura, lo que es y botones con lo que puedes hacer.

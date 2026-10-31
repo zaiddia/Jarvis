@@ -15,7 +15,7 @@ import conversiones
 from nucleo import J
 
 ACTIONS = {"describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo",
-           "preguntas": "Hacer un quiz"}
+           "preguntas": "Hacer un quiz", "editar": "Editar con IA"}
 
 
 _batch = {"ids": []}             # lo último que subiste junto (una tarjeta): a eso se refieren «únelos», «¿qué dicen?»
@@ -62,7 +62,7 @@ def card_of(its):
         acts = ["describir"] if k == "imagen" else ["resumir"]
         acts += ["texto"] if k in ("imagen", "pdf") else []
         acts += ["tabla"] if k in ("imagen", "pdf", "word") else []
-        acts += ["revisar"] if k == "imagen" else []
+        acts += ["revisar", "editar"] if k == "imagen" else []
         acts += ["preguntas"] if k in ("pdf", "word", "powerpoint", "texto") else []
     convs = conversiones.options_for(its)
     return {"ids": [i["id"] for i in its], "nombres": [i["nombre"] for i in its], "desc": "; ".join(adjuntos.describe(i) for i in its),

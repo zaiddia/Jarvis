@@ -1216,9 +1216,17 @@
     </div>
 
     <div class="group">Imágenes para la clase</div>
-    <p class="pane-intro">«Jarvis, hazme una ilustración del ciclo del agua», «genera una imagen de una célula animal para sexto». Usa el modelo de imágenes de Gemini con tu clave y las guarda en <code>Documentos\Jarvis\Imágenes</code>. En los proyectos también puedes pedir imágenes.</p>
-    <div class="field stack"><div class="ft"><label for="f-img-model">Modelo de imágenes</label><p>Déjalo vacío para que Jarvis use el que tenga tu cuenta.</p></div>
+    <p class="pane-intro">«Jarvis, hazme una ilustración del ciclo del agua», «tres opciones de un afiche del día del idioma en acuarela», «dibújame un triángulo rectángulo para colorear», «una imagen horizontal de la célula para proyectar». Después: «otra versión», «cámbiale el fondo a azul», «hazla vertical», «imprímela». También puedes editar una foto que subas al chat. Se guardan en <code>Documentos\Jarvis\Imágenes</code>.</p>
+    <div class="field stack"><div class="ft"><label for="f-img-provider">Quién crea las imágenes</label><p><b>Automático</b>: Gemini si tienes su clave (y tu cuenta tiene modelo de imágenes); si no, ChatGPT. Las claves se ponen en la sección IA. Crear imágenes puede tener costo según tu cuenta.</p></div>
+      <select class="inp" id="f-img-provider" data-key="image_provider" style="max-width:340px">
+        <option value="auto">Automático</option>
+        <option value="gemini">Gemini (Google)</option>
+        <option value="chatgpt">ChatGPT (OpenAI)</option>
+      </select></div>
+    <div class="field stack"><div class="ft"><label for="f-img-model">Modelo de imágenes de Gemini</label><p>Déjalo vacío para que Jarvis use el que tenga tu cuenta.</p></div>
       <input class="inp mono narrow" type="text" id="f-img-model" data-key="image_model" placeholder="automático"></div>
+    <div class="field stack"><div class="ft"><label for="f-img-model-oa">Modelo de imágenes de ChatGPT</label><p>Vacío: el más nuevo de tu cuenta (por ejemplo gpt-image-2).</p></div>
+      <input class="inp mono narrow" type="text" id="f-img-model-oa" data-key="image_model_openai" placeholder="automático"></div>
 
     <div class="group">Varios equipos</div>
     <p class="pane-intro">Pon una carpeta que se sincronice sola (OneDrive, Google Drive para escritorio o Dropbox) en cada computador. Jarvis guarda ahí cada 3 minutos tu perfil, rutinas, tareas, notas, aula, banco de preguntas, notas de estudiantes y habilidades, y trae lo más nuevo de los otros equipos. Las claves y el historial no se copian.</p>

@@ -200,14 +200,14 @@ def extra_checks():
         add(G, "ok" if okf and not J.sync_state["error"] else "fallo",
             "Sincronización entre equipos activa." if okf and not J.sync_state["error"] else
             (J.sync_state["error"] or f"No encuentro la carpeta {s['sync_folder']}."), "" if okf else "ajustes:agente")
-    if J._gemini_for_stt():
-        m = ""
+    if J._gemini_for_stt() or J._ai_cfg({"ai_provider": "chatgpt"}).get("key"):
+        prov, msg = None, ""
         try:
-            m = J.image_model()
+            prov, msg = J.image_backend()
         except Exception:
             pass
-        add(G, "ok" if m else "info", f"Imágenes para clase con {m}." if m else
-            "Tu clave de Gemini no tiene modelo de imágenes: «hazme una ilustración…» no funcionará.")
+        add(G, "ok" if prov else "info", f"Imágenes para clase con {'Gemini (' + J.image_model() + ')' if prov == 'gemini' else 'ChatGPT'}." if prov else
+            f"Imágenes para clase: {msg}.")
     try:
         for sv in J.mcp_hub.status():
             if not sv.get("ok"):

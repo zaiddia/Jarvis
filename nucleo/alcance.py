@@ -212,49 +212,47 @@ def image_model():
     return _img_state["model"]
 
 
-def make_image(text, folder=None):
-    """Genera la imagen y devuelve su ruta. Lanza RuntimeError con un mensaje claro."""
-    cfg = J._gemini_for_stt()
-    if not cfg:
-        raise RuntimeError("para crear imágenes necesito tu clave de Gemini (Ajustes › IA)")
-    model = J.image_model()
-    if not model:
-        raise RuntimeError("tu cuenta de Gemini no tiene un modelo de imágenes disponible")
-    try:
-        data = J._http("POST", f"{J.GEMINI_BASE}/models/{model}:generateContent", J._gemini_headers(cfg),
-                       imagenes.body(text), timeout=120)
-        raw, ext = imagenes.extract(data)
-    except J.AIError as e:
-        raise RuntimeError(e.why)
-    except ValueError as e:
-        raise RuntimeError(str(e))
-    return imagenes.save(raw, ext, folder or os.path.join(J.settings["output_dir"], "Imágenes"), text[:60])
+def make_image(text, folder=None, estilo=None, formato=None):
+    """Genera la imagen y devuelve su ruta. Lanza RuntimeError con un mensaje claro. (11.7: Gemini o ChatGPT, estilo y formato.)"""
+    est = estilo if estilo is not None else imagenes.detect_style(text)
+    fmt = formato if formato is not None else imagenes.detect_aspect(text)
+    return J.studio_generate(text, est, fmt, 1, folder)[0]
 
 
 def image_voice(text, t):
     if not imagenes.is_image(t):
         return False
-    what = imagenes.subject(text)
+    what = imagenes.clean_subject(text)
+    estilo, formato, n = imagenes.detect_style(text), imagenes.detect_aspect(text), imagenes.detect_count(text)
+    kw = {k: v for k, v in (("estilo", estilo), ("formato", formato)) if v}
     remote = getattr(J._tl, "remote", False)              # se pierde al pasar a otro hilo
     if getattr(J._tl, "capture", None) is None:
-        J.reply(f"Creo la imagen de {what}…", "IMAGEN")
+        extra = ", ".join(x for x in (imagenes.STYLE_NAMES.get(estilo, ""), imagenes.ASPECTS.get(formato, "")) if x)
+        J.reply(f"Creo {str(n) + ' opciones' if n > 1 else 'la imagen'} de {what}" + (f" ({extra})" if extra else "") + "…", "IMAGEN")
 
     def work():
-        try:
-            path = J.make_image(what)
-        except RuntimeError as e:
-            J.notify(f"No pude crear la imagen: {e}.", "IMAGEN")
-            return
-        J.generated_files.add(path)
-        opened = J._open_doc(path)
-        J.notify("Listo, la imagen está en Documentos, carpeta Jarvis, Imágenes" + (" y la abrí." if opened else "."), "IMAGEN")
-        if remote and J.telegram_ready():
+        paths = []
+        for _ in range(n):
             try:
-                with open(path, "rb") as f:
-                    J._tg_call("sendPhoto", {"chat_id": J.settings["telegram_chat"].strip()},
-                               files={"photo": (os.path.basename(path), f.read(), "image/png")}, timeout=60)
-            except Exception:
-                pass
+                paths.append(J.make_image(what, **kw))
+            except RuntimeError as e:
+                if not paths:
+                    J.notify(f"No pude crear la imagen: {e}.", "IMAGEN")
+                    return
+                break
+        for p in paths:
+            J.generated_files.add(p)
+        opened = J._open_doc(paths[0]) if len(paths) == 1 else False
+        J.notify(("Listas " + str(len(paths)) + " opciones" if len(paths) > 1 else "Listo, la imagen") + " en Documentos, carpeta Jarvis, Imágenes" +
+                 (" y la abrí" if opened else "") + ". Si quieres: «otra versión», «cámbiale el fondo…», «hazla horizontal» o «imprímela».", "IMAGEN")
+        if remote and J.telegram_ready():
+            for path in paths:
+                try:
+                    with open(path, "rb") as f:
+                        J._tg_call("sendPhoto", {"chat_id": J.settings["telegram_chat"].strip()},
+                                   files={"photo": (os.path.basename(path), f.read(), "image/png")}, timeout=60)
+                except Exception:
+                    pass
     if getattr(J._tl, "capture", None) is not None:
         work()
     else:

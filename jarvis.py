@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "11.6"
+VERSION = "11.7"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -719,6 +719,8 @@ DEFAULT_SETTINGS = {
     "whatsapp_apikey": "",
     "whatsapp_alerts": True,
     "image_model": "",             # 7.9: modelo de imágenes de Gemini (vacío = el que tenga tu cuenta)
+    "image_provider": "auto",      # 11.7: "auto" (Gemini o ChatGPT, el que tenga clave), "gemini" o "chatgpt"
+    "image_model_openai": "",      # 11.7: modelo de imágenes de ChatGPT (vacío = el más nuevo de tu cuenta, p. ej. gpt-image-2)
     "sync_folder": "",             # 7.9: carpeta compartida (OneDrive…) para usar Jarvis en varios equipos
     "encrypt_secrets": True,       # 8.0: claves cifradas con la protección de Windows (no en modo USB)
     "checked_version": "",         # 8.0: versión con la que ya se hizo la revisión tras actualizar
@@ -872,6 +874,7 @@ def _validate(key, value):
                "stt_refine": ("auto", "gemini", "whisper", "off"), "calendar_create": ("google", "ics"),
                "listen_mode": ("auto", "vivo", "clasico"),
                "live_provider": ("gemini", "openai", "deepgram"),
+               "image_provider": ("auto", "gemini", "chatgpt"),
                "openai_live_voice": tuple(v for v, _ in envivo.OPENAI_VOICES),
                "deepgram_voice": tuple(v for v, _ in envivo.DEEPGRAM_VOICES),
                "whisper_model": {k: 1 for k, _ in WHISPER_SIZES}}
@@ -1468,6 +1471,8 @@ def process_command(text):
     if ticket_voice(text, t):                          # 9.6: «lanza el ticket de salida», «semáforo de comprensión»
         return
     if activities_voice(text, t):                      # 9.6: «¿qué actividades funcionaron en fracciones?»
+        return
+    if studio_voice(text, t):                          # 11.7: «otra versión», «cámbiale el fondo a azul», «hazla horizontal», «imprímela»
         return
     if attachment_voice(text, t):                      # 11.6: «¿qué dice este PDF?», «pásalo a Word», «únelos en un PDF» (lo que subiste al chat)
         return
@@ -2079,6 +2084,10 @@ from nucleo.fuentes import *  # noqa: F401,F403,E402
 # ── 11.6: archivos e imágenes que subes al chat: leerlos, preguntarles y convertirlos
 # → nucleo/adjuntar.py (lógica en adjuntos.py y conversiones.py)
 from nucleo.adjuntar import *  # noqa: F401,F403,E402
+
+# ── 11.7: estudio de imágenes (estilos, formatos, varias opciones, editar e imprimir)
+# → nucleo/estudio.py (lógica en imagenes.py)
+from nucleo.estudio import *  # noqa: F401,F403,E402
 
 
 # =============================================================================

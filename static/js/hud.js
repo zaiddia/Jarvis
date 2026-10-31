@@ -780,6 +780,12 @@
     const stat = mk("span", "astat");
     const act = (a, label, extra) => {
       if (a === "revisar") { reviewImage(urls[c.ids[0]]); return; }
+      if (a === "editar") {                                                      // 11.7: editar la foto con la IA
+        if (!extra) { q.dataset.mode = "editar"; qi.placeholder = "¿Qué le cambio? (ej.: ponle un fondo de tablero verde)"; qb.textContent = "Editar"; qi.focus(); return; }
+        stat.textContent = "Editando la imagen…";
+        socket.emit("studio_action", { attach: c.ids[0], action: "editar", texto: extra }, (r) => { if (r && !r.ok) stat.textContent = r.error || "No se pudo."; });
+        return;
+      }
       stat.textContent = `${label}…`;
       socket.emit("attach_action", { ids: c.ids, action: a, pregunta: extra || "" }, (r) => { if (r && !r.ok) stat.textContent = r.error || "No se pudo."; });
     };
@@ -792,7 +798,7 @@
     });
     const q = mk("form", "aq"), qi = mk("input", "rv-in"), qb = mk("button", "mini ok", "Preguntar");
     qi.placeholder = c.nombres.length > 1 ? "Pregúntale algo a estos archivos…" : "Pregúntale algo a este archivo…"; qb.type = "submit";
-    q.addEventListener("submit", (e) => { e.preventDefault(); const v = qi.value.trim(); if (!v) return; act("pregunta", "Leyendo", v); qi.value = ""; });
+    q.addEventListener("submit", (e) => { e.preventDefault(); const v = qi.value.trim(); if (!v) return; act(q.dataset.mode === "editar" ? "editar" : "pregunta", "Leyendo", v); qi.value = ""; });
     q.append(qi, qb);
     info.append(btns, q, stat); b.append(info);
     m.append(mk("div", "msg-meta", "TÚ · ARCHIVO" + (c.nombres.length > 1 ? "S" : "")), b);
@@ -874,7 +880,8 @@
     const m = mk("div", "msg jarvis file");
     const meta = mk("div", "msg-meta", "JARVIS · ARCHIVO");
     const b = mk("div", "msg-body fcard");
-    if (c.image && c.id >= 0) { const im = mk("img", "fthumb"); im.src = `/archivo/${c.id}?t=${Date.now()}`; im.alt = c.name; b.append(im); }
+    let im = null;
+    if (c.image && c.id >= 0) { im = mk("img", "fthumb"); im.src = `/archivo/${c.id}?t=${Date.now()}`; im.alt = c.name; b.append(im); }
     const info = mk("div", "finfo");
     info.append(mk("b", "", c.name), mk("span", "dmeta", `${c.kind} · ${c.folder}`));
     const btns = mk("div", "dbtns");
@@ -883,6 +890,21 @@
     o.addEventListener("click", () => socket.emit("file_open", { path: c.path }));
     f.addEventListener("click", () => socket.emit("file_open", { path: c.path, folder: true }));
     btns.append(o, f); info.append(btns); b.append(info);
+    if (c.estudio) {                                                             // 11.7: imagen creada por Jarvis → seguir trabajándola
+      b.classList.add("studio");
+      info.firstChild.textContent = c.estudio.tema || c.name;
+      info.children[1].textContent = ["Imagen", c.estudio.estilo, c.estudio.formato].filter(Boolean).join(" · ");
+      const sa = (action, texto) => socket.emit("studio_action", { path: c.path, action, texto: texto || "" }, (r) => { if (r && !r.ok) setPreview(r.error || "No se pudo.", "dim"); });
+      const mkb = (t, fn) => { const x = mk("button", "mini", t); x.type = "button"; x.addEventListener("click", fn); btns.append(x); };
+      mkb("Otra versión", () => sa("otra"));
+      mkb(c.estudio.formato === "horizontal" ? "Vertical" : "Horizontal", () => sa("formato", c.estudio.formato === "horizontal" ? "vertical" : "horizontal"));
+      mkb("Imprimir", () => sa("carta"));
+      const ef = mk("form", "aq"), ei = mk("input", "rv-in"), eb = mk("button", "mini ok", "Cambiar");
+      ei.placeholder = "Cámbiale algo… (ej.: fondo azul, quítale el texto)"; eb.type = "submit";
+      ef.addEventListener("submit", (e) => { e.preventDefault(); const v = ei.value.trim(); if (!v) return; sa("editar", v); ei.value = ""; setPreview("Edito la imagen…", "dim"); });
+      ef.append(ei, eb); info.append(ef);
+      if (im) im.addEventListener("click", o.click.bind(o));
+    }
     m.append(meta, b);
     const stick = nearBottom(el.viewChat);
     el.chat.appendChild(m);

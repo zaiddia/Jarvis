@@ -508,3 +508,11 @@ body.inclass .dcard:not(.live):hover { opacity: 1; }
 .acard .aq { display: flex; gap: 4px; margin-top: 4px; }
 .acard .aq .rv-in { flex: 1; min-width: 0; }
 .acard .astat { font-size: 10.5px; opacity: .75; }
+
+/* 11.7: imágenes creadas por Jarvis */
+.fcard.studio { align-items: flex-start; }
+.fcard.studio .fthumb { width: 170px; height: auto; max-height: 220px; object-fit: contain; background: rgba(0, 0, 0, .3); cursor: pointer; }
+.fcard.studio .finfo { flex: 1; }
+.fcard.studio .dbtns { display: flex; flex-wrap: wrap; gap: 4px; }
+.fcard.studio .aq { display: flex; gap: 4px; margin-top: 4px; }
+.fcard.studio .aq .rv-in { flex: 1; min-width: 0; }
