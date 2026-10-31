@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ticket de la clase</title>
+<style>
+  :root { --a: #2ee6ff; --a2: #ffb547; --ok: #3dff9a; --bg: #03060c; --text: #e6f6ff; --muted: #7d95ab; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); padding: 18px 16px 40px; line-height: 1.45; }
+  h1 { font-size: 20px; color: var(--a); margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+  label.nm { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  input[type=text] { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; border: 1px solid #2a4458; background: #071320; color: var(--text); margin-bottom: 18px; }
+  .q { margin-bottom: 20px; }
+  .q p { font-weight: 600; margin-bottom: 8px; }
+  .op { display: block; padding: 12px; margin-bottom: 8px; border: 1px solid #2a4458; border-radius: 10px; background: #071320; cursor: pointer; font-size: 15px; }
+  .op input { margin-right: 8px; accent-color: var(--a); }
+  .op.sel { border-color: var(--a); background: #0b2433; }
+  button { width: 100%; padding: 14px; font-size: 17px; font-weight: 700; border: none; border-radius: 12px; background: var(--a); color: #03060c; }
+  button:disabled { opacity: .5; }
+  .msg { margin-top: 14px; text-align: center; font-size: 15px; }
+  .msg.ok { color: var(--ok); font-size: 18px; }
+  .msg.err { color: var(--a2); }
+</style>
+</head>
+<body>
+<h1 id="t">Ticket de la clase</h1>
+<p class="sub" id="s">Responde con sinceridad: sirve para que tu profe sepa cómo te fue.</p>
+<form id="f" autocomplete="off">
+  <label class="nm" for="nombre">Tu nombre y apellido</label>
+  <input type="text" id="nombre" maxlength="40" required>
+  <div id="qs"></div>
+  <button type="submit" id="b">Enviar</button>
+  <p class="msg" id="m"></p>
+</form>
+<script>
+(() => {
+  const code = {{ code|tojson }};
+  const $ = (s) => document.querySelector(s);
+  let n = 0;
+  fetch(`/t/${code}/datos`).then((r) => r.ok ? r.json() : Promise.reject()).then((d) => {
+    if (d.tema) $("#t").textContent = (d.tipo === "semaforo" ? "¿Cómo te fue? · " : "Ticket de salida · ") + d.tema;
+    n = d.preguntas.length;
+    d.preguntas.forEach((q, i) => {
+      const box = document.createElement("div"); box.className = "q";
+      const p = document.createElement("p"); p.textContent = (n > 1 ? `${i + 1}. ` : "") + q.enunciado; box.append(p);
+      q.opciones.forEach((o, k) => {
+        const l = document.createElement("label"); l.className = "op";
+        const r = document.createElement("input"); r.type = "radio"; r.name = "q" + i; r.value = k;
+        r.addEventListener("change", () => { box.querySelectorAll(".op").forEach((x) => x.classList.remove("sel")); l.classList.add("sel"); });
+        l.append(r, document.createTextNode(o)); box.append(l);
+      });
+      $("#qs").append(box);
+    });
+  }).catch(() => { $("#f").innerHTML = '<p class="msg err">Este ticket ya se cerró.</p>'; });
+  $("#f").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const res = [];
+    for (let i = 0; i < n; i++) { const c = document.querySelector(`input[name=q${i}]:checked`); if (!c) { $("#m").className = "msg err"; $("#m").textContent = "Responde todas las preguntas."; return; } res.push(Number(c.value)); }
+    $("#b").disabled = true;
+    fetch(`/t/${code}/enviar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre: $("#nombre").value, respuestas: res }) })
+      .then((r) => r.json()).then((d) => {
+        $("#m").className = "msg " + (d.ok ? "ok" : "err"); $("#m").textContent = d.msg;
+        if (d.ok) { $("#qs").hidden = true; $("#b").hidden = true; $("#nombre").disabled = true; } else $("#b").disabled = false;
+      }).catch(() => { $("#b").disabled = false; $("#m").className = "msg err"; $("#m").textContent = "Sin conexión. Intenta otra vez."; });
+  });
+})();
+</script>
+</body>
+</html>

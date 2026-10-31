@@ -144,11 +144,15 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
     def work():
         try:
             prompt = aula.build_prompt(kind, request, count or aula.detect_count(request), grade, topic) + J.lessons_ctx()
+            if kind == "plan":                                 # 9.6: lo que ya funcionó en este tema
+                prompt += J.clasevivo.worked_ctx(topic or request)
             m, last_err = None, None
             for _ in range(2):                         # un reintento si la IA devuelve algo mal formado
                 try:
                     raw = J.ai_chat([{"role": "user", "content": prompt}], json_mode=True, max_tokens=8000)
                     m = aula.validate(kind, J._extract_json(raw), request)
+                    if kind == "plan":                         # 9.6: para la clase en vivo
+                        J.clasevivo.remember_plan(m, aula.data.get("activo") or "")
                     if kind == "malla":                        # 8.8: para «¿qué temas me faltan del periodo?»
                         J.diarioclase.set_malla(aula.data.get("activo") or m.get("grado") or "curso", m)
                     if kind in ("quiz", "saber"):

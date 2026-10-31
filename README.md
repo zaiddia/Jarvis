@@ -157,6 +157,29 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Clase en vivo, ticket de salida con el celular y actividades que funcionaron (v9.6)
+
+**Clase en vivo.** «**Empieza la clase de fracciones**» (o solo «empieza la clase», y Jarvis toma la materia de tu
+horario): usa tu plan de clase de ese tema (o lo prepara en un momento) y la conduce contigo en el proyector: la
+pregunta de enganche en grande, el momento actual con sus actividades y su cuenta regresiva, y los momentos que siguen.
+«**Siguiente momento**», «**dame 5 minutos más**», «**termina la clase**» (también con los botones del HUD). Un minuto
+antes de que acabe cada momento te avisa en la campana. Al terminar, anota el tema en el diario de clase y te propone
+el ticket de salida.
+
+**Ticket de salida con el celular de los estudiantes.** «**Lanza el ticket de salida**»: en el proyector aparece un
+código QR; cada estudiante lo escanea con su celular (en la misma wifi), escribe su nombre y responde 2 preguntas del
+tema (de tu banco o del último quiz). Ves cuántos van respondiendo y, con «**cierra el ticket**», el porcentaje de
+aciertos de cada pregunta (también en el proyector) y quién necesita refuerzo. La página de los estudiantes no
+muestra nada más de Jarvis, no necesita cuentas y deja de funcionar al cerrar el ticket. Necesita el «panel del
+celular» encendido (Ajustes › Integraciones).
+
+**Semáforo de comprensión.** «**Semáforo de comprensión**»: cada estudiante marca 🟢 lo entendí, 🟡 tengo dudas o 🔴 no lo
+entendí. Si hay muchos en rojo, Jarvis te sugiere repasar, y lo anota en el diario de clase.
+
+**Banco de actividades que aprende.** Tras una clase en vivo, el resultado del ticket o del semáforo queda asociado a la
+actividad de desarrollo. Cuando vuelves a preparar un plan de ese tema, Jarvis propone las actividades que mejor
+funcionaron. «**¿Qué actividades funcionaron en fracciones?**».
+
 ## Resumen de la mañana en audio, tu estilo al escribir y retroalimentación de textos (v9.5)
 
 **Resumen de la mañana como nota de voz.** Con Telegram conectado, el reporte de la mañana te llega también en audio,

@@ -35,6 +35,29 @@
   .idle-clock { white-space: nowrap; font-family: var(--hud); font-weight: 700; font-size: clamp(90px, 20vw, 320px); color: var(--a); text-shadow: 0 0 50px rgba(var(--a-rgb), .4); font-variant-numeric: tabular-nums; }
   footer { font-size: clamp(11px, 1.1vw, 16px); color: var(--muted); }
   footer b { color: var(--a); font-weight: 400; }
+  /* 9.6: clase en vivo y ticket */
+  .lc { width: 100%; max-width: 1500px; display: flex; flex-direction: column; gap: 2.4vh; text-align: left; }
+  .lc-pills { display: flex; gap: .8vw; flex-wrap: wrap; }
+  .lc-pills span { padding: .6vh 1vw; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: clamp(11px, 1.1vw, 18px); }
+  .lc-pills span.on { border-color: var(--a); color: var(--a); background: rgba(var(--a-rgb), .1); }
+  .lc-pills span.done { color: var(--ok); border-color: rgba(61, 255, 154, .4); }
+  .lc-row { display: flex; align-items: baseline; justify-content: space-between; gap: 2vw; }
+  .lc-name { font-family: var(--hud); font-weight: 700; font-size: clamp(28px, 4.4vw, 76px); color: var(--a); text-transform: uppercase; letter-spacing: .06em; }
+  .lc-time { font-family: var(--hud); font-weight: 700; font-size: clamp(40px, 7vw, 120px); color: var(--a2); font-variant-numeric: tabular-nums; }
+  .lc-time.over { color: var(--err); animation: blink 1s steps(2) infinite; }
+  .lc-act { font-size: clamp(16px, 2vw, 32px); line-height: 1.45; color: var(--text); white-space: pre-wrap; max-height: 40vh; overflow: hidden; }
+  .lc-hook { font-size: clamp(22px, 3.2vw, 56px); font-weight: 700; line-height: 1.25; padding: 2.4vh 2vw; border-left: 5px solid var(--a2);
+    background: rgba(var(--a2-rgb), .08); border-radius: 0 14px 14px 0; }
+  .tk { display: flex; gap: 4vw; align-items: center; justify-content: center; }
+  .tk img { width: min(42vh, 40vw); height: min(42vh, 40vw); background: #fff; padding: 12px; border-radius: 14px; image-rendering: pixelated; }
+  .tk-info { text-align: left; max-width: 46vw; }
+  .tk-n { font-family: var(--hud); font-weight: 700; font-size: clamp(50px, 8vw, 140px); color: var(--a); }
+  .tk-url { font-size: clamp(14px, 1.6vw, 26px); color: var(--muted); word-break: break-all; margin-top: 2vh; }
+  .res { width: 100%; max-width: 1300px; display: flex; flex-direction: column; gap: 2.6vh; text-align: left; }
+  .res-row { display: grid; grid-template-columns: minmax(0, 1fr) 8ch; gap: 1.6vw; align-items: center; font-size: clamp(16px, 2vw, 32px); }
+  .res-bar { grid-column: 1 / -1; height: 18px; border-radius: 9px; background: rgba(var(--a-rgb), .12); overflow: hidden; display: flex; }
+  .res-bar i { display: block; height: 100%; }
+  .res-pct { font-family: var(--hud); font-weight: 700; color: var(--a); text-align: right; }
   /* 9.4: modo tutor */
   .tv { width: 100%; max-width: 1400px; display: flex; flex-direction: column; gap: 3vh; text-align: left; }
   .tv-q { font-size: clamp(20px, 2.6vw, 44px); color: var(--a2); line-height: 1.3; }
@@ -82,6 +105,7 @@
   let st = { timers: [], last: null, imagen: -1, clase: "", hasta: "" };
   let live = { on: false }, liveEnd = 0, liveDone = 0;
   let tutor = { on: false, materia: "", msgs: [] };
+  let lclass = { on: false }, lclassEnd = 0, tk = { open: false }, tkRes = null, tkResAt = 0;
   let show = "idle", shownAt = 0, lastTick = Date.now();
   const p2 = (n) => String(n).padStart(2, "0");
   const hhmm = () => { const d = new Date(); return `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
@@ -96,6 +120,44 @@
     stage.innerHTML = "";
     const box = node("div", "stage-in");
     const t = st.timers[0];
+    if (!live.on && tk.open) {
+      const w = node("div", "tk");
+      const im = node("img"); im.src = `/ticket-qr.png?t=${Math.floor(Date.now() / 4096)}`; im.alt = "Código QR";
+      const info = node("div", "tk-info");
+      info.append(node("div", "kicker", tk.tipo === "semaforo" ? "¿Cómo te fue? Escanea y responde" : "Ticket de salida · escanea y responde"),
+                  node("div", "tk-n", String(tk.n || 0)), node("div", "label", "respuestas"), node("div", "tk-url", tk.url || ""));
+      w.append(im, info); box.append(w); stage.append(box); header(); return;
+    }
+    if (!live.on && tkRes && Date.now() - tkResAt < 60000) {
+      const r = node("div", "res");
+      r.append(node("div", "kicker", `Resultados · ${tkRes.n} respuestas`));
+      if (tkRes.tipo === "semaforo" && tkRes.semaforo) {
+        [["🟢 Lo entendí", tkRes.semaforo.verde, "var(--ok)"], ["🟡 Dudas", tkRes.semaforo.amarillo, "var(--a2)"], ["🔴 No lo entendí", tkRes.semaforo.rojo, "var(--err)"]].forEach(([l, v, c]) => {
+          const row = node("div", "res-row"); row.append(node("span", "", l), node("span", "res-pct", v + " %"));
+          const bar = node("div", "res-bar"); const i = node("i"); i.style.width = v + "%"; i.style.background = c; bar.append(i); row.append(bar); r.append(row);
+        });
+      } else {
+        (tkRes.preguntas || []).forEach((p, k) => {
+          const row = node("div", "res-row"); row.append(node("span", "", `${k + 1}. ${p.enunciado}`), node("span", "res-pct", (p.pct ?? 0) + " %"));
+          const bar = node("div", "res-bar"); const i = node("i"); i.style.width = (p.pct ?? 0) + "%"; i.style.background = "var(--ok)"; bar.append(i); row.append(bar); r.append(row);
+        });
+      }
+      box.append(r); stage.append(box); header(); return;
+    }
+    if (!live.on && lclass.on && !(t && t.remaining > 0)) {
+      const c = node("div", "lc");
+      const pills = node("div", "lc-pills");
+      (lclass.pasos || []).forEach((p, k) => pills.append(node("span", k === lclass.i ? "on" : k < lclass.i ? "done" : "", p)));
+      const row = node("div", "lc-row");
+      const tm = node("div", "lc-time"); tm.id = "lctime";
+      row.append(node("div", "lc-name", lclass.nombre), tm);
+      c.append(pills, row);
+      if (lclass.hook) c.append(node("div", "lc-hook", lclass.hook));
+      c.append(node("div", "lc-act", lclass.actividades || ""));
+      box.append(c); stage.append(box); header();
+      $("#who").textContent = `Clase de ${lclass.tema}` + (lclass.curso ? ` · ${lclass.curso}` : "");
+      tickClass(); return;
+    }
     if (live.on) {
       const q = node("div", "lq");
       const top = node("div", "lq-top");
@@ -155,6 +217,14 @@
     const lb = document.getElementById("lqbar");
     if (lb && live.on) lb.style.width = `${Math.max(0, 100 * (liveEnd - now) / 1000 / (live.secs || 30))}%`;
   }
+  function tickClass() {
+    const el = document.getElementById("lctime");
+    if (!el || !lclass.on) return;
+    const s = Math.round((lclassEnd - Date.now()) / 1000);
+    el.textContent = s >= 0 ? fmt(s) : "+" + fmt(-s);
+    el.classList.toggle("over", s < 0);
+  }
+  setInterval(tickClass, 500);
   setInterval(tick, 500);
 
   const socket = io();
@@ -164,6 +234,9 @@
   socket.on("file_card", (c) => { if (c.image && c.id >= 0) { st.imagen = c.id; show = "image"; shownAt = Date.now(); render(); } });
   socket.on("settings_updated", (s) => { if (s && s.theme) document.documentElement.dataset.theme = s.theme; });
   socket.on("projector", (d) => { if (d && d.close) window.close(); });
+  socket.on("live_class", (d) => { lclass = d || { on: false }; lclassEnd = Date.now() + (lclass.left || 0) * 1000; render(); });
+  socket.on("ticket", (d) => { tk = d || { open: false }; if (d && d.results) { tkRes = d.results; tkResAt = Date.now(); } render(); });
+  socket.on("connect", () => { socket.emit("live_class_state", {}); socket.emit("ticket_state", {}, (d) => { tk = d || { open: false }; render(); }); });
   socket.on("tutor", (d) => { tutor = Object.assign({ msgs: [] }, d || {}); render(); });
   socket.on("tutor_msg", (m) => { if (!tutor.on) return; tutor.msgs.push(m); tutor.msgs = tutor.msgs.slice(-6); render(); });
   socket.on("connect", () => socket.emit("tutor_state", {}, (d) => { tutor = Object.assign({ msgs: [] }, d || {}); render(); }));

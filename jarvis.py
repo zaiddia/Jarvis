@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "9.5"
+VERSION = "9.6"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -375,6 +375,8 @@ import atencion
 import lecciones
 import paginas
 import estilo
+import ticket
+import clasevivo
 import secreto
 
 
@@ -1418,6 +1420,12 @@ def process_command(text):
         return
     if live_quiz_voice(text, t):                       # 8.8: «quiz en vivo», y durante el quiz «respuesta», «siguiente»
         return
+    if live_class_voice(text, t):                      # 9.6: «empieza la clase de fracciones», «siguiente momento»
+        return
+    if ticket_voice(text, t):                          # 9.6: «lanza el ticket de salida», «semáforo de comprensión»
+        return
+    if activities_voice(text, t):                      # 9.6: «¿qué actividades funcionaron en fracciones?»
+        return
     if link_material_voice(text, t):                   # 9.3: «haz un quiz con este artículo https://…», «nivela este texto: …»
         return
     if attention_voice(text, t):                       # 9.3: «¿qué necesita mi atención?»
@@ -1902,6 +1910,13 @@ from nucleo.pulido import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
+# 9.6 · CLASE EN VIVO, TICKET DE SALIDA Y SEMÁFORO CON EL CELULAR, Y ACTIVIDADES QUE FUNCIONARON
+# → nucleo/enclase.py (lógica en clasevivo.py y ticket.py; página de los estudiantes: templates/ticket.html)
+# =============================================================================
+from nucleo.enclase import *  # noqa: F401,F403,E402
+
+
+# =============================================================================
 # ARRANQUE
 # =============================================================================
 def _port_in_use():
@@ -2034,6 +2049,7 @@ def main():
         attention_start()                 # 9.3: compromisos y pulso de atención
         teacher_plus_start()              # 9.4: lecciones y vigilante de páginas
         polish_start()                    # 9.5: tu estilo al escribir
+        live_class_start()                # 9.6: clase en vivo y banco de actividades
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

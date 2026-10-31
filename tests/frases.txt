@@ -187,3 +187,4 @@ hoy en 7A vimos fracciones equivalentes => DIARIO DE CLASE
 activa el modo tutor de matemáticas => TUTOR
 ¿qué lecciones tienes? => LECCIONES
 ¿cómo escribo? => ESTILO
+semáforo de comprensión => TICKET

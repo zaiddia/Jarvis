@@ -294,6 +294,11 @@ def dashboard(now=None):
 def suggestions(now, d):
     """Botones rápidos según el momento: [{"t": texto del botón, "cmd": orden, "fill": True si hay que completarla}]."""
     s = []
+    if J.live_class["on"]:                              # 9.6: durante la clase en vivo, sus controles
+        s += [{"t": "Siguiente momento", "cmd": "siguiente momento", "kind": "aprobar"}, {"t": "5 minutos más", "cmd": "dame 5 minutos más"},
+              {"t": "Termina la clase", "cmd": "termina la clase"}]
+    if J.ticket.state["open"]:
+        s.append({"t": f"Cerrar ticket ({len(J.ticket.state['respuestas'])})", "cmd": "cierra el ticket", "kind": "aprobar"})
     if J.live_quiz["on"]:                               # 8.8: durante el quiz en vivo, sus controles primero
         s += [{"t": "Mostrar respuesta", "cmd": "respuesta", "kind": "aprobar"}, {"t": "Siguiente", "cmd": "siguiente"},
               {"t": "Terminar quiz", "cmd": "termina el quiz"}]
