@@ -91,9 +91,8 @@ def spoken(curso, estudiante):
 
 def performance(avg):
     """Desempeño en la escala nacional (Decreto 1290): rangos habituales de las instituciones."""
-    if avg is None:
-        return ""
-    return "Superior" if avg >= 4.6 else "Alto" if avg >= 4.0 else "Básico" if avg >= 3.0 else "Bajo"
+    import zeti                                        # 10.1: la escala configurada (por defecto 4,5 / 4,0 / 3,0)
+    return zeti.performance(avg)
 
 
 def facts(curso, estudiante, notas, fallas):

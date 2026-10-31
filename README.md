@@ -157,6 +157,24 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Notas como en Zeti: Valoraciones Periódicas de Desempeño (v10.1)
+
+Jarvis calcula las notas **igual que la planilla de Zeti** (zeti.co/calificaciones): cada actividad va en su dimensión,
+**Conocer (35 %), Hacer (30 %), Ser (30 %) y Autoevaluación (5 %)**; el promedio de cada una (DC, DH, DS, AEE) se
+pondera con dos decimales y la suma es la **Val** del periodo con su letra (**S** 4,5–5,0 · **A** 4,0–4,4 · **B**
+3,0–3,9 · **Bj** 1,0–2,9). Lo comprobamos con filas reales de la planilla: mismo resultado, centésima por centésima.
+
+- La dimensión sale del nombre de la actividad (quiz o evaluación → Conocer; taller, proyecto, exposición → Hacer;
+  actitud, participación, convivencia → Ser; autoevaluación) o se la dices: «**ponle 4 a Juan en ser de 7A**». Al
+  anotar, Jarvis te dice en qué dimensión quedó.
+- «**Exporta las notas de 10 para Zeti**»: un Excel con la misma forma de «Valoraciones Periódicas de Desempeño»
+  (dimensiones con sus colores, actividades, DC/DH/DS/AEE, porcentajes, Val, VL, fallas) y la hoja «Para copiar» con
+  una columna por actividad, para pegar en la misma actividad de Zeti.
+- «**Abre Zeti**» abre la página de calificaciones.
+- El promedio que Jarvis usa en todas partes (riesgo, ficha, informes, cierre de periodo) es ahora esta valoración.
+- En Ajustes › Aula: los pesos, la escala de desempeño y el orden «Alfabético» (para listas ya escritas «Apellidos
+  Nombres», como en Zeti).
+
 ## Kit para colegas y reuniones de área (v10.0)
 
 **Kit para colegas.** «**Exporta mi kit para colegas**» (o Ajustes › Agente › Kit para colegas): un archivo con lo que

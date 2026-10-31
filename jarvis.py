@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "10.0"
+VERSION = "10.1"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -736,7 +736,12 @@ DEFAULT_SETTINGS = {
     "drive_auto": False,           # 8.7: subir a tu Drive cada material que Jarvis cree
     "drive_folder_id": "",
     "zeti_since": "",              # 8.7: notas desde esta fecha (AAAA-MM-DD), p. ej. el inicio del periodo
-    "zeti_order": "lista",         # «lista» (como está el curso en Jarvis) o «apellido»
+    "zeti_order": "lista",         # «lista» (como está el curso en Jarvis), «apellido» o «alfabetico» (ya escritos Apellidos Nombres)
+    "zeti_weights": "35,30,30,5",  # 10.1: Conocer, Hacer, Ser y Autoevaluación (%)
+    "zeti_url": "https://www.zeti.co/calificaciones/",
+    "scale_superior": 4.5,         # 10.1: escala de desempeño de la institución
+    "scale_alto": 4.0,
+    "scale_basico": 3.0,
     "zeti_comma": True,            # definitivas con coma decimal (4,5)
     "recovery_days": 10,           # 8.8: plazo de los planes de recuperación
     "live_quiz_secs": 30,          # 8.8: segundos por pregunta en el quiz en vivo
@@ -804,7 +809,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -837,8 +842,15 @@ def _validate(key, value):
     v = str(value).strip()[:6000]
     if key in ("zeti_since", "period_end") and v:                     # 8.7: una fecha AAAA-MM-DD
         v = datetime.date.fromisoformat(v[:10]).isoformat()
+    if key == "zeti_weights":                          # 10.1: cuatro porcentajes que suman 100
+        nums = [int(x) for x in re.findall(r"\d{1,3}", v)]
+        if len(nums) != 4 or sum(nums) != 100:
+            raise ValueError("escribe 4 porcentajes que sumen 100, por ejemplo 35,30,30,5")
+        v = ",".join(map(str, nums))
+    if key == "zeti_url" and v and not v.startswith("https://"):
+        raise ValueError("la dirección debe empezar por https://")
     choices = {"theme": THEMES, "ai_provider": tuple(PROVIDERS),
-               "zeti_order": ("lista", "apellido"), "hud_expanded": ("estrecho", "amplio", "grande"),
+               "zeti_order": ("lista", "apellido", "alfabetico"), "hud_expanded": ("estrecho", "amplio", "grande"),
                "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
                "tts_backend": ("edge", "piper", "gemini"), "stt_backend": ("vosk", "whisper"),
@@ -1462,6 +1474,8 @@ def process_command(text):
     if period_voice(text, t):                          # 9.8: «el periodo termina el 28 de noviembre», «cierra el periodo»
         return
     if inbox_voice(text, t):                           # 9.8: «redacta las respuestas de mis correos», «limpia mi bandeja»
+        return
+    if zeti_open_voice(text, t):                       # 10.1: «abre Zeti»
         return
     if meeting_voice(text, t):                         # 10.0: «prepara la agenda de la reunión de área», «empieza el acta»
         return
@@ -2107,6 +2121,7 @@ def main():
         routines98_start()                # 9.8: semana lista, cierre de periodo y bandeja limpia
         mood_start()                      # 9.9: personalidad y color del día
         colleagues_start()                # 10.0: retoma un acta abierta
+        zeti_apply()                      # 10.1: pesos y escala de la institución
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

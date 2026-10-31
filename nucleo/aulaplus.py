@@ -18,6 +18,7 @@ import classroom
 import perfil
 import recuerdos
 import seguimiento
+import zeti
 from nucleo import J
 
 # ============================================================================ GOOGLE CLASSROOM
@@ -266,7 +267,8 @@ def student_voice(text, t):
             return True
         name = name or quien.title()
         seguimiento.add(course, name, actividad, nota)
-        J.reply(f"Anotado: {str(nota).replace('.', ',')} a {name} en {actividad} ({course}). Su promedio va en "
+        dim = dict((d, n) for d, n, _ in zeti.DIMS)[zeti.infer_dim(actividad)]
+        J.reply(f"Anotado: {str(nota).replace('.', ',')} a {name} en {actividad} ({course}, {dim}). Su valoración va en "
                 f"{str(seguimiento.average(course, name)).replace('.', ',')}.", "AULA")
         return True
     if _RISK_RE.search(t):

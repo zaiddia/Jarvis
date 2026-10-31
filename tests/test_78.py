@@ -118,9 +118,9 @@ def test_notas_y_riesgo(tmp_path):
     seguimiento.add("7A", "Juan Pérez", "quiz", 2.5)
     seguimiento.add("7A", "Juan Pérez", "taller", 3.0)
     seguimiento.add("7A", "Ana Gómez", "quiz", 4.8)
-    assert seguimiento.average("7A", "Juan Pérez") == 2.75
+    assert seguimiento.average("7A", "Juan Pérez") == 2.7          # 10.1: como Zeti (quiz en Conocer 35 %, taller en Hacer 30 %)
     risk = seguimiento.at_risk("7A", ["Juan Pérez", "Ana Gómez", "Luis"], {"Luis": 4}, 3.0, 3)
-    assert risk == [("Juan Pérez", ["promedio 2,75"]), ("Luis", ["4 fallas"])]
+    assert risk == [("Juan Pérez", ["promedio 2,7"]), ("Luis", ["4 fallas"])]
     assert "2 estudiantes en riesgo" in seguimiento.spoken_risk("7A", risk)
     seguimiento.configure(str(tmp_path))                     # se guarda
     assert len(seguimiento.data["7A"]["Juan Pérez"]) == 2

@@ -12,6 +12,7 @@ import threading
 import unicodedata
 
 import datos
+import zeti
 
 _lock = threading.Lock()
 _path = None
@@ -67,19 +68,21 @@ def parse_grade(text):
     return v if 1.0 <= v <= 5.0 else None
 
 
-def add(curso, estudiante, actividad, nota, origen="voz", fecha=None):
+def add(curso, estudiante, actividad, nota, origen="voz", fecha=None, dim=None):
     with _lock:
         lst = data.setdefault(curso, {}).setdefault(estudiante, [])
         act = str(actividad or "nota").strip()[:80]
         lst[:] = [x for x in lst if not (norm(x["actividad"]) == norm(act) and x.get("origen") == origen and origen != "voz")]
-        lst.append({"actividad": act, "nota": round(float(nota), 1), "fecha": (fecha or datetime.date.today()).isoformat(),
-                    "origen": origen})
+        it = {"actividad": act, "nota": round(float(nota), 1), "fecha": (fecha or datetime.date.today()).isoformat(), "origen": origen}
+        if dim in zeti.WEIGHTS:                         # 10.1: Conocer, Hacer, Ser o Autoevaluación (si no, se deduce)
+            it["dim"] = dim
+        lst.append(it)
         save()
 
 
 def average(curso, estudiante):
-    notas = [x["nota"] for x in data.get(curso, {}).get(estudiante, [])]
-    return round(sum(notas) / len(notas), 2) if notas else None
+    """10.1: la valoración como la calcula Zeti (Conocer, Hacer, Ser y Autoevaluación con sus pesos)."""
+    return zeti.valoracion(data.get(curso, {}).get(estudiante, []))["val"]
 
 
 def report(curso, estudiante, faltas=0):

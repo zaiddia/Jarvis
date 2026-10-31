@@ -69,6 +69,8 @@ def apply_settings(data):
             except Exception as e:
                 errors.append(f"No se pudo guardar config.json: {e}")
 
+    if changed & {"zeti_weights", "scale_superior", "scale_alto", "scale_basico"}:
+        J.zeti_apply()                                 # 10.1
     if changed & {"mic_enabled", "mic_device", "wake_word_enabled", "wake_words",
                   "stt_backend", "whisper_model"}:
         J.mic_restart.set()

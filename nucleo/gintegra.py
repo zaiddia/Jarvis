@@ -13,7 +13,9 @@ import calendario
 import classroom
 import exportar
 import gservicios
+import horario
 import seguimiento
+import zeti
 from nucleo import J
 
 
@@ -189,19 +191,43 @@ def export_voice(text, t):
     if not names:
         J.reply(f"No tengo estudiantes ni notas de {course}.", "EXPORTAR")
         return True
+    J.zeti_apply()
+    materia = next((x.get("materia", "") for x in horario.items if x.get("curso") == course and x.get("materia")), "")
     path, n, acts = exportar.zeti_xlsx(course, names, seguimiento.data.get(course, {}), J._absences(course),
                                       J.settings["output_dir"], J.settings["zeti_since"], J.settings["zeti_order"],
-                                      J.settings["zeti_comma"], J.settings["aula_institucion"], J.settings["aula_docente"])
+                                      J.settings["zeti_comma"], J.settings["aula_institucion"], J.settings["aula_docente"],
+                                      materia, zeti.WEIGHTS)
     J.generated_files.add(path)
     opened = J._open_doc(path)
-    J.reply(f"Listo, la planilla de {course} para Zeti: {n} estudiantes y {acts} actividades, con definitiva, desempeño y "
-            "fallas" + (". La abrí" if opened else "") + ". En la hoja «Para copiar» está la columna de definitivas lista para "
-            "pegar en Zeti; revisa que el orden de la lista sea el mismo.", "EXPORTAR")
+    w = zeti.WEIGHTS
+    J.reply(f"Listo, las Valoraciones de {course}{(' en ' + materia) if materia else ''} como en Zeti: {n} estudiantes y {acts} "
+            f"actividades repartidas en Conocer ({w['conocer']} %), Hacer ({w['hacer']} %), Ser ({w['ser']} %) y Autoevaluación "
+            f"({w['auto']} %), con Val y letra" + (". La abrí" if opened else "") + ". En la hoja «Para copiar» va cada actividad en "
+            "su columna, lista para pegar en la misma actividad de Zeti. Di «abre Zeti» y te abro la página de calificaciones.", "EXPORTAR")
+    return True
+
+
+_ZETI_OPEN = re.compile(r"^(?:jarvis\s+)?(?:abre|abreme|entra a|ve a|llevame a)\s+(?:la pagina de\s+)?(?:las\s+)?(?:calificaciones de\s+)?zeti\b")
+
+
+def zeti_apply():
+    """10.1: los pesos y la escala de tu institución (Ajustes › Aula › Zeti)."""
+    zeti.WEIGHTS.update(zeti.parse_weights(J.settings["zeti_weights"]))
+    zeti.SCALE.update(superior=J.settings["scale_superior"], alto=J.settings["scale_alto"], basico=J.settings["scale_basico"])
+
+
+def zeti_open_voice(text, t):
+    if not _ZETI_OPEN.match(t):
+        return False
+    url = J.settings["zeti_url"] if J.settings["zeti_url"].startswith("https://") else "https://www.zeti.co/calificaciones/"
+    webbrowser.open(url)
+    J.reply("Te abro Zeti en calificaciones. Escoge la sede, el grado, la asignatura y el periodo, y pega cada columna de la hoja "
+            "«Para copiar».", "EXPORTAR")
     return True
 
 
 __all__ = [
     '_DRIVE_RE', '_GAME_RE', '_SHARE_RE', '_ZETI_RE', '_gcal', '_last_file', 'cal_configured', 'drive_upload',
     'drive_voice', 'event_create_google', 'export_voice', 'gcal_merge', 'gcal_ready', 'gdrive_ready',
-    'on_new_file',
+    'on_new_file', '_ZETI_OPEN', 'zeti_apply', 'zeti_open_voice',
 ]

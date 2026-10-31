@@ -912,7 +912,7 @@
         <button class="btn btn-ghost" type="button" id="btn-st-unlock">Abrir los datos</button></div></div>
 
     <div class="group">Exportar notas para Zeti y quices para Kahoot o Quizizz</div>
-    <p class="pane-intro">«Exporta las notas de 7A para Zeti»: una planilla de Excel con cada actividad, la <b>definitiva</b> (1,0 a 5,0), el desempeño y las fallas, y una hoja «Para copiar» con la columna de definitivas lista para pegar en la planilla de Zeti. «Pasa el quiz a Kahoot» o «exporta el quiz a Quizizz»: la hoja con el formato de importación de cada plataforma.</p>
+    <p class="pane-intro">«Exporta las notas de 7A para Zeti»: las <b>Valoraciones Periódicas de Desempeño</b> con la misma forma que en Zeti: cada actividad en su dimensión (Conocer, Hacer, Ser y Autoevaluación), los promedios DC, DH, DS y AEE, los porcentajes, la <b>Val</b> y la letra (S, A, B, Bj), calculadas igual que Zeti. La hoja «Para copiar» trae una columna por actividad para pegar en Zeti. Jarvis deduce la dimensión por el nombre de la actividad (quiz o evaluación → Conocer; taller, proyecto, exposición → Hacer; actitud, participación, convivencia → Ser), o dísela: «ponle 4 a Juan en ser de 7A». «Abre Zeti» abre la página de calificaciones. «Pasa el quiz a Kahoot» o «exporta el quiz a Quizizz»: la hoja con el formato de importación de cada plataforma.</p>
     <div class="field stack"><div class="ft"><label for="f-zeti-since">Notas desde (inicio del periodo)</label><p>AAAA-MM-DD. Vacío = todas las notas.</p></div>
       <input class="inp narrow mono" type="text" id="f-zeti-since" data-key="zeti_since" placeholder="2026-08-03"></div>
     <div class="field stack"><div class="ft"><label for="f-period-end">Cierre del periodo</label><p>AAAA-MM-DD, o dile «el periodo termina el 28 de noviembre». Te avisa 7 y 3 días antes (quién no tiene notas, quién está en riesgo) y ese día te propone el consolidado en Word y las planillas para Zeti de todos tus cursos. Al cerrar, «Notas desde» pasa al día siguiente.</p></div>
@@ -924,12 +924,23 @@
       <div class="seg">
         <label><input type="radio" name="zorder" value="lista" data-key="zeti_order"><span>Como mi lista</span></label>
         <label><input type="radio" name="zorder" value="apellido" data-key="zeti_order"><span>Por apellido</span></label>
+        <label><input type="radio" name="zorder" value="alfabetico" data-key="zeti_order"><span>Alfabético (ya escritos «Apellidos Nombres», como en Zeti)</span></label>
       </div>
     </div>
     <div class="field">
       <div class="ft"><label for="f-zeti-comma">Coma decimal (4,5)</label></div>
       <label class="switch"><input type="checkbox" id="f-zeti-comma" data-key="zeti_comma"><span></span></label>
     </div>
+    <div class="field stack"><div class="ft"><label for="f-zeti-w">Pesos: Conocer, Hacer, Ser, Autoevaluación (%)</label><p>Como en tu planilla de Zeti. Deben sumar 100.</p></div>
+      <input class="inp narrow mono" type="text" id="f-zeti-w" data-key="zeti_weights" placeholder="35,30,30,5"></div>
+    <div class="field"><div class="ft"><label for="f-sc-s">Superior desde</label></div>
+      <div class="range"><input type="range" id="f-sc-s" min="3" max="5" step="0.1" data-key="scale_superior"><output></output></div></div>
+    <div class="field"><div class="ft"><label for="f-sc-a">Alto desde</label></div>
+      <div class="range"><input type="range" id="f-sc-a" min="2.5" max="5" step="0.1" data-key="scale_alto"><output></output></div></div>
+    <div class="field"><div class="ft"><label for="f-sc-b">Básico desde (aprueba)</label><p>Por debajo es Bajo.</p></div>
+      <div class="range"><input type="range" id="f-sc-b" min="1" max="4.5" step="0.1" data-key="scale_basico"><output></output></div></div>
+    <div class="field stack"><div class="ft"><label for="f-zeti-url">Página de calificaciones de Zeti</label></div>
+      <input class="inp mono" type="text" id="f-zeti-url" data-key="zeti_url" placeholder="https://www.zeti.co/calificaciones/"></div>
 
     <div class="group">Recuperación, diario de clase y quiz en vivo</div>
     <p class="pane-intro">«Haz los planes de recuperación de 7A», «hoy en 7A vimos fracciones equivalentes», «¿qué temas me faltan del periodo en 7A?», «quiz en vivo» (en el proyector: «respuesta», «siguiente», «termina el quiz»).</p>

@@ -143,17 +143,19 @@ def test_planilla_para_zeti(jv, monkeypatch, tmp_path):
         "Ana Gómez": [{"actividad": "Quiz 1", "nota": 4.6, "fecha": "2026-09-01"}]}})
     jv._rec.clear()
     jv.process_command("exporta las notas de 7A para Zeti")
-    assert "3 estudiantes y 2 actividades" in jv._rec.said()
-    path = next((tmp_path / "Exportaciones").glob("Notas 7A para Zeti*.xlsx"))
+    assert "3 estudiantes y 2 actividades" in jv._rec.said() and "Conocer (35 %)" in jv._rec.said()
+    path = next((tmp_path / "Exportaciones").glob("Zeti 7A*.xlsx"))
     wb = load_workbook(path)
-    ws = wb["Planilla"]
-    head = [c.value for c in ws[4]]
-    assert head == ["N°", "Estudiante", "Quiz 1", "Taller", "Definitiva", "Desempeño", "Fallas"]
-    rows = [[c.value for c in r] for r in ws.iter_rows(min_row=5)]
+    ws = wb["Valoraciones"]
+    assert [c.value for c in ws[4]][:3] == ["N°", "Apellidos y Nombres de Estudiantes", "Conocer"]
+    assert [c.value for c in ws[5]][2:12] == ["Quiz 1", "DC", "35%", "Taller", "DH", "30%", "DS", "30%", "AEE", "5%"]
+    rows = [[c.value for c in r] for r in ws.iter_rows(min_row=6)]
     assert [r[1] for r in rows] == ["Ana Gómez", "Juan Pérez", "Luis Rojas"]                  # por apellido
-    assert rows[1][2:] == [2.0, 3.0, 2.5, "Bajo", 1] and rows[0][4] == 4.6 and rows[0][5] == "Superior"
-    cp = [[c.value for c in r] for r in wb["Para copiar"].iter_rows(min_row=2, max_col=4)]
-    assert cp[1] == ["Juan Pérez", "2,5", "Bajo", 1] and cp[2][1] in ("", None)
+    assert rows[1][2:8] == [2.0, 2.0, 0.7, 3.0, 3.0, 0.9] and rows[1][12:15] == [2.5, "Bj", 1]
+    assert rows[0][12:14] == [4.6, "S"] and "Sin notas de Hacer, Ser" in rows[0][15]
+    cp = [[c.value for c in r] for r in wb["Para copiar"].iter_rows(min_row=3)]
+    assert cp[0] == ["Estudiante", "Conocer: Quiz 1", "Hacer: Taller", "Autoevaluación (AEE)", "Val"]
+    assert cp[2][:3] == ["Juan Pérez", "2,0", "3,0"] and cp[2][4] == "2,5"
 
 
 def test_zeti_desde_valida_la_fecha(jv):

@@ -114,9 +114,8 @@ def surname_key(name):
 
 
 def performance(avg):
-    if avg is None:
-        return ""
-    return "Superior" if avg >= 4.6 else "Alto" if avg >= 4.0 else "Básico" if avg >= 3.0 else "Bajo"
+    import zeti
+    return zeti.performance(avg)
 
 
 def zeti_table(names, grades, absences, since="", order="lista"):
@@ -141,42 +140,14 @@ def zeti_table(names, grades, absences, since="", order="lista"):
     return acts, rows
 
 
-def zeti_xlsx(curso, names, grades, absences, out_dir, since="", order="lista", comma=True, institucion="", docente=""):
-    from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Font, PatternFill
-    acts, rows = zeti_table(names, grades, absences, since, order)
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Planilla"
-    ws["A1"] = f"Planilla de notas · {curso}"
-    ws["A1"].font = Font(bold=True, size=13)
-    ws["A2"] = " · ".join(x for x in (institucion, docente, f"desde {since}" if since else "todo el periodo",
-                                         f"exportado {datetime.date.today():%d/%m/%Y}") if x)
-    heads = ["N°", "Estudiante", *acts, "Definitiva", "Desempeño", "Fallas"]
-    ws.append([])
-    ws.append(heads)
-    head_row = ws.max_row
-    for c in ws[head_row]:
-        c.font = Font(bold=True, color="FFFFFF")
-        c.fill = PatternFill("solid", fgColor="1F4E79")
-        c.alignment = Alignment(wrap_text=True, vertical="center")
-    fmt = "0.0"
-    for i, r in enumerate(rows, 1):
-        ws.append([i, *r])
-        for c in ws[ws.max_row][2:2 + len(acts) + 1]:
-            c.number_format = fmt
-        if r[-3] is not None and r[-3] < 3.0:
-            ws.cell(row=ws.max_row, column=3 + len(acts)).font = Font(bold=True, color="C00000")
-    ws.column_dimensions["A"].width = 5
-    ws.column_dimensions["B"].width = 34
-    ws.freeze_panes = ws.cell(row=head_row + 1, column=3)
-    cp = wb.create_sheet("Para copiar")
-    cp.append(["Estudiante", "Definitiva", "Desempeño", "Fallas"])
-    for c in cp[1]:
-        c.font = Font(bold=True)
-    for r in rows:
-        nota = r[-3]
-        cp.append([r[0], (f"{nota:.1f}".replace(".", ",") if comma else f"{nota:.1f}") if nota is not None else "", r[-2], r[-1]])
-    cp.column_dimensions["A"].width = 34
-    cp["F1"] = "Selecciona la columna «Definitiva» (sin el título), cópiala y pégala en la planilla de Zeti, que debe estar en el mismo orden."
-    return _save(wb, out_dir, f"Notas {curso} para Zeti"), len(rows), len(acts)
+def zeti_xlsx(curso, names, grades, absences, out_dir, since="", order="lista", comma=True, institucion="", docente="",
+              asignatura="", weights=None):
+    """10.1: la planilla con la forma de «Valoraciones Periódicas de Desempeño» de Zeti. → (ruta, estudiantes, actividades)."""
+    import zeti
+    folder = os.path.join(out_dir, "Exportaciones")
+    os.makedirs(folder, exist_ok=True)
+    title = " ".join(x for x in (curso, asignatura) if x)
+    path = os.path.join(folder, f"{_safe('Zeti ' + title)} {datetime.date.today():%Y-%m-%d}.xlsx")
+    n, acts, _rows = zeti.xlsx(curso, names, grades, absences, path, since, order, comma, institucion, docente, surname_key, weights,
+                               asignatura)
+    return path, n, acts
