@@ -131,7 +131,7 @@
     el.preview.classList.add("flash");
   }
 
-  function setLevel(v) { el.reactor.style.setProperty("--lvl", v); }
+  function setLevel(v) { el.reactor.style.setProperty("--lvl", v); el.shell.style.setProperty("--lvl", v); }
 
   function updateSizeButton() {
     const expanded = body.dataset.size === "expandido";
@@ -186,6 +186,7 @@
   /* ---------------- Conversación y registro ---------------- */
   const nearBottom = (b) => b.scrollHeight - b.scrollTop - b.clientHeight < 60;
 
+  let lastDay = "";
   function addChat(item, live = true) {
     $(".empty", el.chat)?.remove();
     hasMessages = true;
@@ -195,7 +196,18 @@
     if (!live) m.style.animation = "none";
     const meta = document.createElement("div");
     meta.className = "msg-meta";
-    meta.textContent = isUser ? (item.source === "voz" ? "TÚ · VOZ" : "TÚ") : "JARVIS";
+    const SRC = { voz: "VOZ", telegram: "CELULAR", orbe: "REACTOR", movil: "PANEL DEL CELULAR", mcp: "OTRA IA" };
+    meta.textContent = isUser ? "TÚ" + (SRC[item.source] ? " · " + SRC[item.source] : "") : "JARVIS";
+    const day = item.date || "";
+    if (day && day !== lastDay) {                                   // 9.2: separador por día
+      lastDay = day;
+      const today = new Date(), y = new Date(Date.now() - 864e5);
+      const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const sep = document.createElement("div");
+      sep.className = "day";
+      sep.textContent = day === iso(today) ? "Hoy" : day === iso(y) ? "Ayer" : `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`;
+      el.chat.appendChild(sep);
+    }
     const t = document.createElement("span");
     t.className = "t";
     t.textContent = item.time || "";
@@ -263,6 +275,7 @@
   el.viewChat.addEventListener("scroll", () => { if (nearBottom(el.viewChat)) newBelow(false); }, { passive: true });
 
   function emptyChat() {
+    lastDay = "";
     el.chat.innerHTML = '<div class="empty">Canal abierto.<br>Prueba: «abre la calculadora», «volumen al 30», «busca recetas de arepas».</div>';
     hasMessages = false;
   }
@@ -327,6 +340,56 @@
     if (wide && !viewHoy.hidden) $('.xtab[data-view="chat"]').click();
   }
   window.addEventListener("resize", placeDash);
+  /* ================= 9.2: campana de avisos, favoritos, tarjeta «Cursos», encabezado compacto y búsqueda ================= */
+  // Encabezado compacto en el HUD expandido: la última línea va en la misma fila que el título
+  const headEl = $(".head"), previewHome = el.preview.nextSibling;
+  function placePreview() {
+    if (body.dataset.size === "expandido") { if (el.preview.parentNode !== headEl) headEl.insertBefore(el.preview, $("#vu")); }
+    else if (el.preview.parentNode === headEl) el.shell.insertBefore(el.preview, previewHome);
+  }
+  window.addEventListener("resize", placePreview);
+
+  // Campana
+  const ntc = { box: $("#ntc"), list: $("#ntc-list"), badge: $("#bell-n") };
+  function setUnread(n) { ntc.badge.hidden = !n; ntc.badge.textContent = n > 9 ? "9+" : String(n); }
+  function drawNotices(r) {
+    ntc.list.innerHTML = "";
+    const items = (r && r.items) || [];
+    if (!items.length) ntc.list.append(mk("p", "dempty", "Sin avisos por ahora."));
+    items.forEach((n) => {
+      const row = mk("div", "ntc-item " + n.kind);
+      row.append(mk("span", "ntc-k", { aviso: "🔔", aprobar: "✓", error: "⚠" }[n.kind] || "•"), mk("span", "ntc-t", n.text), mk("span", "ntc-h2", n.hora));
+      if (n.kind === "aprobar") { row.classList.add("click"); row.addEventListener("click", () => { closeNotices(); if (body.classList.contains("wide")) { dashHidden = false; applyDashHidden(); } else $('.xtab[data-view="hoy"]').click(); }); }
+      ntc.list.append(row);
+    });
+    setUnread(r ? r.unread : 0);
+  }
+  function openNotices() { if (body.dataset.size !== "expandido") setSize("expandido"); ntc.box.hidden = false; socket.emit("notices", { seen: true }, drawNotices); }
+  function closeNotices() { ntc.box.hidden = true; }
+  $("#btn-bell").addEventListener("click", () => (ntc.box.hidden ? openNotices() : closeNotices()));
+  $("#ntc-clear").addEventListener("click", () => socket.emit("notices", { clear: true, seen: true }, drawNotices));
+  socket.on("notice", (n) => { setUnread(n.unread); if (!ntc.box.hidden) socket.emit("notices", { seen: true }, drawNotices); else { $("#btn-bell").classList.remove("ring"); void $("#btn-bell").offsetWidth; $("#btn-bell").classList.add("ring"); } });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !ntc.box.hidden) closeNotices(); });
+  document.addEventListener("mousedown", (e) => { if (!ntc.box.hidden && !e.target.closest("#ntc, #btn-bell")) closeNotices(); });
+
+  // Favoritos
+  let favs = [];
+  function toggleFav(cmd, cb) { socket.emit("favorite_toggle", { cmd }, (r) => { favs = r.favorites || []; refreshDash(); if (cb) cb(); }); }
+
+  // Búsqueda en la conversación (Ctrl+F)
+  const chatQ = $("#chat-q");
+  function filterChat() {
+    const q = plain(chatQ.value);
+    $$(".msg, .day", el.chat).forEach((m) => { m.hidden = !!q && (m.classList.contains("day") || !plain(m.textContent).includes(q)); });
+  }
+  chatQ.addEventListener("input", filterChat);
+  chatQ.addEventListener("keydown", (e) => { if (e.key === "Escape") { chatQ.value = ""; filterChat(); chatQ.hidden = true; el.input.focus(); } });
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "f" && body.dataset.size === "expandido") {
+      e.preventDefault(); $('.xtab[data-view="chat"]').click(); chatQ.hidden = false; chatQ.focus(); chatQ.select();
+    }
+  });
+
 
   function renderDash(d) {
     if (!d) return;
@@ -393,6 +456,25 @@
       k.classList.add("click"); k.addEventListener("click", () => run("¿qué correos importantes tengo?"));
       dash.append(k);
     }
+    favs = d.favoritos || favs;
+    setUnread(d.avisos_sin_leer || 0);
+    if (d.cursos && d.cursos.length) {                       // 9.2: cómo va cada curso
+      const k = card("Cursos");
+      d.cursos.forEach((c) => {
+        const row = mk("div", "drow click course");
+        const name = mk("b", "", c.curso), avg = mk("span", "dmeta", `${String(c.promedio).replace(".", ",")} · ${c.n} est.`);
+        const bar = mk("div", "dist");
+        [["Superior", "s"], ["Alto", "a"], ["Básico", "b"], ["Bajo", "x"]].forEach(([lbl, cls]) => {
+          const v = c.dist[lbl] || 0; if (!v) return;
+          const seg = mk("i", cls); seg.style.flex = String(v); seg.title = `${lbl}: ${v}`; bar.append(seg);
+        });
+        const top = mk("div", "course-top"); top.append(name, avg);
+        row.append(top, bar);
+        row.addEventListener("click", () => run(`¿quiénes están en riesgo en ${c.curso}?`));
+        k.append(row);
+      });
+      dash.append(k);
+    }
     if (d.riesgo && d.riesgo.length) {
       const k = card("En riesgo", "bad");
       d.riesgo.forEach((r) => { const row = mk("div", "drow click"); row.append(mk("b", "", r.curso), mk("span", "dmeta", `${r.n}: ${r.nombres.join(", ")}${r.n > r.nombres.length ? "…" : ""}`));
@@ -405,7 +487,8 @@
   function renderChips(list) {
     chips.innerHTML = "";
     list.forEach((s) => {
-      const b = mk("button", "chip" + (s.kind === "aprobar" ? " hot" : ""), s.t); b.type = "button";
+      const b = mk("button", "chip" + (s.kind === "aprobar" ? " hot" : s.kind === "fav" ? " fav" : ""), s.t); b.type = "button";
+      if (s.kind === "fav") b.addEventListener("contextmenu", (e) => { e.preventDefault(); toggleFav(s.cmd); });
       b.title = s.fill ? "Completa la orden y pulsa Enter" : s.cmd;
       b.addEventListener("click", () => s.fill ? fill(s.cmd) : run(s.cmd));
       chips.append(b);
@@ -579,7 +662,10 @@
     if (pal.q.value.trim()) list.unshift({ t: pal.q.value.trim(), g: "Enviar tal cual" });
     list.forEach((x, i) => {
       const r = mk("div", "pal-item" + (i === pal.sel ? " sel" : ""));
-      r.append(mk("span", "", x.t), mk("span", "pal-g", x.g));
+      const star = mk("button", "pal-star" + (favs.includes(x.t.trim()) ? " on" : ""), favs.includes(x.t.trim()) ? "★" : "☆");
+      star.type = "button"; star.title = "Favorito: aparece como botón en el HUD";
+      star.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); toggleFav(x.t.trim(), drawPal); });
+      r.append(mk("span", "", x.t), mk("span", "pal-g", x.g), star);
       r.addEventListener("mousedown", (e) => { e.preventDefault(); choose(x); });
       pal.list.append(r);
     });
@@ -621,7 +707,7 @@
   }
   function stopSubs() { clearInterval(subTimer); subTimer = null; if (el.preview.classList.contains("subs")) { el.preview.classList.remove("subs"); if (lastJarvis) setPreview(lastJarvis); } }
 
-  socket.on("connect", () => { poke(); refreshDash(); placeDash(); });
+  socket.on("connect", () => { poke(); refreshDash(); placeDash(); placePreview(); });
   socket.on("dashboard", renderDash);
   socket.on("file_card", (c) => { addFileCard(c); poke(); });
   socket.on("disconnect", () => { setPreview("Sin enlace con el motor de Jarvis…", "dim"); led("#led-ai", "err"); });
@@ -629,7 +715,7 @@
     native = !!data.native;
     body.classList.toggle("browser", !native);
     if (!native) $("#btn-hide").hidden = true;
-    if (native && data.size) { body.dataset.size = data.size; updateSizeButton(); }
+    if (native && data.size) { body.dataset.size = data.size; updateSizeButton(); placeDash(); placePreview(); }
     emptyChat();
     el.log.innerHTML = "";
     (data.logs || []).forEach(addLog);
@@ -649,7 +735,7 @@
   socket.on("mic_level", ({ v }) => { if (st.mode !== "speaking") setLevel(v); });
   socket.on("heard", ({ text }) => { if (st.mode === "idle" || st.mode === "awaiting") setPreview(`«${text}»`, "dim"); });
   socket.on("settings_updated", applySettings);
-  socket.on("hud_size", ({ size }) => { body.dataset.size = size; updateSizeButton(); placeDash(); poke(); });
+  socket.on("hud_size", ({ size }) => { body.dataset.size = size; updateSizeButton(); placeDash(); placePreview(); poke(); });
   socket.on("timers", ({ timers }) => { setTimers(timers || []); });
   socket.on("card", (c) => showCard(c));
   socket.on("focus_input", () => setTimeout(() => { try { window.focus(); el.input.focus(); } catch (e) {} }, 200));
@@ -664,7 +750,7 @@
   /* ---------------- Controles ---------------- */
   function setSize(size) {
     if (native) socket.emit("hud_set_size", { size });
-    else { body.dataset.size = size; updateSizeButton(); placeDash(); }
+    else { body.dataset.size = size; updateSizeButton(); placeDash(); placePreview(); }
   }
   el.btnSize.addEventListener("click", () => setSize(body.dataset.size === "expandido" ? "compacto" : "expandido"));
   $("#btn-orb").addEventListener("click", () => setSize("orbe"));

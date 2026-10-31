@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "9.1"
+VERSION = "9.2"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -725,6 +725,7 @@ DEFAULT_SETTINGS = {
     "google_scopes": "",           # 8.5: permisos que diste al conectar tu cuenta de Google (Gmail, Classroom, Forms)
     "hud_subtitles": True,         # 8.6: subtítulos de lo que dice Jarvis, palabra por palabra
     "hud_expanded": "amplio",      # 9.1: tamaño del HUD expandido (estrecho, amplio o grande)
+    "hud_favorites": "",           # 9.2: órdenes favoritas (una por línea), como botones en el HUD
     "drive_auto": False,           # 8.7: subir a tu Drive cada material que Jarvis cree
     "drive_folder_id": "",
     "zeti_since": "",              # 8.7: notas desde esta fecha (AAAA-MM-DD), p. ej. el inicio del periodo
@@ -994,6 +995,10 @@ def log_terminal(message, origin="JARVIS"):
     socketio.emit("terminal_log", {"data": line})
     if origin == "ERROR":                              # 8.0: queda en el registro de errores, con la orden
         errores.record("ERROR", message, getattr(_tl, "cmd_text", "") or "")
+        try:
+            notice_add(str(message)[:200], "error", "ERROR")   # 9.2: y en la campana del HUD
+        except NameError:
+            pass
 
 
 # Lo que el orbe de la barra de tareas muestra (7.3): último mensaje, último aviso y nivel del micrófono.
@@ -1001,8 +1006,8 @@ orb_feed = {"seq": 0, "msg": "", "role": "", "alert_seq": 0, "alert": "", "level
 
 
 def push_chat(role, text, source=""):
-    item = {"role": role, "text": text, "source": source,
-            "time": datetime.datetime.now().strftime("%H:%M")}
+    now = datetime.datetime.now()
+    item = {"role": role, "text": text, "source": source, "time": now.strftime("%H:%M"), "date": now.date().isoformat()}
     chat_buffer.append(item)
     recuerdos.log(role, text)                         # 7.4: historial buscable (sin claves ni contraseñas)
     orb_feed.update(seq=orb_feed["seq"] + 1, msg=str(text)[:400], role=role)

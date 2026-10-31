@@ -144,6 +144,72 @@ def start_job(label, fn, name="trabajo"):
     return t
 
 
+# ============================================================================ CAMPANA DE AVISOS Y FAVORITOS (9.2)
+notices = collections.deque(maxlen=50)
+_notice_seq = [0]
+_notice_seen = [0]
+
+
+def notice_add(text, kind="aviso", origin=""):
+    """Un aviso para la campana del HUD (recordatorios, aprobaciones, errores). Los repetidos seguidos no se duplican."""
+    text = str(text).strip()
+    if not text:
+        return None
+    if notices and notices[-1]["text"] == text and time.time() - notices[-1]["ts"] < 60:
+        return None
+    _notice_seq[0] += 1
+    item = {"id": _notice_seq[0], "text": text[:300], "kind": kind, "origin": origin, "ts": time.time(),
+            "hora": datetime.datetime.now().strftime("%H:%M")}
+    notices.append(item)
+    try:
+        J.socketio.emit("notice", {**item, "unread": notices_unread()})
+    except Exception:
+        pass
+    return item
+
+
+def notices_unread():
+    return sum(1 for n in notices if n["id"] > _notice_seen[0])
+
+
+@J.socketio.on("notices")
+def handle_notices(data=None):
+    if (data or {}).get("seen"):
+        _notice_seen[0] = _notice_seq[0]
+    if (data or {}).get("clear"):
+        notices.clear()
+    return {"items": list(notices)[::-1], "unread": notices_unread()}
+
+
+def favorites():
+    return [x.strip() for x in J.settings["hud_favorites"].splitlines() if x.strip()][:20]
+
+
+@J.socketio.on("favorite_toggle")
+def handle_favorite_toggle(data=None):
+    cmd = re.sub(r"\s+", " ", str((data or {}).get("cmd", ""))).strip()[:160]
+    favs = favorites()
+    if cmd:
+        favs = [f for f in favs if f != cmd] if cmd in favs else (favs + [cmd])[-20:]
+        J.apply_settings({"hud_favorites": "\n".join(favs)})
+        J.settings["hud_favorites"] = "\n".join(favs)
+    return {"favorites": favs}
+
+
+def courses_summary():
+    """Por curso: promedio, cuántos con notas y cuántos en cada desempeño (para la tarjeta «Cursos»)."""
+    out = []
+    for course in sorted(set(aula.data.get("cursos", {})) | set(seguimiento.data))[:10]:
+        avgs = [a for a in (seguimiento.average(course, n) for n in seguimiento.data.get(course, {})) if a is not None]
+        if not avgs:
+            continue
+        dist = {"Superior": 0, "Alto": 0, "Básico": 0, "Bajo": 0}
+        for a in avgs:
+            dist["Superior" if a >= 4.6 else "Alto" if a >= 4.0 else "Básico" if a >= 3.0 else "Bajo"] += 1
+        out.append({"curso": course, "promedio": round(sum(avgs) / len(avgs), 1), "n": len(avgs), "dist": dist})
+    return out
+
+
 # ============================================================================ PANEL «HOY»
 _weather = {"t": 0.0, "text": ""}
 
@@ -214,6 +280,9 @@ def dashboard(now=None):
             risk.append({"curso": course, "n": len(r), "nombres": [n for n, _ in r[:3]]})
     out["riesgo"] = risk
     out["trabajos"] = jobs_list()
+    out["cursos"] = courses_summary()
+    out["favoritos"] = favorites()
+    out["avisos_sin_leer"] = notices_unread()
     out["sugerencias"] = suggestions(now, out)
     return out
 
@@ -243,12 +312,15 @@ def suggestions(now, d):
         s.append({"t": f"En riesgo en {d['riesgo'][0]['curso']}", "cmd": f"¿quiénes están en riesgo en {d['riesgo'][0]['curso']}?"})
     s += [{"t": "Quiz en Forms…", "cmd": "haz un quiz de 10 preguntas de  en Forms", "fill": True},
           {"t": "Mis pendientes", "cmd": "¿qué tengo pendiente?"}]
-    seen, out = set(), []
+    s += [{"t": "★ " + f[:30], "cmd": f, "kind": "fav", "fill": f.endswith(" ")} for f in favorites()]
+    seen, out = {}, []
     for x in s:
         if x["cmd"] not in seen:
-            seen.add(x["cmd"])
+            seen[x["cmd"]] = x
             out.append(x)
-    return out[:7]
+        elif x.get("kind") == "fav" and seen[x["cmd"]].get("kind") != "aprobar":   # ya estaba: se marca como favorito
+            seen[x["cmd"]].update(kind="fav", t="★ " + seen[x["cmd"]]["t"].lstrip("★ "))
+    return out[:12]
 
 
 @J.socketio.on("dashboard")
@@ -358,7 +430,7 @@ def hud_plus_start():
 
 
 __all__ = [
-    'RecentFiles', '_IMG', '_emit_jobs', '_job_lock', '_job_seq', 'jobs', 'jobs_list', 'start_job', '_KINDS', '_PROJ_OFF', '_PROJ_RE', '_allowed', '_dashboard_worker', '_mins_until',
+    'RecentFiles', '_IMG', '_notice_seen', '_notice_seq', 'courses_summary', 'favorites', 'handle_favorite_toggle', 'handle_notices', 'notice_add', 'notices', 'notices_unread', '_emit_jobs', '_job_lock', '_job_seq', 'jobs', 'jobs_list', 'start_job', '_KINDS', '_PROJ_OFF', '_PROJ_RE', '_allowed', '_dashboard_worker', '_mins_until',
     '_open_projector', '_weather', '_weather_short', 'dashboard', 'file_card', 'handle_dashboard', 'handle_file_open',
     'handle_palette', 'handle_projector_state', 'hud_plus_start', 'projector_page', 'projector_state',
     'projector_voice', 'recent_image', 'suggestions',

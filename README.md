@@ -157,6 +157,20 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## HUD: campana de avisos, favoritos, cursos y encabezado compacto (v9.2)
+
+- **Encabezado compacto**: en el HUD expandido el reactor, el título, la última línea y los controles van en una sola
+  fila, así la conversación y el panel «Hoy» ganan espacio. Un **vúmetro** junto al título se mueve con tu voz (y con la
+  de Jarvis cuando habla).
+- **Campana de avisos** (arriba a la derecha): recordatorios, temporizadores, lo que espera tu aprobación y los errores,
+  con su hora y un contador de no leídos. La campana se mueve cuando llega algo nuevo.
+- **Favoritos**: en la paleta de órdenes (Ctrl+K) pulsa la ☆ de una orden y quedará como botón ★ en el HUD (clic derecho
+  en el botón para quitarla). Se guardan en Ajustes, así que no se pierden.
+- **Tarjeta «Cursos»** en el panel «Hoy»: el promedio de cada curso y una barra con cuántos estudiantes van en Superior,
+  Alto, Básico y Bajo; clic para ver quién está en riesgo.
+- **La conversación por días** («Hoy», «Ayer», la fecha) y de dónde vino cada orden (voz, celular, reactor).
+- **Buscar en la conversación** con Ctrl+F.
+
 ## El HUD expandido ahora es amplio (v9.1)
 
 Las mejoras del HUD de la 8.6 y la 9.0 casi no se veían: el HUD expandido medía 440 px de ancho, así que el panel

@@ -210,6 +210,7 @@ def alert(text, origin="JARVIS"):
     J.orb_feed.update(alert_seq=J.orb_feed["alert_seq"] + 1, alert=str(text)[:300])   # el orbe destella
     J.whatsapp_alert(text)                             # 7.9: también al WhatsApp, si lo configuraste
     J.windows_toast(text, origin)                      # 7.2: también como notificación de Windows
+    J.notice_add(text, "aviso", origin)                # 9.2: queda en la campana del HUD
     if J.settings["telegram_alerts"] and J.settings["telegram_remote"]:
         threading.Thread(target=J.telegram_send, args=(f"🔔 {text}",), daemon=True).start()
 

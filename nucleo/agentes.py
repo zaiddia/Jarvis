@@ -29,6 +29,7 @@ def request_approval(tipo, titulo, detalle="", on_ok=None, on_no=None, ttl=900, 
     """Pide permiso. on_ok/on_no se ejecutan (en otro hilo) al responder. Devuelve la aprobación."""
     item = aprobaciones.add(tipo, titulo, detalle, ttl)
     _callbacks[item["id"]] = (on_ok, on_no)
+    J.notice_add(f"Por aprobar: {titulo}", "aprobar", "APROBAR")    # 9.2: campana del HUD
     remote = getattr(J._tl, "remote", False)
     msg = say or f"{titulo}. ¿Lo apruebas? Di «sí» o «no»."
     J.reply(msg + ("" if not remote else f" (Responde «sí {item['id']}» o «no {item['id']}».)"), "APROBAR")
