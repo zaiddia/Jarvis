@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "11.2"
+VERSION = "11.3"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1491,6 +1491,10 @@ def process_command(text):
         return
     if zeti_open_voice(text, t):                       # 10.1: «abre Zeti»
         return
+    if solver_voice(text, t):                          # 11.3: «resuelve paso a paso: …», «haz el solucionario del taller»
+        return
+    if lab_voice(text, t):                             # 11.3: «abre el laboratorio de la parábola»
+        return
     if mastery_voice(text, t):                         # 11.2: «¿cómo va la ruta de 7A?», «haz tarjetas de fracciones para 7A», «exporta las tarjetas a Anki»
         return
     if code_voice(text, t):                            # 11.1: «recibe los programas de 8A, la tarea es: …», «anota las entregas»
@@ -2051,6 +2055,10 @@ from nucleo.tecnoreto import *  # noqa: F401,F403,E402
 # ── 11.2: ruta de dominio y tarjetas de memoria con repaso espaciado
 # → nucleo/maestria.py (lógica en dominio.py)
 from nucleo.maestria import *  # noqa: F401,F403,E402
+
+# ── 11.3: solucionario paso a paso verificado con SymPy y laboratorio interactivo para el proyector
+# → nucleo/solucion.py (lógica en verificar.py; página: templates/lab.html)
+from nucleo.solucion import *  # noqa: F401,F403,E402
 
 
 # =============================================================================

@@ -157,6 +157,20 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Solucionario verificado con SymPy y laboratorio interactivo (v11.3)
+
+- **Solucionario paso a paso verificado:** «**resuelve paso a paso: 2x + 3 = 7; x² − 5x + 6 = 0**» o «**haz el
+  solucionario del taller**» (o del quiz). La IA escribe los pasos y Jarvis **comprueba cada resultado con SymPy**
+  (ecuaciones, operaciones, simplificaciones, derivadas, integrales y sistemas). Si la IA se equivocó, corrige el
+  resultado y rehace los pasos antes de que llegue al estudiante. El Word marca cada problema: ✔ verificado,
+  ⚠ corregido o sin verificación automática (razonamientos, tablas). Las expresiones se leen con una lista cerrada de
+  símbolos: nunca se ejecuta texto libre.
+- **Laboratorio interactivo para el proyector:** «**abre el laboratorio de la parábola**». Con deslizadores: la parábola
+  (vértice, discriminante y raíces), la recta (pendiente e interceptos), el círculo unitario (seno, coseno, tangente),
+  la función seno (amplitud, período, desfase), el crecimiento exponencial, el teorema de Pitágoras con sus cuadrados,
+  fracciones con pizzas, probabilidad con dados (lo que sale contra lo teórico) y áreas. Cada uno trae preguntas para
+  hacerle al curso antes de mover los deslizadores. «¿Qué laboratorios hay?».
+
 ## Ruta de dominio y tarjetas de memoria con repaso espaciado (v11.2)
 
 - **Ruta de dominio:** los temas del periodo, en el orden de tu planeación anual (o de la malla del periodo), son la

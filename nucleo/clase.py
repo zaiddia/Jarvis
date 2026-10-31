@@ -163,6 +163,7 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
                 try:
                     raw = J.ai_chat([{"role": "user", "content": prompt}], json_mode=True, max_tokens=8000)
                     m = aula.validate(kind, J._extract_json(raw), request)
+                    J.last_material.update(m=m, kind=kind, curso=aula.data.get("activo") or "")   # 11.3: para el solucionario
                     if kind == "plan":                         # 9.6: para la clase en vivo
                         J.clasevivo.remember_plan(m, aula.data.get("activo") or "")
                     if kind == "malla":                        # 8.8: para «¿qué temas me faltan del periodo?»

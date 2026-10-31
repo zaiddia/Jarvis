@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio · Jarvis</title>
+<style>
+  :root { --a: #2ee6ff; --a2: #ffb547; --ok: #3dff9a; --bad: #ff6b6b; --bg: #03060c; --card: #071320; --line: #1d3344; --text: #e6f6ff; --muted: #7d95ab; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: system-ui, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 22px; color: var(--a); font-weight: 700; }
+  header select { font-size: 16px; padding: 6px 10px; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 8px; }
+  main { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; padding: 16px 20px; min-height: 0; }
+  #cv { width: 100%; height: 100%; background: #050d17; border: 1px solid var(--line); border-radius: 12px; min-height: 300px; }
+  aside { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+  .ctl { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .ctl label { display: flex; justify-content: space-between; font-size: 18px; margin-bottom: 6px; }
+  .ctl label b { color: var(--a2); font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--a); height: 28px; }
+  .out { font-size: 20px; line-height: 1.6; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .out b { color: var(--ok); }
+  .q { font-size: 16px; color: var(--muted); border-left: 3px solid var(--a2); padding-left: 10px; }
+  button { font-size: 17px; padding: 10px 14px; border-radius: 10px; border: none; background: var(--a); color: #03060c; font-weight: 700; cursor: pointer; }
+  .home { padding: 30px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .home a { display: block; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--text); text-decoration: none; font-size: 20px; }
+  .home a:hover { border-color: var(--a); color: var(--a); }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } #cv { height: 55vh; } }
+</style>
+</head>
+<body>
+<header><h1>🧪 Laboratorio de matemáticas</h1>
+  <select id="pick"><option value="">— escoge —</option>{% for k, v in labs.items() %}<option value="{{ k }}" {% if k == lab %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+</header>
+{% if not lab %}
+<div class="home">{% for k, v in labs.items() %}<a href="/lab/{{ k }}">{{ v }}</a>{% endfor %}</div>
+{% else %}
+<main><canvas id="cv"></canvas><aside id="side"></aside></main>
+{% endif %}
+<script>
+(() => {
+  const LAB = {{ lab|tojson }};
+  document.getElementById("pick").addEventListener("change", (e) => { location.href = "/lab/" + e.target.value; });
+  if (!LAB) return;
+  const cv = document.getElementById("cv"), side = document.getElementById("side"), ctx = cv.getContext("2d");
+  const fmt = (v, d = 2) => (Math.round(v * 10 ** d) / 10 ** d).toString().replace(".", ",");
+  const P = {};
+  let draw = () => {};
+  function slider(key, label, min, max, step, val) {
+    P[key] = val;
+    const box = document.createElement("div"); box.className = "ctl";
+    const l = document.createElement("label"); const b = document.createElement("b"); l.append(label, b);
+    const r = document.createElement("input"); r.type = "range"; r.min = min; r.max = max; r.step = step; r.value = val;
+    const upd = () => { P[key] = parseFloat(r.value); b.textContent = fmt(P[key]); draw(); };
+    r.addEventListener("input", upd); b.textContent = fmt(val);
+    box.append(l, r); side.append(box);
+  }
+  const out = document.createElement("div"); out.className = "out";
+  const ask = (t) => { const q = document.createElement("p"); q.className = "q"; q.textContent = "🤔 " + t; side.append(q); };
+  function size() { const r = cv.getBoundingClientRect(); cv.width = r.width * devicePixelRatio; cv.height = r.height * devicePixelRatio; draw(); }
+  // plano cartesiano con escala
+  function plane(xmin, xmax, ymin, ymax) {
+    const W = cv.width, H = cv.height, pad = 30 * devicePixelRatio;
+    const sx = (x) => pad + (x - xmin) / (xmax - xmin) * (W - 2 * pad), sy = (y) => H - pad - (y - ymin) / (ymax - ymin) * (H - 2 * pad);
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineWidth = 1; ctx.strokeStyle = "#13283a"; ctx.fillStyle = "#7d95ab"; ctx.font = `${13 * devicePixelRatio}px system-ui`;
+    for (let x = Math.ceil(xmin); x <= xmax; x++) { ctx.beginPath(); ctx.moveTo(sx(x), sy(ymin)); ctx.lineTo(sx(x), sy(ymax)); ctx.stroke(); if (x) ctx.fillText(x, sx(x) + 2, sy(0) + 14 * devicePixelRatio); }
+    for (let y = Math.ceil(ymin); y <= ymax; y++) { ctx.beginPath(); ctx.moveTo(sx(xmin), sy(y)); ctx.lineTo(sx(xmax), sy(y)); ctx.stroke(); if (y) ctx.fillText(y, sx(0) + 4, sy(y) - 3); }
+    ctx.strokeStyle = "#9fb3c8"; ctx.lineWidth = 2 * devicePixelRatio;
+    ctx.beginPath(); ctx.moveTo(sx(xmin), sy(0)); ctx.lineTo(sx(xmax), sy(0)); ctx.moveTo(sx(0), sy(ymin)); ctx.lineTo(sx(0), sy(ymax)); ctx.stroke();
+    return { sx, sy };
+  }
+  function curve(f, sx, sy, xmin, xmax, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 4 * devicePixelRatio; ctx.beginPath();
+    let pen = false;
+    for (let i = 0; i <= 800; i++) {
+      const x = xmin + (xmax - xmin) * i / 800, y = f(x);
+      if (!isFinite(y) || Math.abs(y) > 1e4) { pen = false; continue; }
+      if (pen) ctx.lineTo(sx(x), sy(y)); else { ctx.moveTo(sx(x), sy(y)); pen = true; }
+    }
+    ctx.stroke();
+  }
+  function dot(x, y, color, label) {
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 7 * devicePixelRatio, 0, 7); ctx.fill();
+    if (label) { ctx.fillStyle = "#e6f6ff"; ctx.font = `bold ${15 * devicePixelRatio}px system-ui`; ctx.fillText(label, x + 10, y - 10); }
+  }
+
+  const labs = {
+    parabola() {
+      slider("a", "a", -3, 3, 0.1, 1); slider("b", "b", -6, 6, 0.1, 0); slider("c", "c", -6, 6, 0.1, -2); side.append(out);
+      ask("¿Qué pasa con la parábola si a es negativo? ¿Y si a se acerca a 0?"); ask("¿Qué hace c? ¿Dónde corta el eje y?");
+      draw = () => {
+        const { a, b, c } = P, { sx, sy } = plane(-8, 8, -8, 8);
+        curve((x) => a * x * x + b * x + c, sx, sy, -8, 8, "#2ee6ff");
+        let t = `y = <b>${fmt(a)}x² ${b >= 0 ? "+" : "−"} ${fmt(Math.abs(b))}x ${c >= 0 ? "+" : "−"} ${fmt(Math.abs(c))}</b><br>`;
+        if (Math.abs(a) > 1e-9) {
+          const h = -b / (2 * a), k = a * h * h + b * h + c, D = b * b - 4 * a * c;
+          dot(sx(h), sy(k), "#ffb547", `V(${fmt(h, 1)}; ${fmt(k, 1)})`);
+          t += `Vértice: (${fmt(h)}; ${fmt(k)}) · abre hacia ${a > 0 ? "arriba" : "abajo"}<br>Discriminante: ${fmt(D)} → `;
+          if (D > 0) { const r1 = (-b - Math.sqrt(D)) / (2 * a), r2 = (-b + Math.sqrt(D)) / (2 * a); dot(sx(r1), sy(0), "#3dff9a"); dot(sx(r2), sy(0), "#3dff9a"); t += `dos raíces: ${fmt(Math.min(r1, r2))} y ${fmt(Math.max(r1, r2))}`; }
+          else if (Math.abs(D) < 1e-9) { dot(sx(h), sy(0), "#3dff9a"); t += `una raíz doble: ${fmt(h)}`; } else t += "no corta el eje x";
+        } else t += "Con a = 0 ya no es parábola: es una recta.";
+        dot(sx(0), sy(c), "#ff6b6b", "c");
+        out.innerHTML = t;
+      };
+    },
+    recta() {
+      slider("m", "pendiente m", -5, 5, 0.1, 1); slider("b", "intercepto b", -6, 6, 0.1, 1); side.append(out);
+      ask("¿Qué significa una pendiente negativa? ¿Y una pendiente 0?"); ask("Si m = 2, ¿cuánto sube y cuando x avanza 1?");
+      draw = () => {
+        const { m, b } = P, { sx, sy } = plane(-8, 8, -8, 8);
+        curve((x) => m * x + b, sx, sy, -8, 8, "#2ee6ff");
+        ctx.strokeStyle = "#ffb547"; ctx.setLineDash([8, 6]); ctx.lineWidth = 3 * devicePixelRatio;
+        ctx.beginPath(); ctx.moveTo(sx(1), sy(m + b)); ctx.lineTo(sx(2), sy(m + b)); ctx.lineTo(sx(2), sy(2 * m + b)); ctx.stroke(); ctx.setLineDash([]);
+        dot(sx(0), sy(b), "#ff6b6b", "b");
+        if (Math.abs(m) > 1e-9) dot(sx(-b / m), sy(0), "#3dff9a", `x = ${fmt(-b / m, 1)}`);
+        out.innerHTML = `y = <b>${fmt(m)}x ${b >= 0 ? "+" : "−"} ${fmt(Math.abs(b))}</b><br>Por cada 1 que avanza x, y ${m >= 0 ? "sube" : "baja"} ${fmt(Math.abs(m))}.<br>` +
+          `Corta el eje y en ${fmt(b)}` + (Math.abs(m) > 1e-9 ? ` y el eje x en ${fmt(-b / m)}.` : " y nunca corta el eje x (es horizontal).");
+      };
+    },
+    circulo() {
+      slider("g", "ángulo θ (grados)", 0, 360, 1, 30); side.append(out);
+      ask("¿En qué cuadrantes el seno es negativo?"); ask("¿Por qué sen²θ + cos²θ siempre da 1?");
+      draw = () => {
+        const g = P.g, r = g * Math.PI / 180, { sx, sy } = plane(-1.6 * cv.width / cv.height, 1.6 * cv.width / cv.height, -1.6, 1.6);
+        ctx.strokeStyle = "#2ee6ff"; ctx.lineWidth = 3 * devicePixelRatio; ctx.beginPath(); ctx.arc(sx(0), sy(0), sx(1) - sx(0), 0, 7); ctx.stroke();
+        const x = Math.cos(r), y = Math.sin(r);
+        ctx.lineWidth = 4 * devicePixelRatio;
+        ctx.strokeStyle = "#3dff9a"; ctx.beginPath(); ctx.moveTo(sx(x), sy(0)); ctx.lineTo(sx(x), sy(y)); ctx.stroke();
+        ctx.strokeStyle = "#ffb547"; ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); ctx.lineTo(sx(x), sy(0)); ctx.stroke();
+        ctx.strokeStyle = "#e6f6ff"; ctx.lineWidth = 2 * devicePixelRatio; ctx.beginPath(); ctx.moveTo(sx(0), sy(0)); ctx.lineTo(sx(x), sy(y)); ctx.stroke();
+        ctx.strokeStyle = "#ff6b6b"; ctx.beginPath(); ctx.arc(sx(0), sy(0), 30 * devicePixelRatio, 0, -r, true); ctx.stroke();
+        dot(sx(x), sy(y), "#e6f6ff", "P");
+        const tan = Math.abs(x) < 1e-9 ? "no existe" : fmt(y / x, 3);
+        out.innerHTML = `θ = <b>${g}°</b> = ${fmt(r, 3)} rad<br><span style="color:#3dff9a">sen θ = ${fmt(y, 3)}</span><br>` +
+          `<span style="color:#ffb547">cos θ = ${fmt(x, 3)}</span><br>tan θ = ${tan}<br>Cuadrante: ${g % 90 === 0 ? "sobre un eje" : ["I", "II", "III", "IV"][Math.floor((g % 360) / 90)]}`;
+      };
+    },
+    seno() {
+      slider("A", "amplitud A", 0.2, 4, 0.1, 1); slider("B", "frecuencia B", 0.2, 4, 0.1, 1); slider("C", "desfase C", -3.14, 3.14, 0.01, 0); slider("D", "desplazamiento D", -3, 3, 0.1, 0); side.append(out);
+      ask("¿Qué cambia cuando duplicamos B?"); ask("¿Cuál es el valor máximo y mínimo de la función?");
+      draw = () => {
+        const { A, B, C, D } = P, { sx, sy } = plane(-7, 7, -5, 5);
+        curve((x) => Math.sin(x), sx, sy, -7, 7, "#24465e");
+        curve((x) => A * Math.sin(B * x + C) + D, sx, sy, -7, 7, "#2ee6ff");
+        out.innerHTML = `y = <b>${fmt(A)}·sen(${fmt(B)}x ${C >= 0 ? "+" : "−"} ${fmt(Math.abs(C))}) ${D >= 0 ? "+" : "−"} ${fmt(Math.abs(D))}</b><br>` +
+          `Período: 2π/B = ${fmt(2 * Math.PI / B)}<br>Máximo: ${fmt(A + D)} · Mínimo: ${fmt(D - A)}<br><span style="color:#7d95ab">En gris: y = sen x</span>`;
+      };
+    },
+    exponencial() {
+      slider("a", "valor inicial a", 0.5, 5, 0.1, 1); slider("b", "base b", 0.2, 3, 0.05, 2); side.append(out);
+      ask("¿Qué pasa si b está entre 0 y 1?"); ask("Si una población se duplica cada año, ¿cuánto hay a los 5 años?");
+      draw = () => {
+        const { a, b } = P, { sx, sy } = plane(-5, 6, -1, 12);
+        curve((x) => a * Math.pow(b, x), sx, sy, -5, 6, "#2ee6ff");
+        dot(sx(0), sy(a), "#ff6b6b", "a");
+        out.innerHTML = `y = <b>${fmt(a)}·${fmt(b)}ˣ</b><br>${b > 1 ? "Crece" : b < 1 ? "Decrece" : "Es constante"}: ` +
+          `${b !== 1 ? `cada vez que x aumenta 1, y se multiplica por ${fmt(b)}` : ""}<br>x = 5 → y = ${fmt(a * Math.pow(b, 5))}`;
+      };
+    },
+    pitagoras() {
+      slider("a", "cateto a", 1, 10, 0.5, 3); slider("b", "cateto b", 1, 10, 0.5, 4); side.append(out);
+      ask("¿Los cuadrados de los catetos juntos ocupan lo mismo que el de la hipotenusa?"); ask("¿Qué triángulos tienen lados enteros (3, 4, 5…)?");
+      draw = () => {
+        const { a, b } = P, c = Math.hypot(a, b), W = cv.width, H = cv.height, s = Math.min(W, H) / (a + b + c + 2) * 0.9;
+        ctx.clearRect(0, 0, W, H);
+        const ox = W / 2 - b * s / 2, oy = H / 2 + a * s / 3;
+        const A = [ox, oy], B = [ox + b * s, oy], C = [ox, oy - a * s];
+        const sq = (p, q, col) => { const dx = q[0] - p[0], dy = q[1] - p[1]; ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(...p); ctx.lineTo(...q);
+          ctx.lineTo(q[0] + dy, q[1] - dx); ctx.lineTo(p[0] + dy, p[1] - dx); ctx.closePath(); ctx.fill(); };
+        sq(B, A, "rgba(255,181,71,.35)"); sq(A, C, "rgba(61,255,154,.3)"); sq(C, B, "rgba(46,230,255,.3)");
+        ctx.strokeStyle = "#e6f6ff"; ctx.lineWidth = 3 * devicePixelRatio; ctx.beginPath(); ctx.moveTo(...A); ctx.lineTo(...B); ctx.lineTo(...C); ctx.closePath(); ctx.stroke();
+        ctx.fillStyle = "#e6f6ff"; ctx.font = `bold ${18 * devicePixelRatio}px system-ui`;
+        ctx.fillText(`a = ${fmt(a)}`, A[0] - 70 * devicePixelRatio, (A[1] + C[1]) / 2); ctx.fillText(`b = ${fmt(b)}`, (A[0] + B[0]) / 2, A[1] + 26 * devicePixelRatio);
+        ctx.fillText(`c = ${fmt(c)}`, (B[0] + C[0]) / 2 + 10, (B[1] + C[1]) / 2 - 10);
+        out.innerHTML = `a² + b² = ${fmt(a * a)} + ${fmt(b * b)} = <b>${fmt(a * a + b * b)}</b><br>c² = <b>${fmt(c * c)}</b><br>c = √${fmt(a * a + b * b)} = <b>${fmt(c, 3)}</b>`;
+      };
+    },
+    fracciones() {
+      slider("n", "numerador", 0, 12, 1, 3); slider("d", "denominador", 1, 12, 1, 4); side.append(out);
+      ask("¿3/4 y 6/8 son la misma cantidad de pizza?"); ask("¿Qué pasa cuando el numerador es mayor que el denominador?");
+      draw = () => {
+        const { n, d } = P, W = cv.width, H = cv.height;
+        ctx.clearRect(0, 0, W, H);
+        const pizzas = Math.max(1, Math.ceil(n / d)), r = Math.min(H * 0.38, W / (pizzas * 2.4));
+        for (let p = 0; p < pizzas; p++) {
+          const cx = W / 2 + (p - (pizzas - 1) / 2) * r * 2.3, cy = H / 2;
+          for (let i = 0; i < d; i++) {
+            const filled = p * d + i < n;
+            ctx.fillStyle = filled ? "#ffb547" : "#0f2233"; ctx.strokeStyle = "#03060c"; ctx.lineWidth = 3 * devicePixelRatio;
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, -Math.PI / 2 + i * 2 * Math.PI / d, -Math.PI / 2 + (i + 1) * 2 * Math.PI / d); ctx.closePath(); ctx.fill(); ctx.stroke();
+          }
+        }
+        const g = (x, y) => (y ? g(y, x % y) : x), k = g(n, d) || 1;
+        out.innerHTML = `<b>${n}/${d}</b> = ${fmt(n / d, 3)}<br>` + (k > 1 ? `Simplificada: <b>${n / k}/${d / k}</b><br>` : "") +
+          (n > d ? `Fracción impropia: ${Math.floor(n / d)} entera${Math.floor(n / d) > 1 ? "s" : ""} y ${n % d}/${d}` : n === d ? "¡Una pizza completa!" : "Fracción propia (menos de una pizza)");
+      };
+    },
+    dados() {
+      slider("dados", "número de dados", 1, 3, 1, 2); slider("n", "lanzamientos", 10, 2000, 10, 200); side.append(out);
+      const b = document.createElement("button"); b.textContent = "🎲 Lanzar"; b.addEventListener("click", () => draw(true)); side.append(b);
+      ask("Con dos dados, ¿por qué el 7 sale más que el 2 o el 12?"); ask("¿Qué pasa con las barras cuando lanzamos muchas más veces?");
+      let last = null;
+      draw = (roll) => {
+        const { dados, n } = P, W = cv.width, H = cv.height, lo = dados, hi = 6 * dados;
+        if (roll || !last || last.dados !== dados) {
+          const c = {}; for (let s = lo; s <= hi; s++) c[s] = 0;
+          for (let i = 0; i < n; i++) { let s = 0; for (let k = 0; k < dados; k++) s += 1 + Math.floor(Math.random() * 6); c[s]++; }
+          last = { c, n, dados };
+        }
+        // probabilidad teórica
+        let dist = { 0: 1 }; for (let k = 0; k < dados; k++) { const nd = {}; for (const s in dist) for (let f = 1; f <= 6; f++) nd[+s + f] = (nd[+s + f] || 0) + dist[s] / 6; dist = nd; }
+        ctx.clearRect(0, 0, W, H);
+        const cols = hi - lo + 1, bw = (W - 80) / cols, max = Math.max(...Object.values(last.c).map((v) => v / last.n), ...Object.values(dist));
+        for (let s = lo; s <= hi; s++) {
+          const i = s - lo, x = 40 + i * bw, h = (last.c[s] / last.n) / max * (H - 90);
+          ctx.fillStyle = "#2ee6ff"; ctx.fillRect(x + bw * 0.15, H - 50 - h, bw * 0.7, h);
+          const ht = dist[s] / max * (H - 90); ctx.fillStyle = "#ffb547"; ctx.fillRect(x + bw * 0.1, H - 50 - ht - 2, bw * 0.8, 4 * devicePixelRatio);
+          ctx.fillStyle = "#c9d6e2"; ctx.font = `${14 * devicePixelRatio}px system-ui`; ctx.fillText(s, x + bw * 0.4, H - 26);
+        }
+        const most = Object.entries(last.c).sort((a, b) => b[1] - a[1])[0];
+        out.innerHTML = `${last.n} lanzamientos de ${dados} dado${dados > 1 ? "s" : ""}<br>Lo que más salió: <b>${most[0]}</b> (${fmt(100 * most[1] / last.n, 1)} %)<br>` +
+          `<span style="color:#2ee6ff">■ lo que salió</span> · <span style="color:#ffb547">▬ lo que dice la probabilidad</span>`;
+      };
+    },
+    areas() {
+      slider("b", "base", 1, 12, 0.5, 6); slider("h", "altura", 1, 10, 0.5, 4); side.append(out);
+      ask("Si duplico la base, ¿qué le pasa al área? ¿Y al perímetro?"); ask("¿Por qué el triángulo tiene la mitad del área del rectángulo?");
+      draw = () => {
+        const { b, h } = P, W = cv.width, H = cv.height, s = Math.min((W - 80) / (2 * b + 3), (H - 80) / h);
+        ctx.clearRect(0, 0, W, H);
+        const x0 = 40, y0 = H - 40;
+        ctx.fillStyle = "rgba(46,230,255,.25)"; ctx.strokeStyle = "#2ee6ff"; ctx.lineWidth = 3 * devicePixelRatio;
+        ctx.fillRect(x0, y0 - h * s, b * s, h * s); ctx.strokeRect(x0, y0 - h * s, b * s, h * s);
+        ctx.strokeStyle = "#1b3a50"; ctx.lineWidth = 1;
+        for (let i = 1; i < b; i++) { ctx.beginPath(); ctx.moveTo(x0 + i * s, y0); ctx.lineTo(x0 + i * s, y0 - h * s); ctx.stroke(); }
+        for (let j = 1; j < h; j++) { ctx.beginPath(); ctx.moveTo(x0, y0 - j * s); ctx.lineTo(x0 + b * s, y0 - j * s); ctx.stroke(); }
+        const x1 = x0 + b * s + 2 * s;
+        ctx.fillStyle = "rgba(255,181,71,.3)"; ctx.strokeStyle = "#ffb547"; ctx.lineWidth = 3 * devicePixelRatio;
+        ctx.beginPath(); ctx.moveTo(x1, y0); ctx.lineTo(x1 + b * s, y0); ctx.lineTo(x1 + b * s / 2, y0 - h * s); ctx.closePath(); ctx.fill(); ctx.stroke();
+        out.innerHTML = `<span style="color:#2ee6ff">Rectángulo</span>: área = b·h = <b>${fmt(b * h)}</b> u² · perímetro = <b>${fmt(2 * (b + h))}</b> u<br>` +
+          `<span style="color:#ffb547">Triángulo</span>: área = b·h/2 = <b>${fmt(b * h / 2)}</b> u²`;
+      };
+    },
+  };
+  labs[LAB]();
+  addEventListener("resize", size);
+  size();
+})();
+</script>
+</body>
+</html>
