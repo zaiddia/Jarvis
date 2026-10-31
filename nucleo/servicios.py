@@ -353,6 +353,10 @@ def restore_backup(name, parts):
         J.practica.load()
     if "planeacion" in done:                           # 10.8
         J.anual.load()
+    if "entregas" in done:                             # 11.1
+        J.entregas.load()
+    if "retos" in done:
+        J.retos.load()
     if "compromisos" in done:                          # 9.3
         J.compromisos.load()
     if "lecciones" in done:                            # 9.4

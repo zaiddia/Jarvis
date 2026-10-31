@@ -157,6 +157,22 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Entregas de programación revisadas por la IA y el reto matemático de la semana (v11.1)
+
+**Entregas de programación (Tecnología e Informática).** «**Recibe los programas de 8A, la tarea es: un programa que
+diga si un número es par**»: en el proyector sale un QR; cada estudiante entra con su nombre y su PIN (el mismo de la
+práctica), escoge el lenguaje (Python, pseudocódigo/PSeInt, JavaScript…) y **pega su código** o **le toma foto** a su
+diagrama de flujo o a su programa en Scratch. Al momento recibe qué está bien, qué mejorar y una pista, **sin la
+solución** (si la IA intenta dársela, Jarvis la cambia por una pista), y puede mejorarlo hasta 3 veces. **Jarvis nunca
+ejecuta el código**: lo lee. La nota sugerida (1,0 a 5,0) solo la ves tú: «**¿cómo van las entregas?**», «**cierra las
+entregas**» y «**anota las entregas**» (la mejor de cada estudiante, en Hacer de Tecnología, con tu «sí»).
+
+**Reto de la semana.** «**Lanza el reto de la semana para 7A**» (o «…sobre fracciones»): tres problemas de opción
+múltiple, **bronce, plata y oro**, en el celular por QR (nombre y PIN). Puntos: 1, 2 y 3 (la mitad con el segundo
+intento), +1 al primero en resolver todo y +1 por racha desde la tercera semana seguida. **Insignias**: 🥇 Oro,
+💯 Perfecto, ⚡ Primero, 🔥 Racha 3 y 5, 📈 Mejora. «**Cierra el reto**» suma la semana y dice el podio; «**muestra el
+ranking de 7A**» lo abre en grande para el proyector (se actualiza solo).
+
 ## Evaluaciones en versiones A, B, C, D y material con gráficas y figuras (v11.0)
 
 **Versiones.** «**Prepara las hojas de respuesta del quiz para 7A en 4 versiones**» (o «…con versiones»; también 2 o
