@@ -122,9 +122,9 @@
     const t = st.timers[0];
     if (!live.on && tk.open) {
       const w = node("div", "tk");
-      const im = node("img"); im.src = `/ticket-qr.png?t=${Math.floor(Date.now() / 4096)}`; im.alt = "Código QR";
+      const im = node("img"); im.src = `${tk.qr || "/ticket-qr.png"}?t=${Math.floor(Date.now() / 4096)}`; im.alt = "Código QR";
       const info = node("div", "tk-info");
-      info.append(node("div", "kicker", tk.tipo === "semaforo" ? "¿Cómo te fue? Escanea y responde" : "Ticket de salida · escanea y responde"),
+      info.append(node("div", "kicker", tk.tipo === "semaforo" ? "¿Cómo te fue? Escanea y responde" : tk.tipo === "practica" ? "Práctica personal · escanea y entra con tu nombre" : tk.tipo === "saber" ? "Mini simulacro Saber · escanea y responde" : "Ticket de salida · escanea y responde"),
                   node("div", "tk-n", String(tk.n || 0)), node("div", "label", "respuestas"), node("div", "tk-url", tk.url || ""));
       w.append(im, info); box.append(w); stage.append(box); header(); return;
     }

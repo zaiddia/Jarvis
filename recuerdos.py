@@ -251,7 +251,8 @@ def cosine(a, b):
 def _vec_cache_path(tag=""):
     if not _dir:
         return None
-    return os.path.join(_dir, f"vectores-{re.sub(r'[^\w.-]', '_', tag) or 'x'}.json")
+    safe = re.sub(r"[^\w.-]", "_", tag) or "x"          # (sin «\» dentro de la f-string: Python 3.11)
+    return os.path.join(_dir, f"vectores-{safe}.json")
 
 
 def _key(text):

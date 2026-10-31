@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi práctica</title>
+<style>
+  :root { --a: #2ee6ff; --a2: #ffb547; --ok: #3dff9a; --bad: #ff6b6b; --bg: #03060c; --card: #071320; --line: #1d3344; --text: #e6f6ff; --muted: #7d95ab; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); padding: 18px 16px 48px; line-height: 1.45; }
+  h1 { font-size: 21px; color: var(--a); margin-bottom: 2px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+  select, input { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; border: 1px solid #2a4458; background: var(--card); color: var(--text); margin-bottom: 12px; }
+  button { width: 100%; padding: 14px; font-size: 17px; font-weight: 700; border: none; border-radius: 12px; background: var(--a); color: #03060c; margin-bottom: 10px; }
+  button.ghost { background: none; border: 1px solid #2a4458; color: var(--text); font-weight: 500; }
+  button:disabled { opacity: .5; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .tag { font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
+  .q { font-size: 17px; font-weight: 600; margin-bottom: 14px; white-space: pre-wrap; }
+  .op { display: block; width: 100%; text-align: left; padding: 13px; margin-bottom: 9px; border: 1px solid #2a4458; border-radius: 11px; background: #0a1a29;
+    color: var(--text); font-size: 16px; font-weight: 500; }
+  .op.bad { border-color: var(--bad); opacity: .55; } .op.good { border-color: var(--ok); background: #0b2a1c; }
+  .fb { margin: 10px 0; font-size: 15px; } .fb.ok { color: var(--ok); font-weight: 700; } .fb.hint { color: var(--a2); }
+  .exp { white-space: pre-wrap; font-size: 15px; color: var(--text); background: #0a1a29; border-radius: 10px; padding: 12px; margin: 8px 0 12px; }
+  .msg { color: var(--a2); font-size: 14px; min-height: 20px; margin-bottom: 8px; }
+  .topics span { display: inline-block; font-size: 13px; border: 1px solid #2a4458; border-radius: 999px; padding: 3px 10px; margin: 0 6px 6px 0; }
+  .chat { margin-top: 6px; } .chat p { font-size: 14px; margin-bottom: 8px; } .chat p.me { color: var(--muted); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<h1>Mi práctica</h1>
+<p class="sub" id="curso">Tu tutor personal</p>
+
+<section id="login" class="card">
+  <select id="nombre"><option value="">Escoge tu nombre…</option></select>
+  <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="Tu PIN de 4 números (la primera vez lo creas)">
+  <button id="entrar">Entrar</button>
+  <p class="msg" id="lmsg"></p>
+</section>
+
+<section id="home" hidden>
+  <div class="card"><p id="hola" class="q"></p><div class="tag">Vas a practicar</div><div class="topics" id="temas"></div></div>
+  <button id="go">Practicar</button>
+</section>
+
+<section id="ex" hidden>
+  <div class="card">
+    <div class="tag" id="extag"></div>
+    <p class="q" id="exq"></p>
+    <div id="ops"></div>
+    <p class="fb" id="fb"></p>
+    <div class="exp" id="exp" hidden></div>
+    <button id="next" hidden>Siguiente ejercicio</button>
+  </div>
+  <div class="card">
+    <div class="tag">¿Te enredaste? Pregúntale al tutor (no te da la respuesta, te guía)</div>
+    <input id="ask" maxlength="300" placeholder="Ej.: no entiendo por dónde empezar">
+    <button class="ghost" id="askb">Preguntar</button>
+    <div class="chat" id="chat"></div>
+  </div>
+</section>
+<script>
+(() => {
+  const code = {{ code|tojson }};
+  const $ = (s) => document.querySelector(s);
+  const base = `/p/${code}`;
+  let k = "", cur = null;
+  const post = (u, d) => fetch(base + u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ k }, d || {})) }).then((r) => r.json());
+  fetch(base + "/lista").then((r) => r.json()).then((d) => {
+    $("#curso").textContent = `Práctica personal · ${d.curso}`;
+    d.nombres.forEach((n) => { const o = document.createElement("option"); o.value = o.textContent = n; $("#nombre").appendChild(o); });
+  });
+  $("#entrar").addEventListener("click", () => {
+    post("/entrar", { nombre: $("#nombre").value, pin: $("#pin").value }).then((r) => {
+      if (!r.ok) { $("#lmsg").textContent = r.msg; return; }
+      k = r.k; $("#login").hidden = true; $("#home").hidden = false;
+      $("#hola").textContent = `¡Hola, ${r.nombre}! ` + (r.ej ? `Llevas ${r.ej} ejercicios.` : "Empecemos.") + (r.msg ? " " + r.msg : "");
+      $("#temas").innerHTML = ""; r.temas.forEach((t) => { const s = document.createElement("span"); s.textContent = t.replace("Saber: ", "Saber · "); $("#temas").appendChild(s); });
+    });
+  });
+  function load() {
+    $("#home").hidden = true; $("#ex").hidden = false;
+    $("#exq").textContent = "Preparando tu ejercicio…"; $("#ops").innerHTML = ""; $("#fb").textContent = ""; $("#exp").hidden = true; $("#next").hidden = true;
+    post("/siguiente").then((r) => {
+      if (!r.ok) { $("#exq").textContent = r.msg; $("#next").hidden = false; return; }
+      cur = r;
+      $("#extag").textContent = `${r.tema} · nivel ${r.nivel} · ejercicio ${r.hecho + 1}`;
+      $("#exq").textContent = r.enunciado;
+      r.opciones.forEach((o, i) => {
+        const b = document.createElement("button"); b.className = "op"; b.textContent = "ABCD"[i] + ") " + o;
+        b.addEventListener("click", () => answer(i, b)); $("#ops").appendChild(b);
+      });
+    });
+  }
+  function answer(i, b) {
+    post("/responder", { id: cur.id, opcion: i }).then((r) => {
+      if (!r.ok) { $("#fb").textContent = r.msg; return; }
+      if (r.correcto) {
+        b.classList.add("good"); $("#fb").className = "fb ok"; $("#fb").textContent = r.msg + (r.nivel ? ` (nivel ${r.nivel})` : "");
+        if (r.explicacion) { $("#exp").textContent = r.explicacion; $("#exp").hidden = false; }
+        [...$("#ops").children].forEach((x) => x.disabled = true); $("#next").hidden = false;
+        if (navigator.vibrate) navigator.vibrate(40);
+      } else if (r.fin) {
+        b.classList.add("bad"); $("#fb").className = "fb"; $("#fb").textContent = `${r.msg} la respuesta es «${r.respuesta}».`;
+        $("#exp").textContent = r.explicacion || ""; $("#exp").hidden = !r.explicacion;
+        [...$("#ops").children].forEach((x) => x.disabled = true); $("#next").hidden = false;
+      } else {
+        b.classList.add("bad"); b.disabled = true; $("#fb").className = "fb hint"; $("#fb").textContent = `💡 ${r.pista}`;
+      }
+    });
+  }
+  $("#go").addEventListener("click", load);
+  $("#next").addEventListener("click", load);
+  $("#askb").addEventListener("click", () => {
+    const t = $("#ask").value.trim(); if (!t) return;
+    const me = document.createElement("p"); me.className = "me"; me.textContent = "Tú: " + t; $("#chat").prepend(me); $("#ask").value = "";
+    post("/preguntar", { texto: t }).then((r) => { const p = document.createElement("p"); p.textContent = (r.ok ? "Tutor: " : "") + r.msg; $("#chat").prepend(p); });
+  });
+})();
+</script>
+</body>
+</html>

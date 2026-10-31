@@ -349,6 +349,8 @@ def restore_backup(name, parts):
         J.examenes.load()
     if "saber" in done:                                # 10.6
         J.saber.load()
+    if "practica" in done:                             # 10.7
+        J.practica.load()
     if "compromisos" in done:                          # 9.3
         J.compromisos.load()
     if "lecciones" in done:                            # 9.4

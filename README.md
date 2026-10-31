@@ -157,6 +157,20 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Tutor personal para cada estudiante (v10.7)
+
+- «**Activa la práctica de 7A**»: en el proyector aparece un código QR. Cada estudiante lo escanea con su celular (en
+  la wifi del colegio), escoge su nombre y crea un PIN de 4 números la primera vez.
+- Practica **lo que a él le cuesta**: lo que falló en las evaluaciones con hoja de respuestas, su competencia Saber
+  más floja, sus notas bajas o el tema de la clase. Los ejercicios **suben o bajan de nivel** solos (dos aciertos
+  seguidos: sube; dos fallos: baja).
+- Si se equivoca recibe una **pista que no da la respuesta** y vuelve a intentar; a la tercera, la explicación paso a
+  paso. Puede **preguntarle al tutor**, que lo guía con preguntas sin decirle la opción correcta.
+- Tú ves el avance: «**¿quién ha practicado en 7A?**» (y el tablero con ejercicios, % a la primera, días y nivel por
+  tema). «**Anota la práctica de 7A**» propone la nota de práctica en **Hacer** (acertar a la primera = 1 punto, con
+  pista = ½; la meta para el 5,0 se ajusta en Ajustes), solo con tu «sí». «Borra el PIN de Juan de 7A» si lo olvida.
+- Sin la IA, el tutor usa las preguntas de tu banco.
+
 ## Programa Saber 11 y Saber 9 (v10.6)
 
 - «**Haz un simulacro Saber de 20 preguntas para 11A**»: preguntas tipo ICFES con contexto, repartidas entre las
