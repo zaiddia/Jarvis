@@ -157,6 +157,23 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## La semana lista el domingo, cierre de periodo y bandeja limpia (v9.8)
+
+**Semana lista.** El domingo en la tarde Jarvis mira tu horario y, por cada curso, el siguiente tema de la malla del
+periodo (o el último del diario de clase), y te propone preparar el **plan de clase de la semana y una evaluación
+corta** de cada curso, junto con lo que viene (compromisos de la semana y estudiantes a los que hay que ponerles ojo).
+Con tu «sí» lo hace como un proyecto y te deja todo en una carpeta. Cuando quieras: «**prepárame la semana**»,
+«**¿cómo viene la semana?**».
+
+**Cierre de periodo.** «**El periodo termina el 28 de noviembre**» (o en Ajustes › Aula). Una semana y tres días antes
+te avisa cómo va cada curso: promedio, quién está en riesgo, quién no tiene notas y qué temas de la malla faltan. Ese
+día te propone el cierre: un **consolidado en Word** de todos tus cursos y las **planillas para Zeti**; luego «Notas
+desde» pasa sola al periodo siguiente. También: «**cierra el periodo**», «**¿cuánto falta para cerrar el periodo?**».
+
+**Bandeja limpia.** Entre semana, temprano, Jarvis lee tu correo, redacta con tu estilo la respuesta de cada correo que
+la pide (lo que solo tú sabes lo deja entre [corchetes]) y las deja en **por aprobar**, con un solo aviso. Se envían
+solo si dices «sí». También: «**limpia mi bandeja**».
+
 ## Alertas tempranas, ficha del estudiante y felicitaciones (v9.7)
 
 **Alertas tempranas.** Jarvis ya no espera a que alguien quede en riesgo: cada tarde de semana mira la *tendencia* de

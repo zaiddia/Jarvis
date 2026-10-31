@@ -730,6 +730,14 @@
       <label class="switch"><input type="checkbox" id="f-email-read" data-key="email_read"><span></span></label>
     </div>
     <div class="field">
+      <div class="ft"><label for="f-inbox-on">Bandeja limpia en la mañana</label><p>Entre semana, temprano, redacta las respuestas de los correos que piden respuesta (con tu estilo) y las deja en «por aprobar». No envía nada sin tu «sí». También: «limpia mi bandeja».</p></div>
+      <label class="switch"><input type="checkbox" id="f-inbox-on" data-key="inbox_drafts"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-inbox-h">Desde las</label></div>
+      <div class="range"><input type="range" id="f-inbox-h" min="4" max="11" step="1" data-key="inbox_hour" data-unit=":00"><output></output></div>
+    </div>
+    <div class="field">
       <div class="ft"><label for="f-email-days">Revisar los últimos</label></div>
       <div class="range"><input type="range" id="f-email-days" min="1" max="14" step="1" data-key="email_days" data-unit=" días"><output></output></div>
     </div>
@@ -907,6 +915,10 @@
     <p class="pane-intro">«Exporta las notas de 7A para Zeti»: una planilla de Excel con cada actividad, la <b>definitiva</b> (1,0 a 5,0), el desempeño y las fallas, y una hoja «Para copiar» con la columna de definitivas lista para pegar en la planilla de Zeti. «Pasa el quiz a Kahoot» o «exporta el quiz a Quizizz»: la hoja con el formato de importación de cada plataforma.</p>
     <div class="field stack"><div class="ft"><label for="f-zeti-since">Notas desde (inicio del periodo)</label><p>AAAA-MM-DD. Vacío = todas las notas.</p></div>
       <input class="inp narrow mono" type="text" id="f-zeti-since" data-key="zeti_since" placeholder="2026-08-03"></div>
+    <div class="field stack"><div class="ft"><label for="f-period-end">Cierre del periodo</label><p>AAAA-MM-DD, o dile «el periodo termina el 28 de noviembre». Te avisa 7 y 3 días antes (quién no tiene notas, quién está en riesgo) y ese día te propone el consolidado en Word y las planillas para Zeti de todos tus cursos. Al cerrar, «Notas desde» pasa al día siguiente.</p></div>
+      <input class="inp narrow mono" type="text" id="f-period-end" data-key="period_end" placeholder="2026-11-28"></div>
+    <div class="field stack"><div class="ft"><label for="f-period-name">Nombre del periodo</label></div>
+      <input class="inp narrow" type="text" id="f-period-name" data-key="period_name" placeholder="Periodo 4"></div>
     <div class="field stack">
       <div class="ft"><label>Orden de los estudiantes</label><p>Usa el mismo orden que la lista de Zeti para poder pegar la columna directamente.</p></div>
       <div class="seg">
@@ -937,6 +949,13 @@
     <div class="field"><div class="ft"><label for="f-early-on">Alertas tempranas y felicitaciones</label>
       <p>Cada tarde mira la tendencia: quién viene bajando o faltando seguido (antes de quedar en riesgo) y quién mejoró, para proponerte una felicitación en el observador. «¿Quién viene bajando?», «muéstrame a Juan de 7A».</p></div>
       <label class="switch"><input type="checkbox" id="f-early-on" data-key="early_alerts"><span></span></label></div>
+    <div class="field"><div class="ft"><label for="f-week-on">Semana lista el domingo</label>
+      <p>El domingo en la tarde mira tu horario y el siguiente tema de la malla (o del diario de clase) de cada curso, y te propone preparar el plan de clase y una evaluación corta de cada uno. También: «prepárame la semana», «¿cómo viene la semana?».</p></div>
+      <label class="switch"><input type="checkbox" id="f-week-on" data-key="week_prep"><span></span></label></div>
+    <div class="field"><div class="ft"><label for="f-week-h">El domingo desde las</label></div>
+      <div class="range"><input type="range" id="f-week-h" min="0" max="23" step="1" data-key="week_prep_hour" data-unit=":00"><output></output></div></div>
+    <div class="field"><div class="ft"><label for="f-week-q">Incluir evaluación corta por curso</label></div>
+      <label class="switch"><input type="checkbox" id="f-week-q" data-key="week_prep_quiz"><span></span></label></div>
   </section>
 
   <section class="pane" data-pane="rutinas">

@@ -25,11 +25,15 @@ _callbacks = {}            # id -> (al aprobar, al rechazar)
 BARE_WINDOW = 180          # «sí» a secas vale para la última pedida en los últimos 3 minutos
 
 
-def request_approval(tipo, titulo, detalle="", on_ok=None, on_no=None, ttl=900, say=None):
-    """Pide permiso. on_ok/on_no se ejecutan (en otro hilo) al responder. Devuelve la aprobación."""
+def request_approval(tipo, titulo, detalle="", on_ok=None, on_no=None, ttl=900, say=None, quiet=False):
+    """Pide permiso. on_ok/on_no se ejecutan (en otro hilo) al responder. Devuelve la aprobación.
+    quiet=True (9.8): solo queda en la lista y la campana, sin decirlo (para varias a la vez, con un solo aviso)."""
     item = aprobaciones.add(tipo, titulo, detalle, ttl)
     _callbacks[item["id"]] = (on_ok, on_no)
     J.notice_add(f"Por aprobar: {titulo}", "aprobar", "APROBAR")    # 9.2: campana del HUD
+    if quiet:
+        J.socketio.emit("approvals", {"pending": aprobaciones.pending()})
+        return item
     remote = getattr(J._tl, "remote", False)
     msg = say or f"{titulo}. ¿Lo apruebas? Di «sí» o «no»."
     J.reply(msg + ("" if not remote else f" (Responde «sí {item['id']}» o «no {item['id']}».)"), "APROBAR")

@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "9.7"
+VERSION = "9.8"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -756,6 +756,18 @@ DEFAULT_SETTINGS = {
     "style_learn": True,           # 9.5: aprender tu forma de escribir de lo que envías con Jarvis
     "early_alerts": True,          # 9.7: alertas tempranas (quién viene bajando o faltando) y celebraciones
     "early_last": "",              # 9.7: último día en que avisó de las tendencias
+    "week_prep": True,             # 9.8: el domingo propone preparar la semana (planes y evaluaciones por curso)
+    "week_prep_hour": 17,          # 9.8: a partir de qué hora del domingo
+    "week_prep_quiz": True,        # 9.8: incluir una evaluación corta por curso
+    "week_prep_last": "",
+    "period_end": "",              # 9.8: fecha de cierre del periodo (AAAA-MM-DD)
+    "period_name": "",             # 9.8: p. ej. «Periodo 3»
+    "period_closed": "",
+    "period_warned": "",
+    "inbox_drafts": True,          # 9.8: en la mañana redacta las respuestas de los correos que lo piden (por aprobar)
+    "inbox_hour": 6,               # 9.8: desde qué hora de la mañana
+    "inbox_max": 5,                # 9.8: máximo de respuestas por mañana
+    "inbox_last": "",
     "mcp_servers": "",             # conectores MCP (JSON con el formato de Claude Desktop)
     "mcp_trusted": "",             # conectores que no piden confirmación (nombres separados por comas)
     "mcp_server_enabled": False,   # dejar que otras IA (Claude Desktop…) usen Jarvis por MCP
@@ -789,7 +801,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -820,7 +832,7 @@ def _validate(key, value):
         return round(max(lo, min(hi, v)), 2)
 
     v = str(value).strip()[:6000]
-    if key == "zeti_since" and v:                     # 8.7: una fecha AAAA-MM-DD
+    if key in ("zeti_since", "period_end") and v:                     # 8.7: una fecha AAAA-MM-DD
         v = datetime.date.fromisoformat(v[:10]).isoformat()
     choices = {"theme": THEMES, "ai_provider": tuple(PROVIDERS),
                "zeti_order": ("lista", "apellido"), "hud_expanded": ("estrecho", "amplio", "grande"),
@@ -1442,6 +1454,12 @@ def process_command(text):
         return
     if card_voice(text, t):                            # 9.7: «muéstrame a Juan de 7A», «ficha de Juan»
         return
+    if week_voice(text, t):                            # 9.8: «prepárame la semana», «¿cómo viene la semana?»
+        return
+    if period_voice(text, t):                          # 9.8: «el periodo termina el 28 de noviembre», «cierra el periodo»
+        return
+    if inbox_voice(text, t):                           # 9.8: «redacta las respuestas de mis correos», «limpia mi bandeja»
+        return
     if lessons_voice(text, t):                         # 9.4: «de ahora en adelante…», «¿qué lecciones tienes?»
         return
     if text_feedback_voice(text, t):                   # 9.5: «retroalimenta este texto de Juan de 7A: …»
@@ -1925,6 +1943,10 @@ from nucleo.enclase import *  # noqa: F401,F403,E402
 # → nucleo/estudiantes.py (lógica en tendencias.py)
 from nucleo.estudiantes import *  # noqa: F401,F403,E402
 
+# ── 9.8: semana lista el domingo, cierre de periodo y bandeja limpia
+# → nucleo/semanal.py (lógica en semana.py)
+from nucleo.semanal import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2061,6 +2083,7 @@ def main():
         polish_start()                    # 9.5: tu estilo al escribir
         live_class_start()                # 9.6: clase en vivo y banco de actividades
         students_plus_start()             # 9.7: alertas tempranas y celebraciones
+        routines98_start()                # 9.8: semana lista, cierre de periodo y bandeja limpia
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()
