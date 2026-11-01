@@ -48,7 +48,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "11.7"
+VERSION = "11.8"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -732,6 +732,7 @@ DEFAULT_SETTINGS = {
     "weekly_sent": "",
     "update_night": True,          # 8.3: instalar de noche las versiones nuevas (con copia de seguridad)
     "google_scopes": "",           # 8.5: permisos que diste al conectar tu cuenta de Google (Gmail, Classroom, Forms)
+    "hud_text_size": "normal",     # 11.8: tamaño de la letra del HUD: "normal", "grande" o "proyector"
     "hud_subtitles": True,         # 8.6: subtítulos de lo que dice Jarvis, palabra por palabra
     "hud_expanded": "amplio",      # 9.1: tamaño del HUD expandido (estrecho, amplio o grande)
     "hud_favorites": "",           # 9.2: órdenes favoritas (una por línea), como botones en el HUD
@@ -875,6 +876,7 @@ def _validate(key, value):
                "listen_mode": ("auto", "vivo", "clasico"),
                "live_provider": ("gemini", "openai", "deepgram"),
                "image_provider": ("auto", "gemini", "chatgpt"),
+               "hud_text_size": ("normal", "grande", "proyector"),
                "openai_live_voice": tuple(v for v, _ in envivo.OPENAI_VOICES),
                "deepgram_voice": tuple(v for v, _ in envivo.DEEPGRAM_VOICES),
                "whisper_model": {k: 1 for k, _ in WHISPER_SIZES}}
@@ -1471,6 +1473,10 @@ def process_command(text):
     if ticket_voice(text, t):                          # 9.6: «lanza el ticket de salida», «semáforo de comprensión»
         return
     if activities_voice(text, t):                      # 9.6: «¿qué actividades funcionaron en fracciones?»
+        return
+    if journal_voice(text, t):                         # 11.8: «deshaz lo último», «¿qué hiciste hoy?»
+        return
+    if beam_voice(text, t):                            # 11.8: «proyecta eso», «pon la imagen en el proyector»
         return
     if studio_voice(text, t):                          # 11.7: «otra versión», «cámbiale el fondo a azul», «hazla horizontal», «imprímela»
         return
@@ -2089,6 +2095,10 @@ from nucleo.adjuntar import *  # noqa: F401,F403,E402
 # → nucleo/estudio.py (lógica en imagenes.py)
 from nucleo.estudio import *  # noqa: F401,F403,E402
 
+# ── 11.8: HUD de alto impacto (momento del día, bandeja única, fórmulas, proyectar, paleta, orbe y «Lo que hice hoy»)
+# → nucleo/hudpro.py (lógica en momento.py, bitacora.py y mathtext.py)
+from nucleo.hudpro import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2239,6 +2249,7 @@ def main():
         live_guide_start()                # 11.4: guías vivas y podcasts
         sources_start()                   # 11.5: libros guía
         attach_start()                    # 11.6: archivos subidos al chat
+        hudpro_start()                    # 11.8: «Lo que hice hoy» con deshacer
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

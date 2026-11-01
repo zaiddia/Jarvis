@@ -125,8 +125,17 @@
     return `Di «${w.charAt(0).toUpperCase() + w.slice(1)}» o escribe una orden`;
   }
 
+  function texPlain(f) {
+    for (let i = 0; i < 4; i++) {
+      f = f.replace(/\\sqrt\{([^{}]*)\}/g, (m, a) => (/^\w+$/.test(a) ? "√" + a : `√(${a})`))
+        .replace(/\\[dt]?frac\{([^{}]*)\}\{([^{}]*)\}/g, (m, a, b) => `${/^[\w.]+$/.test(a) ? a : "(" + a + ")"}/${/^[\w.]+$/.test(b) ? b : "(" + b + ")"}`);
+    }
+    return f.replace(/\\(pm|cdot|times|leq?|geq?|neq|pi)\b/g, (x, o) => ({ pm: "±", cdot: "·", times: "×", le: "≤", leq: "≤", ge: "≥", geq: "≥", neq: "≠", pi: "π" }[o]))
+      .replace(/\^\{?2\}?/g, "²").replace(/\^\{?3\}?/g, "³").replace(/\\[a-zA-Z]+/g, "").replace(/[{}]/g, "");
+  }
   function setPreview(text, cls = "") {
     el.preview.className = `preview ${cls}`;
+    text = String(text).replace(/\$\$?([^$]+)\$\$?/g, (m, f) => texPlain(f));   // 11.8: sin LaTeX crudo
     el.preview.textContent = String(text).replace(/\*\*|`/g, "").replace(/\n\s*(?:[-•*]|\d+[.)])\s+/g, " · ").replace(/\s*\n\s*/g, " ");
     void el.preview.offsetWidth;
     el.preview.classList.add("flash");
@@ -143,11 +152,14 @@
 
   /* ---------------- Atenuación en reposo ---------------- */
   let lastActivity = Date.now();
+  let pendingN = 0, momentInfo = null, momentAt = 0;
   function poke() { lastActivity = Date.now(); body.classList.remove("dim"); }
   ["mousemove", "mousedown", "keydown", "wheel"].forEach((e) => document.addEventListener(e, poke, { passive: true }));
   setInterval(() => {
     const idle = st.mode === "idle" && document.activeElement !== el.input;
-    body.classList.toggle("dim", !!current.hud_dim_idle && idle && Date.now() - lastActivity > 9000);
+    const busy = body.classList.contains("inclass") || body.classList.contains("working") || body.classList.contains("projecting") ||
+      timers.length > 0 || pendingN > 0 || dictating;                            // 11.8: en clase, con pendientes o trabajando no se apaga
+    body.classList.toggle("dim", !!current.hud_dim_idle && idle && !busy && Date.now() - lastActivity > 9000);
   }, 1000);
 
   /* ---------------- Estado ---------------- */
@@ -157,7 +169,7 @@
     body.dataset.state = st.mode || "idle";
     if (dictating) { el.mode.textContent = "✎ DICTANDO"; } else
     el.mode.textContent = (tutorOn ? "🎓 TUTOR · " : "") + (st.resting ? "· DESCANSANDO · " : st.viewing ? (st.viewing === "camara" ? "◉ VIENDO CÁMARA · " : "◉ VIENDO PANTALLA · ")
-      : st.live && st.mode !== "speaking" ? "● EN VIVO · " : "") + (MODES[st.mode] || MODES.idle);
+      : st.live && st.mode !== "speaking" ? "● EN VIVO · " : "") + ((st.mode || "idle") === "idle" && momentText() ? momentText() : (MODES[st.mode] || MODES.idle));
     led("#led-mic", { on: "on", off: "off", error: "err" }[st.mic] || "off");
     led("#led-ai", { ok: "on", warn: "warn", error: "err" }[st.ai] || "off");
     led("#led-tts", { ok: "on", off: "off", error: "err" }[st.tts] || "off");
@@ -172,9 +184,19 @@
     if (!hasMessages && st.mode === "idle") setPreview(hint(), "dim");
   }
 
+  function momentText() {                                                         // 11.8: «EN CLASE · 7A · 12 MIN», «10A EN 8 MIN»…
+    const m = momentInfo;
+    if (!m) return "";
+    const el2 = Math.floor((Date.now() - momentAt) / 60000);
+    if (m.id === "clase") { const f = m.falta != null ? Math.max(0, m.falta - el2) : null; return `EN CLASE${m.curso ? " · " + m.curso : ""}${f != null ? " · " + f + " MIN" : ""}`; }
+    if (m.siguiente && m.en != null && m.en - el2 <= 60) { const e = Math.max(0, m.en - el2); return `${(m.curso || m.siguiente).toUpperCase()} ${e ? "EN " + e + " MIN" : "AHORA"}`; }
+    return String(m.titulo || "").toUpperCase();
+  }
+  setInterval(() => { if (momentInfo) applyState({}); }, 30000);
   function applySettings(s) {
     current = s || {};
     setTheme(current.theme);
+    body.dataset.text = current.hud_text_size || "normal";                       // 11.8: tamaño de la letra
     el.shell.style.setProperty("--alpha", body.classList.contains("solid")
       ? 0.96 : (current.hud_opacity || 82) / 100);
     const on = !!current.mic_enabled;
@@ -215,8 +237,13 @@
     meta.append(t);
     const b = document.createElement("div");
     b.className = "msg-body";
-    if (isUser) b.textContent = item.text; else b.innerHTML = md(item.text);
+    if (isUser) b.textContent = item.text; else b.innerHTML = window.JMD ? window.JMD.md(item.text) : md(item.text);
     m.append(meta, b);
+    if (!isUser && item.text && item.text.length > 2) {                       // 11.8: proyectar, Word, más corto, en voz, graficar
+      $$(".msg.lastj", el.chat).forEach((x) => x.classList.remove("lastj"));
+      m.classList.add("lastj");
+      m.append(msgActions(item.text));
+    }
     if (!isUser) {                                          // 9.0: copiar la respuesta
       const cp = document.createElement("button");
       cp.type = "button"; cp.className = "copy"; cp.title = "Copiar"; cp.textContent = "Copiar";
@@ -230,6 +257,24 @@
     while (el.chat.children.length > 160) el.chat.firstChild.remove();
     if (stick || isUser) el.viewChat.scrollTop = el.viewChat.scrollHeight;
     if (live) setPreview(isUser ? `› ${item.text}` : item.text, isUser ? "user" : "");
+  }
+
+  function msgActions(text) {
+    const box = mk("div", "macts");
+    const act = (label, action, ok) => {
+      const bt = mk("button", "", label); bt.type = "button";
+      bt.addEventListener("click", () => socket.emit("msg_action", { text, action }, (r) => {
+        if (r && r.ok) { bt.classList.add("done"); setTimeout(() => bt.classList.remove("done"), 1600); if (ok) setPreview(ok, "dim"); }
+        else setPreview((r && r.error) || "No se pudo.", "dim");
+      }));
+      box.append(bt);
+    };
+    act("▣ Proyectar", "proyectar", "Listo, en el proyector.");
+    act("Word", "word", "Listo el Word.");
+    if (text.length > 220) act("Más corto", "corto");
+    act("🔊 Oír", "voz");
+    if (window.JMD && window.JMD.graphable(text)) act("📈 Graficar", "graficar");
+    return box;
   }
 
   /* 9.0: formato ligero (negritas, cursivas, código y listas) sobre texto ya escapado: nunca se inserta HTML ajeno */
@@ -275,10 +320,37 @@
   });
   el.viewChat.addEventListener("scroll", () => { if (nearBottom(el.viewChat)) newBelow(false); }, { passive: true });
 
+  let lastDash = null;
   function emptyChat() {
     lastDay = "";
-    el.chat.innerHTML = '<div class="empty">Canal abierto.<br>Prueba: «abre la calculadora», «volumen al 30», «busca recetas de arepas».</div>';
+    el.chat.innerHTML = "";
+    el.chat.append(mk("div", "empty welcome"));
     hasMessages = false;
+    drawWelcome();
+  }
+  function drawWelcome() {                                                       // 11.8: inicio útil según el momento del día
+    const w = $(".empty.welcome", el.chat);
+    if (!w) return;
+    w.textContent = "";
+    const h = new Date().getHours();
+    const mo = lastDash && lastDash.momento;
+    w.append(mk("div", "wh", (h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches") + (mo ? ` · ${mo.titulo}` : "")));
+    let sub = "Pídeme lo que necesites por voz o escribiendo.";
+    if (mo) {
+      if (mo.id === "clase") sub = `Estás en clase${mo.curso ? " con " + mo.curso : ""}${mo.tema ? " · " + mo.tema : ""}${mo.falta != null ? ` · faltan ${mo.falta} min` : ""}.`;
+      else if (mo.siguiente) sub = `Tu próxima clase: ${mo.siguiente}, ${mo.en <= 0 ? "ahora" : mo.en < 60 ? "en " + mo.en + " min" : "a las " + mo.a_las}${mo.tema ? " · tema: " + mo.tema : ""}.`;
+      else if (mo.id === "noche") sub = (mo.manana || []).length ? `Mañana tienes ${mo.manana.length} clase${mo.manana.length === 1 ? "" : "s"}: ${mo.manana.map((c) => c.t).join(", ")}.` : "Mañana no tienes clases en el horario.";
+      const n = (lastDash.bandeja || []).length;
+      if (n) sub += ` Tienes ${n} cosa${n === 1 ? "" : "s"} en la bandeja.`;
+    }
+    w.append(mk("div", "ws", sub));
+    const acts = ((mo && mo.acciones) || []).slice(0, 4);
+    if (acts.length) {
+      const g = mk("div", "wb");
+      acts.forEach((a) => { const b = mk("button", "", a.t); b.type = "button"; b.addEventListener("click", () => run(a.cmd)); g.append(b); });
+      w.append(g);
+    }
+    w.append(mk("div", "wt", "Ctrl+K busca una orden · arrastra un archivo para leerlo · «hazme una ilustración de…»"));
   }
 
   function logClass(line) {
@@ -360,13 +432,21 @@
     items.forEach((n) => {
       const row = mk("div", "ntc-item " + n.kind);
       row.append(mk("span", "ntc-k", { aviso: "🔔", aprobar: "✓", error: "⚠" }[n.kind] || "•"), mk("span", "ntc-t", n.text), mk("span", "ntc-h2", n.hora));
-      if (n.kind === "aprobar") { row.classList.add("click"); row.addEventListener("click", () => { closeNotices(); if (body.classList.contains("wide")) { dashHidden = false; applyDashHidden(); } else $('.xtab[data-view="hoy"]').click(); }); }
+      if (n.kind === "aprobar") {
+        row.classList.add("click"); row.addEventListener("click", () => { closeNotices(); if (body.classList.contains("wide")) { dashHidden = false; applyDashHidden(); } else $('.xtab[data-view="hoy"]').click(); });
+        const ap = ((lastDash && lastDash.bandeja) || []).find((x) => x.tipo === "aprobar" && n.text.includes(x.t.slice(0, 40)));
+        if (ap) {                                                                  // 11.8: aprobar desde la campana
+          const bb = mk("span", "dbtns"), ok = mk("button", "mini ok", "Sí"), no = mk("button", "mini", "No"); ok.type = no.type = "button";
+          const go = (yes) => (e) => { e.stopPropagation(); socket.emit("approval_resolve", { id: ap.id, ok: yes }, () => { refreshDash(); socket.emit("notices", { seen: true }, drawNotices); }); };
+          ok.addEventListener("click", go(true)); no.addEventListener("click", go(false)); bb.append(ok, no); row.append(bb);
+        }
+      }
       ntc.list.append(row);
     });
     setUnread(r ? r.unread : 0);
   }
-  function openNotices() { if (body.dataset.size !== "expandido") setSize("expandido"); ntc.box.hidden = false; socket.emit("notices", { seen: true }, drawNotices); }
-  function closeNotices() { ntc.box.hidden = true; }
+  function openNotices() { if (body.dataset.size !== "expandido") setSize("expandido"); ntc.box.hidden = false; body.classList.add("ntcopen"); socket.emit("notices", { seen: true }, drawNotices); }
+  function closeNotices() { ntc.box.hidden = true; body.classList.remove("ntcopen"); }
   $("#btn-bell").addEventListener("click", () => (ntc.box.hidden ? openNotices() : closeNotices()));
   $("#ntc-clear").addEventListener("click", () => socket.emit("notices", { clear: true, seen: true }, drawNotices));
   socket.on("notice", (n) => { setUnread(n.unread); if (!ntc.box.hidden) socket.emit("notices", { seen: true }, drawNotices); else { $("#btn-bell").classList.remove("ring"); void $("#btn-bell").offsetWidth; $("#btn-bell").classList.add("ring"); } });
@@ -415,7 +495,7 @@
   }
   let lcTimer = null;
   function inClassCard(e) {
-    const k = card("En clase", "live", "EnClase");
+    const k = card(momentInfo && momentInfo.id === "clase" ? "Clase guiada · momentos" : "En clase", "live", "EnClase");
     clearInterval(lcTimer);
     if (e.clase) {
       const cl = e.clase;
@@ -497,6 +577,7 @@
   const toastBox = mk("div", "toasts"); document.body.append(toastBox);
   const toasted = new Set();
   function toast(text, buttons, ms = 25000) {
+    toastBox.classList.toggle("slim", body.dataset.size !== "expandido");          // 11.8: en el compacto, una sola línea
     const t = mk("div", "toast");
     t.append(mk("span", "tt", text));
     const bb = mk("div", "dbtns");
@@ -511,6 +592,8 @@
     (d && d.pending || []).forEach((a) => {
       if (toasted.has(a.id)) return;
       toasted.add(a.id);
+      const dashVisible = body.dataset.size === "expandido" && ((body.classList.contains("wide") && !dashHidden) || !viewHoy.hidden);
+      if (dashVisible) { refreshDash(); return; }                                 // 11.8: ya se ve en la bandeja: sin aviso encima
       toast(`Por aprobar: ${a.titulo}`, [["Sí", () => socket.emit("approval_resolve", { id: a.id, ok: true }, refreshDash), true],
         ["No", () => socket.emit("approval_resolve", { id: a.id, ok: false }, refreshDash)],
         ["Ver", () => { setSize("expandido"); openNotices(); }]]);
@@ -531,10 +614,20 @@
     if (d.clima) top.append(mk("span", "dweather", weatherIcon(d.clima) + "  " + d.clima));
     dash.append(top);
     if (d.anio) dash.append(yearBar(d.anio));                // 10.9: barra del año
-    body.classList.toggle("inclass", !!d.en_clase);
+    lastDash = d;
+    const mo = d.momento;
+    body.classList.toggle("inclass", !!d.en_clase || (mo && mo.id === "clase"));
+    if (mo) {                                                // 11.8: el HUD según el momento del día
+      const was = momentInfo && momentInfo.id;
+      momentInfo = mo; momentAt = Date.now(); body.dataset.moment = mo.id;
+      dash.append(momentCard(mo));
+      if (mo.id === "clase" && was && was !== "clase" && !body.classList.contains("wide") && body.dataset.size === "expandido") $('.xtab[data-view="hoy"]').click();
+      applyState({});
+    }
     if (d.en_clase) dash.append(inClassCard(d.en_clase));    // 10.9: modo clase
     renderJobs(d.trabajos || []);
-    if (d.atencion && d.atencion.length) {                   // 9.3: lo que necesita tu atención
+    if (d.bandeja) dash.append(inboxCard(d.bandeja));        // 11.8: una sola bandeja (aprobaciones y lo que necesita tu atención)
+    else if (d.atencion && d.atencion.length) {              // 9.3: lo que necesita tu atención
       const k = card(`Atención · ${d.atencion.length}`, "att", "Atención");
       d.atencion.forEach((x) => {
         const r = mk("div", "drow click" + (x.p === 1 ? " hot" : ""));
@@ -556,7 +649,7 @@
         mk("span", "dmeta", c.en != null ? (c.en <= 0 ? "ahora" : `en ${c.en} min`) : (c.hoy ? c.a_las : `${c.a_las} · otro día`))); k.append(r); }
       dash.append(k);
     }
-    if (d.aprobar && d.aprobar.length) {
+    if (!d.bandeja && d.aprobar && d.aprobar.length) {
       const k = card("Por aprobar", "warn");
       d.aprobar.forEach((a) => {
         const r = mk("div", "drow ap"); r.append(mk("span", "", a.t));
@@ -627,9 +720,197 @@
         row.addEventListener("click", () => run(`¿quiénes están en riesgo en ${r.curso}?`)); k.append(row); });
       dash.append(k);
     }
+    if (d.hice && d.hice.length) dash.append(doneCard(d.hice));   // 11.8: lo que hice hoy, con deshacer
     if (dash.children.length === 1) dash.append(mk("p", "dempty", "Nada urgente. Escribe tu horario en Ajustes › Memoria para ver aquí tus clases."));
     renderChips(d.sugerencias || []);
+    pendingN = (d.bandeja || []).length;
+    drawOrb(d.orbe);
+    if (!hasMessages) drawWelcome();
   }
+  /* ---------- 11.8: tarjeta del momento del día ---------- */
+  function momentCard(mo) {
+    const k = card(`Ahora · ${mo.titulo}`, "mom " + mo.id, "Momento");
+    if (mo.id === "clase") {
+      k.append(mk("div", "mom-big", mo.curso ? `Clase con ${mo.curso}` : "En clase"));
+      k.append(mk("div", "mom-sub", [mo.tema, mo.falta != null ? `faltan ${mo.falta} min` : "", mo.hasta ? `hasta ${mo.hasta}` : ""].filter(Boolean).join(" · ")));
+      if (mo.lista) k.append(rosterGrid(mo.lista, mo.tema));
+    } else if (mo.siguiente) {
+      k.append(mk("div", "mom-big", mo.siguiente));
+      k.append(mk("div", "mom-sub", (mo.en <= 0 ? "ahora" : mo.en < 60 ? `en ${mo.en} min` : `a las ${mo.a_las}`) + (mo.quedan > 1 ? ` · ${mo.quedan} clases más hoy` : "")));
+      const t = mk("div", "mom-tema"); t.append("Tema: "); t.append(mk("b", "", mo.tema || "sin planeación para esta semana")); k.append(t);
+    } else if (mo.id === "noche") {
+      if (!(mo.manana || []).length) k.append(mk("div", "mom-sub", "Mañana no tienes clases en el horario."));
+      (mo.manana || []).forEach((c) => {
+        const r = mk("div", "mom-row"), g = mk("div", "grow");
+        g.append(mk("span", "", `${c.a_las} · ${c.t}`)); g.append(mk("small", "", c.tema ? "Tema: " + c.tema : "Sin tema planeado"));
+        const b = mk("button", "mini", "Preparar"); b.type = "button"; b.addEventListener("click", () => run(c.cmd));
+        r.append(g, b); k.append(r);
+      });
+    }
+    const acts = mk("div", "mom-acts");
+    (mo.acciones || []).forEach((a, i) => { const b = mk("button", "mini" + (i === 0 && mo.id !== "clase" ? " ok" : ""), a.t); b.type = "button"; b.addEventListener("click", () => run(a.cmd)); acts.append(b); });
+    if (acts.children.length) k.append(acts);
+    return k;
+  }
+  let rsMenu = null;
+  function closeRs() { rsMenu?.remove(); rsMenu = null; }
+  document.addEventListener("mousedown", (e) => { if (rsMenu && !e.target.closest(".rs-menu, .rs")) closeRs(); });
+  function rosterGrid(r, tema) {
+    const g = mk("div", "roster");
+    const ausentes = r.estudiantes.filter((x) => x.falta).length;
+    g.title = `${r.estudiantes.length} estudiantes${ausentes ? " · " + ausentes + " con falla hoy" : ""} · clic en un nombre para anotar`;
+    r.estudiantes.forEach((x) => {
+      const parts = x.n.split(/\s+/);
+      const c = mk("div", "rs" + (x.falta ? " falta" : ""), parts.length > 1 ? `${parts[0]} ${parts[1][0]}.` : x.n);
+      c.title = x.n + (x.falta ? " · falla hoy" : "") + (x.pos ? ` · ${x.pos} participación(es) hoy` : "");
+      if (x.pos) c.append(mk("b", "", "+" + x.pos));
+      c.addEventListener("click", (e) => {
+        closeRs();
+        const m = mk("div", "rs-menu"); rsMenu = m;
+        m.append(mk("b", "", x.n));
+        const send = (action, texto) => socket.emit("roster_act", { curso: r.clave || r.curso, est: x.n, action, texto: texto || "", tema: tema || "" }, (res) => {
+          closeRs();
+          setPreview(res && res.ok ? res.msg : (res && res.error) || "No se pudo.", "dim");
+          if (res && res.ok) refreshDash();
+        });
+        const opt = (t, fn) => { const b = mk("button", "", t); b.type = "button"; b.addEventListener("click", fn); m.append(b); };
+        opt("✓ Participó", () => send("positiva"));
+        opt(x.falta ? "Presente (quitar falla)" : "✗ Falla", () => send(x.falta ? "presente" : "falla"));
+        const f = mk("form"), inp = mk("input", "rv-in"); inp.placeholder = "Observación… (Enter)"; f.append(inp);
+        f.addEventListener("submit", (ev) => { ev.preventDefault(); if (inp.value.trim()) send("obs", inp.value.trim()); });
+        m.append(f);
+        opt("Ver su ficha", () => { closeRs(); run(`ficha de ${x.n} de ${r.curso}`); });
+        document.body.append(m);
+        const rc = c.getBoundingClientRect();
+        m.style.left = Math.min(rc.left, innerWidth - m.offsetWidth - 6) + "px";
+        m.style.top = (rc.bottom + m.offsetHeight + 6 > innerHeight ? Math.max(4, rc.top - m.offsetHeight - 4) : rc.bottom + 4) + "px";
+        e.stopPropagation();
+      });
+      g.append(c);
+    });
+    return g;
+  }
+  /* ---------- 11.8: bandeja única con atajos (S aprueba, N rechaza u oculta, ↑ ↓ para moverte) ---------- */
+  let ibSel = 0;
+  function inboxCard(items) {
+    const k = card(items.length ? `Bandeja · ${items.length}` : "Bandeja", "inbox", "Bandeja");
+    k.tabIndex = 0;
+    if (!items.length) { k.append(mk("div", "dmeta", "Todo al día ✓")); return k; }
+    ibSel = Math.min(ibSel, items.length - 1);
+    items.forEach((x, i) => {
+      const r = mk("div", "ib" + (x.tipo === "aprobar" ? " ap" : "") + (x.p === 1 ? " hot" : "") + (i === ibSel ? " sel" : ""));
+      r.append(mk("span", "ik", x.tipo === "aprobar" ? "✓" : x.p === 1 ? "●" : "○"));
+      const t = mk("span", "it", x.tipo === "aprobar" ? `Aprobar: ${x.t}` : x.t);
+      t.addEventListener("click", () => ibDo(x, true));
+      r.append(t);
+      const bb = mk("span", "dbtns");
+      if (x.tipo === "aprobar") {
+        const ok = mk("button", "mini ok", "Sí"), no = mk("button", "mini", "No"); ok.type = no.type = "button";
+        ok.addEventListener("click", () => ibDo(x, true)); no.addEventListener("click", () => ibDo(x, false)); bb.append(ok, no);
+      } else {
+        const hide = mk("button", "mini", "Ocultar"); hide.type = "button"; hide.title = "No mostrar hasta mañana";
+        hide.addEventListener("click", () => ibDo(x, false)); bb.append(hide);
+      }
+      r.append(bb); k.append(r);
+    });
+    k.append(mk("div", "ib-help", "Atajos: Alt+B · S = sí / abrir · N = no / ocultar · ↑ ↓"));
+    k.addEventListener("keydown", (e) => {
+      const key = e.key.toLowerCase();
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); ibSel = Math.max(0, Math.min(items.length - 1, ibSel + (e.key === "ArrowDown" ? 1 : -1))); $$(".ib", k).forEach((r, i) => r.classList.toggle("sel", i === ibSel)); }
+      else if (key === "s" || e.key === "Enter") { e.preventDefault(); ibDo(items[ibSel], true); }
+      else if (key === "n" || e.key === "Delete") { e.preventDefault(); ibDo(items[ibSel], false); }
+      else if (e.key === "Escape") { k.blur(); el.input.focus(); }
+    });
+    return k;
+  }
+  function ibDo(x, yes) {
+    if (!x) return;
+    const again = () => { refreshDash(); setTimeout(() => $(".dcard.inbox")?.focus(), 250); };
+    if (x.tipo === "aprobar") socket.emit("approval_resolve", { id: x.id, ok: yes }, again);
+    else if (yes) { if (x.cmd) (/\s$/.test(x.cmd) ? fill(x.cmd) : run(x.cmd)); }
+    else socket.emit("inbox_snooze", { k: x.k }, again);
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.altKey && !e.ctrlKey && e.key.toLowerCase() === "b") {
+      e.preventDefault();
+      if (body.dataset.size !== "expandido") setSize("expandido");
+      if (body.classList.contains("wide")) { dashHidden = false; applyDashHidden(); } else $('.xtab[data-view="hoy"]').click();
+      setTimeout(() => $(".dcard.inbox")?.focus(), 200);
+    }
+  });
+  /* ---------- 11.8: lo que hice hoy, con deshacer ---------- */
+  function hjRow(x, after) {
+    const r = mk("div", "hj" + (x.deshecho ? " undone" : ""));
+    r.append(mk("span", "hh", x.hora), mk("span", "ht", x.texto));
+    if (x.puede && !x.deshecho) {
+      const u = mk("button", "mini", "Deshacer"); u.type = "button";
+      u.addEventListener("click", () => socket.emit("journal_undo", { id: x.id }, (res) => { setPreview(res ? res.msg : "No se pudo.", "dim"); refreshDash(); if (after) after(res); }));
+      r.append(u);
+    }
+    return r;
+  }
+  function doneCard(items) {
+    const k = card(`Lo que hice hoy · ${items.length}${items.length >= 6 ? "+" : ""}`, "", "Hice");
+    items.forEach((x) => k.append(hjRow(x)));
+    const all = mk("button", "text-btn", "Ver todo"); all.type = "button"; all.addEventListener("click", openJournal); k.append(all);
+    return k;
+  }
+  let hjBox = null;
+  function openJournal() {
+    if (body.dataset.size !== "expandido") setSize("expandido");
+    socket.emit("journal", {}, (r) => {
+      hjBox?.remove();
+      const box = mk("div", "hjall"); hjBox = box;
+      const h = mk("h4", "", "Lo que hice hoy");
+      const x = mk("button", "mini", "✕"); x.type = "button"; x.addEventListener("click", () => { box.remove(); hjBox = null; }); h.append(x);
+      box.append(h);
+      const items = (r && r.items) || [];
+      if (!items.length) box.append(mk("p", "dempty", "Hoy todavía no he hecho nada por ti."));
+      items.forEach((it) => box.append(hjRow(it, () => openJournal())));
+      el.shell.append(box);
+    });
+  }
+  socket.on("journal", () => { if (hjBox) openJournal(); });
+  /* ---------- 11.8: el orbe informa (anillo con el tiempo de la clase y número de pendientes) ---------- */
+  function drawOrb(o) {
+    const ring = $("#orb-prog"), fg = $("#orb-prog-fg"), badge = $("#orb-badge");
+    if (!ring) return;
+    const C = 2 * Math.PI * 47;
+    if (o && o.progreso != null) {
+      ring.hidden = false; fg.style.strokeDasharray = String(C); fg.style.strokeDashoffset = String(C * (1 - o.progreso));
+      ring.classList.toggle("end", o.falta != null && o.falta <= 5);
+    } else ring.hidden = true;
+    const n = (o && o.pendientes) || 0;
+    badge.hidden = !n; badge.textContent = n > 9 ? "9+" : String(n);
+    $("#orb").title = (o && o.clase ? `En clase · ${o.clase}${o.falta != null ? " · faltan " + o.falta + " min" : ""}\n` : "") +
+      (n ? `${n} en la bandeja · ` : "") + "arrastra para mover · doble clic para cambiar de tamaño";
+  }
+  /* ---------- 11.8: lo que está en el proyector ---------- */
+  const projPill = $("#proj-pill");
+  socket.on("projecting", (d) => {
+    const on = !!(d && d.on);
+    projPill.hidden = !on; body.classList.toggle("projecting", on);
+    if (on) $("#proj-t").textContent = "Proyectando: " + (d.title || (d.kind === "imagen" ? "imagen" : "respuesta"));
+  });
+  projPill.addEventListener("click", () => socket.emit("project_clear", {}));
+  /* ---------- 11.8: tamaño de la letra ---------- */
+  function textSize(dir) {
+    const order = ["normal", "grande", "proyector"];
+    const i = order.indexOf(body.dataset.text || "normal");
+    const next = dir == null ? order[(i + 1) % 3] : order[Math.max(0, Math.min(2, i + dir))];
+    body.dataset.text = next;
+    socket.emit("hud_text_size", { size: next });
+    setPreview(`Letra: ${next === "normal" ? "normal" : next === "grande" ? "grande" : "para proyectar"}`, "dim");
+  }
+  $("#btn-text").addEventListener("click", () => textSize());
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === "+" || e.key === "=" || e.key === "-")) { e.preventDefault(); textSize(e.key === "-" ? -1 : 1); }
+  });
+  /* las sugerencias: rueda del ratón para moverlas y sin cortes escondidos */
+  chips.addEventListener("wheel", (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { chips.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+  const chipsEnd = () => chips.classList.toggle("end", chips.scrollLeft + chips.clientWidth >= chips.scrollWidth - 4);
+  chips.addEventListener("scroll", chipsEnd, { passive: true });
+
   function renderChips(list) {
     chips.innerHTML = "";
     list.forEach((s) => {
@@ -639,6 +920,7 @@
       b.addEventListener("click", () => s.fill ? fill(s.cmd) : run(s.cmd));
       chips.append(b);
     });
+    setTimeout(chipsEnd, 0);
   }
   function run(cmd) { socket.emit("manual_command", { command: cmd }); poke(); }
   function fill(cmd) {
@@ -890,6 +1172,11 @@
     o.addEventListener("click", () => socket.emit("file_open", { path: c.path }));
     f.addEventListener("click", () => socket.emit("file_open", { path: c.path, folder: true }));
     btns.append(o, f); info.append(btns); b.append(info);
+    if (c.image) {                                                               // 11.8: la imagen al proyector con un clic
+      const pj = mk("button", "mini", "▣ Proyectar"); pj.type = "button";
+      pj.addEventListener("click", () => socket.emit("project_show", { path: c.path, title: c.estudio ? c.estudio.tema : c.name }, (r) => setPreview(r && r.ok ? "Listo, en el proyector." : (r && r.error) || "No se pudo.", "dim")));
+      btns.append(pj);
+    }
     if (c.estudio) {                                                             // 11.7: imagen creada por Jarvis → seguir trabajándola
       b.classList.add("studio");
       info.firstChild.textContent = c.estudio.tema || c.name;
@@ -973,18 +1260,18 @@
   const plain = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   function openPal() {
     if (body.dataset.size !== "expandido") setSize("expandido");
-    pal.box.hidden = false; pal.q.value = el.input.value || ""; pal.sel = 0;
+    pal.box.hidden = false; body.classList.add("palopen"); pal.q.value = el.input.value || ""; pal.sel = 0;
     socket.emit("palette", {}, (r) => {
-      pal.items = (r.recent || []).map((t) => ({ t, g: "Reciente" })).concat(r.examples || []);
+      pal.items = (r.smart || []).concat((r.recent || []).map((t) => ({ t, g: "Reciente" })), r.examples || []);   // 11.8: lo de ahora primero
       drawPal();
     });
     setTimeout(() => pal.q.focus(), 30);
   }
-  function closePal() { pal.box.hidden = true; el.input.focus(); }
+  function closePal() { pal.box.hidden = true; body.classList.remove("palopen"); el.input.focus(); }
   function palMatches() {
     const w = plain(pal.q.value).split(/\s+/).filter(Boolean);
     const seen = new Set();
-    return pal.items.filter((x) => { const k = plain(x.t); if (seen.has(k)) return false; seen.add(k); return w.every((y) => k.includes(y) || plain(x.g).includes(y)); }).slice(0, 40);
+    return pal.items.filter((x) => { const k = plain(x.t); if (seen.has(k)) return false; seen.add(k); const lab = plain(x.label || ""); return w.every((y) => k.includes(y) || lab.includes(y) || plain(x.g).includes(y)); }).slice(0, 40);
   }
   function drawPal() {
     const list = palMatches();
@@ -996,7 +1283,12 @@
       const star = mk("button", "pal-star" + (favs.includes(x.t.trim()) ? " on" : ""), favs.includes(x.t.trim()) ? "★" : "☆");
       star.type = "button"; star.title = "Favorito: aparece como botón en el HUD";
       star.addEventListener("mousedown", (e) => { e.preventDefault(); e.stopPropagation(); toggleFav(x.t.trim(), drawPal); });
-      r.append(mk("span", "", x.t), mk("span", "pal-g", x.g), star);
+      const pl = mk("span", "pl");
+      const shown = x.label || x.t.replace(/\s{2,}/g, " … ").replace(/\s+$/, "");
+      pl.append(shown);
+      if (/\s{2}|\s$/.test(x.t) && !x.label) pl.append(mk("span", "gap", " …"));
+      if (x.label && x.label !== x.t) pl.append(mk("small", "", x.t));
+      r.append(pl, mk("span", "pal-g", x.g), star);
       r.addEventListener("mousedown", (e) => { e.preventDefault(); choose(x); });
       pal.list.append(r);
     });

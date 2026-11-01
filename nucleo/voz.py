@@ -5,6 +5,7 @@ Parte de Jarvis (antes dentro de jarvis.py). Los nombres globales de Jarvis se u
 from collections import deque
 import asyncio
 import json
+import mathtext
 import os
 import queue
 import rapidez
@@ -109,6 +110,7 @@ def _whisper_installed():
 
 
 def _clean_for_speech(text):
+    text = mathtext.speech(text)                                 # 11.8: las fórmulas $…$ dichas en palabras
     text = text.split("\n")[0]                                   # solo la primera línea
     text = re.sub(r"[A-Za-z]:\\\S+|/\S+/\S+", "", text)          # no leer rutas en voz alta
     return re.sub(r"[*#`_>|«»]", "", text).strip()

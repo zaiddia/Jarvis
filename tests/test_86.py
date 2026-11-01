@@ -28,7 +28,9 @@ def test_aprobar_desde_las_sugerencias(jv, monkeypatch):
     monkeypatch.setattr(jv, "_weather_short", lambda: "")
     jv.request_approval("notas", "Guardar notas de 7A", "x", on_ok=lambda: None, ttl=60)
     d = jv.dashboard()
-    assert d["aprobar"] and d["sugerencias"][0]["kind"] == "aprobar" and d["sugerencias"][0]["cmd"].startswith("sí ")
+    # 11.8: las aprobaciones van a la bandeja única (arriba de todo), no repetidas en las sugerencias
+    assert d["aprobar"] and d["bandeja"][0]["tipo"] == "aprobar" and any(x["t"] == "Guardar notas de 7A" and x["tipo"] == "aprobar" for x in d["bandeja"])
+    assert not any(str(s["cmd"]).startswith("sí ") for s in d["sugerencias"])
     for a in jv.aprobaciones.pending():
         jv.resolve_approval(a["id"], False, "prueba")
 

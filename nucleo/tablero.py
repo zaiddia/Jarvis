@@ -37,6 +37,7 @@ class RecentFiles(set):
         self.order.append(path)
         try:
             J.socketio.emit("file_card", file_card(path))
+            J.journal_file(path)                       # 11.8: «Lo que hice hoy», con deshacer
             J.on_new_file(path)                        # 8.7: subir a Drive, si lo activaste
         except Exception:
             pass
@@ -292,6 +293,10 @@ def dashboard(now=None):
         J.hud_extras(now, out)
     except Exception as e:
         J.note_error("HUD", e)
+    try:                                               # 11.8: momento del día, bandeja única, orbe y «Lo que hice hoy»
+        J.hudpro_extras(now, out)
+    except Exception as e:
+        J.note_error("HUD", e)
     out["sugerencias"] = suggestions(now, out)
     return out
 
@@ -307,8 +312,6 @@ def suggestions(now, d):
     if J.live_quiz["on"]:                               # 8.8: durante el quiz en vivo, sus controles primero
         s += [{"t": "Mostrar respuesta", "cmd": "respuesta", "kind": "aprobar"}, {"t": "Siguiente", "cmd": "siguiente"},
               {"t": "Terminar quiz", "cmd": "termina el quiz"}]
-    for a in d["aprobar"][:1]:
-        s.append({"t": f"✓ Aprobar: {a['t'][:28]}", "cmd": f"sí {a['id']}", "kind": "aprobar"})
     c = d["clase"]
     if c["ahora"]:
         s += [{"t": "Llamar a lista", "cmd": "llama a lista"}, {"t": "Escoger estudiante", "cmd": "escoge un estudiante"},
@@ -369,7 +372,11 @@ def handle_palette(data=None):
              "prepárame la próxima clase de ", "anota en el observador de  que ", "haz el informe para los padres de ",
              "crea 10 preguntas tipo saber de ", "haz la malla curricular de ", "adapta el taller de  para un estudiante con ",
              "genera el informe de errores", "modo proyector", "exporta las notas de  para Zeti"]
-    return {"recent": recent, "examples": [{"t": e, "g": "Nuevo"} for e in extra] + ex}
+    try:
+        smart = J.smart_palette()                      # 11.8: lo de ahora primero, con el curso ya puesto
+    except Exception:
+        smart = []
+    return {"recent": recent, "smart": smart, "examples": [{"t": e, "g": "Sugeridas"} for e in extra] + ex}
 
 
 # ============================================================================ MODO PROYECTOR

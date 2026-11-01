@@ -883,7 +883,7 @@ def _extract_json(text):
 def ask_ai(prompt, route=False):
     """Devuelve ('chat', respuesta) o ('skill', nombre, args)."""
     system = (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + f" Hoy es {J.fecha_hablada(datetime.date.today())}." + J._notes_ctx()
-              + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.persona_ctx())   # 9.4: tus lecciones y el modo tutor
+              + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.persona_ctx() + J.MATH_RULE)   # 9.4: tus lecciones y el modo tutor
     if route:
         # Seguridad: la IA solo ve acciones NO destructivas. Apagar, reiniciar, vaciar la
         # papelera, etc. nunca se activan por interpretación: solo con la orden directa exacta.

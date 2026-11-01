@@ -155,8 +155,16 @@
       <div class="ft"><label for="f-opacity">Opacidad del fondo</label><p>Más bajo = más transparente. Sin efecto con fondo sólido.</p></div>
       <div class="range"><input type="range" id="f-opacity" min="30" max="100" step="5" data-key="hud_opacity" data-unit="%"><output></output></div>
     </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-textsize">Tamaño de la letra</label><p>También con el botón «Aa» del HUD o con Ctrl + y Ctrl −. «Proyector» sirve si muestras el HUD en el televisor.</p></div>
+      <select class="inp" id="f-textsize" data-key="hud_text_size" style="max-width:340px">
+        <option value="normal">Normal</option>
+        <option value="grande">Grande</option>
+        <option value="proyector">Proyector (muy grande)</option>
+      </select>
+    </div>
     <div class="field">
-      <div class="ft"><label for="f-dim">Atenuar en reposo</label><p>Se vuelve casi transparente cuando no lo usas; reaparece al pasar el ratón o al hablar.</p></div>
+      <div class="ft"><label for="f-dim">Atenuar en reposo</label><p>Se vuelve casi transparente cuando no lo usas; reaparece al pasar el ratón o al hablar. Nunca se atenúa en clase, con algo en la bandeja o mientras Jarvis trabaja.</p></div>
       <label class="switch"><input type="checkbox" id="f-dim" data-key="hud_dim_idle"><span></span></label>
     </div>
     <div class="field">

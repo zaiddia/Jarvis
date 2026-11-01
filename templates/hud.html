@@ -6,6 +6,7 @@
 <title>Jarvis</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/hud.css', v=asset_v) }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/katex/katex.min.css', v=asset_v) }}">
 </head>
 <body data-size="compacto" data-state="idle">
 
@@ -34,6 +35,8 @@
 <div class="shell" id="shell">
   <!-- Reactor: también sirve para arrastrar el HUD -->
   <div class="orb drag-zone" id="orb" title="Arrastra para mover · doble clic para cambiar de tamaño">
+    <svg class="orb-prog" id="orb-prog" viewBox="0 0 100 100" aria-hidden="true" hidden><circle class="op-bg" cx="50" cy="50" r="47"/><circle class="op-fg" id="orb-prog-fg" cx="50" cy="50" r="47"/></svg>
+    <b class="orb-badge" id="orb-badge" hidden></b>
     <div class="reactor" id="reactor">
       <svg viewBox="0 0 100 100" class="reactor-svg" aria-hidden="true">
         <defs>
@@ -94,11 +97,13 @@
       <button type="button" class="xtab" data-view="hoy" id="xtab-hoy">Hoy</button>
       <button type="button" class="xtab" data-view="log">Registro</button>
       <span class="spacer"></span>
+      <button type="button" class="proj-pill" id="proj-pill" hidden title="Quitar del proyector"><svg class="i"><use href="#i-screen"/></svg><span id="proj-t">En el proyector</span> ✕</button>
       <input type="search" id="chat-q" class="chat-q" placeholder="Buscar en la conversación…" aria-label="Buscar en la conversación" hidden>
       <span class="logtools" id="logtools">
         <button type="button" class="lf active" data-f="all">Todo</button><button type="button" class="lf" data-f="error">Errores</button><button type="button" class="lf" data-f="warn">Avisos</button>
         <input type="search" id="log-q" placeholder="Buscar…" aria-label="Buscar en el registro">
       </span>
+      <button type="button" class="text-btn" id="btn-text" title="Tamaño de la letra (Ctrl + y Ctrl −)">Aa</button>
       <button type="button" class="text-btn" id="btn-clear" title="Nueva conversación"><svg class="i"><use href="#i-trash"/></svg>Nueva</button>
       <button type="button" class="text-btn icon" id="btn-dash" title="Ocultar el panel Hoy"><svg class="i"><use href="#i-panel"/></svg></button>
     </div>
@@ -138,6 +143,8 @@
 </div>
 
 <script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='vendor/katex/katex.min.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='js/mdmath.js', v=asset_v) }}"></script>
 <script src="{{ url_for('static', filename='js/hud.js', v=asset_v) }}"></script>
 </body>
 </html>

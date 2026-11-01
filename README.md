@@ -157,6 +157,22 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## HUD de alto impacto (v11.8)
+
+- **El HUD cambia según el momento del día.** Arriba del panel «Hoy» aparece la tarjeta **Ahora**:
+  - *antes de clase* («Prepárate»): la próxima clase, el tema de la semana según tu planeación anual y «Prepárame esto»;
+  - *en clase*: el curso, el tiempo que falta y la **lista del curso**: un clic en un nombre para anotar participación, falla u observación, o ver su ficha;
+  - *entre clases* y *después de clases*: lo que hay que atender, calificar hojas, notas a Zeti;
+  - *en la noche* («Planear mañana»): las clases de mañana con su tema y un botón «Preparar» en cada una (el domingo, «Prepárame la semana»).
+  - La cabecera ya no dice «EN ESPERA»: dice «EN CLASE · 7A · 12 MIN» o «10A EN 8 MIN». El chat vacío muestra un inicio con tu próxima clase y cuatro botones del momento.
+- **Una sola bandeja**: aprobaciones y lo que necesita tu atención en un mismo lugar, con «Sí / No» y «Ocultar» (hasta mañana). Atajos: **Alt+B** para ir a la bandeja, **S** aprueba o abre, **N** rechaza u oculta, flechas para moverte. Las aprobaciones ya no salen repetidas, y en el HUD compacto el aviso ocupa una sola línea. Desde la campana también puedes aprobar.
+- **Letra legible**: todo el HUD con letra más grande y más contraste, y tres tamaños: normal, grande y para proyectar (botón **Aa**, **Ctrl +** / **Ctrl −** o Ajustes › HUD). Además, el HUD **ya no se atenúa** en clase, con algo en la bandeja, con un temporizador o mientras Jarvis trabaja.
+- **Respuestas de profesor de matemáticas**: las fórmulas se ven bien dibujadas (fracciones, raíces, exponentes, sistemas), las tablas salen con formato, y Jarvis dice las fórmulas en palabras al hablar («x al cuadrado más 3x»). Cada respuesta trae botones: **Proyectar**, **Word**, **Más corto**, **Oír** y **Graficar** (si hay una función como y = 2x + 1).
+- **Proyectar con un clic**: cualquier respuesta o imagen va al proyector en letra gigante (con las fórmulas bien dibujadas). En el HUD ves «Proyectando: …» y con un clic lo quitas. Por voz: «proyecta eso», «pon la imagen en el proyector».
+- **Paleta inteligente (Ctrl+K)**: primero lo que toca ahora y el curso que tienes (con el curso ya puesto: «exporta las notas de 7A para Zeti»), luego lo de mañana y lo que tienes por aprobar. Las órdenes que hay que completar se marcan con «…».
+- **El orbe informa**: un anillo verde que se llena con el tiempo de la clase (rojo en los últimos 5 minutos) y el número de cosas en la bandeja.
+- **Lo que hice hoy, con deshacer**: notas anotadas, observaciones, fallas, pendientes, aprobaciones y archivos creados, con el botón **Deshacer** cuando se puede (los archivos van a la carpeta «Papelera de Jarvis», no se borran). Por voz: «deshaz lo último», «¿qué hiciste hoy?». Esta lista se borra al cerrar Jarvis.
+
 ## Estudio de imágenes (v11.7)
 
 - **Crea imágenes a partir de lo que pides**: «hazme una ilustración del ciclo del agua para quinto», «crea tres opciones de un afiche del día del idioma en acuarela», «dibújame un triángulo rectángulo para colorear», «genera una imagen horizontal de la célula animal para proyectar», «hazme un logo para el club de matemáticas».

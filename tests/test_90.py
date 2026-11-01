@@ -53,6 +53,8 @@ def test_pagina_del_hud():
     assert 'id="jobs"' in html and 'id="btn-dash"' in html and 'id="log-q"' in html
     for name in ("function md(", "showTyping", "renderJobs", "remember(", "applyLogFilter", "review_upload", "addReviewCard", "hud-collapsed"):
         assert name in js, name
-    assert "innerHTML = md(" in js and "function esc(" in js          # el formato se aplica sobre texto escapado
+    assert ("innerHTML = md(" in js or "window.JMD.md(item.text) : md(item.text)" in js) and "function esc(" in js  # el formato va sobre texto escapado
+    mm = open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "js", "mdmath.js"), encoding="utf-8").read()
+    assert "const lines = esc(src)" in mm and "trust: false" in mm        # 11.8: fórmulas con KaTeX, el resto escapado
 
 
