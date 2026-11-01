@@ -1,5 +1,6 @@
 """Pruebas de la 8.3: resumen semanal, proyectos que se repiten y actualización de noche con vuelta atrás."""
 import datetime
+import os
 
 import horario
 import notas
@@ -69,12 +70,20 @@ def test_actualizacion_de_noche(jv, monkeypatch):
     assert jv.night_update_tick(datetime.datetime(2026, 10, 31, 3, 0)) is False       # ocupado: espera
 
 
-def test_vuelta_atras_si_no_arranca(jv, monkeypatch):
-    state = {"just_updated": jv.VERSION, "boot_count": 0}
+def test_vuelta_atras_si_no_arranca(jv, monkeypatch, tmp_path):
+    """11.8.1: solo cuentan los arranques que de verdad murieron (no cerrar, reiniciar ni abrirlo dos veces)."""
+    state = {"just_updated": jv.VERSION}
     monkeypatch.setattr(jv, "_upd_load", lambda: dict(state))
     monkeypatch.setattr(jv, "_upd_save", lambda **kw: state.update(kw))
+    log = tmp_path / "jarvis.log"
+    log.write_text("antes\n[ARRANQUE] Iniciando\nTraceback: algo falló\n", encoding="utf-8")
+    monkeypatch.setattr(jv, "LOG_PATH", str(log))
+    errs = []
+    monkeypatch.setattr(jv, "note_error", lambda origin, e, cmd="": errs.append(str(e)))
     rolled = []
     monkeypatch.setattr(jv, "rollback_update", lambda: rolled.append(1) or {"ok": True})
+    alive = set()
+    monkeypatch.setattr(jv, "_pid_alive", lambda pid: int(pid) in alive)
     timers = []
 
     class T:
@@ -84,9 +93,58 @@ def test_vuelta_atras_si_no_arranca(jv, monkeypatch):
         def start(self):
             pass
     monkeypatch.setattr(jv.threading, "Timer", T)
-    assert jv.boot_guard() == 1 and jv.boot_guard() == 2
-    assert jv.boot_guard() == {"ok": True} and rolled == [1] and state["just_updated"] == ""
-    state.update(just_updated=jv.VERSION, boot_count=0)
+    assert jv.boot_guard() == 0 and state["boot"]["pid"] == os.getpid()           # primer arranque
+    state["boot"] = {"pid": 999991, "log_at": 6, "clean": True}                  # salió bien: no cuenta
+    assert jv.boot_guard() == 0
+    alive.add(999992)
+    state["boot"] = {"pid": 999992, "log_at": 6, "clean": False}                 # otro Jarvis vivo (abierto dos veces): no cuenta
+    assert jv.boot_guard() == 0
+    state["boot"] = {"pid": 999993, "log_at": 6, "clean": False}                 # murió sin salir bien: cuenta
+    assert jv.boot_guard() == 1 and "se cerró sin terminar de arrancar" in errs[-1] and "Traceback: algo falló" in errs[-1]
+    state["boot"] = {"pid": 999994, "log_at": 0, "clean": False}
+    assert jv.boot_guard() == {"ok": True} and rolled == [1] and state["just_updated"] == "" and state["rolled_back"] == jv.VERSION
+    state.update(just_updated=jv.VERSION, boot_fails=0, boot={})
     jv.boot_guard()
     timers[-1]()                                                   # arrancó bien: se limpia
     assert state["just_updated"] == "" and jv.boot_guard() is None
+    state.update(just_updated=jv.VERSION, boot={"pid": os.getpid(), "log_at": 0, "clean": False})
+    jv.boot_clean_exit()
+    assert state["boot"]["clean"]
+
+
+def test_la_deshecha_no_se_reinstala_de_noche(jv, monkeypatch):
+    state = {"rolled_back": "9.9"}
+    monkeypatch.setattr(jv, "_upd_load", lambda: dict(state))
+    monkeypatch.setattr(jv, "_upd_save", lambda **kw: state.update(kw))
+    monkeypatch.setattr(jv, "check_updates", lambda: {"newer": True, "version": "9.9"})
+    monkeypatch.setattr(jv, "is_offline", lambda: False)
+    monkeypatch.setattr(jv, "_busy", lambda: False)
+    monkeypatch.setattr(jv, "install_update", lambda: (_ for _ in ()).throw(AssertionError("no debía instalar")))
+    monkeypatch.setitem(jv.settings, "update_auto", True)
+    monkeypatch.setitem(jv.settings, "update_night", True)
+    assert jv.night_update_tick(datetime.datetime(2026, 10, 31, 2, 0)) is False
+
+
+def test_un_solo_jarvis_a_la_vez(jv, tmp_path, monkeypatch):
+    lock = str(tmp_path / "jarvis.lock")
+    assert jv.take_instance_lock(lock) and open(lock).read() == str(os.getpid())
+    assert jv.take_instance_lock(lock)                             # el candado es mío
+    with open(lock, "w") as f:
+        f.write("999995")                                          # de un proceso que ya no existe: se toma
+    assert jv.take_instance_lock(lock) and open(lock).read() == str(os.getpid())
+    import psutil
+
+    class P:
+        def __init__(self, pid=None):
+            self.pid = pid if pid is not None else os.getpid()
+    with open(lock, "w") as f:
+        f.write("999996")
+    monkeypatch.setattr(psutil, "Process", P)
+    monkeypatch.setattr(jv, "_proc_is_jarvis", lambda p, allow_self=False: p.pid == 999996)
+    assert jv.take_instance_lock(lock) is False                    # otro Jarvis vivo lo tiene
+    jv.release_instance_lock(lock)
+    assert os.path.exists(lock)                                    # no es mío: no lo borro
+    with open(lock, "w") as f:
+        f.write(str(os.getpid()))
+    jv.release_instance_lock(lock)
+    assert not os.path.exists(lock)

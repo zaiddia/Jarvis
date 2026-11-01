@@ -29,6 +29,7 @@ import array
 import hmac
 import queue
 import random
+import atexit
 import socket
 import asyncio
 import tempfile
@@ -48,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "11.8"
+VERSION = "11.8.1"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -303,8 +304,87 @@ def _wait_previous():
         time.sleep(4)
 
 
+INSTANCE_LOCK = os.path.join(CONFIG_DIR, "jarvis.lock")
+
+
+def take_instance_lock(path=None):
+    """11.8.1: un solo Jarvis a la vez. Si Windows lo abre dos veces seguidas (inicio + enlace), el segundo ya no
+    arranca otro ni cierra al primero mientras carga. → True si este es el Jarvis, False si ya hay otro vivo."""
+    path = path or INSTANCE_LOCK
+    try:
+        import psutil
+    except ImportError:
+        return True
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    for _ in range(3):
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            with os.fdopen(fd, "w") as f:
+                f.write(str(os.getpid()))
+            return True
+        except FileExistsError:
+            pid = ""
+            for _ in range(5):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        pid = f.read().strip()
+                except OSError:
+                    pid = ""
+                if pid:
+                    break
+                time.sleep(0.2)
+            try:
+                if pid.isdigit() and int(pid) != os.getpid() and int(pid) not in _my_family() and _proc_is_jarvis(psutil.Process(int(pid))):
+                    return False
+            except Exception:
+                pass
+            try:                                       # el que lo tenía ya no existe: se toma
+                os.remove(path)
+            except OSError:
+                time.sleep(0.2)
+        except OSError:
+            return True
+    return True
+
+
+def release_instance_lock(path=None):
+    path = path or INSTANCE_LOCK
+    try:
+        with open(path, encoding="utf-8") as f:
+            if f.read().strip() == str(os.getpid()):
+                f.close()
+                os.remove(path)
+    except OSError:
+        pass
+
+
+def _wait_other_jarvis(timeout=25.0):
+    """Otro Jarvis tiene el candado: espera a que responda. → su puerto, o None si no responde."""
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        for port in [5000, *range(5057, 5070)]:
+            ping = _http_text(f"http://{HOST}:{port}/api/ping", timeout=0.6)
+            if ping and ping.startswith("jarvis "):
+                return port
+        time.sleep(0.5)
+    return None
+
+
 _wait_previous()
-PORT = _resolve_port()
+if "pytest" in sys.modules or take_instance_lock():
+    PORT = _resolve_port()
+else:
+    _other = _wait_other_jarvis()
+    if _other:
+        _boot("Ya hay un Jarvis abierto o arrancando: le paso la orden y no abro otro.")
+        SAME_JARVIS_RUNNING = True
+        PORT = _other
+    else:                                              # el otro está colgado: se resuelve como antes (se cierra)
+        _boot("El otro Jarvis no responde: lo cierro y arranco este.")
+        PORT = _resolve_port()
+        release_instance_lock()
+        take_instance_lock()
+atexit.register(release_instance_lock)
 URL = f"http://{HOST}:{PORT}"
 import windows_shell  # noqa: E402
 START_LINK = windows_shell.find_link(sys.argv)     # abierto desde el clic derecho, la lista de saltos o un enlace
@@ -2286,7 +2366,13 @@ def main():
         try:
             create_hud(start_hidden, loader=not server_ready)
             webview.start(private_mode=False, storage_path=os.path.join(CONFIG_DIR, "webview"))
-            os._exit(0)
+            if hud.get("quitting"):
+                os._exit(0)
+            hud["window"] = None                       # 11.8.1: se cerró sola (no pediste salir): Jarvis sigue
+            log_terminal("La ventana del HUD se cerró sin pedir salir; Jarvis sigue funcionando (icono de la bandeja o "
+                         "«mostrar panel»).", "AVISO")
+            note_error("HUD", "la ventana del HUD se cerró sin pedir salir")
+            start_hidden = True
         except Exception as e:
             hud["window"] = None
             log_terminal(f"No se pudo abrir la ventana HUD ({e}); uso el navegador.", "AVISO")

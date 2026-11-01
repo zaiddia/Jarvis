@@ -390,6 +390,8 @@ def close_settings_window():
 def quit_app():
     J.hud["quitting"] = True
     J.log_terminal("Apagando Jarvis...", "SISTEMA")
+    J.boot_clean_exit()                                # 11.8.1: salir bien no cuenta como arranque fallido
+    J.release_instance_lock()
     try:
         if J.hud["tray"]:
             J.hud["tray"].stop()

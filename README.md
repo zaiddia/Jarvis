@@ -157,6 +157,13 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Corrección: la 11.8 se deshacía sola al actualizar (v11.8.1)
+
+- **Qué pasaba**: al prender el computador, Windows abre Jarvis dos veces casi al mismo tiempo (el inicio automático y el enlace de inicio). Las dos copias arrancaban a la vez (por eso salía «Atajo ocupado por otro programa: Ctrl+Alt+J») y cada arranque contaba para la protección de actualizaciones, que creía que la versión nueva fallaba y la deshacía, aunque funcionara.
+- **Un solo Jarvis a la vez**: si se abre dos veces, la segunda copia le pasa la orden a la primera y se cierra, sin cerrar a la que está cargando.
+- **La protección de actualizaciones ahora es exacta**: solo cuenta un arranque como fallido si el proceso se murió sin salir bien y antes de terminar de arrancar; cerrar, reiniciar o abrir dos veces ya no cuenta. Si una versión de verdad falla, el final del registro de ese arranque queda en el informe de errores, y esa versión no se vuelve a instalar sola de noche.
+- Si la ventana del HUD se cierra sin pedir salir, Jarvis sigue funcionando (desde el icono de la bandeja o «mostrar panel») y queda anotado.
+
 ## HUD de alto impacto (v11.8)
 
 - **El HUD cambia según el momento del día.** Arriba del panel «Hoy» aparece la tarjeta **Ahora**:

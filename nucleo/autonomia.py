@@ -3,6 +3,7 @@
 Los nombres globales de Jarvis se usan como J.<nombre>.
 """
 import datetime
+import os
 import re
 import sys
 import threading
@@ -141,30 +142,77 @@ def night_update_tick(now=None):
     info = J.check_updates()
     if not info.get("newer"):
         return False
+    if info.get("version") and info["version"] == J._upd_load().get("rolled_back"):
+        return False                                   # 11.8.1: la que se deshizo sola no se vuelve a instalar de noche
     J.log_terminal(f"Instalo de noche la versión {info['version']} (con copia de seguridad).", "ACTUALIZACIÓN")
     J._upd_save(just_updated=info["version"], boot_count=0, updated_from=J.VERSION)
     J.install_update()
     return True
 
 
+def _pid_alive(pid):
+    try:
+        import psutil
+        return psutil.pid_exists(int(pid))
+    except Exception:
+        return False
+
+
+def _log_tail(offset, limit=2500):
+    """El final de lo que escribió en el registro el arranque anterior (desde donde empezó)."""
+    try:
+        with open(J.LOG_PATH, "rb") as f:
+            size = os.fstat(f.fileno()).st_size
+            start = offset if 0 <= offset <= size else 0
+            f.seek(max(start, size - limit))
+            return f.read().decode("utf-8", "replace").strip()
+    except OSError:
+        return ""
+
+
 def boot_guard():
-    """Si la versión recién instalada no logra arrancar bien 3 veces seguidas, vuelve a la anterior sola."""
+    """Si la versión recién instalada se cierra sola 2 veces seguidas sin terminar de arrancar, vuelve a la anterior.
+    11.8.1: solo cuentan los arranques que de verdad fallaron (el proceso murió sin salir bien y antes de 150 s);
+    cerrar Jarvis, reiniciarlo o que Windows lo abra dos veces a la vez ya no cuenta como fallo. El final del registro
+    del arranque que falló queda en el informe de errores."""
     st = J._upd_load()
     if st.get("just_updated") != J.VERSION:
         return None
-    n = int(st.get("boot_count", 0)) + 1
-    J._upd_save(boot_count=n)
-    if n >= 3:
-        J._upd_save(just_updated="", boot_count=0)
-        J.log_terminal(f"La versión {J.VERSION} no arrancó bien {n - 1} veces: vuelvo a la anterior.", "ACTUALIZACIÓN")
+    prev = st.get("boot") or {}
+    fails = int(st.get("boot_fails", 0))
+    if prev.get("pid") and int(prev["pid"]) != os.getpid() and not prev.get("clean") and not J._pid_alive(prev["pid"]):
+        fails += 1
+        tail = J._log_tail(int(prev.get("log_at", 0)))
+        J.note_error("ACTUALIZACIÓN", f"la versión {J.VERSION} se cerró sin terminar de arrancar" + (f". Final del registro:\n{tail}" if tail else ""))
+    try:
+        log_at = os.path.getsize(J.LOG_PATH)
+    except OSError:
+        log_at = 0
+    J._upd_save(boot={"pid": os.getpid(), "t": time.time(), "log_at": log_at, "clean": False}, boot_fails=fails)
+    if fails >= 2:
+        J._upd_save(just_updated="", boot_fails=0, boot={}, rolled_back=J.VERSION)
+        J.log_terminal(f"La versión {J.VERSION} se cerró sola {fails} veces al arrancar: vuelvo a la anterior.", "ACTUALIZACIÓN")
         J.note_error("ACTUALIZACIÓN", f"la versión {J.VERSION} falló al arrancar; se deshizo sola")
         return J.rollback_update()
 
     def ok():
-        J._upd_save(just_updated="", boot_count=0)
+        J._upd_save(just_updated="", boot_fails=0, boot={})
         J.log_terminal(f"La versión {J.VERSION} arrancó bien.", "ACTUALIZACIÓN")
-    threading.Timer(150.0, ok).start()
-    return n
+    t = threading.Timer(150.0, ok)
+    t.daemon = True
+    t.start()
+    return fails
+
+
+def boot_clean_exit():
+    """Al salir bien (Salir, reiniciar, actualizar): este arranque no cuenta como fallo."""
+    try:
+        st = J._upd_load()
+        b = st.get("boot") or {}
+        if b.get("pid") == os.getpid():
+            J._upd_save(boot=dict(b, clean=True))
+    except Exception:
+        pass
 
 
 def _autonomy_worker():
@@ -183,5 +231,5 @@ def autonomy_start():
     threading.Thread(target=J._autonomy_worker, daemon=True, name="autonomia").start()
 
 
-__all__ = ['_DAYS', '_WEEK_RE', '_autonomy_worker', '_busy', '_week_state', 'autonomy_start', 'boot_guard',
+__all__ = ['_DAYS', '_WEEK_RE', '_autonomy_worker', '_busy', '_week_state', '_log_tail', '_pid_alive', 'autonomy_start', 'boot_clean_exit', 'boot_guard',
            'night_update_tick', 'recurring_project', 'weekly_summary', 'weekly_tick', 'weekly_voice']
