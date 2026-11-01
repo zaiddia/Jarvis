@@ -57,6 +57,7 @@ def test_personalidad_en_el_prompt(jv, base, monkeypatch):
     monkeypatch.setitem(jv.settings, "persona_auto", True)
     now = datetime.datetime.now()
     monkeypatch.setattr(horario, "items", [{"dia": now.weekday(), "inicio": "00:00", "fin": "23:59", "curso": "7A", "materia": "M"}])
+    monkeypatch.setattr(horario, "now_class", lambda now=None: horario.items[0])          # sin depender de la hora (falla a las 23:59)
     assert "MODO CLASE" in jv.persona_ctx()
     jv.process_command("ponte relajado")
     assert "MODO RELAJADO" in jv.persona_ctx() and "3 horas" in jv._rec.said()
