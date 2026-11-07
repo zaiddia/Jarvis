@@ -326,6 +326,35 @@ def handle_review_upload(data):
         return {"ok": False, "error": f"No pude abrir la imagen: {e}"}
 
 
+@J.socketio.on("review_from_attach")
+def handle_review_from_attach(data=None):
+    """12.3: revisar lo que subiste al chat (una foto, varias páginas o un PDF)."""
+    its = [i for i in (J.adjuntos.get(x) for x in ((data or {}).get("ids") or [])) if i]
+    if not its:
+        return {"ok": False, "error": "Ese archivo ya no está; súbelo otra vez."}
+    try:
+        preview, n = J.review_set_from(its)
+    except ValueError as e:
+        return {"ok": False, "error": str(e)}
+    except Exception as e:
+        return {"ok": False, "error": f"No pude abrir el trabajo: {e}"}
+    return {"ok": True, "preview": preview, "paginas": n, **J.handle_review_info()}
+
+
+@J.socketio.on("review_info")
+def handle_review_info(data=None):
+    """12.3: los cursos con sus listas (para escoger de quién es el trabajo) y el curso de ahora."""
+    cursos = {c: list(v) for c, v in J.aula.data.get("cursos", {}).items()}
+    activo = J.aula.data.get("activo", "")
+    try:
+        x = J.horario.now_class()
+        if x and x.get("curso") in cursos:
+            activo = x["curso"]
+    except Exception:
+        pass
+    return {"cursos": cursos, "activo": activo if activo in cursos else ""}
+
+
 @J.socketio.on("review_run")
 def handle_review_run(data):
     d = data or {}
@@ -906,7 +935,7 @@ __all__ = [
     'handle_quake_test',
     'handle_reindex_apps',
     'handle_review_capture',
-    'handle_review_run',
+    'handle_review_from_attach', 'handle_review_info', 'handle_review_run',
     'handle_review_upload',
     'handle_rutinas_defaults',
     'handle_rutinas_delete',

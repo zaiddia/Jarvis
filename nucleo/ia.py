@@ -169,6 +169,29 @@ def _png_b64(path):
         return base64.b64encode(f.read()).decode()
 
 
+def _img_mime(path):
+    """12.3: el tipo real de la imagen (una foto .jpg declarada como PNG la rechaza Claude)."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(12)
+    except OSError:
+        return "image/png"
+    if head[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return "image/webp"
+    if head[:3] == b"GIF":
+        return "image/gif"
+    return "image/png"
+
+
+def _img_list(image_path):
+    """12.3: una imagen o varias (las páginas de un taller)."""
+    if not image_path:
+        return []
+    return [p for p in (image_path if isinstance(image_path, (list, tuple)) else [image_path]) if p]
+
+
 def _model_name(m):
     for key in ("model", "name"):
         v = m.get(key) if isinstance(m, dict) else getattr(m, key, None)
@@ -224,7 +247,8 @@ def _gemini_body(cfg, messages, max_tokens, json_mode=False, image_path=None,
     if image_path:
         if not contents:
             contents.append({"role": "user", "parts": []})
-        contents[-1]["parts"].append({"inlineData": {"mimeType": "image/png", "data": J._png_b64(image_path)}})
+        for ip in J._img_list(image_path):
+            contents[-1]["parts"].append({"inlineData": {"mimeType": J._img_mime(ip), "data": J._png_b64(ip)}})
     if audio_wav:
         import base64
         if not contents:
@@ -310,8 +334,9 @@ def _anthropic_body(cfg, messages, max_tokens, image_path=None, stream=False):
     if conv and conv[0]["role"] == "assistant":
         conv.insert(0, {"role": "user", "content": [{"type": "text", "text": "(continuamos)"}]})
     if image_path and conv:
-        conv[-1]["content"].insert(0, {"type": "image", "source": {
-            "type": "base64", "media_type": "image/png", "data": J._png_b64(image_path)}})
+        for ip in reversed(J._img_list(image_path)):
+            conv[-1]["content"].insert(0, {"type": "image", "source": {
+                "type": "base64", "media_type": J._img_mime(ip), "data": J._png_b64(ip)}})
     # Sin «temperature»: los modelos Claude actuales la rechazan si no es la de fábrica.
     body = {"model": cfg["model"], "max_tokens": max_tokens, "messages": conv}
     if system:
@@ -358,9 +383,8 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
     sp = cfg["spec"]
     msgs = [dict(m) for m in messages]
     if image_path and msgs:
-        msgs[-1]["content"] = [{"type": "text", "text": msgs[-1]["content"]},
-                               {"type": "image_url",
-                                "image_url": {"url": "data:image/png;base64," + J._png_b64(image_path)}}]
+        msgs[-1]["content"] = [{"type": "text", "text": msgs[-1]["content"]}] + [
+            {"type": "image_url", "image_url": {"url": f"data:{J._img_mime(ip)};base64," + J._png_b64(ip)}} for ip in J._img_list(image_path)]
     tp = sp.get("tokens_param", "max_tokens")
     body = {"model": cfg["model"], "messages": msgs, tp: max_tokens}
     if not sp.get("no_temp"):
@@ -1081,7 +1105,7 @@ __all__ = [
     '_net_worker',
     '_oa_body',
     '_oa_headers',
-    '_png_b64',
+    '_img_list', '_img_mime', '_png_b64',
     '_post',
     '_recommend_model',
     '_sse_lines',

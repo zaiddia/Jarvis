@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Revisar y calificar un taller, corregido (v12.3)
+
+- **«Califica el taller de Juan» ya no abre la cámara si acabas de subir la foto o el PDF**: revisa lo que subiste al chat (en los últimos 30 minutos). La cámara solo se usa si no subiste nada.
+- **Talleres de varias páginas**: sube varias fotos juntas o el PDF del taller y pulsa **Revisar trabajo**: la IA revisa todas las páginas como un solo trabajo, con una sola nota, y dice la página de cada error («p. 2, punto 3»).
+- **La tarjeta de revisión del HUD, completa**: escoges el **curso** y el **estudiante de la lista** (escribes «luis» y aparece «Luis Rojas»), la actividad y, si quieres, las **respuestas correctas** para que la nota sea más justa. El resultado aparece en la misma tarjeta (nota sugerida, aciertos, errores con su corrección) y puedes revisar otra vez.
+- **Nunca se crea un estudiante que no está en la lista**: si el nombre no coincide, Jarvis te lo dice y no anota la nota sugerida.
+- Las fotos del celular se revisan derechas, y las fotos JPG ya no fallan con la IA de Claude (se enviaban como si fueran PNG).
+
 ## Jarvis llena las plataformas y cerebro local (v12.2)
 
 - **Jarvis pasa las notas a la plataforma por ti.** «Pasa las notas de 7A a Zeti» abre la plataforma en el navegador de Jarvis (el Edge o Chrome que ya tienes, con un perfil aparte que recuerda tu sesión). Entra tú con tu usuario (Jarvis **nunca** escribe ni ve contraseñas), abre la planilla y di «llénala».

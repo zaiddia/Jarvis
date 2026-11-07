@@ -158,7 +158,7 @@ def test_subir_y_tarjeta(jv, ad):
     assert r["ok"] and r["preview"].startswith("data:image/jpeg") and r["tipos"] == ["imagen"]
     acts = [a["a"] for a in r["acciones"]]
     assert "describir" in acts and "revisar" in acts and "conv:pdf" in acts and "conv:png" not in acts
-    assert jv.review_state["path"] == adjuntos.get(r["ids"][0])["ruta"]                 # «revisa este trabajo» usa la foto subida
+    assert jv.review_state["source"] == "adjunto" and jv.review_state["t"] > 0           # «revisa este trabajo» usa la foto subida (12.3: ya derecha)
     r2 = jv.handle_attach({"files": [{"name": "virus.exe", "data": _url(b"MZ")}]})
     assert not r2["ok"] and "no lo puedo leer" in r2["error"]
     a = jv.handle_attach({"files": [{"name": "a.pdf", "data": _url(_text_pdf(1))}]})

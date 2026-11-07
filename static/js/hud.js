@@ -1023,7 +1023,14 @@
     socket.emit("review_upload", { data: dataUrl }, (r) => {
       if (!r || !r.ok) { setPreview((r && r.error) || "No pude abrir la imagen.", "dim"); return; }
       if (body.dataset.size !== "expandido") setSize("expandido");
-      addReviewCard(r.preview);
+      addReviewCard(r.preview, 1);
+    });
+  }
+  function reviewAttach(ids) {                                                   // 12.3: una foto, varias páginas o un PDF del chat
+    socket.emit("review_from_attach", { ids }, (r) => {
+      if (!r || !r.ok) { setPreview((r && r.error) || "No pude abrir el trabajo.", "dim"); return; }
+      if (body.dataset.size !== "expandido") setSize("expandido");
+      addReviewCard(r.preview, r.paginas, r);
     });
   }
 
@@ -1071,7 +1078,7 @@
     info.append(mk("b", "", c.nombres.length > 1 ? `${c.nombres.length} archivos` : c.nombres[0]), mk("span", "dmeta", c.desc));
     const stat = mk("span", "astat");
     const act = (a, label, extra) => {
-      if (a === "revisar") { reviewImage(urls[c.ids[0]]); return; }
+      if (a === "revisar") { reviewAttach(c.ids); return; }
       if (a === "editar") {                                                      // 11.7: editar la foto con la IA
         if (!extra) { q.dataset.mode = "editar"; qi.placeholder = "¿Qué le cambio? (ej.: ponle un fondo de tablero verde)"; qb.textContent = "Editar"; qi.focus(); return; }
         stat.textContent = "Editando la imagen…";
@@ -1083,7 +1090,6 @@
     };
     const btns = mk("div", "dbtns");
     (c.acciones || []).forEach((x) => {
-      if (x.a === "revisar" && !urls[c.ids[0]]) return;
       const bt = mk("button", "mini" + (x.a.startsWith("conv:") ? " conv" : x === c.acciones[0] ? " ok" : ""), x.t); bt.type = "button";
       bt.addEventListener("click", () => act(x.a, x.t.replace(/^→ /, "Convirtiendo a ")));
       btns.append(bt);
@@ -1098,32 +1104,78 @@
     el.viewChat.scrollTop = el.viewChat.scrollHeight;
     $('.xtab[data-view="chat"]').click();
   }
-  function addReviewCard(preview) {
+  /* 12.3: tarjeta para revisar un trabajo: de quién (de la lista del curso), qué actividad, la clave y el resultado aquí mismo */
+  let reviewCard = null;
+  function addReviewCard(preview, pages, info0) {
     $(".empty", el.chat)?.remove();
-    const m = mk("div", "msg jarvis file");
+    const m = mk("div", "msg jarvis file rvcard");
     const b = mk("div", "msg-body fcard");
     if (preview) { const im = mk("img", "fthumb"); im.src = preview; im.alt = "Trabajo para revisar"; b.append(im); }
     const info = mk("div", "finfo");
-    info.append(mk("b", "", "Trabajo listo para revisar"));
-    const who = mk("input", "rv-in"); who.placeholder = "¿De quién es? (opcional)";
-    const what = mk("input", "rv-in"); what.placeholder = "¿Qué actividad? (opcional)";
+    info.append(mk("b", "", pages > 1 ? `Taller de ${pages} páginas listo para revisar` : "Trabajo listo para revisar"));
+    const curso = mk("select", "rv-in");
+    curso.append(new Option("Curso: el de ahora", ""));
+    const who = mk("input", "rv-in"); who.placeholder = "¿De quién es? (escribe y escoge de la lista)";
+    const dl = mk("datalist"); dl.id = "rv-dl-" + Date.now(); who.setAttribute("list", dl.id);
+    const what = mk("input", "rv-in"); what.placeholder = "¿Qué actividad? (ej.: Taller 3 de fracciones)";
+    const key = mk("textarea", "rv-in rv-key"); key.rows = 2;
+    key.placeholder = "Respuestas correctas (opcional, mejora la nota): 1) 3/4  2) x = 5  3) b …";
     const subj = mk("select", "rv-in");                                          // 10.4: área o asignatura
     subj.append(new Option("Asignatura: automática", ""));
     socket.emit("subjects_info", {}, (r) => (r && r.choices || []).forEach((c) => subj.append(new Option(c, c))));
+    let lists = {};
+    const fillNames = () => {
+      dl.textContent = "";
+      (lists[curso.value || curso.dataset.activo] || []).forEach((n) => dl.append(new Option(n, n)));
+    };
+    const useInfo = (r) => {
+      lists = (r && r.cursos) || {};
+      Object.keys(lists).sort().forEach((c) => curso.append(new Option(c, c)));
+      curso.dataset.activo = (r && r.activo) || "";
+      if (curso.dataset.activo) curso.options[0].textContent = `Curso: ${curso.dataset.activo} (el de ahora)`;
+      fillNames();
+    };
+    if (info0 && info0.cursos) useInfo(info0); else socket.emit("review_info", {}, useInfo);
+    curso.addEventListener("change", fillNames);
+    const res = mk("div", "rv-res");
     const go = mk("button", "mini ok", "Revisar"); go.type = "button";
     go.addEventListener("click", () => {
-      socket.emit("review_run", { estudiante: who.value.trim(), que: what.value.trim(), asignatura: subj.value }, (r) => {
-        go.disabled = true; go.textContent = r && r.ok ? "Revisando…" : "Error";
-        if (r && !r.ok) setPreview(r.error || "No pude revisarlo.", "dim");
+      const c = curso.value || curso.dataset.activo || "";
+      const name = who.value.trim();
+      if (name && c && (lists[c] || []).length && !(lists[c] || []).some((n) => n.toLowerCase() === name.toLowerCase())) {
+        const near = (lists[c] || []).filter((n) => n.toLowerCase().includes(name.toLowerCase()));
+        if (near.length === 1) who.value = near[0];
+        else { res.textContent = near.length ? `¿Cuál? ${near.slice(0, 4).join(" · ")}` : `«${name}» no está en la lista de ${c}: escoge el nombre de la lista (o déjalo vacío).`; res.className = "rv-res err"; return; }
+      }
+      go.disabled = true; go.textContent = "Revisando…"; res.className = "rv-res"; res.textContent = pages > 1 ? `Leyendo las ${pages} páginas…` : "Leyendo el trabajo…";
+      reviewCard = { go, res };
+      socket.emit("review_run", { estudiante: who.value.trim(), que: what.value.trim(), clave: key.value.trim(), asignatura: subj.value, curso: c }, (r) => {
+        if (r && !r.ok) { go.disabled = false; go.textContent = "Revisar"; res.textContent = r.error || "No pude revisarlo."; res.className = "rv-res err"; }
       });
     });
-    info.append(who, what, subj, go); b.append(info);
+    info.append(curso, who, dl, what, key, subj, go, res); b.append(info);
     m.append(mk("div", "msg-meta", "JARVIS · REVISAR TRABAJO"), b);
     el.chat.appendChild(m);
     el.viewChat.scrollTop = el.viewChat.scrollHeight;
     $('.xtab[data-view="chat"]').click();
     who.focus();
   }
+  socket.on("review_result", (d) => {                                            // 12.3: el resultado llega a la tarjeta
+    const rc = reviewCard;
+    if (!rc || !d) return;
+    if (d.status === "working") return;
+    rc.go.disabled = false; rc.go.textContent = "Revisar otra vez";
+    rc.res.textContent = "";
+    if (d.status === "error") { rc.res.className = "rv-res err"; rc.res.textContent = d.error || "No pude revisarlo."; return; }
+    const r = d.result || {};
+    rc.res.className = "rv-res ok";
+    if (!r.legible) { rc.res.textContent = "No se lee bien: toma la foto más de cerca, derecha y con buena luz."; return; }
+    if (r.nota != null) rc.res.append(mk("b", "rv-nota", `Nota sugerida: ${String(r.nota).replace(".", ",")}`));
+    rc.res.append(mk("span", "", ` · ${(r.aciertos || []).length} aciertos · ${(r.errores || []).length} errores${d.estudiante ? " · " + d.estudiante : ""}`));
+    (r.errores || []).slice(0, 4).forEach((e) => rc.res.append(mk("div", "rv-err", "✗ " + (typeof e === "string" ? e : [e.donde ? e.donde + ":" : "", e.que_esta_mal, e.correccion ? "→ " + e.correccion : ""].filter(Boolean).join(" ")))));
+    if (d.estudiante && d.curso && r.nota != null) rc.res.append(mk("div", "dmeta", "La nota quedó en la bandeja para que la apruebes."));
+    reviewCard = null;
+  });
 
   /* 10.5: calificar hojas de respuesta (QR para el celular y avance en vivo) */
   const grading = { open: false, card: null };

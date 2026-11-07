@@ -145,7 +145,14 @@ def propose_review_grade(course, estudiante, que, nota, subject=""):
     if not key:
         return None
     names = aula.students(key)
-    name = estudiante if (not names or estudiante in names) else (aula.find_student(estudiante, names)[0] or estudiante)
+    name = estudiante
+    if names and estudiante not in names:              # 12.3: nunca se crea un estudiante que no está en la lista
+        name, cands = aula.find_student(estudiante, names)
+        if not name:
+            nn = str(nota).replace(".", ",")
+            J.reply((f"No sé cuál de {', '.join(cands[:3])} es «{estudiante}»" if cands else f"No encontré a «{estudiante}» en la lista de {course}") +
+                    f", así que no anoté la nota sugerida ({nn}). Dime «ponle {nn} a …» con el nombre como está en la lista.", "REVISION")
+            return None
     act = (que or "Trabajo revisado").strip()[:80]
     nota = max(1.0, min(5.0, round(float(nota), 1)))
     where = key.replace(asignaturas.SEP, ", ")

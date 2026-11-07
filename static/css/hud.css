@@ -650,3 +650,11 @@ body.has-face .reactor-svg { display: none; }
 .ptab { border-collapse: collapse; width: 100%; font-size: calc(12px * var(--fs, 1)); }
 .ptab th { cursor: pointer; text-align: left; color: var(--a); border-bottom: 1px solid var(--line-strong); padding: 2px 4px; }
 .ptab td { padding: 2px 4px; border-bottom: 1px solid rgba(255,255,255,.06); }
+
+/* 12.3: revisar un trabajo */
+.rvcard .finfo { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.rvcard .rv-key { resize: vertical; min-height: 38px; font-family: inherit; }
+.rv-res { font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+.rv-res.err { color: #ff8a95; }
+.rv-res .rv-nota { color: var(--ok); font-size: 1.1em; }
+.rv-res .rv-err { color: #ffb4bb; margin-top: 2px; overflow-wrap: anywhere; }

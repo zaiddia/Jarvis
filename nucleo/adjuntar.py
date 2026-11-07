@@ -63,7 +63,10 @@ def card_of(its):
         acts += ["texto"] if k in ("imagen", "pdf") else []
         acts += ["tabla"] if k in ("imagen", "pdf", "word") else []
         acts += ["revisar", "procedimiento", "editar"] if k == "imagen" else []           # 12.0: paso a paso
+        acts += ["revisar"] if k == "pdf" else []                                          # 12.3: un taller en PDF
         acts += ["preguntas"] if k in ("pdf", "word", "powerpoint", "texto") else []
+    elif kinds == {"imagen"} and len(its) <= 8:
+        acts = ["revisar"]                                                                  # 12.3: varias fotos = un taller de varias páginas
     convs = conversiones.options_for(its)
     return {"ids": [i["id"] for i in its], "nombres": [i["nombre"] for i in its], "desc": "; ".join(adjuntos.describe(i) for i in its),
             "tipos": sorted(kinds), "preview": _preview(its[0]) if len(its) == 1 else "",
@@ -88,7 +91,10 @@ def handle_attach(data=None):
         return {"ok": False, "error": "; ".join(errs) or "No llegó ningún archivo."}
     _batch["ids"] = [i["id"] for i in its]
     if len(its) == 1 and its[0]["tipo"] == "imagen":
-        J._set_review_image(its[0]["ruta"], "imagen")          # «revisa este trabajo» por voz también funciona con la foto subida
+        try:
+            J.review_set_from(its)                     # «revisa este taller» por voz también funciona con la foto subida
+        except Exception:
+            J._set_review_image(its[0]["ruta"], "imagen")          # «revisa este trabajo» por voz también funciona con la foto subida
     J.log_terminal("Adjuntos: " + "; ".join(adjuntos.describe(i) for i in its), "ADJUNTOS")
     return {"ok": True, **card_of(its), "errores": errs}
 
@@ -218,7 +224,7 @@ def attach_run(its, action, pregunta=""):
             J.notify(msg, "ADJUNTOS")
             return files
         if action == "revisar":
-            J._set_review_image(its[0]["ruta"], "imagen")
+            J.review_set_from(its)
             J.start_review("actual")
             return None
         if action == "procedimiento":                  # 12.0: cada paso verificado con SymPy y mapa de errores

@@ -306,21 +306,57 @@ def aula_voice(text, t):
 # =============================================================================
 # REVISIÓN DE TRABAJOS (cámara, pantalla o imagen). La lógica está en revision.py.
 # =============================================================================
-review_state = {"path": "", "source": "", "busy": False}
+review_state = {"path": "", "source": "", "busy": False, "paths": [], "t": 0.0, "name": ""}   # 12.3: varias páginas
 
 
 def _revision_tmp():
     return os.path.join(tempfile.gettempdir(), f"jarvis_trabajo_{uuid.uuid4().hex}.png")
 
 
-def _set_review_image(path, source):
-    old = J.review_state.get("path")
-    if old and old != path and os.path.basename(old).startswith("jarvis_trabajo_"):
-        try:
-            os.remove(old)
-        except OSError:
-            pass
-    J.review_state.update(path=path, source=source)
+def _set_review_image(path, source, paths=None, name=""):
+    """La imagen (o las páginas) del trabajo a revisar. 12.3: varias páginas y la hora (para «revisa este taller»)."""
+    paths = [p for p in (paths or [path]) if p]
+    for old in [J.review_state.get("path")] + list(J.review_state.get("paths") or []):
+        if old and old not in paths and os.path.basename(old).startswith("jarvis_trabajo_"):
+            try:
+                os.remove(old)
+            except OSError:
+                pass
+    J.review_state.update(path=paths[0] if paths else path, source=source, paths=paths, t=time.time(), name=name)
+
+
+def review_pages(its, max_pages=8):
+    """12.3: las páginas de un taller subido al chat: varias fotos, o las páginas de un PDF. → [rutas de imagen]."""
+    out = []
+    for it in its:
+        if it["tipo"] == "imagen":
+            out.append(J.load_image_file(it["ruta"]))
+        elif it["tipo"] == "pdf":
+            out += J.adjuntos.page_images(it, os.path.join(tempfile.gettempdir(), f"jarvis_trabajo_{uuid.uuid4().hex}"), 1, max_pages,
+                                          scale=1.8, fmt="jpg")
+        if len(out) >= max_pages:
+            break
+    if not out:
+        raise ValueError("Para revisar un trabajo necesito una foto o un PDF del taller.")
+    return out[:max_pages]
+
+
+def load_image_file(path):
+    """Una foto derecha (las del celular vienen giradas) y de tamaño razonable, lista para la IA."""
+    from PIL import Image, ImageOps
+    img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
+    if max(img.size) > 2400:
+        img.thumbnail((2400, 2400))
+    dst = J._revision_tmp().replace(".png", ".jpg")
+    img.save(dst, quality=90)
+    return dst
+
+
+def review_set_from(its):
+    """Prepara la revisión con lo que subiste al chat. → (vista previa, número de páginas)."""
+    pages = J.review_pages(its)
+    J._set_review_image(pages[0], "adjunto", pages, ", ".join(i["nombre"] for i in its)[:120])
+    return J._preview_b64(pages[0]), len(pages)
 
 
 def _preview_b64(path, max_w=900):
@@ -408,11 +444,16 @@ def load_uploaded_image(data_url):
 
 
 def review_work(path, estudiante="", que="", clave="", grado="", asignatura=""):
-    """Revisa el trabajo de la imagen. Devuelve (resultado, ruta del Word o "")."""
+    """Revisa el trabajo de la imagen (o de las páginas, si es una lista). Devuelve (resultado, ruta del Word o "")."""
     cfg, err = J._vision_cfg()
     if not cfg:
         raise ValueError(err)
+    pages = path if isinstance(path, (list, tuple)) else [path]
+    path = pages[0]
     prompt = revision.build_prompt(que, clave, grado, estudiante) + J.area_hint(asignatura) + J.lessons_ctx()   # 10.4: según el área
+    if len(pages) > 1:                                 # 12.3: un taller de varias páginas
+        prompt += (f" El trabajo tiene {len(pages)} páginas: te llegan como {len(pages)} imágenes, en orden. Revísalas TODAS como un solo "
+                   "trabajo y da una sola nota; en los aciertos y errores di la página («p. 2, punto 3»).")
     msgs = [{"role": "user", "content": prompt}]
     J.thinking += 1
     J.refresh_mode()
@@ -421,11 +462,11 @@ def review_work(path, estudiante="", que="", clave="", grado="", asignatura=""):
             vmodel = J.settings["vision_model"].strip() or "moondream"
             r = J.ollama.Client(host=cfg["ollama_host"], timeout=240).chat(
                 model=vmodel, format="json", options={"num_predict": 1500},
-                messages=[{"role": "user", "content": prompt, "images": [path]}])
+                messages=[{"role": "user", "content": prompt, "images": list(pages)}])
             raw = r["message"]["content"]
         else:
             J._need_key(cfg)
-            raw = J._with_fallback(cfg, lambda c: J._cloud_chat(c, msgs, json_mode=True, image_path=path,
+            raw = J._with_fallback(cfg, lambda c: J._cloud_chat(c, msgs, json_mode=True, image_path=pages if len(pages) > 1 else path,
                                                             max_tokens=4000))
     finally:
         J.thinking -= 1
@@ -457,30 +498,43 @@ def start_review(source="actual", estudiante="", que="", clave="", grado="", voi
             path = J.review_state["path"]
             if not path or not os.path.exists(path):
                 raise ValueError("Primero toma una foto, captura la pantalla o sube una imagen.")
+            pages = [p for p in (J.review_state.get("paths") or [path]) if os.path.exists(p)] or [path]
             if voice:
                 J._maybe_open_board("revisar")
             J.aula_emit({"type": "review", "status": "working", "preview": J._preview_b64(path), "view": "revisar"})
+            J.socketio.emit("review_result", {"status": "working", "paginas": len(pages)})
             course = J._resolve_course(curso) if curso else (aula.data.get("activo") or "")
             subj = asignatura or (J.current_subject(course) if course and len(J.subjects_for(course)) >= 2 else "") or \
                 (J.subjects_for(course)[0] if course and J.subjects_for(course) else J.settings["subject_current"])
             grade = grado or (f"{aula.grade_of(course)}°" if aula.grade_of(course) else "")
-            res, doc = J.review_work(path, estudiante, que, clave, grade, subj)
+            who = estudiante
+            if who and course:                         # 12.3: el nombre como está en la lista del curso
+                try:
+                    who = aula.find_student(who, aula.students(course))[0] or who
+                except (ValueError, KeyError, TypeError):
+                    pass
+            res, doc = J.review_work(pages if len(pages) > 1 else path, who, que, clave, grade, subj)
             J.aula_emit({"type": "review", "status": "done", "result": res, "doc": doc,
-                       "docname": os.path.basename(doc) if doc else "", "estudiante": estudiante})
-            J.reply(revision.spoken_summary(res, estudiante), "REVISION")
+                       "docname": os.path.basename(doc) if doc else "", "estudiante": who})
+            J.socketio.emit("review_result", {"status": "done", "result": res, "estudiante": who, "curso": course, "paginas": len(pages),
+                                              "doc": os.path.basename(doc) if doc else ""})
+            J.reply(revision.spoken_summary(res, who), "REVISION")
             if res["legible"] and res["retroalimentacion"]:
                 J.push_chat("jarvis", "📝 " + res["retroalimentacion"], "REVISION")
-            if res["legible"] and res.get("nota") is not None and estudiante and course:     # 10.4: anotarla en su asignatura
-                J.propose_review_grade(course, estudiante, que or res.get("que_es", ""), res["nota"], subj)
+            if res["legible"] and res.get("nota") is not None and who and course:     # 10.4: anotarla en su asignatura
+                J.propose_review_grade(course, who, que or res.get("que_es", ""), res["nota"], subj)
         except J.AIError as e:
             J.aula_emit({"type": "review", "status": "error", "error": e.why})
+            J.socketio.emit("review_result", {"status": "error", "error": e.why})
             J.reply(J.ai_error_reply(e), "REVISION")
         except ValueError as e:
             J.aula_emit({"type": "review", "status": "error", "error": str(e)})
+            J.socketio.emit("review_result", {"status": "error", "error": str(e)})
             J.reply(str(e), "REVISION")
         except Exception as e:
             J.log_terminal(f"Revisión de trabajo: {e}", "ERROR")
             J.aula_emit({"type": "review", "status": "error", "error": str(e)})
+            J.socketio.emit("review_result", {"status": "error", "error": "No pude revisar el trabajo. Inténtalo de nuevo."})
             J.reply("No pude revisar el trabajo. Inténtalo de nuevo.", "REVISION")
         finally:
             J.review_state["busy"] = False
@@ -515,6 +569,20 @@ def review_voice(text, t):
             pass
         estudiante = estudiante or opciones[-1].title()
     source = "pantalla" if medio == "pantalla" else "actual" if medio in ("foto", "imagen") else "camara"
+    if not medio and source == "camara":               # 12.3: si acabas de subir la foto o el PDF del taller, se revisa eso
+        fresh = J.review_state.get("path") and J.review_state.get("source") in ("imagen", "adjunto") and \
+            time.time() - J.review_state.get("t", 0) < 1800 and os.path.exists(J.review_state["path"])
+        if fresh:
+            source = "actual"
+        else:
+            rec = [a for a in J.adjuntos.recent(1800) if a["tipo"] in ("imagen", "pdf")]
+            if rec:
+                batch = [a for a in J._batch_items() if a["tipo"] in ("imagen", "pdf")] or rec[-1:]
+                try:
+                    J.review_set_from(batch)
+                    source = "actual"
+                except ValueError:
+                    pass
     J.start_review(source, estudiante=estudiante, voice=True)
     return True
 
@@ -543,6 +611,9 @@ __all__ = [
     'material_job',
     'open_aula_window',
     'review_state',
+    'load_image_file',
+    'review_pages',
+    'review_set_from',
     'review_voice',
     'review_work',
     'start_review',
