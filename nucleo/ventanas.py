@@ -406,9 +406,15 @@ def quit_app():
     threading.Timer(0.4, lambda: os._exit(0)).start()
 
 
-def toggle_mic():
-    J.apply_settings({"mic_enabled": not J.settings["mic_enabled"]})
+def toggle_mic(source=""):
+    """12.13.2: queda anotado desde dónde se pausó, para saber por qué no te escucha."""
+    on = not J.settings["mic_enabled"]
+    J.apply_settings({"mic_enabled": on})
     J.socketio.emit("settings_updated", J.public_settings())
+    where = f" ({source})" if source else ""
+    J.log_terminal("Micrófono activado" + where + "." if on else
+                   "Micrófono en pausa" + where + ": no te escucho hasta que lo actives con el botón del micrófono del HUD o desde la bandeja.",
+                   "AUDIO")
 
 
 def _tray_icon_path():
@@ -448,7 +454,7 @@ def start_tray():
         item("Tamaño: compacto", lambda: (J.hud_show(), J.hud_set_size("compacto"))),
         item("Tamaño: expandido", lambda: (J.hud_show(), J.hud_set_size("expandido"))),
         pystray.Menu.SEPARATOR,
-        item("Pausar micrófono", lambda: J.toggle_mic(), checked=lambda i: not J.settings["mic_enabled"]),
+        item("Pausar micrófono", lambda: J.toggle_mic("bandeja"), checked=lambda i: not J.settings["mic_enabled"]),
         item("Tablero del aula…", lambda: J.open_aula_window()),
         item("Ajustes…", lambda: J.open_settings_window()),
         item("Bienvenida y primeros pasos…", lambda: J.open_welcome_window()),

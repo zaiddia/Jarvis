@@ -40,16 +40,18 @@
     badge.hidden = !(docked && unread > 0);
     pillEl.dataset.state = H.mode();
     const mic = H.mic();                                                   // 12.13.1: si no te puede oír, la píldora lo muestra
-    pillEl.dataset.mic = mic === "on" ? "on" : mic === "error" ? "err" : "off";
-    pillEl.title = mic === "on" ? "Jarvis te escucha · pasa el ratón para abrir" : mic === "error" ? "El micrófono falló · pasa el ratón para ver" : "Micrófono en pausa · pasa el ratón para abrir";
+    const paused = H.settings().mic_enabled === false;
+    pillEl.dataset.mic = mic === "on" ? "on" : mic === "error" ? "err" : paused ? "off" : "wait";
+    pillEl.title = mic === "on" ? "Jarvis te escucha · pasa el ratón para abrir" : mic === "error" ? "El micrófono falló · pasa el ratón para ver"
+      : paused ? "Micrófono en pausa · ábreme y pulsa el botón del micrófono" : "Activando el micrófono…";
   }
 
-  function open() { if (docked && !waiting && Date.now() - dockedAt > 700) {   // recién escondida: el ratón ya no está ahí
+  function open() { if ((docked || window.innerWidth < 80) && !waiting && Date.now() - dockedAt > 700) {   // recién escondida: el ratón ya no está ahí
     waiting = true; socket.emit("hud_dock", { on: false }); setTimeout(() => { waiting = false; }, 3000); } }
 
   // Ratón: sobre la página = sobre la ventana del HUD (o de la píldora).
   document.addEventListener("pointermove", () => { hover = true; touch(); }, { passive: true });
-  document.addEventListener("pointerdown", () => { hover = true; touch(); if (docked) open(); });
+  document.addEventListener("pointerdown", () => { hover = true; touch(); if (docked || window.innerWidth < 80) open(); });
   document.addEventListener("keydown", touch);
   document.addEventListener("wheel", touch, { passive: true });
   document.documentElement.addEventListener("mouseleave", () => { hover = false; clearTimeout(enterT); touch(); });
@@ -57,7 +59,7 @@
     hover = true; touch();
     if (docked) { clearTimeout(enterT); enterT = setTimeout(() => { if (hover) open(); }, HOVER_MS); }
   });
-  pillEl.addEventListener("pointerenter", () => { if (docked) { clearTimeout(enterT); enterT = setTimeout(open, HOVER_MS); } });
+  pillEl.addEventListener("pointerenter", () => { if (docked || window.innerWidth < 80) { clearTimeout(enterT); enterT = setTimeout(open, HOVER_MS); } });
 
   socket.on("hud_pill", (d) => {
     if (d && d.refused) { waiting = false; touch(); return; }   // el ratón sigue encima: espera otro rato

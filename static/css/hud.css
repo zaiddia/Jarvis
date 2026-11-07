@@ -698,3 +698,10 @@ body.pill-mode #pill { visibility: visible !important; pointer-events: auto !imp
 @media (prefers-reduced-motion: reduce) { .pill-dot { animation: none; } }
 .pill[data-mic="off"] .pill-dot { background: var(--muted); box-shadow: none; animation: none; opacity: .8; }
 .pill[data-mic="err"] .pill-dot { background: var(--err); box-shadow: 0 0 8px rgba(255, 77, 94, .9); animation: none; }
+/* 12.13.2: si la ventana tiene tamaño de píldora, se ve la píldora aunque la página no lo sepa todavía
+   (al cargar, al reconectar o mientras cambia de tamaño): nunca queda un botón del HUD bajo el ratón. */
+@media (max-width: 80px) {
+  .pill, .pill[hidden] { display: flex !important; visibility: visible !important; pointer-events: auto !important; }
+  body > :not(#pill):not(script) { visibility: hidden !important; pointer-events: none !important; }
+}
+.pill[data-mic="wait"] .pill-dot { opacity: .5; animation-duration: 1.2s; }

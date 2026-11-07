@@ -91,7 +91,7 @@ def run_link(url, source="enlace"):
     elif action == "escuchar":
         J.activate_listening()
     elif action == "microfono":
-        J.toggle_mic()
+        J.toggle_mic(f"enlace {source}")
     elif action == "ajustes":
         J.open_settings_window()
     elif action == "bienvenida":

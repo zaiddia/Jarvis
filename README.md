@@ -157,6 +157,12 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## El micrófono ya no se pausa sin querer desde la píldora (v12.13.2)
+
+- **Causa**: al abrirse, la ventana pasaba un instante con el tamaño de la píldora mostrando el HUD apretado, y justo bajo el ratón quedaba el **botón del micrófono**. Un segundo clic (o doble clic) sobre la píldora lo pausaba, y como esa pausa se guarda, Jarvis dejaba de escucharte.
+- Ahora, con tamaño de píldora, siempre se ve la píldora (aunque la página aún no lo sepa) y el botón del micrófono no responde en la píldora ni mientras la ventana cambia de tamaño.
+- El registro dice desde dónde se pausó o activó el micrófono (botón del HUD, bandeja o enlace), y el HUD distingue «Micrófono en pausa · pulsa el botón del micrófono», «Activando el micrófono…» y «El micrófono falló».
+
 ## La píldora se abre al decir «Jarvis» y la escucha nunca la espera (v12.13.1)
 
 - Al decir «Jarvis» (solo o con la orden de una vez), mientras piensa o cuando te responde, **Jarvis mismo abre la píldora**; antes dependía de la página del HUD y a veces no se abría.

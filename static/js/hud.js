@@ -119,7 +119,9 @@
   function setTheme(name) { root.dataset.theme = name || "cyan"; }
 
   function hint() {
-    if (st.mic !== "on") return "Micrófono en pausa · escribe una orden";
+    if (st.mic === "error") return "El micrófono falló · mira el registro o elige otro en Ajustes › Escucha";
+    if (st.mic !== "on") return current.mic_enabled === false ? "Micrófono en pausa · pulsa el botón del micrófono para activarlo"
+      : "Activando el micrófono…";
     if (!current.wake_word_enabled) return "Te escucho · habla o escribe una orden";
     const w = (current.wake_words || "jarvis").split(",")[0].trim();
     return `Di «${w.charAt(0).toUpperCase() + w.slice(1)}» o escribe una orden`;
@@ -1575,7 +1577,18 @@
     if (native) socket.emit("open_settings");
     else window.open("/ajustes", "_blank");
   });
-  el.btnMic.addEventListener("click", () => socket.emit("toggle_mic"));
+  // 12.13.2: en la píldora (o mientras la ventana cambia de tamaño) el botón del micrófono quedaba justo
+  // bajo el ratón y un clic lo pausaba sin querer. Ahora solo responde con el HUD abierto y quieto.
+  let lastResize = 0, seenW = window.innerWidth, seenH = window.innerHeight;
+  const sizeCheck = () => { if (window.innerWidth !== seenW || window.innerHeight !== seenH) { seenW = window.innerWidth; seenH = window.innerHeight; lastResize = Date.now(); } };
+  window.addEventListener("resize", sizeCheck);
+  el.btnMic.addEventListener("click", (e) => {
+    sizeCheck();                                   // el aviso de «cambió el tamaño» puede llegar después del clic
+    if (window.innerWidth < 200 || window.innerHeight < 80 || body.classList.contains("pill-mode") || Date.now() - lastResize < 900) {
+      e.preventDefault(); return;
+    }
+    socket.emit("toggle_mic");
+  });
   $("#btn-stop").addEventListener("click", () => socket.emit("stop_voice"));
   $("#btn-clear").addEventListener("click", () => socket.emit("clear_history", () => emptyChat()));
 

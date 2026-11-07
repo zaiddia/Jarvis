@@ -67,7 +67,7 @@ def test_enlaces_en_jarvis(jv, monkeypatch):
     rec.clear()
     calls = []
     monkeypatch.setattr(jv, "hud_show", lambda: calls.append("show"))
-    monkeypatch.setattr(jv, "toggle_mic", lambda: calls.append("mic"))
+    monkeypatch.setattr(jv, "toggle_mic", lambda source="": calls.append("mic"))
     monkeypatch.setattr(jv, "trigger_alarm", lambda s, l: calls.append(("alarma", s, l)))
     assert jv.run_link("jarvis://mostrar") and calls == ["show"]
     assert jv.run_link("jarvis://microfono") and calls[-1] == "mic"

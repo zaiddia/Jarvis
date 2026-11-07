@@ -170,3 +170,15 @@ def test_mover_la_ventana_no_frena_la_escucha(hud):
             break
         time.sleep(0.02)
     assert ("resize", 430, 150) in win.calls
+
+
+def test_queda_anotado_quien_pauso_el_microfono(jv, monkeypatch):
+    logs = []
+    monkeypatch.setattr(jv, "log_terminal", lambda msg, tag="": logs.append(msg))
+    monkeypatch.setattr(jv, "save_settings_file", lambda: None)
+    monkeypatch.setitem(jv.settings, "mic_enabled", True)
+    monkeypatch.setattr(jv.mic_restart, "set", lambda: None)
+    jv.handle_toggle_mic()
+    assert jv.settings["mic_enabled"] is False and "Micrófono en pausa (botón del HUD)" in logs[-1]
+    sys.modules["nucleo.ventanas"].toggle_mic("bandeja")
+    assert jv.settings["mic_enabled"] is True and logs[-1] == "Micrófono activado (bandeja)."

@@ -754,7 +754,7 @@ def handle_test_alarm(data):
 
 @J.socketio.on("toggle_mic")
 def handle_toggle_mic():
-    J.toggle_mic()
+    J.toggle_mic("botón del HUD")
     return {"mic_enabled": J.settings["mic_enabled"]}
 
 
