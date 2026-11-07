@@ -272,3 +272,43 @@ def test_concentracion(jv, monkeypatch):
     assert notif == ["silenciar"] and "30 minutos" in jv._rec.said() and pc.pc_state["focus_until"]
     pc.focus_end()
     assert notif == ["silenciar", "activar"] and not pc.pc_state["focus_until"]
+
+
+# ============================================================================ 12.9.1: dicho con otras palabras
+@pytest.mark.parametrize("frase,accion", [
+    ("¿puedes instalar VLC?", "_install"), ("quiero instalar VLC", "_install"), ("necesito instalar zoom", "_install"),
+    ("puedes actualizar mis programas", "_ask_upgrades"), ("¿me puedes limpiar los temporales?", "_clean_temp"),
+    ("qué está consumiendo memoria", "_slow_report"), ("mi pc está muy lento", "_slow_report"), ("¿podrías apagar el bluetooth?", "_radios"),
+    ("¿puedes conectarte al wifi Casa?", "_wifi_connect"), ("quiero activar el modo avión", "_radios")])
+def test_dicho_con_otras_palabras(jv, monkeypatch, frase, accion):
+    import nucleo.equipopc as pc
+    hit = []
+    for n in ("_install", "_ask_upgrades", "_slow_report", "_clean_temp", "_radios", "_wifi_connect"):
+        monkeypatch.setattr(pc, n, lambda *a, _n=n, **k: hit.append(_n))
+    monkeypatch.setattr(jv, "IS_WIN", True)
+    jv._rec.clear()
+    jv.process_command(frase)
+    assert hit == [accion]
+
+
+def test_quiero_escribir_no_teclea():
+    import jarvis
+    assert jarvis.polite_to_order("quiero escribir un correo a juan") is None
+    assert jarvis.polite_to_order("quiero instalar vlc") == "instala vlc"
+
+
+def test_la_ia_conoce_lo_nuevo(jv, monkeypatch):
+    import skills
+    import nucleo.equipopc as pc
+    sk = skills.REGISTRY["orden_asistente"]
+    assert not sk.dangerous and "instala <programa>" in sk.args and "orden_asistente" in jv.router_catalog("necesito un reproductor de video")
+    assert "nunca digas que no puede" in jv.ACTION_RULE and "instala VLC" in jv.system_static()
+    hit = []
+    monkeypatch.setattr(pc, "_install", lambda name, origin="": hit.append(name))
+    monkeypatch.setattr(jv, "IS_WIN", True)
+    monkeypatch.setitem(jv.settings, "ai_router", True)
+    monkeypatch.setattr(jv, "ask_ai", lambda prompt, route=False: ("skill", "orden_asistente", {"orden": "instala VLC"}))
+    monkeypatch.setattr(jv, "ack_start", lambda text: type("A", (), {"done": lambda self: None})())
+    jv._rec.clear()
+    jv.process_command("me hace falta un programa para descomprimir archivos rar")
+    assert hit == ["vlc"]

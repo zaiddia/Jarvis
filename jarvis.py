@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.9"
+VERSION = "12.9.1"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -574,7 +574,14 @@ ACTION_RULE = (
     "En esta conversación tú NO ejecutas acciones: las acciones del PC (abrir programas, enviar "
     "mensajes, poner música...) las hace otro sistema. Nunca digas que enviaste, abriste o hiciste "
     "algo; si te lo piden, di que no pudiste hacerlo y sugiere decirlo como orden, por ejemplo "
-    "«manda un WhatsApp a Andrea diciendo...»."
+    "«manda un WhatsApp a Andrea diciendo...». Jarvis SÍ sabe hacer estas cosas con la orden directa (nunca digas que no "
+    "puede; sugiere la orden exacta): instalar, actualizar y desinstalar programas («instala VLC», «actualiza todos mis "
+    "programas», «desinstala Zoom»); ver qué pone lento el PC y cerrarlo («¿qué está poniendo lento el PC?», «cierra el que "
+    "más consume»); «limpia los temporales»; «¿cuánto espacio tengo?»; «¿qué programas arrancan con Windows?», «quita "
+    "Spotify del inicio»; «plan de energía alto rendimiento»; «activa el ahorro de batería»; «apaga el bluetooth», «activa "
+    "el wifi», «modo avión», «conéctate al wifi Casa»; «modo concentración 40 minutos»; «modo docente», «modo general»; "
+    "gastos, pagos y listas («gasté 20 mil en almuerzo», «recuérdame pagar el internet el 15 de cada mes», «agrega leche "
+    "a la lista del mercado»); y la casa con Home Assistant («enciende la luz de la sala»)."
 )
 
 # =============================================================================
@@ -1524,7 +1531,14 @@ from nucleo.pantalla import *  # noqa: F401,F403,E402
 from nucleo.diagnostico import *  # noqa: F401,F403,E402
 _POLITE_RE = re.compile(r"^(?:(?:oye|jarvis|porfa|por favor|bueno|y)\s+)*(?:(?:me|le|nos)\s+)?"
                         r"(?:puedes|podrias|podria|puede|quieres|quisieras|seria posible|es posible|me haces el favor de|"
-                        r"hazme el favor de|me ayudas a|te pido que|ayudame a)\s+(?:(?:me|le|nos)\s+)?(\w+)\s*(.*)$")
+                        r"hazme el favor de|me ayudas a|te pido que|ayudame a|me ayudarias a)\s+(?:(?:me|le|nos)\s+)?(\w+)\s*(.*)$")
+# 12.9.1: «quiero instalar VLC», «necesito limpiar el PC»: solo con los verbos del PC y del día a día (así «quiero escribir
+# un correo» no se vuelve la orden de teclear)
+_WANT_RE = re.compile(r"^(?:(?:oye|jarvis|porfa|por favor|bueno|y)\s+)*(?:yo\s+)?(?:quiero|necesito|quisiera|me gustaria|como puedo|"
+                      r"como hago para|ayudame a)\s+(\w+)\s*(.*)$")
+_WANT_VERBS = {"instalar": "instala", "desinstalar": "desinstala", "actualizar": "actualiza", "limpiar": "limpia", "liberar": "libera",
+               "conectarme": "conectate", "activar": "activa", "desactivar": "desactiva", "apagar": "apaga", "encender": "enciende",
+               "prender": "prende", "agregar": "agrega", "anadir": "anade", "quitar": "quita"}
 _ME_VERB_RE = re.compile(r"^(?:(?:oye|jarvis|porfa|y)\s+)*(?:me|le|nos)\s+(\w+)\b\s*(.*)$")
 _TU_TO_IMP = {"pones": "pon", "abres": "abre", "subes": "sube", "bajas": "baja", "cierras": "cierra", "buscas": "busca",
               "pausas": "pausa", "quitas": "quita", "silencias": "silencia", "apagas": "apaga", "enciendes": "enciende",
@@ -1542,7 +1556,13 @@ _INF_TO_IMP = {"poner": "pon", "ponerme": "pon", "abrir": "abre", "abrirme": "ab
                "desactivar": "desactiva", "cambiar": "cambia", "tomar": "toma", "hacer": "haz", "hacerme": "haz",
                "mandar": "manda", "enviar": "envia", "escribir": "escribe", "recordarme": "recuerdame",
                "avisarme": "avisame", "calcular": "calcula", "traducir": "traduce", "pasar": "pasa", "dar": "dame",
-               "darme": "dame", "llevarme": "llevame", "cancelar": "cancela", "iniciar": "inicia", "crear": "crea"}
+               "darme": "dame", "llevarme": "llevame", "cancelar": "cancela", "iniciar": "inicia", "crear": "crea",
+               # 12.9.1: el PC y el día a día
+               "instalar": "instala", "instalarme": "instala", "desinstalar": "desinstala", "desinstalarme": "desinstala",
+               "actualizar": "actualiza", "actualizarme": "actualiza", "limpiar": "limpia", "limpiarme": "limpia", "borrar": "borra",
+               "borrarme": "borra", "liberar": "libera", "liberarme": "libera", "conectar": "conecta", "conectarme": "conectate",
+               "conectarte": "conectate", "desconectar": "desconecta", "agregar": "agrega", "anadir": "anade", "anotar": "anota",
+               "apuntar": "apunta", "revisar": "revisa", "cerrarme": "cierra", "quitarme": "quita", "eliminar": "elimina"}
 
 
 def polite_to_order(t):
@@ -1551,6 +1571,9 @@ def polite_to_order(t):
     m = _POLITE_RE.match(t)
     if m and m.group(1) in _INF_TO_IMP:
         return (_INF_TO_IMP[m.group(1)] + " " + m.group(2)).strip()
+    m = _WANT_RE.match(t)
+    if m and m.group(1) in _WANT_VERBS:
+        return (_WANT_VERBS[m.group(1)] + " " + m.group(2)).strip()
     m = _ME_VERB_RE.match(t)
     if m and m.group(1) in _TU_TO_IMP:
         return (_TU_TO_IMP[m.group(1)] + " " + m.group(2)).strip()
@@ -2011,7 +2034,10 @@ def process_command(text):
                 ack.done()
         finally:
             _tl.fast_model = ""
-        if result[0] == "skill":
+        if result[0] == "skill" and result[1] == "orden_asistente":      # 12.9.1: lo nuevo, directo a su orden
+            log_terminal(f"La IA entendió: «{(result[2] or {}).get('orden', '')}»", "COMPRENSIÓN")
+            assistant_direct((result[2] or {}).get("orden", ""))
+        elif result[0] == "skill":
             run_skill(result[1], result[2])
         elif result[0] == "mcp":
             run_mcp(result[1], result[2], text)

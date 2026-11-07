@@ -420,7 +420,9 @@ def focus_end(done=False, origin="CONCENTRACIÓN"):
 # ============================================================================ ÓRDENES
 _SLOW = re.compile(r"\bque (?:esta|me esta|lo esta|anda) (?:poniendo|haciendo) lento\b|\bpor que (?:esta|anda|va) (?:tan )?lento (?:el|mi) "
                    r"(?:pc|computador|portatil|equipo|computadora)\b|\bque (?:programa |proceso )?(?:esta )?consum(?:e|iendo) (?:mas|tanta) "
-                   r"(?:memoria|ram|procesador|cpu|bateria)\b|\bque es lo que mas consume\b")
+                   r"(?:memoria|ram|procesador|cpu|bateria)\b|\bque es lo que mas consume\b|\bque (?:programa |proceso )?(?:esta|me esta) "
+                   r"(?:consumiendo|gastando|usando) (?:la |el |tanta |tanto |mucha |mucho )?(?:memoria|ram|procesador|cpu|bateria)\b|"
+                   r"\bque (?:programa|proceso) (?:consume|gasta|usa) mas\b|\b(?:el|mi) (?:pc|computador|portatil|equipo) (?:esta|anda|va) (?:muy |super )?lento\b")
 _KILL_TOP = re.compile(r"\bcierra (?:el|lo) que mas (?:consume|gasta|pesa)\b")
 _TEMP = re.compile(r"\b(?:limpia|borra|elimina)(?:me)? (?:los |las )?(?:archivos )?temporales\b|\blibera(?:me)? (?:espacio|memoria del disco)\b|"
                    r"\blimpia (?:el|mi) (?:pc|computador|equipo|disco|portatil)\b")

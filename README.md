@@ -157,6 +157,10 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Las órdenes del PC, también dichas con otras palabras (v12.9.1)
+
+- **Arreglado**: «¿puedes instalar VLC?», «quiero instalar VLC», «¿me puedes limpiar los temporales?», «mi PC está muy lento», «¿podrías apagar el bluetooth?» llegaban a la IA, que no sabía que Jarvis ya podía hacerlo y respondía «no puedo». Ahora se convierten en la orden, la IA conoce las habilidades nuevas (y las usa cuando lo pides con otras palabras) y nunca dice que no puede: sugiere la orden exacta.
+
 ## Dos modos: Docente y Asistente general, y Jarvis maneja el PC con órdenes del sistema (v12.9)
 
 - **Modo Docente y modo Asistente general.** En automático, Jarvis es docente en tu jornada (según tu horario) o conectado al Wi-Fi del colegio, y asistente general el resto del tiempo; cambia sus instrucciones y lo muestra en el HUD (✎ docente, ◎ general; clic para cambiar). «Modo docente», «modo general», «modo automático». Ajustes › **Asistente**.

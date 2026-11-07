@@ -16,6 +16,7 @@ import time
 
 import equipo
 import horario
+import skills
 import vidadiaria
 from nucleo import J
 
@@ -241,6 +242,41 @@ def modes_start():
     threading.Thread(target=_mode_worker, daemon=True, name="modos").start()
 
 
+# ----------------------------------------------------------------------------- 12.9.1: que la IA conozca lo nuevo
+ASSISTANT_ORDERS = ("instala <programa>", "actualiza todos mis programas", "¿qué programas tienen actualización?", "desinstala <programa>",
+                    "¿qué está poniendo lento el PC?", "cierra el que más consume", "limpia los temporales", "¿cuánto espacio tengo?",
+                    "¿qué programas arrancan con Windows?", "quita <programa> del inicio", "plan de energía alto rendimiento",
+                    "plan de energía equilibrado", "activa el ahorro de batería", "desactiva el ahorro de batería", "apaga el bluetooth",
+                    "activa el bluetooth", "apaga el wifi", "activa el wifi", "modo avión", "desactiva el modo avión", "¿a qué wifi estoy conectado?",
+                    "conéctate al wifi <red>", "modo concentración <N> minutos", "termina la concentración", "luz nocturna",
+                    "cambia la salida de audio", "modo docente", "modo general", "modo automático", "gasté <monto> en <concepto>",
+                    "¿cuánto he gastado este mes?", "recuérdame pagar <cosa> el <día> de cada mes", "¿qué pagos tengo?", "ya pagué <cosa>",
+                    "agrega <cosas> a la lista de <lista>", "¿qué hay en la lista de <lista>?", "enciende <aparato de la casa>",
+                    "apaga <aparato de la casa>", "cuando conecte el cargador, <orden>", "¿qué disparadores tengo?")
+
+
+@skills.skill("orden_asistente", "El PC y el día a día con órdenes de Jarvis: instalar, actualizar o desinstalar programas; qué "
+                                 "consume más y cerrarlo; temporales; espacio en disco; programas al inicio; planes de energía y ahorro de "
+                                 "batería; wifi, bluetooth y modo avión; concentración; modo docente o general; gastos, pagos y listas; luces y "
+                                 "aparatos de la casa; disparadores. Úsala cuando pidan algo de esto con otras palabras.",
+              "orden: la orden directa, una de: " + " | ".join(ASSISTANT_ORDERS), windows_only=False)
+def assistant_order(orden):
+    return assistant_direct(orden)
+
+
+def assistant_direct(orden):
+    """Ejecuta una orden del asistente general sin volver a pasar por la IA (así no hay vueltas). → True si alguien la atendió."""
+    from nucleo.diaadia import expense_voice, home_voice, list_voice, payment_voice
+    from nucleo.equipopc import pc_voice
+    text = str(orden or "").strip()
+    t = J.normalize(text)
+    for fn in (mode_voice, trigger_voice, payment_voice, expense_voice, list_voice, pc_voice, home_voice):
+        if fn(text, t):
+            return True
+    J.reply(f"No supe cómo hacer «{text}». Prueba con la orden directa, por ejemplo «instala VLC» o «limpia los temporales».", "PC")
+    return False
+
+
 @J.socketio.on("assistant_rules")
 def handle_assistant_rules(data=None):
     d = data or {}
@@ -255,5 +291,5 @@ def handle_assistant_rules(data=None):
 
 
 __all__ = ['MODE_LABEL', '_MODE_ASK', '_MODE_SET', '_TRIG_DEL', '_TRIG_LIST', '_mode_changed', '_mode_worker', '_proc_names', '_run_trigger',
-           '_tick', 'current_mode', 'handle_assistant_mode', 'handle_assistant_rules', 'mode_info', 'mode_rule', 'mode_state', 'mode_voice',
+           '_tick', 'ASSISTANT_ORDERS', 'assistant_direct', 'assistant_order', 'current_mode', 'handle_assistant_mode', 'handle_assistant_rules', 'mode_info', 'mode_rule', 'mode_state', 'mode_voice',
            'modes_start', 'set_mode', 'trigger_voice', 'wifi_now']
