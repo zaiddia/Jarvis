@@ -470,6 +470,7 @@
   $("#btn-docs").addEventListener("click", () => socket.emit("open_docs_page"));        // 12.14
   $("#btn-apps").addEventListener("click", () => socket.emit("open_apps_page"));
   $("#btn-midia").addEventListener("click", () => socket.emit("open_midia_page"));     // 12.15
+  $("#btn-guide").addEventListener("click", () => socket.emit("open_guide_page"));     // 12.16
   $("#btn-pcdoc").addEventListener("click", () => socket.emit("open_pc_page"));       // 12.8: panel de salud
   $("#btn-bell").addEventListener("click", () => (ntc.box.hidden ? openNotices() : closeNotices()));
   $("#ntc-clear").addEventListener("click", () => socket.emit("notices", { clear: true, seen: true }, drawNotices));
@@ -671,6 +672,22 @@
       }
       if (c.siguiente) { const r = mk("div", "drow"); r.append(mk("span", "", (c.ahora ? "Luego: " : "Siguiente: ") + c.siguiente),
         mk("span", "dmeta", c.en != null ? (c.en <= 0 ? "ahora" : `en ${c.en} min`) : (c.hoy ? c.a_las : `${c.a_las} · otro día`))); k.append(r); }
+      dash.append(k);
+    }
+    if (d.midia) {                                           // 12.16: «Mi día» en el mismo panel, con sus botones
+      const m = d.midia, k = card("Mi día", "", "Mi día");
+      const line = (txt, meta, cls, cmd) => { const r = mk("div", "drow" + (cls ? " " + cls : "") + (cmd ? " click" : "")); r.append(mk("span", "", txt)); if (meta) r.append(mk("span", "dmeta", meta)); if (cmd) r.addEventListener("click", () => run(cmd)); k.append(r); };
+      if (m.dnd) line(`🔕 No molestar (${m.dnd.motivo})`, m.dnd.guardados ? `${m.dnd.guardados} guardados` : (m.dnd.hasta ? `hasta ${m.dnd.hasta}` : ""), "", m.dnd.guardados ? "¿qué me perdí?" : "");
+      if (m.toma) line(`💊 ${m.toma.t}`, m.toma.tarde ? `pendiente ${m.toma.h} · ✓ ya` : `a las ${m.toma.h}`, m.toma.tarde ? "hot" : "", m.toma.tarde ? `ya me tomé ${m.toma.t}` : "");
+      (m.citas || []).forEach((c) => line("🩺 " + c, "", "soon"));
+      (m.venc || []).forEach((v) => line(`📄 ${v.t}`, v.n < 0 ? `vencido` : v.n === 0 ? "hoy" : `en ${v.n} días`, v.n <= 7 ? "hot" : ""));
+      (m.cumples || []).forEach((c) => line(`🎂 ${c.t}`, c.n === 0 ? "¡hoy!" : `en ${c.n} días`, c.n === 0 ? "soon" : "", c.n <= 1 ? `escríbele un mensaje de cumpleaños a ${c.t}` : ""));
+      if (m.presupuesto) line(`💰 ${m.presupuesto.cat}`, `${m.presupuesto.pct} % del presupuesto`, m.presupuesto.pct >= 100 ? "hot" : "", "¿cómo voy con el presupuesto?");
+      if (m.viaje) line(`✈ ${m.viaje.t}`, m.viaje.n === 0 ? "hoy" : `en ${m.viaje.n} días`, "");
+      const b = mk("div", "dbtns midia-btns");
+      [["Mi día", "open_midia_page"], ["Médico del PC", "open_pc_page"], ["Documentos", "open_docs_page"], ["Aplicaciones", "open_apps_page"], ["Guía", "open_guide_page"]]
+        .forEach(([t, ev]) => { const x = mk("button", "mini", t); x.type = "button"; x.addEventListener("click", () => socket.emit(ev)); b.append(x); });
+      k.append(b);
       dash.append(k);
     }
     if (!d.bandeja && d.aprobar && d.aprobar.length) {

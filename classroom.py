@@ -36,7 +36,9 @@ SCOPES = ["https://www.googleapis.com/auth/classroom.courses.readonly",
           "https://www.googleapis.com/auth/gmail.readonly",
           # 8.7: Calendar (crear y leer eventos) y Drive (solo los archivos que sube Jarvis)
           "https://www.googleapis.com/auth/calendar.events",
-          "https://www.googleapis.com/auth/drive.file"]
+          "https://www.googleapis.com/auth/drive.file",
+          # 12.16: los cumpleaños de tus contactos (solo lectura)
+          "https://www.googleapis.com/auth/contacts.readonly"]
 FORMS_API = "https://forms.googleapis.com/v1/"
 
 

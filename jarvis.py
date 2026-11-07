@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.15"
+VERSION = "12.16"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -859,6 +859,7 @@ DEFAULT_SETTINGS = {
     "hud_favorites": "",           # 9.2: órdenes favoritas (una por línea), como botones en el HUD
     "hud_auto_hide": True,         # 12.13: el HUD se esconde como píldora en el borde derecho
     "hud_hide_secs": 5,            # 12.13: segundos sin usarlo antes de esconderse
+    "dnd_auto": True,              # 12.16: no molestar solo en clase y en videollamadas
     "drive_auto": False,           # 8.7: subir a tu Drive cada material que Jarvis cree
     "drive_folder_id": "",
     "zeti_since": "",              # 8.7: notas desde esta fecha (AAAA-MM-DD), p. ej. el inicio del periodo
@@ -1666,6 +1667,8 @@ def process_command(text):
         return
     if copy_voice(text, t) or game_voice(text, t) or difficulty_voice(text, t):            # 12.12: copia, juegos, dificultad
         return
+    if dnd_voice(text, t) or guide_voice(text, t) or autotest_voice(text, t) or compartir_voice(text, t):   # 12.16
+        return
     if pc_doctor_voice(text, t) or mi_dia_voice(text, t):   # 12.15: médico del PC, vencimientos, medicamentos, citas, cumpleaños, presupuesto…
         return
     if payment_voice(text, t) or expense_voice(text, t) or list_voice(text, t):   # 12.9: pagos, gastos y listas
@@ -2436,6 +2439,10 @@ from nucleo.aplicaciones import *  # noqa: F401,F403,E402
 from nucleo.generador import *  # noqa: F401,F403,E402
 from nucleo.hogarvoz import *  # noqa: F401,F403,E402
 from nucleo.medicopc import *  # noqa: F401,F403,E402
+from nucleo.guiavoz import *  # noqa: F401,F403,E402
+from nucleo.celular import *  # noqa: F401,F403,E402
+from nucleo.compartir import *  # noqa: F401,F403,E402
+from nucleo.nomolestar import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
@@ -2572,6 +2579,8 @@ def main():
         modes_start()                     # 12.9: modo docente/general, disparadores y avisos de batería
         daily_start()                     # 12.9: avisos de pagos
         midia_start()                     # 12.15: vencimientos, medicamentos, citas, cumpleaños, presupuesto y viajes
+        compartir_start()                 # 12.16: resumen del mes
+        dnd_start()                       # 12.16: no molestar en clase y en videollamadas
         school_start()                    # 12.12: calendario escolar y recuperaciones (avisos)
         apps_start()                      # 12.14: tus tarjetas de aplicaciones y su horario
         gen_start()                       # 12.14: historial del generador de documentos

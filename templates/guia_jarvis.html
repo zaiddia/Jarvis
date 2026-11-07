@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de Jarvis</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
+<style>
+  html, body { min-height: 100%; }
+  body { background: radial-gradient(ellipse at 50% -10%, rgba(var(--a-rgb), .12), transparent 60%), var(--bg); color: var(--text);
+         font-family: var(--mono); font-size: 13px; padding: 22px clamp(16px, 3vw, 40px) 50px; user-select: text; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 16px; }
+  header h1 { font-family: var(--hud); font-size: clamp(20px, 3vw, 30px); color: var(--a); letter-spacing: .12em; text-shadow: 0 0 16px rgba(var(--a-rgb), .5); }
+  header p { color: var(--muted); margin-top: 6px; }
+  .search { display: flex; gap: 10px; max-width: 640px; margin: 0 auto 14px; }
+  .search .inp { flex: 1; height: 42px; font-size: 14px; padding: 0 14px; }
+  .cats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 18px; }
+  .cat { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: pointer; font-size: 12px; }
+  .cat.on { background: var(--a); color: #03060c; border-color: var(--a); font-weight: 700; }
+  .sec { margin-bottom: 22px; }
+  .sec h2 { font-family: var(--hud); font-size: 12px; letter-spacing: .22em; color: var(--a); margin-bottom: 10px; display: flex; gap: 10px; align-items: center; }
+  .sec h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+  .g { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: rgba(var(--a-rgb), .025); }
+  .g h3 { font-size: 13.5px; color: var(--text); margin-bottom: 8px; }
+  .g h3 small { color: var(--muted); font-weight: 400; font-size: 10.5px; margin-left: 6px; }
+  .ex { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px dashed rgba(var(--a-rgb), .12); }
+  .ex:first-of-type { border-top: 0; }
+  .ex span { flex: 1; color: #bfefff; line-height: 1.35; }
+  .ex span.note { color: var(--muted); font-style: italic; }
+  .ex button { padding: 4px 8px; border-radius: 6px; font-size: 11px; color: var(--muted); border: 1px solid var(--line); white-space: nowrap; }
+  .ex button:hover { color: var(--a); border-color: var(--a); }
+  mark { background: rgba(var(--a-rgb), .25); color: inherit; padding: 0 1px; }
+  .empty { color: var(--muted); text-align: center; padding: 30px; }
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 10px); max-width: 520px; padding: 10px 16px; background: #061423;
+           border: 1px solid var(--line-strong); opacity: 0; transition: .25s; pointer-events: none; z-index: 9; }
+  #toast.on { opacity: 1; transform: translate(-50%, 0); }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body class="page">
+<div class="wrap">
+  <header><h1>LO QUE SÉ HACER</h1><p id="sub">Busca, mira un ejemplo y pulsa «Probar» para que Jarvis lo haga. También puedes decirlo con tus palabras.</p></header>
+  <div class="search"><input class="inp" id="q" placeholder="Busca: presupuesto, medicamentos, ventanas, notas, QR…" autofocus></div>
+  <div class="cats" id="cats"></div>
+  <div id="list"></div>
+</div>
+<div id="toast"></div>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const socket = io();
+  let G = [], cat = "", toastT = 0;
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  function toast(t) { const n = $("#toast"); n.textContent = t; n.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => n.classList.remove("on"), 4000); }
+  function hl(text, words) {
+    const span = el("span"); if (!words.length) { span.textContent = text; return span; }
+    const n = norm(text); const marks = new Array(text.length).fill(false);
+    words.forEach((w) => { let i = n.indexOf(w); while (i >= 0) { for (let k = i; k < i + w.length; k++) marks[k] = true; i = n.indexOf(w, i + 1); } });
+    let cur = "", on = false; const flush = () => { if (!cur) return; span.append(on ? Object.assign(el("mark"), { textContent: cur }) : document.createTextNode(cur)); cur = ""; };
+    for (let i = 0; i < text.length; i++) { if (marks[i] !== on) { flush(); on = marks[i]; } cur += text[i]; } flush();
+    return span;
+  }
+  function draw() {
+    const words = norm($("#q").value).split(/\s+/).filter((w) => w.length > 2);
+    const cats = $("#cats"); cats.innerHTML = "";
+    [["", "Todo"]].concat(G.map((c) => [c.id, `${c.icono} ${c.nombre}`])).forEach(([id, n]) => {
+      const b = el("span", "cat" + (id === cat ? " on" : ""), n); b.addEventListener("click", () => { cat = id; draw(); }); cats.append(b);
+    });
+    const list = $("#list"); list.innerHTML = ""; let shown = 0;
+    G.filter((c) => !cat || c.id === cat).forEach((c) => {
+      const gs = c.grupos.filter((g) => !words.length || words.every((w) => norm(g.nombre + " " + g.ejemplos.map((e) => e.t).join(" ")).includes(w)));
+      if (!gs.length) return;
+      const sec = el("section", "sec"); sec.append(el("h2", "", `${c.icono} ${c.nombre.toUpperCase()}`));
+      const grid = el("div", "grid");
+      gs.forEach((g) => {
+        const box = el("div", "g"); const ver = (g.nombre.match(/\((\d+\.\d+(?:\.\d+)?)\)/) || [])[1];
+        const h = el("h3", "", g.nombre.replace(/\s*\(\d+\.\d+(?:\.\d+)?\)/, "")); if (ver) h.append(el("small", "", "v" + ver)); box.append(h);
+        g.ejemplos.forEach((e) => {
+          const r = el("div", "ex"); const s = hl(e.t, words); if (!e.probar) s.className = "note"; r.append(s);
+          if (e.probar) {
+            const b = el("button", "", "▶ Probar"); b.type = "button"; b.title = "Jarvis lo hace ahora, como si se lo dijeras";
+            b.addEventListener("click", () => socket.emit("guide_try", { cmd: e.t }, (res) => toast(res && res.ok ? `Enviado a Jarvis: «${e.t}»` : "Ese ejemplo se hace de otra forma.")));
+            const cp = el("button", "", "Copiar"); cp.type = "button";
+            cp.addEventListener("click", () => { try { navigator.clipboard.writeText(e.t); toast("Copiado."); } catch (err) { toast(e.t); } });
+            r.append(b, cp);
+          }
+          box.append(r);
+        });
+        grid.append(box); shown++;
+      });
+      sec.append(grid); list.append(sec);
+    });
+    if (!shown) list.append(el("div", "empty", "No encontré eso. Prueba con otra palabra, o pregúntale a Jarvis: «¿qué puedes hacer con …?»."));
+  }
+  $("#q").addEventListener("input", draw);
+  socket.on("connect", () => socket.emit("guide_data", {}, (d) => { G = d.categorias || []; $("#sub").textContent = `${d.total} ejemplos de lo que sé hacer (v${d.version}). Busca, mira un ejemplo y pulsa «Probar».`; draw(); }));
+  socket.emit("get_settings", (r) => { if (r && r.settings && r.settings.theme) document.documentElement.dataset.theme = r.settings.theme; });
+})();
+</script>
+</body>
+</html>

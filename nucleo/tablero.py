@@ -297,6 +297,10 @@ def dashboard(now=None):
         J.hudpro_extras(now, out)
     except Exception as e:
         J.note_error("HUD", e)
+    try:                                               # 12.16: lo de «Mi día» en el mismo panel
+        out["midia"] = J.midia_dash(now)
+    except Exception as e:
+        J.note_error("HUD", e)
     out["sugerencias"] = suggestions(now, out)
     return out
 

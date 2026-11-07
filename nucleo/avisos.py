@@ -217,7 +217,8 @@ def alert(text, origin="JARVIS"):
 
 _TG_HELP = ("Soy Jarvis, en tu computador. Escríbeme como me hablarías, por ejemplo:\n"
             "• ¿qué tengo hoy?\n• abre la presentación de ciencias\n• recuérdame a las 3 llamar a la coordinadora\n"
-            "• volumen al 30\n• ¿cómo está el clima?\n• noticias\n\n"
+            "• volumen al 30\n• ¿cómo está el clima?\n• noticias\n"
+            "• mándame la foto de un recibo (lo anoto en tus gastos) o un PDF (te lo paso a audio)\n\n"
             "/captura – foto de la pantalla\n/estado – cómo está el PC\n/prueba – prueba completa de Jarvis\n/informe – informe de errores (sin claves)\n/ayuda – esta ayuda\n\n"
             "Por seguridad, desde aquí no apago ni reinicio el equipo, no cierro programas, no escribo en ventanas "
             "y no borro datos.")
@@ -285,8 +286,10 @@ def _tg_handle(msg):
     if not text and (msg.get("voice") or msg.get("audio")):
         J.tg_voice(msg)                                # 7.9: notas de voz
         return
+    if not text and J.tg_file_in(msg):                 # 12.16: fotos y archivos (recibos, PDF para audio, talleres)
+        return
     if not text:
-        J.telegram_send("Por ahora entiendo mensajes de texto y notas de voz.")
+        J.telegram_send("Entiendo texto, notas de voz, fotos y archivos (PDF, Word, Excel…).")
         return
     J.tg["last_cmd"] = time.time()
     J.log_terminal(f"Desde el celular: {text}", "TELEGRAM")
@@ -314,6 +317,8 @@ def _tg_handle(msg):
     elif low in ("prueba", "prueba completa", "diagnostico"):
         J.telegram_send("Haciendo la prueba completa… (tarda unos segundos)")
         out = J.check_report(J.run_system_check(speak_it=False))
+    elif J.tg_pending_answer(text):                    # 12.16: «recibo», «audio»… para el archivo que mandaste
+        out = ""
     else:
         out = J.telegram_run(text)
     if out:

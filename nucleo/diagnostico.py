@@ -121,6 +121,10 @@ def system_check():
     if J.autostart_supported():
         add(G, "info", "Arranca con Windows." if J.autostart_enabled() else "No arranca con Windows (Ajustes › General).")
     add(G, "info", f"Jarvis {J.VERSION} · Python {platform.python_version()} · registro en {J.LOG_PATH}")
+    try:                                               # 12.16: autoprueba de las funciones nuevas en este equipo
+        out += J.features_check()
+    except Exception as e:
+        add("Funciones nuevas (autoprueba)", "aviso", f"No pude terminar la autoprueba: {e}")
     return out
 
 

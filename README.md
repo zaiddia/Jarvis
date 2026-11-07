@@ -157,6 +157,17 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Guía, Telegram con archivos, compartir con la familia, resumen del mes, no molestar y autoprueba (v12.16)
+
+- **Guía de lo que sé hacer** («abre la guía», «¿qué puedes hacer?» o el botón «?» del HUD expandido): casi 300 ejemplos por grupos (colegio, PC, Mi día, dinero, web, mensajes, casa…), con buscador y botón **Probar**. «¿Qué puedes hacer con el presupuesto?» responde con los ejemplos que coinciden.
+- **Telegram recibe fotos y archivos**: manda a tu bot la foto de un recibo, un PDF o la foto de un taller. Si escribes una palabra al enviarlo («recibo», «audio», «revisa», «resume», «texto»), lo hago de una vez; si no, te pregunto qué hacer.
+- **Cumpleaños de tus contactos de Google**: «importa los cumpleaños de mis contactos». La primera vez pulsa otra vez «Conectar con Google» en Ajustes (pide el permiso de ver contactos, solo lectura) y, si Google lo pide, activa la People API en tu proyecto.
+- **Un solo inicio**: el panel «Hoy» del HUD expandido muestra ahora «Mi día» (la próxima toma con ✓, citas, vencimientos, cumpleaños, presupuesto y viaje) con botones a Mi día, Médico del PC, Documentos, Aplicaciones y la Guía.
+- **Autoprueba**: «haz la autoprueba» (y en cada prueba completa) revisa en tu equipo, sin cambiar nada, lo que necesitan las funciones nuevas: selector de archivos, zoom de pantalla, tarjetas que apuntan a algo que ya no existe, librerías del generador, voz para audio, IA que lee fotos, batería, Telegram, permisos de Google y contactos de WhatsApp. El detalle sale en el panel de salud.
+- **Compartir con la familia**: «mándale la lista del mercado a mi esposa», «compártele el menú a mi mamá», «avísale a mi hermana del cumpleaños de mamá». Jarvis te muestra el mensaje y solo lo envía por WhatsApp cuando dices «sí» (los contactos van en Ajustes › Integraciones).
+- **Resumen del mes**: «resumen del mes» (o el día 1, solo): cuánto gastaste por categoría frente al presupuesto, cobros fijos, lo que se vencía, pastillas agotadas y lo que viene el mes siguiente.
+- **No molestar inteligente**: en tu horario de clase, con la clase en vivo o en Zoom/Meet/Teams, los avisos no se dicen en voz alta: se guardan y te los cuento al terminar. Medicamentos, citas y alarmas llegan en silencio al HUD y al celular. «No me molestes por una hora», «no me molestes hasta las 4», «¿qué me perdí?», «ya puedes hablar». Se apaga en Ajustes › HUD.
+
 ## Mi día: vencimientos, recibos, medicamentos, citas, cumpleaños, presupuesto, menú, audio, médico del PC y viajes (v12.15)
 
 Todo está también en la página **Mi día** («abre mi día» o el botón del calendario en el HUD expandido), y lo importante sale en el resumen de la mañana.
