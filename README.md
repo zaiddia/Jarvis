@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Pestañas, carpetas y ventanas por voz (v12.10)
+
+- **Pestañas del programa que nombres**: «cierra la pestaña del explorador», «cierra la pestaña de Chrome», «abre una pestaña nueva en el explorador», «siguiente pestaña de Edge». Jarvis pone ese programa al frente y actúa en él. Sin nombrar programa, actúa en la ventana del frente si tiene pestañas (navegador, Explorador, Terminal, Bloc de notas, VS Code); si es Word o Excel, va a tu navegador (así no cierra tu documento).
+- **Explorador**: «sube una carpeta», «carpeta anterior», «nueva carpeta», «vista de detalles», «iconos grandes», «vista previa», «renombra», «propiedades».
+- **La ventana del frente**: «guarda el archivo», «selecciona todo», «copia eso», «pega aquí», «imprime esto», «acerca», «aleja», «zoom normal», «pon la ventana a la izquierda/derecha», «pasa la ventana al otro monitor».
+- **Windows**: «nuevo escritorio virtual», «siguiente escritorio», «cierra el escritorio virtual», «vista de tareas», «historial del portapapeles», «recorte de pantalla», «abre los emojis», «abre el explorador».
+- Cada orden es un atajo de teclado fijo y conocido: Jarvis no teclea texto ni mueve el mouse por su cuenta. La IA también las conoce si lo pides con otras palabras.
+
 ## Las órdenes del PC, también dichas con otras palabras (v12.9.1)
 
 - **Arreglado**: «¿puedes instalar VLC?», «quiero instalar VLC», «¿me puedes limpiar los temporales?», «mi PC está muy lento», «¿podrías apagar el bluetooth?» llegaban a la IA, que no sabía que Jarvis ya podía hacerlo y respondía «no puedo». Ahora se convierten en la orden, la IA conoce las habilidades nuevas (y las usa cuando lo pides con otras palabras) y nunca dice que no puede: sugiere la orden exacta.

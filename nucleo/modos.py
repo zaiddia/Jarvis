@@ -252,13 +252,19 @@ ASSISTANT_ORDERS = ("instala <programa>", "actualiza todos mis programas", "¿qu
                     "cambia la salida de audio", "modo docente", "modo general", "modo automático", "gasté <monto> en <concepto>",
                     "¿cuánto he gastado este mes?", "recuérdame pagar <cosa> el <día> de cada mes", "¿qué pagos tengo?", "ya pagué <cosa>",
                     "agrega <cosas> a la lista de <lista>", "¿qué hay en la lista de <lista>?", "enciende <aparato de la casa>",
-                    "apaga <aparato de la casa>", "cuando conecte el cargador, <orden>", "¿qué disparadores tengo?")
+                    "apaga <aparato de la casa>", "cuando conecte el cargador, <orden>", "¿qué disparadores tengo?",
+                    "cierra la pestaña del <explorador|Chrome|Edge|Firefox|navegador|terminal>", "abre una pestaña nueva en el <programa>",
+                    "sube una carpeta", "nueva carpeta", "vista de detalles", "renombra", "guarda el archivo", "selecciona todo", "copia eso",
+                    "pega aquí", "imprime esto", "acerca", "aleja", "zoom normal", "pon la ventana a la izquierda", "pon la ventana a la derecha",
+                    "pasa la ventana al otro monitor", "nuevo escritorio virtual", "siguiente escritorio", "vista de tareas",
+                    "historial del portapapeles", "recorte de pantalla", "abre el explorador")
 
 
 @skills.skill("orden_asistente", "El PC y el día a día con órdenes de Jarvis: instalar, actualizar o desinstalar programas; qué "
                                  "consume más y cerrarlo; temporales; espacio en disco; programas al inicio; planes de energía y ahorro de "
                                  "batería; wifi, bluetooth y modo avión; concentración; modo docente o general; gastos, pagos y listas; luces y "
-                                 "aparatos de la casa; disparadores. Úsala cuando pidan algo de esto con otras palabras.",
+                                 "aparatos de la casa; disparadores; pestañas de un programa (explorador, Chrome…), carpetas, ventanas, "
+                                 "escritorios virtuales, portapapeles y recortes. Úsala cuando pidan algo de esto con otras palabras.",
               "orden: la orden directa, una de: " + " | ".join(ASSISTANT_ORDERS), windows_only=False)
 def assistant_order(orden):
     return assistant_direct(orden)
@@ -268,9 +274,10 @@ def assistant_direct(orden):
     """Ejecuta una orden del asistente general sin volver a pasar por la IA (así no hay vueltas). → True si alguien la atendió."""
     from nucleo.diaadia import expense_voice, home_voice, list_voice, payment_voice
     from nucleo.equipopc import pc_voice
+    from nucleo.ventanaactiva import window_voice
     text = str(orden or "").strip()
     t = J.normalize(text)
-    for fn in (mode_voice, trigger_voice, payment_voice, expense_voice, list_voice, pc_voice, home_voice):
+    for fn in (mode_voice, trigger_voice, payment_voice, expense_voice, list_voice, pc_voice, window_voice, home_voice):
         if fn(text, t):
             return True
     J.reply(f"No supe cómo hacer «{text}». Prueba con la orden directa, por ejemplo «instala VLC» o «limpia los temporales».", "PC")

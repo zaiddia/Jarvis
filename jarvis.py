@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.9.1"
+VERSION = "12.10"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -581,7 +581,8 @@ ACTION_RULE = (
     "Spotify del inicio»; «plan de energía alto rendimiento»; «activa el ahorro de batería»; «apaga el bluetooth», «activa "
     "el wifi», «modo avión», «conéctate al wifi Casa»; «modo concentración 40 minutos»; «modo docente», «modo general»; "
     "gastos, pagos y listas («gasté 20 mil en almuerzo», «recuérdame pagar el internet el 15 de cada mes», «agrega leche "
-    "a la lista del mercado»); y la casa con Home Assistant («enciende la luz de la sala»)."
+    "a la lista del mercado»); la casa con Home Assistant («enciende la luz de la sala»); y pestañas, carpetas y ventanas "
+    "(«cierra la pestaña del explorador», «sube una carpeta», «pon la ventana a la izquierda», «nuevo escritorio virtual»)."
 )
 
 # =============================================================================
@@ -1652,6 +1653,8 @@ def process_command(text):
         return
     if pc_voice(text, t):                              # 12.9: programas, mantenimiento, energía, conexiones, concentración
         return
+    if window_voice(text, t):                          # 12.10: «cierra la pestaña del explorador», «sube una carpeta», «nuevo escritorio virtual»
+        return
     if home_voice(text, t):                            # 12.9: Home Assistant: «enciende la luz de la sala»
         return
     if ai_who_voice(text, t):                          # 12.5: «¿qué IA estás usando?», «instala la voz sin internet»
@@ -2335,6 +2338,9 @@ import vidadiaria  # noqa: E402
 from nucleo.modos import *  # noqa: F401,F403,E402
 from nucleo.equipopc import *  # noqa: F401,F403,E402
 from nucleo.diaadia import *  # noqa: F401,F403,E402
+
+# ── 12.10: acciones de la ventana (atajos fijos: pestañas por programa, Explorador, ventanas, escritorios) → nucleo/ventanaactiva.py
+from nucleo.ventanaactiva import *  # noqa: F401,F403,E402
 
 # ── 12.0: revisar el procedimiento a mano paso a paso (SymPy), mapa de errores del curso y refuerzo para ese error
 # → nucleo/pasoapaso.py (lógica en procedimiento.py)
