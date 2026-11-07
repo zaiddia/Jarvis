@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,8 +28,9 @@
   .msg { text-align: center; margin-top: 10px; color: var(--a2); }
   .time { color: var(--a2); font-weight: 700; }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body>
+<body class="page">
 <div id="app"><h1>{{ titulo }}</h1><p class="sub">Aventura matemática por equipos</p>
   <label class="sub" for="nm">Tu nombre</label><input id="nm" maxlength="30" autocomplete="off">
   <p class="sub">Escoge tu equipo</p>

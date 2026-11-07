@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,8 +28,9 @@
   .home a:hover { border-color: var(--a); color: var(--a); }
   @media (max-width: 800px) { main { grid-template-columns: 1fr; } #cv { height: 55vh; } }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body>
+<body class="page">
 <header><h1>🧪 Laboratorio de matemáticas</h1>
   <select id="pick"><option value="">— escoge —</option>{% for k, v in labs.items() %}<option value="{{ k }}" {% if k == lab %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
 </header>

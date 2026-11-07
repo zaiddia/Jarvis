@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="cyan">
+<html lang="es" data-theme="cyan" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,8 +7,9 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/hud.css', v=asset_v) }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/katex/katex.min.css', v=asset_v) }}">
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body data-size="compacto" data-state="idle">
+<body class="hud-body" data-size="compacto" data-state="idle">
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-expand" viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></symbol>

@@ -1,0 +1,181 @@
+/* 12.6 · Estilo «Aurora»: azul noche con brillo índigo, acento cian, degradado cian → violeta, tarjetas redondeadas y
+   botones en píldora. Se aplica en todo Jarvis (HUD, Ajustes, Aula, proyector y páginas del celular) cuando
+   <html data-look="aurora"> (el estilo por defecto). «Clásico» (data-look="clasico") deja el visor futurista anterior. */
+
+html[data-look="aurora"] {
+  --bg: #060a17;
+  --bg2: #0b1024;
+  --panel: rgba(15, 20, 42, .78);
+  --panel-2: rgba(22, 28, 58, .72);
+  --border: rgba(148, 163, 214, .16);
+  --border-2: rgba(148, 163, 214, .26);
+  --text: #e8edff;
+  --muted: #8d97ba;
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --err: #fb7185;
+  --a: #22d3ee;   --a-rgb: 34, 211, 238;
+  --a2: #a78bfa;  --a2-rgb: 167, 139, 250;
+  --v: #818cf8;   --v-rgb: 129, 140, 248;
+  --grad: linear-gradient(135deg, #22d3ee 0%, #818cf8 100%);
+  --grad-soft: linear-gradient(135deg, rgba(34, 211, 238, .22) 0%, rgba(129, 140, 248, .26) 100%);
+  --line: var(--border);
+  --line-strong: rgba(34, 211, 238, .45);
+  --r-lg: 22px; --r-md: 16px; --r-sm: 12px;
+  --sans: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+  --hud: var(--sans);
+  --cut-sm: none;
+  --aurora-bg:
+    radial-gradient(70% 45% at 0% 0%, rgba(34, 211, 238, .10), transparent 60%),
+    radial-gradient(60% 45% at 100% 100%, rgba(236, 72, 153, .08), transparent 65%),
+    radial-gradient(90% 60% at 50% 35%, rgba(99, 102, 241, .13), transparent 70%),
+    #060a17;
+}
+/* los acentos de color de Ajustes › HUD siguen funcionando, con el violeta como segundo color */
+html[data-look="aurora"][data-theme="ambar"]   { --a: #fbbf24; --a-rgb: 251, 191, 36; --grad: linear-gradient(135deg, #fbbf24, #f472b6); }
+html[data-look="aurora"][data-theme="rojo"]    { --a: #fb7185; --a-rgb: 251, 113, 133; --grad: linear-gradient(135deg, #fb7185, #a78bfa); }
+html[data-look="aurora"][data-theme="verde"]   { --a: #34d399; --a-rgb: 52, 211, 153; --grad: linear-gradient(135deg, #34d399, #22d3ee); }
+html[data-look="aurora"][data-theme="violeta"] { --a: #a78bfa; --a-rgb: 167, 139, 250; --grad: linear-gradient(135deg, #a78bfa, #f472b6); }
+html[data-look="aurora"][data-theme="azul"]    { --a: #60a5fa; --a-rgb: 96, 165, 250; --grad: linear-gradient(135deg, #60a5fa, #818cf8); }
+html[data-look="aurora"][data-theme="magenta"] { --a: #f472b6; --a-rgb: 244, 114, 182; --grad: linear-gradient(135deg, #f472b6, #818cf8); }
+html[data-look="aurora"][data-theme="hielo"]   { --a: #a5f3fc; --a-rgb: 165, 243, 252; --grad: linear-gradient(135deg, #a5f3fc, #c4b5fd); }
+
+/* ---------------------------------------------------------------- base compartida (todas las páginas) */
+html[data-look="aurora"] body { font-family: var(--sans); color: var(--text); }
+html[data-look="aurora"] body:not(.hud-body) { background: var(--aurora-bg); background-attachment: fixed; }
+html[data-look="aurora"] code { color: var(--a); }
+html[data-look="aurora"] .btn {
+  height: 40px; padding: 0 18px; border-radius: 999px; clip-path: none;
+  font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: .01em; text-transform: none;
+}
+html[data-look="aurora"] .btn-primary { background: var(--grad); color: #061021; box-shadow: 0 6px 22px rgba(var(--a-rgb), .25); }
+html[data-look="aurora"] .btn-primary:hover { filter: brightness(1.08); box-shadow: 0 8px 28px rgba(var(--a-rgb), .38); }
+html[data-look="aurora"] .btn-ghost { border: 1px solid rgba(var(--a-rgb), .45); color: #dff8ff; background: rgba(var(--a-rgb), .08); }
+html[data-look="aurora"] .btn-ghost:hover { background: rgba(var(--a-rgb), .16); }
+html[data-look="aurora"] .btn-danger { border-radius: 999px; }
+html[data-look="aurora"] .inp {
+  border-radius: var(--r-sm); background: rgba(10, 14, 32, .75); border: 1px solid var(--border-2); color: var(--text);
+}
+html[data-look="aurora"] .inp:focus { border-color: rgba(var(--a-rgb), .7); box-shadow: 0 0 0 3px rgba(var(--a-rgb), .14); }
+html[data-look="aurora"] select.inp option { background: #0f1430; }
+html[data-look="aurora"] .switch span { border-radius: 999px; clip-path: none; border-color: var(--border-2); background: rgba(255, 255, 255, .06); }
+html[data-look="aurora"] .switch span::before { border-radius: 50%; }
+html[data-look="aurora"] .switch input:checked + span { background: var(--grad); border-color: transparent; }
+html[data-look="aurora"] .switch input:checked + span::before { background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+html[data-look="aurora"] .seg span { border-radius: var(--r-sm); clip-path: none; }
+html[data-look="aurora"] .seg input:checked + span { background: var(--grad-soft); border-color: rgba(var(--a-rgb), .6); color: #fff; }
+html[data-look="aurora"] .status.ok { color: var(--ok) !important; }
+html[data-look="aurora"] ::-webkit-scrollbar-thumb { background: rgba(148, 163, 214, .25); border-radius: 99px; }
+
+/* ---------------------------------------------------------------- HUD */
+html[data-look="aurora"] .shell {
+  background: linear-gradient(180deg, rgba(17, 22, 46, var(--alpha, .86)), rgba(9, 12, 28, var(--alpha, .86)));
+  border: 1px solid var(--border-2); border-radius: 26px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .02) inset, 0 0 40px rgba(var(--v-rgb), .08);
+  text-shadow: none;
+}
+html[data-look="aurora"] .shell::before, html[data-look="aurora"] .shell::after { display: none; }
+html[data-look="aurora"] body.browser { background: var(--aurora-bg); }
+html[data-look="aurora"] body.solid { background: #070b19; }
+html[data-look="aurora"] body.solid .shell { border-radius: 0; }
+html[data-look="aurora"] .brand {
+  font-family: var(--mono); letter-spacing: .32em; text-shadow: none;
+  background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+html[data-look="aurora"] .mode { font-family: var(--mono); color: var(--muted); }
+html[data-look="aurora"] .leds i[data-s="on"] { background: var(--ok); box-shadow: 0 0 8px rgba(52, 211, 153, .8); }
+html[data-look="aurora"] .win-btns button { border-radius: 14px; border: 1px solid var(--border-2); background: rgba(255, 255, 255, .03); }
+html[data-look="aurora"] .win-btns button:hover { background: rgba(var(--a-rgb), .12); border-color: rgba(var(--a-rgb), .5); }
+html[data-look="aurora"] .preview { color: var(--muted); }
+html[data-look="aurora"] .panel { border-top-color: var(--border); }
+html[data-look="aurora"] .xtab { font-family: var(--sans); font-size: calc(12.5px * var(--fs, 1)); letter-spacing: .02em; text-transform: none; border-radius: 999px;
+  padding: 5px 12px; border: 1px solid transparent; }
+html[data-look="aurora"] .xtab.active { color: #fff; background: var(--grad-soft); border-color: rgba(var(--a-rgb), .45); }
+/* mensajes */
+html[data-look="aurora"] .msg { max-width: 86%; }
+html[data-look="aurora"] .msg-meta { font-family: var(--mono); letter-spacing: .14em; font-size: calc(10px * var(--fs, 1)); color: var(--muted); }
+html[data-look="aurora"] .msg.user .msg-meta { color: var(--muted); }
+html[data-look="aurora"] .msg-body { border-radius: 20px; padding: 10px 14px; font-family: var(--sans); font-size: calc(14px * var(--fs, 1)); }
+html[data-look="aurora"] .msg.user .msg-body {
+  background: var(--grad-soft); border: 1px solid rgba(var(--a-rgb), .45); border-top-right-radius: 20px; border-bottom-right-radius: 8px;
+  box-shadow: 0 6px 20px rgba(var(--v-rgb), .12);
+}
+html[data-look="aurora"] .msg.jarvis .msg-body {
+  position: relative; background: var(--panel); border: 1px solid var(--border-2); border-top-left-radius: 20px; border-bottom-left-radius: 8px;
+  padding-left: 18px;
+}
+html[data-look="aurora"] .msg.jarvis .msg-body::before {
+  content: ""; position: absolute; left: 7px; top: 12px; bottom: 12px; width: 3px; border-radius: 3px; background: var(--a);
+  box-shadow: 0 0 10px rgba(var(--a-rgb), .6);
+}
+html[data-look="aurora"] .msg.jarvis.err .msg-body { color: #fecdd3; }
+html[data-look="aurora"] .msg.jarvis.err .msg-body::before { background: var(--err); box-shadow: 0 0 10px rgba(251, 113, 133, .6); }
+html[data-look="aurora"] .msg.file .msg-body::before, html[data-look="aurora"] .msg.typing .msg-body::before { display: none; }
+html[data-look="aurora"] .msg.file .msg-body, html[data-look="aurora"] .msg.typing .msg-body { padding-left: 12px; }
+html[data-look="aurora"] .msg-body b { color: #fff; }
+html[data-look="aurora"] .day { color: var(--muted); }
+/* barra de escribir */
+html[data-look="aurora"] .bar input {
+  height: 34px; border-radius: 999px; padding: 0 16px; background: rgba(8, 12, 28, .85); border: 1px solid rgba(var(--a-rgb), .4);
+  font-family: var(--sans); font-size: calc(13.5px * var(--fs, 1));
+}
+html[data-look="aurora"] .bar input:focus { border-color: rgba(var(--a-rgb), .8); box-shadow: 0 0 0 3px rgba(var(--a-rgb), .14); }
+html[data-look="aurora"] .bar-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-2); background: rgba(255, 255, 255, .03); color: #cfe9ff; }
+html[data-look="aurora"] .bar-btn:hover { background: rgba(var(--a-rgb), .14); border-color: rgba(var(--a-rgb), .55); }
+html[data-look="aurora"] .bar-btn.send { width: 40px; border-radius: 14px; background: var(--grad); color: #061021; border: none; box-shadow: 0 6px 18px rgba(var(--v-rgb), .35); }
+html[data-look="aurora"] .bar-btn.stop { border-radius: 999px; }
+/* tarjetas, chips y botones pequeños */
+html[data-look="aurora"] .dcard { background: var(--panel); border: 1px solid var(--border-2); border-radius: var(--r-md); padding: 10px 12px; }
+html[data-look="aurora"] .dcard h4 { font-family: var(--mono); letter-spacing: .16em; color: var(--muted); }
+html[data-look="aurora"] .dcard.mom { background: linear-gradient(135deg, rgba(var(--a-rgb), .14), rgba(var(--v-rgb), .10)); border-color: rgba(var(--a-rgb), .4); }
+html[data-look="aurora"] .dcard.mom h4 { color: var(--a); }
+html[data-look="aurora"] .dclock { font-family: var(--mono); color: #fff; text-shadow: none; }
+html[data-look="aurora"] .ddate { font-family: var(--sans); color: var(--muted); }
+html[data-look="aurora"] .chip { border-radius: 999px; padding: 5px 12px; background: rgba(255, 255, 255, .03); border-color: var(--border-2); font-family: var(--sans); }
+html[data-look="aurora"] .chip:hover { background: rgba(var(--a-rgb), .12); border-color: rgba(var(--a-rgb), .55); color: #fff; }
+html[data-look="aurora"] .mini { border-radius: 999px; padding: 3px 11px; border-color: var(--border-2); background: rgba(255, 255, 255, .03); font-family: var(--sans); }
+html[data-look="aurora"] .mini:hover { border-color: rgba(var(--a-rgb), .6); color: #fff; background: rgba(var(--a-rgb), .1); }
+html[data-look="aurora"] .mini.ok { background: var(--grad); color: #061021; border: none; font-weight: 600; }
+html[data-look="aurora"] .rv-in, html[data-look="aurora"] .aq .rv-in { border-radius: var(--r-sm); }
+html[data-look="aurora"] .fthumb { border-radius: 14px; }
+html[data-look="aurora"] .tmr { border-radius: 999px; }
+html[data-look="aurora"] .ai-chip, html[data-look="aurora"] .proj-pill { font-family: var(--mono); letter-spacing: .08em; }
+html[data-look="aurora"] .toast { border-radius: var(--r-md); background: rgba(14, 19, 42, .97); border: 1px solid var(--border-2); }
+html[data-look="aurora"] .pal, html[data-look="aurora"] .ntc, html[data-look="aurora"] .hjall, html[data-look="aurora"] .rs-menu {
+  border-radius: var(--r-lg); background: rgba(12, 16, 36, .97); border: 1px solid var(--border-2); }
+html[data-look="aurora"] .welcome .wb button { border-radius: var(--r-md); background: var(--panel); border-color: var(--border-2); }
+html[data-look="aurora"] .welcome .wb button:hover { background: var(--grad-soft); border-color: rgba(var(--a-rgb), .5); color: #fff; }
+html[data-look="aurora"] .macts button { border-color: var(--border-2); }
+html[data-look="aurora"] .ib.sel { background: var(--grad-soft); border-radius: var(--r-sm); }
+
+/* ---------------------------------------------------------------- Ajustes */
+html[data-look="aurora"] .page-head h1 { font-family: var(--sans); font-weight: 700; letter-spacing: .01em; }
+html[data-look="aurora"] .eyebrow { font-family: var(--mono); letter-spacing: .3em; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+html[data-look="aurora"] .tabs .tab, html[data-look="aurora"] .tab { font-family: var(--sans); letter-spacing: .02em; text-transform: none; border-radius: 999px; }
+html[data-look="aurora"] .tab.active { background: var(--grad-soft); color: #fff; border-color: rgba(var(--a-rgb), .45); }
+html[data-look="aurora"] .group { font-family: var(--mono); letter-spacing: .22em; color: var(--a); }
+html[data-look="aurora"] .field { border-color: var(--border); }
+html[data-look="aurora"] .ft label { font-family: var(--sans); font-weight: 600; }
+html[data-look="aurora"] .s-search, html[data-look="aurora"] .ver { border-radius: 999px; }
+html[data-look="aurora"] .card, html[data-look="aurora"] .note, html[data-look="aurora"] .bak-row, html[data-look="aurora"] .routines li,
+html[data-look="aurora"] .upd-notes { border-radius: var(--r-md); }
+html[data-look="aurora"] .page-foot { background: linear-gradient(0deg, rgba(6, 10, 23, .96), rgba(6, 10, 23, .7)); border-top-color: var(--border); }
+
+/* ---------------------------------------------------------------- Aula y proyector */
+html[data-look="aurora"] .top { border-bottom-color: var(--border); }
+html[data-look="aurora"] .card { background: var(--panel); border: 1px solid var(--border-2); border-radius: var(--r-lg); }
+html[data-look="aurora"] .chip::before { border-radius: 50%; }
+html[data-look="aurora"] .group { border-radius: var(--r-md); }
+html[data-look="aurora"] .pick-name { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
+html[data-look="aurora"] .grade { border-radius: 18px; }
+
+/* ---------------------------------------------------------------- Páginas del celular y del salón (estilos propios) */
+html[data-look="aurora"] body.page button:not(.raw), html[data-look="aurora"] body.page .btn { border-radius: 999px; }
+html[data-look="aurora"] body.page input:not([type=checkbox]):not([type=radio]):not([type=range]), html[data-look="aurora"] body.page select,
+html[data-look="aurora"] body.page textarea { border-radius: 14px; }
+html[data-look="aurora"] body.page .card, html[data-look="aurora"] body.page .box, html[data-look="aurora"] body.page .panel,
+html[data-look="aurora"] body.page section.card { border-radius: var(--r-lg); border-color: var(--border-2); background: var(--panel); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+html[data-look="aurora"] body.page .msg.user { background: var(--grad-soft); border: 1px solid rgba(var(--a-rgb), .45); border-radius: 20px 20px 8px 20px; }
+html[data-look="aurora"] body.page .msg.jarvis { background: var(--panel); border: 1px solid var(--border-2); border-radius: 20px 20px 20px 8px; border-left: 3px solid var(--a); }
+html[data-look="aurora"] body.page form button[type=submit], html[data-look="aurora"] body.page .primary, html[data-look="aurora"] body.page button.ok {
+  background: var(--grad); color: #061021; border: none; }

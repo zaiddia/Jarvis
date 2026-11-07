@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="cyan">
+<html lang="es" data-theme="cyan" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -93,6 +93,7 @@
   @keyframes blink { 50% { opacity: .5; } }
   @media (prefers-reduced-motion: reduce) { .stage, .name { animation: none; } }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
 <body>
 <header>

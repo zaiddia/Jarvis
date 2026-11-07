@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,8 +23,9 @@
   .msg.ok { color: var(--ok); font-size: 18px; }
   .msg.err { color: var(--a2); }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body>
+<body class="page">
 <h1 id="t">Ticket de la clase</h1>
 <p class="sub" id="s">Responde con sinceridad: sirve para que tu profe sepa cómo te fue.</p>
 <form id="f" autocomplete="off">

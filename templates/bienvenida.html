@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="cyan">
+<html lang="es" data-theme="cyan" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -49,6 +49,7 @@
   .hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
   @media (max-width: 520px) { header, main, footer { padding-left: 16px; padding-right: 16px; } .dots { display: none; } }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
 <body>
 <header>

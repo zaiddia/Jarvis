@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.5"
+VERSION = "12.6"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -587,6 +587,8 @@ ACTION_RULE = (
 PROVIDERS = {
     "ollama": dict(label="Ollama (en tu equipo, sin internet)", short="Ollama", kind="ollama",
                    group="local"),
+    "motor": dict(label="Jarvis local (IA integrada: sin internet y sin Ollama)", short="Jarvis local", kind="openai", group="local",
+                  base="http://127.0.0.1:8091/v1", no_key=True, local=True),                # 12.6: motor llama.cpp dentro de Jarvis
     "openai": dict(label="Personalizado (LM Studio u otro compatible con OpenAI)",
                    short="API personalizada", kind="openai", group="local", custom=True),
     "gemini": dict(label="Google Gemini", short="Gemini", kind="gemini", group="cloud",
@@ -650,6 +652,7 @@ VOICE_RULE = (
 DEFAULT_SETTINGS = {
     # General / HUD
     "theme": "cyan",
+    "look": "aurora",              # 12.6: estilo de toda la interfaz: "aurora" (azul noche, tarjetas redondeadas) o "clasico" (visor futurista)
     "hud_start_size": "compacto",
     "hud_position": "inf-der",
     "hud_x": -1,
@@ -707,6 +710,8 @@ DEFAULT_SETTINGS = {
     "ollama_model": "llama3.2",
     "offline_auto": True,          # sin internet: usar la IA de tu equipo (Ollama) y la voz Piper
     "offline_model": "",
+    "motor_model": "",             # 12.6: el modelo .gguf de la IA integrada (vacío = el que esté descargado)
+    "motor_autostop": True,        # 12.6: apagar la IA integrada a los 20 min sin uso (libera memoria)
     "update_repo": "zaiddia/Jarvis",  # repositorio de GitHub con las versiones (usuario/nombre)
     "update_auto": True,           # mirar una vez al día si hay versión nueva (solo avisa)
     "github_api_key": "",          # solo para repositorios privados
@@ -974,7 +979,7 @@ def _validate(key, value):
         raise ValueError("la dirección debe empezar por https://")
     if key == "zeti_url" and v and not v.startswith("https://"):
         raise ValueError("la dirección debe empezar por https://")
-    choices = {"theme": THEMES, "ai_provider": tuple(PROVIDERS),
+    choices = {"theme": THEMES, "look": ("aurora", "clasico"), "ai_provider": tuple(PROVIDERS),
                "zeti_order": ("lista", "apellido", "alfabetico"), "hud_expanded": ("estrecho", "amplio", "grande"),
                "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
@@ -1587,6 +1592,8 @@ def process_command(text):
     if ticket_voice(text, t):                          # 9.6: «lanza el ticket de salida», «semáforo de comprensión»
         return
     if activities_voice(text, t):                      # 9.6: «¿qué actividades funcionaron en fracciones?»
+        return
+    if motor_voice(text, t):                           # 12.6: «instala la IA integrada»
         return
     if ai_who_voice(text, t):                          # 12.5: «¿qué IA estás usando?», «instala la voz sin internet»
         return
@@ -2252,6 +2259,9 @@ from nucleo.hudpro import *  # noqa: F401,F403,E402
 # ── 12.5: qué IA responde (nube o local) y qué falta para funcionar sin internet → nucleo/estadoia.py
 from nucleo.estadoia import *  # noqa: F401,F403,E402
 
+# ── 12.6: la IA local integrada (motor llama.cpp dentro de Jarvis, sin Ollama) → nucleo/motor.py (lógica en motorlocal.py)
+from nucleo.motor import *  # noqa: F401,F403,E402
+
 # ── 12.0: revisar el procedimiento a mano paso a paso (SymPy), mapa de errores del curso y refuerzo para ese error
 # → nucleo/pasoapaso.py (lógica en procedimiento.py)
 from nucleo.pasoapaso import *  # noqa: F401,F403,E402
@@ -2456,6 +2466,7 @@ def main():
         attach_start()                    # 11.6: archivos subidos al chat
         hudpro_start()                    # 11.8: «Lo que hice hoy» con deshacer
         ai_state_start()                  # 12.5: qué IA responde, a la vista
+        motor_start_services()            # 12.6: apaga la IA integrada cuando no se usa
         procedure_start()                 # 12.0: mapa de errores de los procedimientos
         night_start()                     # 12.0: turno de noche
         adventure_start()                 # 12.0: reloj de la aventura matemática

@@ -100,6 +100,7 @@
     showTtsBackend(s.tts_backend);
     showSttBackend(s.stt_backend);
     setTheme(s.theme);
+    document.documentElement.dataset.look = s.look || "aurora";
     setDirty(false);
     clears.clear();
   }
@@ -202,6 +203,11 @@
       b.addEventListener("click", () => socket.emit("offline_setup", { what }, (r) => { st.textContent = (r && r.msg) || ""; st.className = "status" + (r && r.ok ? " ok" : " err"); }));
       btns.append(b);
     };
+    if (o.ia_paso) {                                                             // 12.6: lo más fácil, sin Ollama
+      const b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = "Instalar la IA integrada (sin Ollama)";
+      b.addEventListener("click", () => socket.emit("motor", { action: "instalar" }, (r) => { st.textContent = (r && r.msg) || ""; st.className = "status ok"; }));
+      btns.append(b);
+    }
     if (o.ia_paso === "componente" && !o.frozen) btn("Instalar el componente de Ollama", "componente");
     if (o.ia_paso === "instalar") btn("Instalar Ollama", "instalar");
     if (o.ia_paso === "abrir") btn("Abrir Ollama", "abrir");
@@ -280,6 +286,20 @@
   /* ---------------- Socket ---------------- */
   const socket = io();
   socket.on("ai_now", (a) => renderAiNow(a));                                   // 12.5: qué IA responde, en vivo
+  function renderMotor(m) {                                                      // 12.6: la IA integrada
+    const st = $("#motor-status"), pick = $("#f-motor-pick"), tg = $("#btn-motor-toggle"), ins = $("#btn-motor-install");
+    if (!st || !m) return;
+    if (pick.options.length <= 1) (m.catalogo || []).forEach((c) => pick.append(new Option(`${c.nombre} · ${c.gb} GB`, c.id)));
+    st.textContent = m.instalando ? (m.msg || "Instalando…") : m.modelo ? `Lista: ${m.modelo.replace(/\.gguf$/i, "")}${m.corriendo ? " · encendida" : " · apagada (se enciende sola al usarla)"}.`
+      : m.recomendado ? `Sin instalar. Para este equipo se recomienda ${m.recomendado} (unos ${m.recomendado_gb} GB).` : "Sin instalar. Este equipo tiene poca memoria o poco disco para una IA local.";
+    st.className = "status" + (m.modelo ? " ok" : "");
+    ins.textContent = m.modelo ? "Cambiar de modelo" : "Instalar la IA integrada"; ins.disabled = !!m.instalando;
+    tg.hidden = !m.modelo; tg.textContent = m.corriendo ? "Apagar" : "Encender";
+  }
+  socket.on("motor", renderMotor);
+  socket.emit("motor", {}, renderMotor);
+  $("#btn-motor-install").addEventListener("click", () => socket.emit("motor", { action: "instalar", modelo: $("#f-motor-pick").value }, (r) => { renderMotor(r); $("#motor-status").textContent = r.msg || ""; }));
+  $("#btn-motor-toggle").addEventListener("click", () => socket.emit("motor", { action: $("#btn-motor-toggle").textContent === "Apagar" ? "apagar" : "encender" }, (r) => { renderMotor(r); setTimeout(() => socket.emit("motor", {}, renderMotor), 8000); }));
   socket.on("connect", () => {
     socket.emit("get_settings", (res) => {
       meta = res;
@@ -383,6 +403,7 @@
     const f = e.target;
     if (f.type === "range") syncRange(f);
     if (f.dataset.key === "theme") setTheme(f.value);
+    if (f.dataset.key === "look") document.documentElement.dataset.look = f.value;       // 12.6: estilo en vivo
     if (f.dataset.key === "ai_provider") { showProvider(f.value); loadModels(false); }
     if (f.dataset.key === "tts_backend") showTtsBackend(f.value);
     if (f.dataset.key === "live_provider") showLiveProvider(f.value);
@@ -407,6 +428,7 @@
   function closeWindow() {
     if (dirty && !confirm("Hay cambios sin guardar. ¿Cerrar de todos modos?")) return;
     setTheme(saved.theme);
+    document.documentElement.dataset.look = saved.look || "aurora";
     socket.emit("close_settings");
     setTimeout(() => window.close(), 150);
   }

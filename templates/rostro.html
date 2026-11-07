@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,8 +21,9 @@
   #sub b { color: var(--a); }
   .name { letter-spacing: 8px; color: var(--muted); font-size: 14px; }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body>
+<body class="page">
 <div class="stage"><div class="holo" id="holo"><span class="base"></span></div><div class="name">J · A · R · V · I · S</div><p id="sub"></p></div>
 <script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
 <script src="{{ url_for('static', filename='js/avatar.js', v=asset_v) }}"></script>

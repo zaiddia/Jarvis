@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -63,8 +63,9 @@
   [hidden] { display: none !important; }
   @media (prefers-reduced-motion: reduce) { .reactor i { animation: none !important; } }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body data-mode="idle">
+<body class="page" data-mode="idle">
 <header>
   <div class="reactor" aria-hidden="true"><i></i><i></i><i></i></div>
   <div>

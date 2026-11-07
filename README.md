@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Nuevo estilo «Aurora» e IA local integrada, sin Ollama (v12.6)
+
+- **Estilo Aurora en todo Jarvis**: azul noche con brillo índigo, acento cian y degradado cian → violeta, tarjetas y burbujas redondeadas, botones en píldora y el botón de enviar con degradado. Tus mensajes van en burbuja de degradado; los de Jarvis, en tarjeta oscura con una barra cian a la izquierda (roja cuando es un error). Se aplica al HUD, Ajustes, Aula, proyector y las páginas del celular y del salón. Los colores de acento siguen funcionando. *Ajustes › General › Estilo*: «Aurora» o «Clásico» (el visor de antes).
+- **IA local integrada («Jarvis local»)**: Jarvis descarga **una sola vez** el motor de IA llama.cpp (el mismo que usan Ollama y LM Studio por dentro) y un modelo a su carpeta, y lo enciende solo cuando hace falta: si se cae el internet o si eliges «Jarvis local» como IA. **No hay que instalar ni abrir Ollama**, y funciona también en la versión .exe.
+  - Modelos: Qwen3 4B (recomendado, unos 2,5 GB, para equipos con 8 GB de RAM o más), Gemma 3 4B, Llama 3.2 3B y Gemma 3 1B (liviano, para 4 GB). Jarvis recomienda el que cabe en tu equipo.
+  - Se apaga sola a los 20 minutos sin uso para liberar memoria; sin internet se enciende antes de que preguntes.
+  - Para instalarla: *Ajustes › IA › Si se cae el internet › Instalar la IA integrada*, o en el proveedor «Jarvis local», o por voz: «instala la IA integrada». Siempre pide tu «sí» antes de descargar.
+
 ## Qué IA responde, a la vista (v12.5)
 
 - **En el HUD, junto a «Aa», se ve qué IA está respondiendo**: «☁ Gemini» (la de la nube), «⌂ Local · llama3.2» (la de tu equipo, por ejemplo cuando no hay internet) o «✕ Sin IA». Al pasar el ratón dice el modelo y si hay IA de respaldo para cuando se caiga el internet; un clic abre los Ajustes. También en *Ajustes › IA › Ahora responde*, y por voz: «¿qué IA estás usando?».

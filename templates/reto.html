@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,8 +35,9 @@
   .Bronce { background: #5a3a1c; color: #ffcf9e; } .Plata { background: #3b4552; color: #e2ebf3; } .Oro { background: #5c4a0f; color: #ffe27a; }
   .badges span { display: inline-block; font-size: 14px; border: 1px solid #2a4458; border-radius: 999px; padding: 3px 10px; margin: 0 6px 6px 0; }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body>
+<body class="page">
 <h1>🏆 Reto de la semana</h1>
 <p class="sub" id="curso">Matemáticas</p>
 <section id="login" class="card">

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,8 +62,9 @@
   @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
   .empty { margin: auto; text-align: center; font-size: 24px; color: var(--muted); }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body>
+<body class="page">
 <div class="stars"></div>
 <main><section class="scene" id="scene"><div class="empty">Escribiendo la aventura… (di «lanza una aventura de fracciones para 7A»)</div></section>
 <aside><h2>MARCADOR</h2><div id="teams"></div><div class="doors" id="doors"></div><div id="qr"></div>

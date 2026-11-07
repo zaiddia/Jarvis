@@ -598,6 +598,11 @@ def mobile_url():
 mobile_app = Flask("jarvis_movil", template_folder=J.get_resource_path("templates"), static_folder=None)
 
 
+@mobile_app.context_processor
+def _mobile_look():
+    return {"look": J.settings.get("look", "aurora")}          # 12.6: el mismo estilo en las páginas del celular
+
+
 def _mobile_ok():
     ip = request.remote_addr or "?"
     f = J.mobile["fails"].get(ip, (0, 0.0))

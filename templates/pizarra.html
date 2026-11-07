@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,8 +38,9 @@
   #msg { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: var(--card); border: 1px solid var(--a2); color: var(--a2); padding: 8px 14px;
          border-radius: 10px; font-size: 15px; display: none; }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body>
+<body class="page">
 <header>
   <h1>✏️ Pizarra</h1>
   {% for k, c in colors.items() %}<span class="sw{% if loop.first %} on{% endif %}" data-c="{{ c }}" title="{{ k }}" style="background: {{ c }}"></span>{% endfor %}

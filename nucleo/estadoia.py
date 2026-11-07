@@ -26,10 +26,13 @@ def ai_now():
     except Exception:
         return {"donde": "ninguna", "texto": "Sin IA", "proveedor": "", "modelo": "", "sin_internet": False, "respaldo": ""}
     off = bool(J.net.get("offline"))
-    local = cfg["kind"] == "ollama"
+    local = cfg["kind"] == "ollama" or bool(cfg["spec"].get("local"))
     ok = J.state.get("ai") in ("ok", "warn", "unknown", "")
     model = cfg.get("model") or ""
-    if local:
+    if cfg.get("ai_provider") == "motor":              # 12.6: la IA integrada
+        model = J.motor_name() if J.motor_ready() else ""
+        donde, prov = ("local" if model else "ninguna"), "Jarvis local"
+    elif local:
         donde = "local" if model else "ninguna"
         prov = "Ollama"
     else:
@@ -88,10 +91,13 @@ def offline_detail():
             models = None
     running = models is not None
     model = J.local_ai_model(refresh=True) if running else ""
+    motor_ok = J.motor_ready()                         # 12.6: la IA integrada no necesita Ollama
     piper_lib = bool(J.PIPER_INSTALLED)
     piper_voice = bool(J.find_piper_voice())
-    if model:
-        ia = f"IA de tu equipo lista: {model}."
+    if motor_ok:
+        ia, ia_paso, model = f"IA integrada lista: {J.motor_name()} (no hace falta Ollama).", "", J.motor_name()
+    elif model and not model.startswith("motor:"):
+        ia = f"IA de tu equipo lista (Ollama): {model}."
         ia_paso = ""
     elif not lib:
         ia, ia_paso = "Falta el componente de Ollama en Jarvis.", "componente"
@@ -107,7 +113,9 @@ def offline_detail():
         voz, voz_paso = "Piper está, pero falta descargar la voz en español.", "voz"
     else:
         voz, voz_paso = "Falta la voz sin internet (Piper).", "voz"
-    return {"offline": bool(J.net.get("offline")), "local_model": model, "piper": piper_lib and piper_voice,
+    if ia_paso:                                        # la forma más fácil: la IA integrada (sin instalar ni abrir Ollama)
+        ia += " Lo más fácil: instalar la IA integrada de Jarvis."
+    return {"offline": bool(J.net.get("offline")), "local_model": model, "motor": J.motor_status(), "piper": piper_lib and piper_voice,
             "ollama_lib": lib, "ollama_exe": bool(exe), "ollama_running": running, "modelos": (models or [])[:8],
             "ia": ia, "ia_paso": ia_paso, "voz": voz, "voz_paso": voz_paso, "frozen": bool(getattr(J.sys, "frozen", False)),
             "ahora": J.ai_now()}

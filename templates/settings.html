@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="cyan">
+<html lang="es" data-theme="cyan" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +16,7 @@
   .gal-card .on { color: var(--ok); font-size: 11px; }
   .gal-card .warn { color: var(--warn); font-size: 11px; }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -65,6 +66,10 @@
     <div class="field stack">
       <div class="ft"><label>Tema de color</label><p>Color del reactor y de toda la interfaz.</p></div>
       <div class="swatches" id="swatches"></div>
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-look">Estilo</label><p><b>Aurora</b>: azul noche con brillo índigo, tarjetas redondeadas y botones en píldora (en todo Jarvis: HUD, Ajustes, Aula, proyector y celular). <b>Clásico</b>: el visor futurista de antes.</p></div>
+      <select class="inp" id="f-look" data-key="look" style="max-width:340px"><option value="aurora">Aurora</option><option value="clasico">Clásico</option></select>
     </div>
     <div class="group">Inicio</div>
     <div class="field">
@@ -403,7 +408,7 @@
   <section class="pane" data-pane="ia">
     <div class="group">Conexión</div>
     <div class="field stack">
-      <div class="ft"><label for="f-provider">Proveedor de IA</label><p>Ollama funciona sin internet en tu equipo. Los de la nube necesitan internet y una clave de API de esa empresa; lo que dices se envía a ella.</p></div>
+      <div class="ft"><label for="f-provider">Proveedor de IA</label><p>«Jarvis local» (la IA integrada) y Ollama funcionan sin internet en tu equipo. Los de la nube necesitan internet y una clave de API de esa empresa; lo que dices se envía a ella.</p></div>
       <select class="inp" id="f-provider" data-key="ai_provider">
         <optgroup label="En tu equipo">
           {% for pid, p in providers.items() if p.group == "local" %}<option value="{{ pid }}">{{ p.label }}</option>{% endfor %}
@@ -436,6 +441,20 @@
       <div class="field stack">
         <div class="ft"><label for="f-ollama-model">Modelo</label><p>Elige uno instalado o escribe otro (luego ejecuta <code>ollama pull nombre</code>).</p></div>
         <input class="inp" type="text" id="f-ollama-model" data-key="ollama_model" data-model list="models-list" placeholder="llama3.2">
+      </div>
+    </div>
+    <div data-provider="motor" hidden>
+      <div class="field stack">
+        <div class="ft"><label>IA integrada de Jarvis</label><p>Un motor de IA (llama.cpp) y un modelo que se descargan <b>una sola vez</b> a la carpeta de Jarvis. Funciona sin internet y <b>sin instalar ni abrir Ollama</b> (también en la versión .exe). Jarvis lo enciende solo cuando hace falta y lo apaga a los 20 minutos sin uso. Es más lenta que la IA de la nube y necesita unos 8 GB de RAM para el modelo recomendado.</p>
+          <p class="status" id="motor-status">…</p></div>
+      </div>
+      <div class="field stack">
+        <div class="ft"><label for="f-motor-pick">Modelo</label><p>El recomendado lo elige Jarvis según la memoria de tu equipo.</p></div>
+        <div class="row" style="flex-wrap:wrap;gap:6px">
+          <select class="inp" id="f-motor-pick" style="max-width:340px"><option value="">Recomendado para este equipo</option></select>
+          <button class="btn" type="button" id="btn-motor-install">Instalar la IA integrada</button>
+          <button class="btn btn-ghost" type="button" id="btn-motor-toggle">Encender</button>
+        </div>
       </div>
     </div>
     <div data-provider="openai" hidden>

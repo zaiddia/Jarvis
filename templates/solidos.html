@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -29,8 +29,9 @@
   #file { display: none; }
   @media (max-width: 640px) { .bar h1 { display: none; } #panel { max-height: 38vh; } }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body>
+<body class="page">
 <video id="bgv" playsinline muted autoplay></video><img id="bgi" alt="">
 <canvas id="cv"></canvas><canvas id="net"></canvas>
 <div class="bar">

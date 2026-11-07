@@ -205,6 +205,7 @@
   function applySettings(s) {
     current = s || {};
     setTheme(current.theme);
+    root.dataset.look = current.look || "aurora";                                // 12.6: estilo Aurora o Clásico
     body.dataset.text = current.hud_text_size || "normal";                       // 11.8: tamaño de la letra
     setFace(!!current.hud_avatar);                                                // 12.0: rostro holográfico en vez del reactor
     el.shell.style.setProperty("--alpha", body.classList.contains("solid")
@@ -226,6 +227,7 @@
     const m = document.createElement("div");
     const isUser = item.role === "user";
     m.className = `msg ${isUser ? "user" : "jarvis"}${item.source === "PC" ? " pc" : ""}`;
+    if (!isUser && /^(No pude|No puedo|Falta |Faltan |Error|No encontré|Sin conexión|No hay conexión)/i.test(item.text || "")) m.classList.add("err");   // 12.6: errores con barra roja
     if (!live) m.style.animation = "none";
     const meta = document.createElement("div");
     meta.className = "msg-meta";

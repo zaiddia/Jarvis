@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -41,8 +41,9 @@
   a.labbtn { display: block; text-align: center; padding: 13px; border-radius: 12px; background: var(--a2); color: #03060c; font-weight: 700; text-decoration: none; }
   .op.sel { border-color: var(--a); } .res { font-size: 14px; margin: 4px 0 12px; }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body>
+<body class="page">
 <h1 id="tit">Guía viva</h1>
 <p class="sub" id="curso"></p>
 <div id="blocks"></div>

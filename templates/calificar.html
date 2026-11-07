@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-look="{{ look|default('aurora') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,8 +26,9 @@
   li.err { border-color: #5a3a1a; color: var(--a2); }
   li.work { color: var(--muted); }
 </style>
+<style>{% include "_aurora.css" %}</style>
 </head>
-<body>
+<body class="page">
 <h1 id="t">Calificar hojas</h1>
 <p class="sub" id="s">Jarvis</p>
 <p class="count"><b id="n">0</b> <span id="of"></span> hojas calificadas</p>

@@ -213,11 +213,13 @@ def _ai_cfg(override=None):
         return str(o.get(k, J.settings.get(k, "")) or "").strip()
 
     base = get("openai_base_url") if sp.get("custom") else sp.get("base", "")
-    if override is None and pid != "ollama" and J.is_offline() and J.net["local_model"]:
-        # sin internet: la IA de tu equipo (Ollama) responde mientras vuelve la conexión
+    if override is None and pid not in ("ollama", "motor") and J.is_offline() and J.net["local_model"]:
+        # sin internet: la IA de tu equipo responde mientras vuelve la conexión (12.6: la integrada primero; si no, Ollama)
+        if J.net["local_model"].startswith("motor:"):
+            return dict(J._ai_cfg({"ai_provider": "motor"}), label="Jarvis local (sin internet)", offline=True)
         return dict(J._ai_cfg({"ai_provider": "ollama", "ollama_model": J.net["local_model"]}),
                     label="Ollama (sin internet)", offline=True)
-    fast = getattr(J._tl, "fast_model", "") if override is None and pid != "ollama" else ""      # 12.1: dos cerebros
+    fast = getattr(J._tl, "fast_model", "") if override is None and pid not in ("ollama", "motor") else ""      # 12.1: dos cerebros
     return {"ai_provider": pid, "kind": sp["kind"], "spec": sp, "label": sp["short"],
             "model": fast or get(f"{pid}_model"), "fast": bool(fast), "key": "" if pid == "ollama" else get(f"{pid}_api_key"),
             "base": base.rstrip("/"),
@@ -225,7 +227,7 @@ def _ai_cfg(override=None):
 
 
 def _need_key(cfg):
-    if cfg["kind"] != "ollama" and not cfg["spec"].get("custom") and not cfg["key"]:
+    if cfg["kind"] != "ollama" and not cfg["spec"].get("custom") and not cfg["spec"].get("no_key") and not cfg["key"]:
         raise J.AIError(f"Falta la clave de API de {cfg['label']} (Ajustes › IA).", kind="config",
                       why=f"falta poner la clave de {cfg['label']} en Ajustes, sección IA")
 
@@ -429,6 +431,8 @@ def openai_stream(cfg, messages, image_path=None):
 # ---- Lista de modelos y elección automática -----------------------------------
 def ai_list_models(cfg):
     kind = cfg["kind"]
+    if cfg.get("ai_provider") == "motor":
+        J.motor_ensure()
     if kind == "ollama":
         if J.ollama is None:
             raise J.AIError("Falta la librería 'ollama' (pip install ollama).", kind="config")
@@ -527,6 +531,9 @@ def _with_fallback(cfg, fn):
 
 
 def _cloud_chat(cfg, messages, json_mode=False, image_path=None, max_tokens=None):
+    if cfg.get("ai_provider") == "motor":              # 12.6: la IA integrada se enciende sola si hace falta
+        J.motor_ensure()
+        return J.motorlocal.clean_reply(J.openai_chat(cfg, messages, json_mode, max_tokens or 1024))
     tokens = max_tokens or (1024 if json_mode else 2048)
     if cfg["kind"] == "gemini":
         return J.gemini_chat(cfg, messages, json_mode, tokens, image_path)
@@ -536,6 +543,8 @@ def _cloud_chat(cfg, messages, json_mode=False, image_path=None, max_tokens=None
 
 
 def _cloud_stream(cfg, messages, image_path=None):
+    if cfg.get("ai_provider") == "motor":
+        J.motor_ensure()
     if cfg["kind"] == "gemini":
         return J.gemini_stream(cfg, messages, image_path)
     if cfg["kind"] == "anthropic":
@@ -687,7 +696,9 @@ def local_ai_model(refresh=False):
         return J.net["local_model"]
     model = ""
     try:
-        if J.ollama is not None:
+        if J.motor_ready():                            # 12.6: la IA integrada, si está descargada (no hace falta Ollama)
+            model = "motor:" + J.motor_name()
+        elif J.ollama is not None:
             names = J.ai_list_models(J._ai_cfg({"ai_provider": "ollama"}))
             names = [n for n in names if "embed" not in n.lower()]
 
