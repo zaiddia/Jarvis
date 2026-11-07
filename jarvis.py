@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.8"
+VERSION = "12.9"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -878,6 +878,13 @@ DEFAULT_SETTINGS = {
     "cloud_hour": 21,              # 12.8: desde esta hora se hace la copia de la noche
     "cloud_last": "",              # 12.8: cuándo se subió la última copia cifrada
     "cloud_last_error": "",
+    "assistant_mode": "auto",      # 12.9: auto | docente | general
+    "school_wifi": "",             # 12.9: el Wi-Fi del colegio (con él, modo docente); varios separados por coma
+    "battery_alerts": True,        # 12.9: avisar con la batería baja
+    "battery_low": 20,
+    "focus_distractions": "youtube, facebook, instagram, tiktok, whatsapp, twitter, netflix, x.com, telegram",
+    "ha_url": "",                  # 12.9: tu Home Assistant, p. ej. http://192.168.1.20:8123
+    "ha_token": "",                # 12.9: token de acceso de larga duración (secreto)
     "attention_pulse": True,       # 9.3: cada hora, avisar solo de lo nuevo que necesita tu atención
     "attention_from": 7,
     "attention_to": 19,
@@ -923,7 +930,7 @@ for _pid, _sp in PROVIDERS.items():
 API_KEY_FIELDS = tuple(k for k in DEFAULT_SETTINGS if k.endswith("_api_key"))
 # Nunca salen hacia las páginas (solo «guardado sí/no»): claves y el enlace secreto del calendario
 SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls", "telegram_token", "email_app_password", "mobile_token",
-                                   "classroom_client_secret", "classroom_refresh", "whatsapp_apikey", "data_key", "cloud_pass") + (
+                                   "classroom_client_secret", "classroom_refresh", "whatsapp_apikey", "data_key", "cloud_pass", "ha_token") + (
     ("spotify_client_secret",) if "spotify_client_secret" in DEFAULT_SETTINGS else ())
 AI_SETTING_KEYS = ({"ai_provider", "ollama_host", "ollama_model", "openai_base_url"}
                    | set(API_KEY_FIELDS) | {f"{p}_model" for p in PROVIDERS})
@@ -936,6 +943,7 @@ RANGES = {
     "mic_device": (-1, 999), "hud_opacity": (30, 100),
     "night_hour": (17, 23), "adventure_secs": (20, 300),            # 12.0
     "cloud_hour": (0, 23),                                          # 12.8
+    "battery_low": (10, 50),                                        # 12.9
     "ack_ms": (300, 3000), "turn_hold": (0.6, 4.0),                 # 12.1
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
@@ -983,13 +991,15 @@ def _validate(key, value):
         if not 2 <= len(nums) <= 6 or sum(nums) != 100:
             raise ValueError("escribe el peso de cada periodo y que sumen 100, por ejemplo 34,33,33")
         v = ",".join(map(str, nums))
+    if key == "ha_url" and v and not re.match(r"^https?://[\w.\-]+(?::\d+)?/?$", v):  # 12.9
+        raise ValueError("la dirección de Home Assistant es como http://192.168.1.20:8123")
     if key == "cloud_pass" and 0 < len(v) < 8:                                   # 12.8
         raise ValueError("la clave de las copias debe tener al menos 8 caracteres")
     if key == "platform_url" and v and not v.startswith("https://"):            # 12.2
         raise ValueError("la dirección debe empezar por https://")
     if key == "zeti_url" and v and not v.startswith("https://"):
         raise ValueError("la dirección debe empezar por https://")
-    choices = {"theme": THEMES, "look": ("aurora", "clasico"), "ai_provider": tuple(PROVIDERS),
+    choices = {"theme": THEMES, "look": ("aurora", "clasico"), "assistant_mode": ("auto", "docente", "general"), "ai_provider": tuple(PROVIDERS),
                "zeti_order": ("lista", "apellido", "alfabetico"), "hud_expanded": ("estrecho", "amplio", "grande"),
                "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
@@ -1612,6 +1622,14 @@ def process_command(text):
     if boletin_voice(text, t):                         # 12.8: «haz los boletines de 7A», «boletín de Ana de 7A»
         return
     if cloud_voice(text, t):                           # 12.8: «trae la copia de mi Drive», «¿cuándo fue la última copia en la nube?»
+        return
+    if mode_voice(text, t) or trigger_voice(text, t):  # 12.9: «modo general», «cuando conecte el cargador, …»
+        return
+    if payment_voice(text, t) or expense_voice(text, t) or list_voice(text, t):   # 12.9: pagos, gastos y listas
+        return
+    if pc_voice(text, t):                              # 12.9: programas, mantenimiento, energía, conexiones, concentración
+        return
+    if home_voice(text, t):                            # 12.9: Home Assistant: «enciende la luz de la sala»
         return
     if ai_who_voice(text, t):                          # 12.5: «¿qué IA estás usando?», «instala la voz sin internet»
         return
@@ -2286,6 +2304,12 @@ from nucleo.boletines import *  # noqa: F401,F403,E402
 # ── 12.8: panel de salud de Jarvis → nucleo/panelsalud.py
 from nucleo.panelsalud import *  # noqa: F401,F403,E402
 
+# ── 12.9: asistente general: modos y disparadores, el PC, el día a día → nucleo/modos.py, equipopc.py, diaadia.py
+import vidadiaria  # noqa: E402
+from nucleo.modos import *  # noqa: F401,F403,E402
+from nucleo.equipopc import *  # noqa: F401,F403,E402
+from nucleo.diaadia import *  # noqa: F401,F403,E402
+
 # ── 12.0: revisar el procedimiento a mano paso a paso (SymPy), mapa de errores del curso y refuerzo para ese error
 # → nucleo/pasoapaso.py (lógica en procedimiento.py)
 from nucleo.pasoapaso import *  # noqa: F401,F403,E402
@@ -2470,6 +2494,8 @@ def main():
         class_plus_start()                # 8.8: diario de clase y quiz en vivo
         students_start()                  # 8.9: abre los datos de estudiantes cifrados (con la clave ya leída)
         cloud_start()                     # 12.8: la copia cifrada de cada noche en tu Drive
+        modes_start()                     # 12.9: modo docente/general, disparadores y avisos de batería
+        daily_start()                     # 12.9: avisos de pagos
         attention_start()                 # 9.3: compromisos y pulso de atención
         teacher_plus_start()              # 9.4: lecciones y vigilante de páginas
         polish_start()                    # 9.5: tu estilo al escribir

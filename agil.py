@@ -94,7 +94,7 @@ _START = re.compile(rf"^(?:jarvis\s+)?(?:luego\s+|despues\s+|tambien\s+|y\s+)?(?
 _PART_OF_PREV = re.compile(r"^(?:pon|ponle|haz|hazle|agrega|incluye|anade|dale)\s+(?:\d+|un|una|dos|tres|cuatro|cinco|diez)\s+"
                            r"(?:preguntas?|ejercicios?|puntos?|opciones?|problemas?|minutos? de|imagen|imagenes|ejemplos?)\b")
 _SEP = re.compile(r"\s*(?:,|;|\by luego\b|\by despu[eé]s\b|\bluego\b|\bdespu[eé]s\b|\by tambi[eé]n\b|\by\b)\s+", re.I)
-_NEVER = re.compile(r"[:\"«»]|^(?:jarvis\s+)?(?:escribe|teclea|dicta|recuerda que|anota que|apunta que|dile|mandale un mensaje|envia un mensaje|"
+_NEVER = re.compile(r"[:\"«»]|^(?:jarvis\s+)?(?:cuando|escribe|teclea|dicta|recuerda que|anota que|apunta que|dile|mandale un mensaje|envia un mensaje|"
                     r"escribele|responde|contesta)\b")
 
 

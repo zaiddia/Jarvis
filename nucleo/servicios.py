@@ -367,6 +367,8 @@ def restore_backup(name, parts):
         J.libro.load()
     if "compromisos" in done:                          # 9.3
         J.compromisos.load()
+    if "vidadiaria" in done:                           # 12.9: gastos, pagos, listas y disparadores
+        J.vidadiaria.load()
     if "lecciones" in done:                            # 9.4
         J.lecciones.load()
     if "paginas" in done:

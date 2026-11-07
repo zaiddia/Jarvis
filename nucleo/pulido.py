@@ -46,6 +46,10 @@ def morning_brief_text(now=None):
             parts.append("También necesita tu atención: " + "; ".join(x["t"] for x in items[:4]) + ".")
     except Exception:
         pass
+    try:
+        parts += J.brief_extras(now)                   # 12.9: pagos que vencen, listas, batería y disco
+    except Exception:
+        pass
     parts.append("¡Que tengas un excelente día!")
     return " ".join(parts)
 

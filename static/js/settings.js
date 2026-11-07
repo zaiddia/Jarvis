@@ -603,6 +603,42 @@
   });
 
   $("#btn-health").addEventListener("click", () => socket.emit("open_health"));       // 12.8: panel de salud
+  /* 12.9: asistente general */
+  function renderRules(r) {
+    if (!r) return;
+    if (r.mode) $("#mode-now").textContent = `Ahora: ${r.label}${r.auto ? " (automático)" : ""}${r.ssid ? " · Wi-Fi: " + r.ssid : ""}.`;
+    const box = $("#rules-list"); box.innerHTML = "";
+    if (r.ok === false && r.error) toast(r.error, "err", 6000);
+    (r.items || []).forEach((txt, i) => {
+      const row = document.createElement("div"); row.className = "bak-row";
+      row.innerHTML = '<div class="bak-main"><b></b></div><button class="btn btn-ghost" type="button">Borrar</button>';
+      row.querySelector("b").textContent = `${i + 1}. ${txt}`;
+      row.querySelector("button").addEventListener("click", () => socket.emit("assistant_rules", { action: "borrar", n: String(i + 1) }, renderRules));
+      box.append(row);
+    });
+    if (!(r.items || []).length) box.innerHTML = '<p class="note">Sin disparadores todavía.</p>';
+  }
+  socket.emit("assistant_rules", {}, renderRules);
+  socket.on("assistant_mode", (m) => { if (m && m.label) $("#mode-now").textContent = `Ahora: ${m.label}${m.auto ? " (automático)" : ""}${m.ssid ? " · Wi-Fi: " + m.ssid : ""}.`; });
+  $("#btn-rule-add").addEventListener("click", () => {
+    const v = $("#rule-text").value.trim(); if (!v) return;
+    socket.emit("assistant_rules", { action: "crear", texto: v }, (r) => { renderRules(r); if (r.ok) $("#rule-text").value = ""; });
+  });
+  $("#btn-ha-test").addEventListener("click", () => {
+    if (dirty) { toast("Guarda primero la dirección y el token.", "err"); return; }
+    $("#ha-status").textContent = "Probando…";
+    socket.emit("ha_test", {}, (r) => { $("#ha-status").textContent = r.ok ? `Conectado: ${r.n} aparatos (${(r.ejemplos || []).join(", ")}).` : r.error; $("#ha-status").className = "status" + (r.ok ? " ok" : " err"); });
+  });
+  socket.emit("daily_info", {}, (d) => {
+    if (!d) return;
+    const money = (v) => "$" + Math.round(v).toLocaleString("es-CO");
+    const parts = [`<b>Gastos del mes:</b> ${money(d.gastos_mes)} en ${d.n} gasto${d.n === 1 ? "" : "s"}` + (Object.keys(d.por_categoria).length ? " (" + Object.entries(d.por_categoria).map(([k, v]) => `${k} ${money(v)}`).join(", ") + ")" : "")];
+    parts.push("<b>Pagos:</b> " + (d.pagos.length ? d.pagos.map((p) => `${p.nombre} el ${p.dia}` + (p.monto ? ` (${money(p.monto)})` : "")).join(" · ") : "ninguno"));
+    const L = Object.entries(d.listas);
+    parts.push("<b>Listas:</b> " + (L.length ? L.map(([k, v]) => `${k} (${v.length})`).join(" · ") : "ninguna"));
+    const box = $("#daily-info"); box.innerHTML = "";
+    parts.forEach((h) => { const p = document.createElement("p"); p.innerHTML = h.replace(/<(?!\/?b>)/g, "&lt;"); box.append(p); });
+  });
   /* 12.8: copia cifrada cada noche en tu Drive */
   function fmtAgo(iso) { return iso ? fmtDate(iso) : "nunca"; }
   function renderCloud(r) {

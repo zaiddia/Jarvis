@@ -208,6 +208,12 @@ def morning_report():
     if J.settings["morning_weather"] and J.settings["weather_city"].strip():
         J.reply(J.weather_text(), "CLIMA")
     J.notes_today_summary(speak_it=True)
+    try:
+        extras = J.brief_extras()                      # 12.9: pagos que vencen, listas, batería y disco
+        if extras:
+            J.reply(" ".join(extras), "RUTINA")
+    except Exception:
+        pass
     if J.settings["morning_news"]:
         J.reply(J.news_text(), "NOTICIAS")
     if J.settings["morning_voice_note"] and J.telegram_ready():      # 9.5: el resumen como nota de voz

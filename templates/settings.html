@@ -46,6 +46,7 @@
   <button class="tab" type="button" data-tab="escucha">Escucha</button>
   <button class="tab" type="button" data-tab="ia">IA</button>
   <button class="tab" type="button" data-tab="pc">Control del PC</button>
+  <button class="tab" type="button" data-tab="asistente">Asistente</button>
   <button class="tab" type="button" data-tab="integra">Integraciones</button>
   <button class="tab" type="button" data-tab="memoria">Memoria</button>
   <button class="tab" type="button" data-tab="rutinas">Rutinas</button>
@@ -595,6 +596,53 @@
   </section>
 
   <!-- INTEGRACIONES -->
+  <section class="pane" data-pane="asistente">
+    <div class="group">Modo de Jarvis (12.9)</div>
+    <p class="note"><b>Docente</b>: el colegio (clases, cursos, notas, material). <b>Asistente general</b>: el PC, tus programas, gastos, pagos, listas, la casa y lo personal. En automático, Jarvis es docente en tu jornada (según tu horario) o conectado al Wi-Fi del colegio, y asistente general el resto del tiempo. También: «modo docente», «modo general», «modo automático», o el botón del modo en el HUD.</p>
+    <div class="field">
+      <div class="ft"><label for="f-amode">Modo</label><p class="status" id="mode-now">…</p></div>
+      <select class="inp" id="f-amode" data-key="assistant_mode" style="max-width:260px"><option value="auto">Automático</option><option value="docente">Siempre docente</option><option value="general">Siempre asistente general</option></select>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-school-wifi">Wi-Fi del colegio</label><p>Con esta red, modo docente. Varias, separadas por coma. Pregúntale «¿a qué wifi estoy conectado?» para saber el nombre exacto.</p></div>
+      <input class="inp" type="text" id="f-school-wifi" data-key="school_wifi" placeholder="Colegio San José" style="max-width:260px">
+    </div>
+    <div class="group">Disparadores: «cuando pase esto, haz aquello»</div>
+    <p class="note">Ejemplos: «cuando conecte el cargador, modo general» · «cuando me conecte al wifi Colegio, modo docente» · «cuando abra Excel, silencia las notificaciones» · «cuando la batería esté al 15 %, activa el ahorro de batería» · «cuando encienda el PC, dame el resumen de la mañana». También por voz.</p>
+    <div class="field stack">
+      <div class="row wrap"><input class="inp" type="text" id="rule-text" placeholder="cuando conecte el cargador, modo general" style="flex:1;min-width:240px"><button class="btn btn-primary" type="button" id="btn-rule-add">Agregar</button></div>
+      <div class="bak-list" id="rules-list"></div>
+    </div>
+    <div class="group">Batería y concentración</div>
+    <div class="field">
+      <div class="ft"><label for="f-bat-alerts">Avisar con la batería baja</label><p>Un aviso al llegar al porcentaje elegido y otro al 8 %.</p></div>
+      <label class="switch"><input type="checkbox" id="f-bat-alerts" data-key="battery_alerts"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-bat-low">Batería baja desde</label><p>Porcentaje (10 a 50).</p></div>
+      <input class="inp" type="number" min="10" max="50" id="f-bat-low" data-key="battery_low" style="max-width:90px">
+    </div>
+    <div class="field stack">
+      <div class="ft"><label for="f-distract">Lo que distrae (modo concentración)</label><p>«Modo concentración 40 minutos» silencia las notificaciones y minimiza (no cierra) las ventanas con estas palabras en el título.</p></div>
+      <input class="inp" type="text" id="f-distract" data-key="focus_distractions">
+    </div>
+    <div class="group">Casa inteligente (Home Assistant)</div>
+    <p class="note">Si tienes Home Assistant en tu casa: «enciende la luz de la sala», «apaga el ventilador», «luz del cuarto al 40 %». En Home Assistant, tu perfil › Seguridad › <b>Tokens de acceso de larga duración</b> › Crear token, y pégalo aquí.</p>
+    <div class="field">
+      <div class="ft"><label for="f-ha-url">Dirección</label><p>Por ejemplo http://192.168.1.20:8123</p></div>
+      <input class="inp" type="text" id="f-ha-url" data-key="ha_url" placeholder="http://192.168.1.20:8123" style="max-width:260px">
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-ha-token">Token</label><p class="status" id="ha-status"></p></div>
+      <div class="row"><input class="inp" type="password" id="f-ha-token" data-key="ha_token" placeholder="Token de larga duración" autocomplete="off" style="max-width:220px"><button class="btn btn-ghost" type="button" id="btn-ha-test">Probar</button></div>
+    </div>
+    <div class="group">Tu día a día</div>
+    <p class="note">«Gasté 20 mil en almuerzo», «recuérdame pagar el internet el 15 de cada mes», «agrega leche a la lista del mercado». Funciona igual desde Telegram.</p>
+    <div class="field stack"><div id="daily-info" class="note">…</div></div>
+    <div class="group">El PC</div>
+    <p class="note">Sin mover el mouse por ti, con órdenes del sistema: «instala VLC», «actualiza todos mis programas», «¿qué está poniendo lento el PC?», «limpia los temporales», «¿qué programas arrancan con Windows?», «plan de energía alto rendimiento», «apaga el bluetooth», «modo avión». Instalar, desinstalar, cerrar programas, borrar temporales y quitar del inicio piden tu «sí».</p>
+  </section>
+
   <section class="pane" data-pane="integra">
     <div class="group">Jarvis dentro de Windows</div>
     <p class="pane-intro">Pone a Jarvis en el <b>clic derecho del escritorio</b> y de las carpetas (submenú «Jarvis»: escribir una orden, modo clase, temporizador, pendientes…), en <b>Win+R › jarvis</b>, en la <b>lista de saltos</b> de su icono de la barra de tareas y en los enlaces <code>jarvis://</code>. Solo cambia tu usuario de Windows (sin permisos de administrador) y al apagarlo se quita todo. En Windows 11 el submenú sale en «Mostrar más opciones».</p>

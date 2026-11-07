@@ -877,6 +877,19 @@ CAPABILITIES = [
     ("Salud de Jarvis (12.8)", ["abre el panel de salud", "¿cómo está tu salud?", "¿cuándo fue la última copia en la nube?",
                                 "trae la copia de mi Drive", "dale visión a la IA local"]),
     ("Boletines del periodo (12.8)", ["haz los boletines de 7A", "boletín de Ana Gómez de 7A", "boletines de todos los cursos"]),
+    ("Modos (12.9)", ["modo docente", "modo general", "modo automático", "¿estás en modo docente o general?"]),
+    ("Disparadores (12.9)", ["cuando conecte el cargador, modo general", "cuando me conecte al wifi Colegio, modo docente",
+                             "cuando abra Excel, silencia las notificaciones", "¿qué disparadores tengo?", "borra el disparador 1"]),
+    ("Programas del PC (12.9)", ["instala VLC", "¿qué programas tienen actualización?", "actualiza todos mis programas", "desinstala Zoom"]),
+    ("Mantenimiento del PC (12.9)", ["¿qué está poniendo lento el PC?", "cierra el que más consume", "limpia los temporales",
+                                     "¿cuánto espacio tengo?", "¿qué programas arrancan con Windows?", "quita Spotify del inicio"]),
+    ("Energía y conexiones (12.9)", ["plan de energía alto rendimiento", "activa el ahorro de batería", "apaga el bluetooth", "activa el wifi",
+                                     "modo avión", "¿a qué wifi estoy conectado?", "conéctate al wifi Casa"]),
+    ("Concentración (12.9)", ["modo concentración 25 minutos", "termina la concentración"]),
+    ("Gastos y pagos (12.9)", ["gasté 20 mil en almuerzo", "¿cuánto he gastado este mes?", "recuérdame pagar el internet el 15 de cada mes",
+                               "¿qué pagos tengo?", "ya pagué el internet"]),
+    ("Listas (12.9)", ["agrega leche y pan a la lista del mercado", "¿qué hay en la lista del mercado?", "ya compré leche"]),
+    ("Casa inteligente (12.9)", ["enciende la luz de la sala", "apaga el ventilador", "luz del cuarto al 40 %"]),
     ("Avísame cuando termine", ["avísame cuando termine la descarga", "avísame cuando se cierre Zoom",
                                 "avísame cuando termine de instalar", "¿qué estás vigilando?"]),
     ("Diario", ["¿qué hice ayer?", "¿qué hice hoy?", "resume mi semana", "borra mi diario"]),
@@ -950,7 +963,7 @@ def _extract_json(text):
 def system_static():
     """12.7: la parte FIJA de las instrucciones va primero (igual en cada pregunta del día): así la IA local (y la de la
     nube) reusa lo ya leído y responde antes. Lo que cambia con cada orden va después."""
-    return (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + J.MATH_RULE +
+    return (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + J.MATH_RULE + J.mode_rule() +
             f" Hoy es {J.fecha_hablada(datetime.date.today())}.")
 
 

@@ -157,6 +157,19 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Dos modos: Docente y Asistente general, y Jarvis maneja el PC con órdenes del sistema (v12.9)
+
+- **Modo Docente y modo Asistente general.** En automático, Jarvis es docente en tu jornada (según tu horario) o conectado al Wi-Fi del colegio, y asistente general el resto del tiempo; cambia sus instrucciones y lo muestra en el HUD (✎ docente, ◎ general; clic para cambiar). «Modo docente», «modo general», «modo automático». Ajustes › **Asistente**.
+- **Disparadores** («cuando pase esto, haz aquello»): «cuando conecte el cargador, modo general», «cuando me conecte al wifi Colegio, modo docente», «cuando abra Excel, silencia las notificaciones», «cuando la batería esté al 15 %, activa el ahorro de batería», «cuando encienda el PC, dame el resumen de la mañana». Avisos de batería baja.
+- **Programas** con winget, el instalador oficial de Windows: «instala VLC», «¿qué programas tienen actualización?», «actualiza todos mis programas», «desinstala Zoom». Siempre con tu «sí».
+- **Mantenimiento**: «¿qué está poniendo lento el PC?», «cierra el que más consume», «limpia los temporales», «¿cuánto espacio tengo?», «¿qué programas arrancan con Windows?», «quita Spotify del inicio». Lo que cierra, borra o cambia pide tu «sí».
+- **Energía y conexiones**: «plan de energía alto rendimiento», «activa el ahorro de batería», «apaga el bluetooth», «activa el wifi», «modo avión», «¿a qué wifi estoy conectado?», «conéctate al wifi Casa». La luz nocturna y la salida de audio las abre en su ajuste de Windows.
+- **Concentración**: «modo concentración 40 minutos» silencia las notificaciones, minimiza (no cierra) lo que distrae y avisa al terminar. «Modo concentración» a secas sigue usando tu habilidad de siempre.
+- **Gastos, pagos y listas**: «gasté 20 mil en almuerzo», «¿cuánto he gastado este mes?», «recuérdame pagar el internet el 15 de cada mes de 90 mil» (avisa dos días antes y el mismo día, también por Telegram), «agrega leche y pan a la lista del mercado», «ya compré leche». Funciona igual desde Telegram y entra en las copias de seguridad.
+- **Casa inteligente** con Home Assistant: «enciende la luz de la sala», «apaga el ventilador», «luz del cuarto al 40 %».
+- El **resumen de la mañana** suma los pagos que vencen, tus listas, la batería y el disco.
+- Jarvis no mueve el mouse ni escribe por su cuenta: cada acción es una orden concreta del sistema.
+
 ## Boletines en PDF, IA local que ve, copia cifrada cada noche y panel de salud (v12.8)
 
 - **Boletines del periodo para las familias**: «Jarvis, haz los boletines de 7A» (o el botón *Boletines del periodo* en el Aula). Un **PDF por estudiante**, con todas las asignaturas que le das: valoración por dimensión como en Zeti (Conocer, Hacer, Ser y Autoevaluación, con sus actividades), desempeño, fallas, cómo va el año y lo que le falta para aprobar, el observador y un comentario para la familia con recomendaciones para la casa. Además, un PDF de todo el curso para imprimir y los **mensajes para WhatsApp ya escritos**. El comentario lo redacta la IA solo con esos datos; sin IA, Jarvis lo escribe a partir de las notas, así que siempre salen. Nada se envía solo. También: «boletín de Ana Gómez de 7A», «boletines de todos los cursos».

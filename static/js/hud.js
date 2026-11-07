@@ -921,6 +921,20 @@
   socket.on("ai_now", drawAiNow);
   socket.on("connect", () => socket.emit("ai_now", {}, drawAiNow));
   aiChip.addEventListener("click", () => socket.emit("open_settings"));
+  /* ---------- 12.9: modo Docente / Asistente general ---------- */
+  const modeChip = $("#mode-chip");
+  function drawMode(m) {
+    if (!m || !modeChip) return;
+    modeChip.hidden = false;
+    modeChip.dataset.mode = m.mode;
+    $("#mode-chip-i").textContent = m.mode === "docente" ? "✎" : "◎";
+    $("#mode-chip-t").textContent = (m.mode === "docente" ? "Docente" : "General") + (m.auto ? "" : " ·fijo");
+    modeChip.title = `Modo ${m.label}${m.auto ? " (automático: docente en tu jornada o en el Wi-Fi del colegio)" : " (elegido por ti)"}. Clic: cambiar.`;
+    document.body.dataset.amode = m.mode;
+  }
+  socket.on("assistant_mode", drawMode);
+  socket.on("connect", () => socket.emit("assistant_mode", {}, drawMode));
+  modeChip.addEventListener("click", () => socket.emit("assistant_mode", { set: "toggle" }, drawMode));
 
   /* ---------- 11.8: tamaño de la letra ---------- */
   function textSize(dir) {
