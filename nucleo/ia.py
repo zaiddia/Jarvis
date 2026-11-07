@@ -194,8 +194,9 @@ def _ai_cfg(override=None):
         # sin internet: la IA de tu equipo (Ollama) responde mientras vuelve la conexión
         return dict(J._ai_cfg({"ai_provider": "ollama", "ollama_model": J.net["local_model"]}),
                     label="Ollama (sin internet)", offline=True)
+    fast = getattr(J._tl, "fast_model", "") if override is None and pid != "ollama" else ""      # 12.1: dos cerebros
     return {"ai_provider": pid, "kind": sp["kind"], "spec": sp, "label": sp["short"],
-            "model": get(f"{pid}_model"), "key": "" if pid == "ollama" else get(f"{pid}_api_key"),
+            "model": fast or get(f"{pid}_model"), "fast": bool(fast), "key": "" if pid == "ollama" else get(f"{pid}_api_key"),
             "base": base.rstrip("/"),
             "ollama_host": get("ollama_host").rstrip("/") or J.DEFAULT_SETTINGS["ollama_host"]}
 
@@ -889,6 +890,9 @@ def ask_ai(prompt, route=False):
         # papelera, etc. nunca se activan por interpretación: solo con la orden directa exacta.
         # 7.5: solo las acciones y conectores que tienen que ver con la orden (por significado).
         system += J.ROUTER_PROMPT.format(skills=J.router_catalog(prompt))
+    fast = bool(getattr(J._tl, "fast_model", ""))
+    if fast:
+        system += J.cerebro.FAST_RULE                   # 12.1: si no está seguro, pasa la pregunta al modelo potente
     user_msg = {"role": "user", "content": prompt}
     keep = J.settings["history_turns"] * 2
     history = J.chat_history[-keep:] if keep else []
@@ -927,6 +931,10 @@ def ask_ai(prompt, route=False):
             return ("skill", action, args)
         answer = str(data.get("respuesta") or "").strip() or "No estoy seguro de cómo ayudarte con eso."
 
+    if fast and J.cerebro.escalated(answer):           # 12.1: el rápido no estaba seguro: responde el potente
+        J.log_terminal("El modelo rápido pasó la pregunta al potente.", "IA")
+        J._tl.fast_model = ""
+        return ask_ai(prompt, route)
     J.chat_history.extend([user_msg, {"role": "assistant", "content": answer}])
     del J.chat_history[:-max(keep, 2)]
     J.save_memory()
@@ -970,23 +978,40 @@ def answer_question_streaming(prompt):
     user_msg = {"role": "user", "content": prompt}
     keep = J.settings["history_turns"] * 2
     history = J.chat_history[-keep:] if keep else []
-    msgs = [{"role": "system", "content": system}, *history, user_msg]
+    if cfg.get("fast"):
+        msgs_sys = system + J.cerebro.FAST_RULE        # 12.1: el rápido puede pasar la pregunta al potente
+        msgs = [{"role": "system", "content": msgs_sys}, *history, user_msg]
+    else:
+        msgs = [{"role": "system", "content": system}, *history, user_msg]
 
     J.thinking += 1
     J.refresh_mode()
+    ack = J.ack_start(prompt)                          # 12.1: cero silencio mientras llega la primera frase
     full, buf = "", ""
+    escalate = False
     try:
         for chunk in J._stream_chunks(cfg, msgs):
             full += chunk
             buf += chunk
+            if cfg.get("fast"):
+                head = full.strip().strip("*").upper()
+                if head and J.cerebro.ESCALATE.startswith(head):
+                    continue                           # va escribiendo «ESCALAR»: espera a verlo entero
+                if J.cerebro.escalated(full):
+                    escalate = True
+                    break
             m = J._SENT_END.search(buf)
             while m:                                  # habla cada frase completa al instante
                 sent = buf[:m.end()].strip()
                 buf = buf[m.end():]
                 if len(sent) > 1:
+                    ack.done()
                     J.speak(J._clean_for_speech(sent))
                 m = J._SENT_END.search(buf)
+        if cfg.get("fast") and J.cerebro.escalated(full):
+            escalate = True
     except Exception as e:
+        ack.done()
         J.log_terminal(f"Error de IA (streaming): {e}", "ERROR")
         if (not full.strip() and getattr(e, "kind", "") == "net" and cfg["kind"] != "ollama"
                 and J.net_recheck() and J._ai_cfg()["kind"] == "ollama"):
@@ -1002,6 +1027,12 @@ def answer_question_streaming(prompt):
         J.thinking -= 1
         J.refresh_mode()
 
+    if escalate:
+        ack.done()
+        J.log_terminal("El modelo rápido pasó la pregunta al potente.", "IA")
+        J._tl.fast_model = ""
+        return answer_question_streaming(prompt)
+    ack.done()
     if buf.strip():
         J.speak(J._clean_for_speech(buf))
     full = full.strip() or "No estoy seguro de cómo responder."

@@ -164,6 +164,10 @@
       </select>
     </div>
     <div class="field">
+      <div class="ft"><label for="f-face">Rostro holográfico</label><p>En lugar del reactor, un rostro que mueve la boca al hablar y cambia de expresión. «Proyecta tu rostro en el proyector» lo muestra en grande.</p></div>
+      <label class="switch"><input type="checkbox" id="f-face" data-key="hud_avatar"><span></span></label>
+    </div>
+    <div class="field">
       <div class="ft"><label for="f-dim">Atenuar en reposo</label><p>Se vuelve casi transparente cuando no lo usas; reaparece al pasar el ratón o al hablar. Nunca se atenúa en clase, con algo en la bandeja o mientras Jarvis trabaja.</p></div>
       <label class="switch"><input type="checkbox" id="f-dim" data-key="hud_dim_idle"><span></span></label>
     </div>
@@ -214,7 +218,12 @@
         <label><input type="radio" name="tts_backend" value="gemini" data-key="tts_backend"><span>Gemini (muy natural)</span></label>
         <label><input type="radio" name="tts_backend" value="edge" data-key="tts_backend"><span>Edge (online)</span></label>
         <label><input type="radio" name="tts_backend" value="piper" data-key="tts_backend"><span>Piper (offline)</span></label>
+        <label><input type="radio" name="tts_backend" value="kokoro" data-key="tts_backend"><span>Kokoro (offline, más natural)</span></label>
       </div>
+    </div>
+    <div class="field stack" data-ttsbk="kokoro" hidden>
+      <div class="ft"><label for="f-kvoice">Voz (Kokoro)</label><p>Opcional: di «instala la voz Kokoro» (unos 90 MB) y luego «mide las voces» para saber si en tu equipo conviene más que Piper. Sin internet, si está instalada, Jarvis la usa primero.</p></div>
+      <select class="inp" id="f-kvoice" data-key="kokoro_voice" style="max-width:240px"><option value="dora">Dora (mujer)</option><option value="alex">Alex (hombre)</option></select>
     </div>
     <div class="field stack" data-ttsbk="gemini" hidden>
       <div class="ft"><label for="f-gvoice">Voz (Gemini)</label><p class="status" id="gemini-tts-status"></p></div>
@@ -496,6 +505,26 @@
       <div class="ft"><label for="f-offline-model">Modelo de Ollama para ese caso</label><p>Vacío = el que tengas instalado. Con 16 GB de RAM va bien <code>llama3.2</code> o <code>qwen3:4b</code>; se instala una sola vez con internet: <code>ollama pull llama3.2</code>.</p></div>
       <input class="inp" type="text" id="f-offline-model" data-key="offline_model" placeholder="Automático" style="max-width:340px">
     </div>
+
+    <div class="group">Más ágil e inteligente (12.1)</div>
+    <div class="field"><div class="ft"><label for="f-ack">Cero silencio</label><p>Si la IA va a tardar, dice al instante una frase corta («A ver…», «Voy con eso…») y luego la respuesta.</p></div>
+      <label class="switch"><input type="checkbox" id="f-ack" data-key="ack_enabled"><span></span></label></div>
+    <div class="field"><div class="ft"><label for="f-ackms">Decirla después de</label></div>
+      <div class="range"><input type="range" id="f-ackms" min="300" max="3000" step="100" data-key="ack_ms" data-unit=" ms"><output></output></div></div>
+    <div class="field"><div class="ft"><label for="f-turn">Esperar a que termines</label><p>Si la frase queda colgando («haz un quiz de… eh…»), espera un momento en vez de cortarte.</p></div>
+      <label class="switch"><input type="checkbox" id="f-turn" data-key="turn_smart"><span></span></label></div>
+    <div class="field"><div class="ft"><label for="f-turnh">Cuánto espera</label></div>
+      <div class="range"><input type="range" id="f-turnh" min="0.6" max="4" step="0.2" data-key="turn_hold" data-unit=" s"><output></output></div></div>
+    <div class="field"><div class="ft"><label for="f-chain">Varias órdenes en una frase</label><p>«Pon un temporizador de 10 minutos, abre la pizarra y muéstrales el QR».</p></div>
+      <label class="switch"><input type="checkbox" id="f-chain" data-key="chain_enabled"><span></span></label></div>
+    <div class="field"><div class="ft"><label for="f-brain">Dos cerebros</label><p>Lo simple lo contesta un modelo rápido de tu misma cuenta y lo difícil el potente; si el rápido duda, le pasa la pregunta al potente. Más rápido y gasta menos.</p></div>
+      <label class="switch"><input type="checkbox" id="f-brain" data-key="brain_enabled"><span></span></label></div>
+    <div class="field stack"><div class="ft"><label for="f-fastm">Modelo rápido</label><p>Vacío = lo elige solo de tu lista de modelos; <code>off</code> = nunca.</p></div>
+      <input class="inp" type="text" id="f-fastm" data-key="ai_fast_model" placeholder="Automático" style="max-width:340px"></div>
+    <div class="field"><div class="ft"><label for="f-panel">Respuestas interactivas</label><p>«¿Qué pasa si Juan saca 4?», «simula…», «compárame…»: la respuesta llega como un panel con deslizadores, tabla y botones.</p></div>
+      <label class="switch"><input type="checkbox" id="f-panel" data-key="panel_enabled"><span></span></label></div>
+    <div class="field"><div class="ft"><label for="f-memn">Memoria que se ordena sola</label><p>Cada noche repasa lo que le dijiste y guarda en tu perfil lo duradero, con la cita de dónde salió. Si algo contradice lo que sabía, te pregunta.</p></div>
+      <label class="switch"><input type="checkbox" id="f-memn" data-key="memory_consolidate"><span></span></label></div>
   </section>
 
   <!-- CONTROL DEL PC -->
@@ -959,6 +988,8 @@
       <div class="range"><input type="range" id="f-sc-b" min="1" max="4.5" step="0.1" data-key="scale_basico"><output></output></div></div>
     <div class="field stack"><div class="ft"><label for="f-zeti-url">Página de calificaciones de Zeti</label></div>
       <input class="inp mono" type="text" id="f-zeti-url" data-key="zeti_url" placeholder="https://www.zeti.co/calificaciones/"></div>
+    <div class="field stack"><div class="ft"><label for="f-plat-url">Otra plataforma de notas (opcional)</label><p>12.2: «pasa las notas de 7A a la plataforma» la abre en el navegador de Jarvis; tú entras con tu usuario, dices «llénala» y Jarvis escribe las notas comprobadas, resaltadas. Nunca guarda sin que digas «guarda la planilla» y nunca escribe contraseñas. Vacío = Zeti.</p></div>
+      <input class="inp mono" type="text" id="f-plat-url" data-key="platform_url" placeholder="https://…"></div>
 
     <div class="group">Libro guía del curso</div>
     <p class="pane-intro">Sube el PDF (o Word, o texto) de tu libro de texto o del plan de área. Jarvis guarda su texto en tu equipo y, al preparar talleres, quices, guías vivas o la planeación, busca las páginas que hablan del tema y las usa como base, citando la página. Solo usa lo que subes aquí. Por voz: «busca en el libro guía: teorema de Pitágoras».</p>
@@ -1018,6 +1049,21 @@
       <div class="range"><input type="range" id="f-week-h" min="0" max="23" step="1" data-key="week_prep_hour" data-unit=":00"><output></output></div></div>
     <div class="field"><div class="ft"><label for="f-week-q">Incluir evaluación corta por curso</label></div>
       <label class="switch"><input type="checkbox" id="f-week-q" data-key="week_prep_quiz"><span></span></label></div>
+
+    <div class="group">Turno de noche</div>
+    <p class="pane-intro">Mientras duermes, Jarvis deja lista cada clase del día siguiente según tu horario y tu planeación (plan, evaluación corta y diapositivas), califica las fotos de procedimientos que dejes en <code>Documentos › Jarvis › Por calificar › &lt;curso&gt;</code> y redacta los mensajes a padres de quien viene bajando. Nada se guarda ni se envía sin tu aprobación. En la mañana te cuenta qué dejó listo. Deja el equipo encendido; si estaba apagado, lo hace temprano antes de tu primera clase. También: «haz el turno de noche ahora», «¿qué me dejaste listo?».</p>
+    <div class="field"><div class="ft"><label for="f-night-on">Trabajar de noche</label></div>
+      <label class="switch"><input type="checkbox" id="f-night-on" data-key="night_shift"><span></span></label></div>
+    <div class="field"><div class="ft"><label for="f-night-h">Desde las</label></div>
+      <div class="range"><input type="range" id="f-night-h" min="17" max="23" step="1" data-key="night_hour" data-unit=":00"><output></output></div></div>
+    <div class="field"><div class="ft"><label for="f-night-q">Evaluación corta de cada clase</label></div>
+      <label class="switch"><input type="checkbox" id="f-night-q" data-key="night_quiz"><span></span></label></div>
+    <div class="field"><div class="ft"><label for="f-night-s">Diapositivas de cada clase</label></div>
+      <label class="switch"><input type="checkbox" id="f-night-s" data-key="night_slides"><span></span></label></div>
+    <div class="field"><div class="ft"><label for="f-night-g">Calificar lo que dejé en «Por calificar»</label></div>
+      <label class="switch"><input type="checkbox" id="f-night-g" data-key="night_grade"><span></span></label></div>
+    <div class="field"><div class="ft"><label for="f-night-p">Redactar mensajes a padres</label></div>
+      <label class="switch"><input type="checkbox" id="f-night-p" data-key="night_parents"><span></span></label></div>
   </section>
 
   <section class="pane" data-pane="rutinas">

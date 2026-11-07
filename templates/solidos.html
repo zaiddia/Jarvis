@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Sólidos en 3D · Jarvis</title>
+<style>
+  :root { --a: #2ee6ff; --a2: #ffb547; --ok: #3dff9a; --bg: #03060c; --card: rgba(7, 19, 32, .9); --line: #1d3344; --text: #e6f6ff; --muted: #7d95ab; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: system-ui, "Segoe UI", sans-serif; }
+  #bgv, #bgi { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
+  #net { position: fixed; inset: 0; width: 100%; height: 100%; display: none; background: rgba(3, 6, 12, .97); }
+  .bar { position: fixed; left: 8px; right: 8px; top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; z-index: 3; }
+  .bar select, .bar button, .bar label { font-size: 14px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  .bar button.on { border-color: var(--a); color: var(--a); }
+  .bar h1 { font-size: 16px; color: var(--a); margin-right: 4px; }
+  #panel { position: fixed; left: 8px; bottom: 8px; width: min(360px, calc(100% - 16px)); background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+           padding: 10px 12px; z-index: 3; max-height: 48vh; overflow-y: auto; }
+  #panel .row { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 14px; }
+  #panel .row span { min-width: 74px; color: var(--muted); }
+  #panel .row b { min-width: 40px; text-align: right; color: var(--a2); font-variant-numeric: tabular-nums; }
+  #panel input[type=range] { flex: 1; accent-color: var(--a); }
+  #meas { font-size: 14px; line-height: 1.55; margin-top: 6px; border-top: 1px solid var(--line); padding-top: 6px; }
+  #meas em { color: var(--muted); font-style: normal; }
+  #meas b { color: var(--ok); }
+  #meas .sec { color: #ff80ab; }
+  #tip { position: fixed; right: 10px; bottom: 10px; color: var(--muted); font-size: 12px; z-index: 3; text-align: right; }
+  #file { display: none; }
+  @media (max-width: 640px) { .bar h1 { display: none; } #panel { max-height: 38vh; } }
+</style>
+</head>
+<body>
+<video id="bgv" playsinline muted autoplay></video><img id="bgi" alt="">
+<canvas id="cv"></canvas><canvas id="net"></canvas>
+<div class="bar">
+  <h1>🧊 Sólidos</h1>
+  <select id="kind">
+    <option value="cubo">Cubo</option><option value="ortoedro">Prisma rectangular</option><option value="prisma">Prisma</option>
+    <option value="piramide">Pirámide</option><option value="cilindro">Cilindro</option><option value="cono">Cono</option><option value="esfera">Esfera</option>
+  </select>
+  <button id="bCut">✂ Corte</button><button id="bNet">📐 Desplegar</button><button id="bIn">👁 Por dentro</button><button id="bSpin" class="on">⟳ Girar</button>
+  <button id="bCam">📷 Sobre mi pupitre</button><input type="file" id="file" accept="image/*" capture="environment">
+</div>
+<div id="panel"><div id="ctl"></div><div id="meas"></div></div>
+<div id="tip">Arrastra para girar · pellizca o rueda para acercar</div>
+<script>
+(() => {
+  "use strict";
+  const START = "{{ kind or '' }}";
+  const cv = document.getElementById("cv"), ctx = cv.getContext("2d"), net = document.getElementById("net"), nctx = net.getContext("2d");
+  const $ = (id) => document.getElementById(id);
+  const P = { cubo: { a: 2 }, ortoedro: { a: 3, b: 2, c: 1.5 }, prisma: { n: 3, l: 2, h: 3 }, piramide: { n: 4, l: 2.5, h: 3 }, cilindro: { r: 1.2, h: 3 }, cono: { r: 1.4, h: 3 }, esfera: { r: 1.6 } };
+  const LIM = { a: [0.5, 5, 0.1], b: [0.5, 5, 0.1], c: [0.5, 5, 0.1], n: [3, 8, 1], l: [0.5, 5, 0.1], h: [0.5, 6, 0.1], r: [0.3, 3, 0.1] };
+  const NAMES = { a: "Lado", b: "Ancho", c: "Alto", n: "Lados base", l: "Lado base", h: "Altura", r: "Radio" };
+  let kind = P[START] ? START : "cubo", yaw = 0.7, pitch = -0.45, zoom = 1, spin = true, cut = false, cutH = 0.5, cutTilt = 0, inside = false, showNet = false, netT = 0;
+  const f2 = (x) => (Math.round(x * 100) / 100).toString().replace(".", ",");
+
+  /* ---------- mallas (y hacia arriba, la base en y = 0) ---------- */
+  function ngon(n, r, y) { const o = []; for (let i = 0; i < n; i++) { const t = 2 * Math.PI * i / n + Math.PI / n; o.push([r * Math.cos(t), y, r * Math.sin(t)]); } return o; }
+  function mesh() {
+    const p = P[kind], V = [], F = [], smooth = kind === "cilindro" || kind === "cono" || kind === "esfera";
+    if (kind === "cubo" || kind === "ortoedro") {
+      const a = kind === "cubo" ? p.a : p.a, b = kind === "cubo" ? p.a : p.b, c = kind === "cubo" ? p.a : p.c;
+      for (const [x, y, z] of [[0,0,0],[1,0,0],[1,0,1],[0,0,1],[0,1,0],[1,1,0],[1,1,1],[0,1,1]]) V.push([(x - .5) * a, y * c, (z - .5) * b]);
+      F.push([0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]);
+    } else if (kind === "prisma" || kind === "cilindro") {
+      const n = kind === "prisma" ? p.n : 40, r = kind === "prisma" ? p.l / (2 * Math.sin(Math.PI / n)) : p.r;
+      V.push(...ngon(n, r, 0), ...ngon(n, r, p.h));
+      F.push([...Array(n).keys()].reverse(), [...Array(n).keys()].map((i) => i + n));
+      for (let i = 0; i < n; i++) F.push([i, (i + 1) % n, (i + 1) % n + n, i + n]);
+    } else if (kind === "piramide" || kind === "cono") {
+      const n = kind === "piramide" ? p.n : 40, r = kind === "piramide" ? p.l / (2 * Math.sin(Math.PI / n)) : p.r;
+      V.push(...ngon(n, r, 0), [0, p.h, 0]);
+      F.push([...Array(n).keys()].reverse());
+      for (let i = 0; i < n; i++) F.push([i, (i + 1) % n, n]);
+    } else {
+      const R = p.r, la = 14, lo = 28;
+      for (let i = 0; i <= la; i++) { const t = Math.PI * i / la; for (let j = 0; j < lo; j++) { const u = 2 * Math.PI * j / lo; V.push([R * Math.sin(t) * Math.cos(u), R + R * Math.cos(t), R * Math.sin(t) * Math.sin(u)]); } }
+      for (let i = 0; i < la; i++) for (let j = 0; j < lo; j++) { const a = i * lo + j, b = i * lo + (j + 1) % lo; F.push([a, b, b + lo, a + lo]); }
+    }
+    const H = Math.max(...V.map((v) => v[1]));
+    return { V, F, smooth, H };
+  }
+  /* ---------- cámara ---------- */
+  function project(v, W, Hh, H) {
+    let [x, y, z] = [v[0], v[1] - H / 2, v[2]];
+    const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    [x, z] = [x * cy - z * sy, x * sy + z * cy];
+    [y, z] = [y * cp - z * sp, y * sp + z * cp];
+    const d = 9, s = Math.min(W, Hh) * (W < 700 ? 0.15 : 0.11) * zoom * (d / (d + z));
+    return [W / 2 + x * s, Hh * 0.52 - y * s, z];
+  }
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], crs = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], nrm = (a) => { const l = Math.hypot(...a) || 1; return a.map((x) => x / l); };
+  function rotN(n) {   // la normal girada como la cámara (para la luz)
+    let [x, y, z] = n; const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    [x, z] = [x * cy - z * sy, x * sy + z * cy]; [y, z] = [y * cp - z * sp, y * sp + z * cp]; return [x, y, z];
+  }
+  /* ---------- corte con un plano ---------- */
+  function plane(m) {
+    const t = cutTilt * Math.PI / 180, n = [Math.sin(t), Math.cos(t), 0], p0 = [0, cutH * m.H, 0];
+    return { n, d: dot(n, p0) };
+  }
+  function section(m) {
+    const pl = plane(m), pts = [], seen = new Set();
+    for (const f of m.F) for (let i = 0; i < f.length; i++) {
+      const a = f[i], b = f[(i + 1) % f.length], k = a < b ? a + "," + b : b + "," + a;
+      if (seen.has(k)) continue; seen.add(k);
+      const A = m.V[a], B = m.V[b], da = dot(pl.n, A) - pl.d, db = dot(pl.n, B) - pl.d;
+      if ((da < 0) !== (db < 0)) { const t = da / (da - db); pts.push([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t]); }
+    }
+    if (pts.length < 3) return null;
+    const c = pts.reduce((s, p) => [s[0] + p[0] / pts.length, s[1] + p[1] / pts.length, s[2] + p[2] / pts.length], [0, 0, 0]);
+    const u = nrm(crs(pl.n, [0, 0, 1])), w = crs(pl.n, u);
+    const pl2 = pts.map((p) => { const q = sub(p, c); return { p, a: Math.atan2(dot(q, w), dot(q, u)), x: dot(q, u), y: dot(q, w) }; }).sort((a, b) => a.a - b.a);
+    let area = 0; for (let i = 0; i < pl2.length; i++) { const A = pl2[i], B = pl2[(i + 1) % pl2.length]; area += A.x * B.y - B.x * A.y; }
+    return { poly: pl2.map((q) => q.p), area: Math.abs(area) / 2, n: pl2.length };
+  }
+  /* ---------- dibujo ---------- */
+  function draw() {
+    const W = cv.width, Hh = cv.height, m = mesh();
+    ctx.clearRect(0, 0, W, Hh);
+    const hasBg = $("bgv").style.display === "block" || $("bgi").style.display === "block";
+    if (!hasBg) { const g = ctx.createRadialGradient(W / 2, Hh / 2, 10, W / 2, Hh / 2, Math.max(W, Hh) * .7); g.addColorStop(0, "#0b1a2a"); g.addColorStop(1, "#03060c"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, Hh); }
+    // sombra en el «pupitre»
+    const sh = project([0, 0, 0], W, Hh, m.H), r0 = Math.max(...m.V.map((v) => Math.hypot(v[0], v[2])));
+    const e1 = project([r0, 0, 0], W, Hh, m.H), e2 = project([0, 0, r0], W, Hh, m.H);
+    ctx.fillStyle = hasBg ? "rgba(0,0,0,.35)" : "rgba(46,230,255,.08)";
+    ctx.beginPath(); ctx.ellipse(sh[0], sh[1], Math.max(8, Math.hypot(e1[0] - sh[0], e1[1] - sh[1]) * 1.1), Math.max(4, Math.abs(e2[1] - sh[1]) * 1.1 + 6), 0, 0, 7); ctx.fill();
+    const P2 = m.V.map((v) => project(v, W, Hh, m.H));
+    const cen = m.V.reduce((s, v) => [s[0] + v[0] / m.V.length, s[1] + v[1] / m.V.length, s[2] + v[2] / m.V.length], [0, 0, 0]);
+    const faces = m.F.map((f) => {
+      let n = nrm(crs(sub(m.V[f[1]], m.V[f[0]]), sub(m.V[f[2]], m.V[f[0]])));
+      const fc = f.reduce((s, i) => [s[0] + m.V[i][0] / f.length, s[1] + m.V[i][1] / f.length, s[2] + m.V[i][2] / f.length], [0, 0, 0]);
+      if (dot(n, sub(fc, cen)) < 0) n = n.map((x) => -x);
+      const rn = rotN(n), z = f.reduce((s, i) => s + P2[i][2], 0) / f.length;
+      return { f, rn, z };
+    }).sort((a, b) => b.z - a.z);
+    const alpha = inside || cut ? 0.32 : 0.92, light = nrm([-0.4, 0.7, -0.6]);
+    for (const fc of faces) {
+      if (!(inside || cut) && fc.rn[2] > 0.02) continue;              // cara de atrás
+      const L = Math.max(0, -dot(fc.rn, [light[0], light[1], light[2] * -1])) * 0.65 + 0.3;
+      ctx.beginPath(); fc.f.forEach((i, k) => (k ? ctx.lineTo : ctx.moveTo).call(ctx, P2[i][0], P2[i][1])); ctx.closePath();
+      ctx.fillStyle = `rgba(${Math.round(46 * L + 20)},${Math.round(180 * L + 20)},${Math.round(230 * L + 20)},${alpha})`; ctx.fill();
+      if (!m.smooth) { ctx.strokeStyle = "rgba(230,246,255,.85)"; ctx.lineWidth = 2; ctx.stroke(); }
+    }
+    if (m.smooth && kind !== "esfera") {          // bordes de las tapas del cilindro y del cono
+      const n = 40; ctx.strokeStyle = "rgba(230,246,255,.85)"; ctx.lineWidth = 2;
+      ctx.beginPath(); for (let i = 0; i <= n; i++) { const q = P2[i % n]; (i ? ctx.lineTo : ctx.moveTo).call(ctx, q[0], q[1]); } ctx.stroke();
+      if (kind === "cilindro") { ctx.beginPath(); for (let i = 0; i <= n; i++) { const q = P2[n + i % n]; (i ? ctx.lineTo : ctx.moveTo).call(ctx, q[0], q[1]); } ctx.stroke(); }
+    }
+    let sec = null;
+    if (cut) {
+      sec = section(m);
+      if (sec) {
+        ctx.beginPath(); sec.poly.forEach((p, k) => { const q = project(p, W, Hh, m.H); (k ? ctx.lineTo : ctx.moveTo).call(ctx, q[0], q[1]); }); ctx.closePath();
+        ctx.fillStyle = "rgba(255,128,171,.75)"; ctx.fill(); ctx.strokeStyle = "#ff80ab"; ctx.lineWidth = 3; ctx.stroke();
+      }
+    }
+    measures(m, sec);
+    if (showNet) drawNet();
+  }
+  /* ---------- medidas ---------- */
+  function measures(m, sec) {
+    const p = P[kind]; let h = "", el = "";
+    const pi = Math.PI;
+    if (kind === "cubo") { h = `<em>Área total</em> 6a² = <b>${f2(6 * p.a ** 2)}</b><br><em>Volumen</em> a³ = <b>${f2(p.a ** 3)}</b>`; el = [6, 8, 12]; }
+    else if (kind === "ortoedro") { h = `<em>Área total</em> 2(ab + ac + bc) = <b>${f2(2 * (p.a * p.b + p.a * p.c + p.b * p.c))}</b><br><em>Volumen</em> a·b·c = <b>${f2(p.a * p.b * p.c)}</b>`; el = [6, 8, 12]; }
+    else if (kind === "prisma") { const ap = p.l / (2 * Math.tan(pi / p.n)), B = p.n * p.l * ap / 2, Lt = p.n * p.l * p.h;
+      h = `<em>Área base</em> (perímetro·apotema)/2 = <b>${f2(B)}</b><br><em>Área lateral</em> perímetro·h = <b>${f2(Lt)}</b><br><em>Área total</em> = <b>${f2(Lt + 2 * B)}</b><br><em>Volumen</em> área base·h = <b>${f2(B * p.h)}</b>`; el = [p.n + 2, 2 * p.n, 3 * p.n]; }
+    else if (kind === "piramide") { const ap = p.l / (2 * Math.tan(pi / p.n)), B = p.n * p.l * ap / 2, apo = Math.hypot(p.h, ap), Lt = p.n * p.l * apo / 2;
+      h = `<em>Área base</em> = <b>${f2(B)}</b><br><em>Apotema lateral</em> √(h² + ap²) = <b>${f2(apo)}</b><br><em>Área total</em> = <b>${f2(B + Lt)}</b><br><em>Volumen</em> (área base·h)/3 = <b>${f2(B * p.h / 3)}</b>`; el = [p.n + 1, p.n + 1, 2 * p.n]; }
+    else if (kind === "cilindro") h = `<em>Área lateral</em> 2πrh = <b>${f2(2 * pi * p.r * p.h)}</b><br><em>Área total</em> 2πr(r + h) = <b>${f2(2 * pi * p.r * (p.r + p.h))}</b><br><em>Volumen</em> πr²h = <b>${f2(pi * p.r ** 2 * p.h)}</b>`;
+    else if (kind === "cono") { const g = Math.hypot(p.r, p.h); h = `<em>Generatriz</em> g = √(r² + h²) = <b>${f2(g)}</b><br><em>Área total</em> πr(r + g) = <b>${f2(pi * p.r * (p.r + g))}</b><br><em>Volumen</em> πr²h/3 = <b>${f2(pi * p.r ** 2 * p.h / 3)}</b>`; }
+    else h = `<em>Área</em> 4πr² = <b>${f2(4 * pi * p.r ** 2)}</b><br><em>Volumen</em> 4πr³/3 = <b>${f2(4 * pi * p.r ** 3 / 3)}</b>`;
+    if (el) h += `<br><em>Caras ${el[0]} · vértices ${el[1]} · aristas ${el[2]}</em> (C + V − A = ${el[0] + el[1] - el[2]})`;
+    if (sec) h += `<br><span class="sec">✂ Corte: ${sec.n > 12 ? (cutTilt ? "elipse" : "círculo") : ["", "", "", "triángulo", "cuadrilátero", "pentágono", "hexágono", "heptágono", "octágono"][sec.n] || sec.n + " lados"}, área ≈ ${f2(sec.area)}</span>`;
+    $("meas").innerHTML = h;
+  }
+  /* ---------- desarrollo plano ---------- */
+  function drawNet() {
+    const W = net.width, H = net.height, p = P[kind], pi = Math.PI;
+    nctx.clearRect(0, 0, W, H);
+    const shapes = [];       // polígonos en unidades
+    const poly = (pts) => shapes.push(pts);
+    const ngon2 = (n, l, cx, cy, rot) => { const r = l / (2 * Math.sin(pi / n)), o = []; for (let i = 0; i < n; i++) { const t = rot + 2 * pi * i / n; o.push([cx + r * Math.cos(t), cy + r * Math.sin(t)]); } return o; };
+    const rect = (x, y, w, h) => poly([[x, y], [x + w, y], [x + w, y + h], [x, y + h]]);
+    let msg = "";
+    if (kind === "cubo" || kind === "ortoedro") {
+      const a = kind === "cubo" ? p.a : p.a, b = kind === "cubo" ? p.a : p.b, c = kind === "cubo" ? p.a : p.c;
+      rect(0, b, a, c); rect(a, b, b, c); rect(a + b, b, a, c); rect(2 * a + b, b, b, c); rect(0, 0, a, b); rect(0, b + c, a, b);
+    } else if (kind === "prisma") {
+      for (let i = 0; i < p.n; i++) rect(i * p.l, 0, p.l, p.h);
+      const ap = p.l / (2 * Math.tan(pi / p.n));
+      poly(ngon2(p.n, p.l, p.l / 2, -ap, pi / 2 + pi / p.n).map(([x, y]) => [x, y])); poly(ngon2(p.n, p.l, p.l / 2, p.h + ap, -pi / 2 + pi / p.n));
+    } else if (kind === "piramide") {
+      const ap = p.l / (2 * Math.tan(pi / p.n)), apo = Math.hypot(p.h, ap), base = ngon2(p.n, p.l, 0, 0, pi / p.n);
+      poly(base);
+      for (let i = 0; i < p.n; i++) { const A = base[i], B = base[(i + 1) % p.n], mx = (A[0] + B[0]) / 2, my = (A[1] + B[1]) / 2, l = Math.hypot(mx, my); poly([A, B, [mx + mx / l * apo, my + my / l * apo]]); }
+    } else if (kind === "cilindro") {
+      const L = 2 * pi * p.r; rect(0, 0, L, p.h);
+      const circ = (cx, cy) => { const o = []; for (let i = 0; i < 48; i++) o.push([cx + p.r * Math.cos(2 * pi * i / 48), cy + p.r * Math.sin(2 * pi * i / 48)]); poly(o); };
+      circ(L / 2, -p.r); circ(L / 2, p.h + p.r);
+      msg = `Rectángulo de ${f2(L)} × ${f2(p.h)} (el largo es el perímetro 2πr) y dos círculos de radio ${f2(p.r)}`;
+    } else if (kind === "cono") {
+      const g = Math.hypot(p.r, p.h), ang = 2 * pi * p.r / g, o = [[0, 0]];
+      for (let i = 0; i <= 40; i++) { const t = -pi / 2 - ang / 2 + ang * i / 40; o.push([g * Math.cos(t), g * Math.sin(t)]); } poly(o);
+      const c = []; for (let i = 0; i < 48; i++) c.push([p.r * Math.cos(2 * pi * i / 48), p.r + 0.15 + p.r * Math.sin(2 * pi * i / 48)]); poly(c);
+      msg = `Sector circular de radio g = ${f2(g)} y ángulo ${f2(ang * 180 / pi)}°, más el círculo de la base`;
+    } else msg = "La esfera no tiene desarrollo plano exacto: por eso los mapas del mundo siempre deforman algo.";
+    const all = shapes.flat(); if (!all.length) { nctx.fillStyle = "#e6f6ff"; nctx.font = "20px system-ui"; nctx.textAlign = "center"; nctx.fillText(msg, W / 2, H / 2); return; }
+    const xs = all.map((q) => q[0]), ys = all.map((q) => q[1]), x0 = Math.min(...xs), y0 = Math.min(...ys), bw = Math.max(...xs) - x0, bh = Math.max(...ys) - y0;
+    const k = Math.min((W - 80) / bw, (H - 160) / bh), ox = (W - bw * k) / 2 - x0 * k, oy = (H - bh * k) / 2 - y0 * k + 20;
+    const tt = Math.min(1, netT);
+    shapes.forEach((s, i) => {
+      const a = Math.max(0, Math.min(1, tt * shapes.length - i)); if (a <= 0) return;
+      const cx = s.reduce((t, q) => t + q[0], 0) / s.length, cy = s.reduce((t, q) => t + q[1], 0) / s.length, sc = 0.6 + 0.4 * a;
+      nctx.beginPath(); s.forEach((q, j) => (j ? nctx.lineTo : nctx.moveTo).call(nctx, ox + (cx + (q[0] - cx) * sc) * k, oy + (cy + (q[1] - cy) * sc) * k)); nctx.closePath();
+      nctx.fillStyle = `rgba(46,180,230,${0.35 * a})`; nctx.fill(); nctx.strokeStyle = `rgba(230,246,255,${a})`; nctx.lineWidth = 2; nctx.stroke();
+    });
+    nctx.fillStyle = "#ffb547"; nctx.font = "18px system-ui"; nctx.textAlign = "center";
+    nctx.fillText(msg || `Desarrollo plano: ${shapes.length} caras. Recórtalo y ármalo.`, W / 2, H - 24);
+  }
+  /* ---------- controles ---------- */
+  function controls() {
+    const p = P[kind]; let h = "";
+    for (const k of Object.keys(p)) { const [lo, hi, st] = LIM[k]; h += `<div class="row"><span>${NAMES[k]}</span><input type="range" min="${lo}" max="${hi}" step="${st}" value="${p[k]}" data-k="${k}"><b>${f2(p[k])}</b></div>`; }
+    if (cut) h += `<div class="row"><span>Altura corte</span><input type="range" min="0.02" max="0.98" step="0.01" value="${cutH}" data-cut="h"><b>${Math.round(cutH * 100)}%</b></div>` +
+      `<div class="row"><span>Inclinación</span><input type="range" min="0" max="75" step="1" value="${cutTilt}" data-cut="t"><b>${cutTilt}°</b></div>`;
+    $("ctl").innerHTML = h;
+    $("ctl").querySelectorAll("input").forEach((i) => i.oninput = () => {
+      if (i.dataset.k) { p[i.dataset.k] = +i.value; i.nextElementSibling.textContent = f2(+i.value); }
+      else if (i.dataset.cut === "h") { cutH = +i.value; i.nextElementSibling.textContent = Math.round(cutH * 100) + "%"; }
+      else { cutTilt = +i.value; i.nextElementSibling.textContent = cutTilt + "°"; }
+      netT = 1; draw();
+    });
+  }
+  function size() { const d = window.devicePixelRatio || 1; for (const c of [cv, net]) { c.width = innerWidth * d; c.height = innerHeight * d; } draw(); }
+  $("kind").value = kind;
+  $("kind").onchange = () => { kind = $("kind").value; netT = 0; controls(); draw(); };
+  const tog = (id, fn) => $(id).onclick = () => { fn(); $(id).classList.toggle("on"); controls(); draw(); };
+  tog("bCut", () => (cut = !cut)); tog("bIn", () => (inside = !inside)); tog("bSpin", () => (spin = !spin));
+  tog("bNet", () => { showNet = !showNet; netT = 0; net.style.display = showNet ? "block" : "none"; });
+  /* ---------- realidad aumentada: la cámara (si el navegador lo deja) o una foto del pupitre ---------- */
+  $("bCam").onclick = async () => {
+    if (window.isSecureContext && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try { const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }); const v = $("bgv"); v.srcObject = s; v.style.display = "block"; $("bgi").style.display = "none"; draw(); return; } catch (e) {}
+    }
+    $("file").click();
+  };
+  $("file").onchange = () => { const f = $("file").files[0]; if (!f) return; const i = $("bgi"); i.src = URL.createObjectURL(f); i.style.display = "block"; $("bgv").style.display = "none"; i.onload = draw; };
+  /* ---------- girar y acercar ---------- */
+  const ptrs = new Map(); let pinch = 0;
+  cv.addEventListener("pointerdown", (e) => { cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); spin = false; $("bSpin").classList.remove("on"); });
+  cv.addEventListener("pointermove", (e) => {
+    if (!ptrs.has(e.pointerId)) return;
+    const [x0, y0] = ptrs.get(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) zoom = Math.max(.4, Math.min(3, zoom * d / pinch)); pinch = d; }
+    else { yaw += (e.clientX - x0) * 0.01; pitch = Math.max(-1.4, Math.min(1.4, pitch + (e.clientY - y0) * 0.01)); }
+    draw();
+  });
+  const up = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = 0; };
+  cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+  cv.addEventListener("wheel", (e) => { e.preventDefault(); zoom = Math.max(.4, Math.min(3, zoom * (e.deltaY < 0 ? 1.1 : 0.9))); draw(); }, { passive: false });
+  let last = performance.now();
+  function loop(t) { const dt = (t - last) / 1000; last = t; let dirty = false;
+    if (spin && !showNet) { yaw += dt * 0.5; dirty = true; } if (showNet && netT < 1) { netT += dt * 0.8; dirty = true; } if ($("bgv").style.display === "block") dirty = true;
+    if (dirty) draw(); requestAnimationFrame(loop); }
+  addEventListener("resize", size); controls(); size(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

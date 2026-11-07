@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>{{ "Lápiz de la pizarra" if mode == "lapiz" else "Pizarra en vivo" }}</title>
+<style>
+  :root { --a: #2ee6ff; --a2: #ffb547; --ok: #3dff9a; --bad: #ff6b6b; --bg: #03060c; --card: #071320; --line: #1d3344; --text: #e6f6ff; --muted: #7d95ab; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { display: flex; gap: 6px; align-items: center; padding: 6px 8px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+  header b { color: var(--a); font-size: 15px; margin-right: auto; }
+  button { font-size: 14px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  button.main { background: var(--a); color: #03060c; font-weight: 700; border-color: var(--a); }
+  .sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; }
+  .sw.on { border-color: #fff; }
+  #stage { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+  #wrap { position: relative; background: #0e1116; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; touch-action: none; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #items { position: absolute; inset: 0; pointer-events: none; }
+  .card { position: absolute; background: rgba(7,19,32,.92); border: 1px solid var(--a); border-radius: 8px; padding: 4px 8px; font-size: 14px; max-width: 45%; }
+  .card .f { color: #ffdd55; font-size: 16px; } .card .ok { color: var(--ok); } .card .bad { color: var(--bad); }
+  #hint { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; color: var(--muted); font-size: 13px; pointer-events: none; }
+  #rot { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 5; align-items: center; justify-content: center; text-align: center; padding: 30px; font-size: 18px; }
+  @media (orientation: portrait) { body.pen #rot { display: flex; } }
+</style>
+</head>
+<body class="{{ 'pen' if mode == 'lapiz' else '' }}">
+<div id="rot">↻ Gira el celular (horizontal) para usarlo como lápiz.</div>
+<header>
+  <b>{{ "🖊 Lápiz" if mode == "lapiz" else "📱 Pizarra en vivo" }}</b>
+  {% if mode == "lapiz" %}
+  <span class="sw on" data-c="#ecf0f1" style="background:#ecf0f1"></span><span class="sw" data-c="#ffdd55" style="background:#ffdd55"></span>
+  <span class="sw" data-c="#58c4dd" style="background:#58c4dd"></span><span class="sw" data-c="#fc6255" style="background:#fc6255"></span>
+  <button data-a="undo">↶</button><button class="main" data-a="reconocer">✨</button><button data-a="nueva">＋</button>
+  {% else %}<span id="pg"></span>{% endif %}
+</header>
+<div id="stage"><div id="wrap"><canvas id="cv"></canvas><div id="items"></div><div id="hint"></div></div></div>
+<script>
+(() => {
+  "use strict";
+  const MODE = "{{ mode }}", CODE = "{{ code }}", PEN = "{{ pen }}";
+  const cv = document.getElementById("cv"), wrap = document.getElementById("wrap"), stage = document.getElementById("stage"), ctx = cv.getContext("2d");
+  let snap = { strokes: [], items: [], ver: -1 }, cur = null, color = "#ecf0f1", seq = 0, buf = [], queue = [], sending = false;
+  const me = Math.random().toString(36).slice(2, 7);
+  function fit() {
+    const W = stage.clientWidth - 8, H = stage.clientHeight - 8, w = Math.min(W, H * 16 / 9), h = w * 9 / 16;
+    wrap.style.width = w + "px"; wrap.style.height = h + "px";
+    const dpr = window.devicePixelRatio || 1; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); draw();
+  }
+  function px(p) { return [p[0] * cv.width, p[1] * cv.height]; }
+  function sp(s) {
+    if (!s.p.length) return; const k = cv.width / 1280;
+    ctx.strokeStyle = s.c; ctx.fillStyle = s.c; ctx.lineWidth = s.w * k; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.beginPath(); const [x0, y0] = px(s.p[0]); ctx.moveTo(x0, y0);
+    if (s.p.length === 1) { ctx.arc(x0, y0, s.w * k / 2, 0, 7); ctx.fill(); return; }
+    for (let i = 1; i < s.p.length; i++) { const [x, y] = px(s.p[i]); ctx.lineTo(x, y); }
+    ctx.stroke();
+  }
+  function draw() { ctx.clearRect(0, 0, cv.width, cv.height); snap.strokes.forEach(sp); if (cur) sp(cur); }
+  function items() {
+    const el = document.getElementById("items"); el.innerHTML = "";
+    for (const it of snap.items || []) {
+      const c = document.createElement("div"); c.className = "card"; c.style.left = it.x * 100 + "%"; c.style.top = it.y * 100 + "%";
+      const f = document.createElement("div"); f.className = "f"; f.textContent = it.plano || it.texto || ""; c.appendChild(f);
+      if (it.nota) { const n = document.createElement("div"); n.className = it.ok === true ? "ok" : it.ok === false ? "bad" : ""; n.textContent = it.nota; c.appendChild(n); }
+      el.appendChild(c);
+    }
+  }
+  async function poll() {
+    try {
+      const r = await fetch(`/pz/${CODE}/datos?v=${snap.ver}`, { cache: "no-store" });
+      if (r.ok) { const d = await r.json(); if (!d.same) { snap = d; if (cur && !snap.strokes.some((x) => x.id === cur.id)) {} draw(); items();
+        const pg = document.getElementById("pg"); if (pg) pg.textContent = `pág. ${d.page + 1}/${d.pages}`; } }
+    } catch (e) {}
+    setTimeout(poll, MODE === "lapiz" ? 2500 : 700);
+  }
+  if (MODE === "lapiz") {
+    document.getElementById("hint").textContent = "Escribe aquí: aparece en el proyector.";
+    const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+    async function send() {
+      if (cur && buf.length) queue.push({ id: cur.id, c: cur.c, w: cur.w, p: buf.splice(0) });
+      if (sending || !queue.length) return;
+      sending = true;
+      const body = queue.shift();
+      try { await fetch(`/pz/${CODE}/trazo?t=${PEN}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); } catch (e) {}
+      sending = false; send();
+    }
+    cv.addEventListener("pointerdown", (e) => { cv.setPointerCapture(e.pointerId); const p = pos(e); cur = { id: `m${me}-${++seq}`, c: color, w: 5, p: [p] }; buf = [p]; draw(); });
+    cv.addEventListener("pointermove", (e) => { if (!cur) return; const p = pos(e); cur.p.push(p); buf.push(p); draw(); if (buf.length > 5) send(); });
+    const end = () => { if (!cur) return; send(); snap.strokes.push(cur); cur = null; };
+    cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+    document.querySelectorAll(".sw").forEach((b) => b.onclick = () => { document.querySelectorAll(".sw").forEach((x) => x.classList.remove("on")); b.classList.add("on"); color = b.dataset.c; });
+    document.querySelectorAll("[data-a]").forEach((b) => b.onclick = async () => {
+      try { await fetch(`/pz/${CODE}/accion?t=${PEN}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ a: b.dataset.a }) }); } catch (e) {}
+      snap.ver = -1;
+    });
+  } else {
+    document.getElementById("hint").textContent = "En vivo desde el proyector.";
+  }
+  window.addEventListener("resize", fit); fit(); poll();
+})();
+</script>
+</body>
+</html>

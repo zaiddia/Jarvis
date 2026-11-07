@@ -14,7 +14,7 @@ import adjuntos
 import conversiones
 from nucleo import J
 
-ACTIONS = {"describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo",
+ACTIONS = {"describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo", "procedimiento": "Revisar procedimiento",
            "preguntas": "Hacer un quiz", "editar": "Editar con IA"}
 
 
@@ -62,7 +62,7 @@ def card_of(its):
         acts = ["describir"] if k == "imagen" else ["resumir"]
         acts += ["texto"] if k in ("imagen", "pdf") else []
         acts += ["tabla"] if k in ("imagen", "pdf", "word") else []
-        acts += ["revisar", "editar"] if k == "imagen" else []
+        acts += ["revisar", "procedimiento", "editar"] if k == "imagen" else []           # 12.0: paso a paso
         acts += ["preguntas"] if k in ("pdf", "word", "powerpoint", "texto") else []
     convs = conversiones.options_for(its)
     return {"ids": [i["id"] for i in its], "nombres": [i["nombre"] for i in its], "desc": "; ".join(adjuntos.describe(i) for i in its),
@@ -220,6 +220,10 @@ def attach_run(its, action, pregunta=""):
         if action == "revisar":
             J._set_review_image(its[0]["ruta"], "imagen")
             J.start_review("actual")
+            return None
+        if action == "procedimiento":                  # 12.0: cada paso verificado con SymPy y mapa de errores
+            J._set_review_image(its[0]["ruta"], "imagen")
+            J.start_procedure("actual")
             return None
         if action == "tabla":
             dst, n, nt = J.table_from(its[0])

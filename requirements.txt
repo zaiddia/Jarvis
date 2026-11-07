@@ -38,3 +38,7 @@ cryptography
 pypdf
 # 11.6: ver las páginas de un PDF como imágenes (PDF escaneados, PDF a imágenes)
 pypdfium2
+# 12.0: videos animados (MP4 con voz y subtítulos; trae su propio ffmpeg)
+imageio-ffmpeg
+# 12.2: el navegador con el que Jarvis llena las plataformas (usa el Edge o Chrome que ya tienes)
+playwright

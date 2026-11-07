@@ -162,10 +162,19 @@
     body.classList.toggle("dim", !!current.hud_dim_idle && idle && !busy && Date.now() - lastActivity > 9000);
   }, 1000);
 
+  /* ---------------- 12.0: rostro holográfico ---------------- */
+  let face = null;
+  function setFace(on) {
+    body.classList.toggle("has-face", on);
+    if (on && !face && window.JarvisFace) { const box = document.createElement("div"); box.className = "face-box"; el.reactor.appendChild(box); face = window.JarvisFace(box, {}); face.mode(st.mode); }
+    if (!on && face) { face.el.parentNode.remove(); face = null; }
+  }
+
   /* ---------------- Estado ---------------- */
   function led(id, s) { $(id).dataset.s = s; }
   function applyState(s) {
     st = { ...st, ...s };
+    if (face) face.mode(st.mode);
     body.dataset.state = st.mode || "idle";
     if (dictating) { el.mode.textContent = "✎ DICTANDO"; } else
     el.mode.textContent = (tutorOn ? "🎓 TUTOR · " : "") + (st.resting ? "· DESCANSANDO · " : st.viewing ? (st.viewing === "camara" ? "◉ VIENDO CÁMARA · " : "◉ VIENDO PANTALLA · ")
@@ -197,6 +206,7 @@
     current = s || {};
     setTheme(current.theme);
     body.dataset.text = current.hud_text_size || "normal";                       // 11.8: tamaño de la letra
+    setFace(!!current.hud_avatar);                                                // 12.0: rostro holográfico en vez del reactor
     el.shell.style.setProperty("--alpha", body.classList.contains("solid")
       ? 0.96 : (current.hud_opacity || 82) / 100);
     const on = !!current.mic_enabled;
@@ -1335,6 +1345,60 @@
   socket.on("tutor", (d) => { tutorOn = !!(d && d.on); applyState({}); });
   socket.on("connect", () => socket.emit("tutor_state", {}, (d) => { tutorOn = !!(d && d.on); applyState({}); }));
   socket.on("file_card", (c) => { addFileCard(c); poke(); });
+  /* 12.1: respuestas interactivas. Las fórmulas se leen con un analizador propio (igual que panel.py): nunca eval. */
+  function panelEval(expr, env) {
+    const toks = []; const rx = /\s*(?:(\d+(?:[.,]\d+)?)|([A-Za-z_]\w*)|(\*\*|[-+*/^(),]))/y; let pos = 0; const s = String(expr || "");
+    while (pos < s.length) { if (/\s/.test(s[pos])) { pos++; continue; } rx.lastIndex = pos; const m = rx.exec(s); if (!m) throw new Error("símbolo");
+      toks.push(m[1] ? ["n", parseFloat(m[1].replace(",", "."))] : m[2] ? ["v", m[2]] : ["o", m[3] === "**" ? "^" : m[3]]); pos = rx.lastIndex; }
+    const F = { min: Math.min, max: Math.max, round: (x, n) => { const k = 10 ** (n || 0); return Math.round(x * k) / k; }, abs: Math.abs, sqrt: Math.sqrt };
+    let i = 0; const peek = () => toks[i] || ["e", ""], is = (o) => peek()[0] === "o" && peek()[1] === o, take = () => toks[i++] || ["e", ""];
+    function ex() { let v = te(); while (is("+") || is("-")) { const o = take()[1]; const r = te(); v = o === "+" ? v + r : v - r; } return v; }
+    function te() { let v = po(); while (is("*") || is("/")) { const o = take()[1]; const r = po(); v = o === "*" ? v * r : (r ? v / r : Infinity); } return v; }
+    function po() { const v = un(); if (is("^")) { take(); return v ** po(); } return v; }
+    function un() { if (is("-")) { take(); return -un(); } if (is("+")) { take(); return un(); } return at(); }
+    function at() { const [k, v] = take();
+      if (k === "n") return v;
+      if (k === "v") { if (is("(")) { if (!Object.prototype.hasOwnProperty.call(F, v)) throw new Error("función"); take(); const a = [ex()]; while (is(",")) { take(); a.push(ex()); } if (!is(")")) throw new Error(")"); take(); return F[v](...a); }
+        if (!Object.prototype.hasOwnProperty.call(env, v)) throw new Error("variable"); return Number(env[v]); }
+      if (k === "o" && v === "(") { const r = ex(); if (!is(")")) throw new Error(")"); take(); return r; }
+      throw new Error("fórmula"); }
+    const r = ex(); if (i !== toks.length) throw new Error("sobra"); return r;
+  }
+  function addPanelCard(p) {
+    $(".empty", el.chat)?.remove();
+    hasMessages = true;
+    const m = mk("div", "msg jarvis panelcard");
+    m.append(mk("div", "msg-meta", "JARVIS · PANEL"));
+    const b = mk("div", "msg-body pcard");
+    b.append(mk("b", "ptitle", p.titulo || "Panel"));
+    const env = {}; (p.constantes || []).forEach((c) => (env[c.id] = c.valor));
+    const fmt = (v, d) => (Number.isFinite(v) ? v.toLocaleString("es-CO", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—");
+    const outs = [];
+    (p.controles || []).forEach((c) => {
+      env[c.id] = c.valor;
+      const row = mk("label", "prow"); const val = mk("output", "", fmt(c.valor, String(c.paso).includes(".") ? String(c.paso).split(".")[1].length : 0));
+      const inp = document.createElement("input"); inp.type = "range"; inp.min = c.min; inp.max = c.max; inp.step = c.paso; inp.value = c.valor;
+      inp.addEventListener("input", () => { env[c.id] = Number(inp.value); val.textContent = fmt(Number(inp.value), String(c.paso).includes(".") ? String(c.paso).split(".")[1].length : 0); recalc(); });
+      row.append(mk("span", "", c.etiqueta), inp, val); b.append(row);
+    });
+    (p.resultados || []).forEach((r) => { const row = mk("div", "pres"); const v = mk("b", ""); row.append(mk("span", "", r.etiqueta), v); b.append(row); outs.push([r, v, row]); });
+    function recalc() { outs.forEach(([r, v, row]) => { let x; try { x = panelEval(r.formula, env); } catch (e) { x = NaN; }
+      v.textContent = fmt(x, r.decimales ?? 1); if (r.meta != null) { row.classList.toggle("ok", x >= r.meta); row.classList.toggle("bad", x < r.meta); } }); }
+    recalc();
+    if (p.tabla) {
+      const t = mk("table", "ptab"); const hr = mk("tr"); let rows = p.tabla.filas.slice(), dir = 1;
+      p.tabla.columnas.forEach((c, k) => { const th = mk("th", "", c); th.title = "Ordenar"; th.addEventListener("click", () => {
+        const num = (x) => parseFloat(String(x).replace(/\./g, "").replace(",", "."));
+        rows.sort((a, z) => { const A = num(a[k]), Z = num(z[k]); return (Number.isFinite(A) && Number.isFinite(Z) ? A - Z : String(a[k]).localeCompare(String(z[k]))) * dir; });
+        dir = -dir; fill(); }); hr.append(th); });
+      const body = mk("tbody"); t.append(mk("thead"), body); t.firstChild.append(hr);
+      function fill() { body.textContent = ""; rows.forEach((r) => { const tr = mk("tr"); r.forEach((x) => tr.append(mk("td", "", x))); body.append(tr); }); }
+      fill(); b.append(t);
+    }
+    if ((p.botones || []).length) { const bt = mk("div", "dbtns"); p.botones.forEach((x) => { const k = mk("button", "mini", x.texto); k.type = "button"; k.addEventListener("click", () => run(x.orden)); bt.append(k); }); b.append(bt); }
+    m.append(b); el.chat.append(m); el.chat.scrollTop = el.chat.scrollHeight;
+  }
+  socket.on("panel", (p) => { addPanelCard(p); poke(); });
   socket.on("student_card", (c) => { addStudentCard(c); poke(); });
   /* 9.9: color del día del reactor y personalidad del momento */
   let persona = "";
@@ -1369,7 +1433,7 @@
     el.viewChat.scrollTop = el.viewChat.scrollHeight;
   });
   socket.on("terminal_log", ({ data }) => addLog(data));
-  socket.on("chat", (item) => { if (item.role !== "user") lastJarvis = item.text; addChat(item); poke(); });
+  socket.on("chat", (item) => { if (item.role !== "user") { lastJarvis = item.text; if (face) face.say(item.text, current.tts_rate); } addChat(item); poke(); });
   socket.on("state", (s) => { const was = st.mode; applyState(s); showTyping(st.mode === "thinking"); if (st.mode === "speaking" && was !== "speaking") startSubs(); else if (st.mode !== "speaking" && was === "speaking") stopSubs(); });
   socket.on("mic_level", ({ v }) => { if (st.mode !== "speaking") setLevel(v); });
   socket.on("heard", ({ text }) => { if (st.mode === "idle" || st.mode === "awaiting") setPreview(`«${text}»`, "dim"); });

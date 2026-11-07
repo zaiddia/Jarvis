@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jarvis</title>
+<style>
+  :root { --a: #2ee6ff; --text: #e6f6ff; --muted: #7d95ab; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: radial-gradient(ellipse at 50% 60%, #071a2a 0%, #02040a 70%); color: var(--text);
+               font-family: system-ui, "Segoe UI", sans-serif; }
+  .stage { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; }
+  .holo { position: relative; width: min(62vh, 80vw); aspect-ratio: 1; color: var(--a); }
+  .holo::after { content: ""; position: absolute; left: 10%; right: 10%; bottom: -4%; height: 8%; border-radius: 50%;
+                 background: radial-gradient(ellipse, #2ee6ff55, transparent 70%); filter: blur(4px); }
+  .holo .base { position: absolute; left: 22%; right: 22%; bottom: -7%; height: 3%; border-radius: 50%; border: 2px solid #2ee6ff88; box-shadow: 0 0 30px #2ee6ff66; }
+  .jf { width: 100%; height: 100%; display: block; animation: flick 6s infinite; }
+  @keyframes flick { 0%, 96%, 100% { opacity: 1; } 97% { opacity: .55; } 98% { opacity: .95; } }
+  .jf[data-mode="thinking"] { color: #ffb547; } .jf[data-mode="awaiting"] { color: #3dff9a; }
+  #sub { min-height: 3.2em; max-width: 80vw; text-align: center; font-size: clamp(18px, 2.6vw, 34px); line-height: 1.35; text-shadow: 0 0 12px #000; }
+  #sub b { color: var(--a); }
+  .name { letter-spacing: 8px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="stage"><div class="holo" id="holo"><span class="base"></span></div><div class="name">J · A · R · V · I · S</div><p id="sub"></p></div>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='js/avatar.js', v=asset_v) }}"></script>
+<script>
+(() => {
+  const face = JarvisFace(document.getElementById("holo"), { big: true }), sub = document.getElementById("sub"), socket = io();
+  let rate = 0, words = [], timer = null, last = "";
+  function subs() {
+    clearInterval(timer); let i = 0; const wps = 2.6 * (1 + rate / 100);
+    timer = setInterval(() => { i = Math.min(words.length, i + 1); const from = Math.max(0, i - 14);
+      sub.innerHTML = ""; sub.append(words.slice(from, i - 1).join(" ") + " "); const b = document.createElement("b"); b.textContent = words[i - 1] || ""; sub.append(b);
+      if (i >= words.length) clearInterval(timer); }, 1000 / Math.max(1.2, wps));
+  }
+  socket.on("settings", (s) => { rate = Number(s && s.tts_rate) || 0; });
+  socket.on("settings_updated", (s) => { rate = Number(s && s.tts_rate) || 0; });
+  socket.on("chat", (it) => { if (it && it.role !== "user") { last = it.text; face.say(last, rate); } });
+  socket.on("state", (s) => { if (!s) return; const was = face.el.dataset.mode; face.mode(s.mode);
+    if (s.mode === "speaking" && was !== "speaking") { words = String(last).replace(/\$[^$]*\$/g, "…").split(/\s+/).filter(Boolean); subs(); }
+    if (s.mode === "idle" && was === "speaking") setTimeout(() => { if (face.el.dataset.mode === "idle") sub.textContent = ""; }, 4000); });
+  socket.on("connect", () => socket.emit("get_settings", {}, (s) => { rate = Number(s && s.tts_rate) || 0; }));
+})();
+</script>
+</body>
+</html>

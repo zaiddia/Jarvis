@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "11.8.1"
+VERSION = "12.2"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -813,6 +813,30 @@ DEFAULT_SETTINGS = {
     "update_night": True,          # 8.3: instalar de noche las versiones nuevas (con copia de seguridad)
     "google_scopes": "",           # 8.5: permisos que diste al conectar tu cuenta de Google (Gmail, Classroom, Forms)
     "hud_text_size": "normal",     # 11.8: tamaño de la letra del HUD: "normal", "grande" o "proyector"
+    "hud_avatar": False,           # 12.0: rostro holográfico en lugar del reactor
+    "night_shift": False,          # 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo con aprobación)
+    "night_hour": 21,              # 12.0: desde qué hora trabaja de noche
+    "night_quiz": True,            # 12.0: en el turno de noche, también la evaluación corta de cada clase
+    "night_slides": True,          # 12.0: … y las diapositivas
+    "night_grade": True,           # 12.0: … califica las fotos de «Por calificar»
+    "night_parents": True,         # 12.0: … y redacta los mensajes a padres de quien viene bajando
+    "night_last": "",
+    "adventure_secs": 60,          # 12.0: segundos por puerta en la aventura matemática
+    "adventure_voice": True,       # 12.0: Jarvis narra los capítulos de la aventura
+    "ack_enabled": True,           # 12.1: cero silencio: frase corta al instante si la IA va a tardar
+    "ack_ms": 700,                 # 12.1: a partir de cuántos milisegundos de espera la dice
+    "turn_smart": True,            # 12.1: espera a que termines si la frase quedó colgando («haz un quiz de… eh…»)
+    "turn_hold": 1.6,              # 12.1: cuántos segundos espera
+    "chain_enabled": True,         # 12.1: varias órdenes en una frase
+    "brain_enabled": True,         # 12.1: dos cerebros (modelo rápido para lo simple)
+    "ai_fast_model": "",           # 12.1: el modelo rápido ("" = lo elige solo; "off" = nunca)
+    "panel_enabled": True,         # 12.1: respuestas interactivas en el HUD
+    "memory_consolidate": True,    # 12.1: memoria que se ordena sola cada noche
+    "memory_last": "",
+    "kokoro_voice": "dora",        # 12.1: voz de Kokoro (dora o alex)
+    "agent_browser": "",           # 12.2: navegador del agente de plataformas ("" = Edge en Windows; o "chrome", o la ruta del .exe)
+    "agent_headless": False,       # 12.2: sin ventana (solo para pruebas)
+    "platform_url": "",            # 12.2: otra plataforma de notas (vacío = Zeti)
     "hud_subtitles": True,         # 8.6: subtítulos de lo que dice Jarvis, palabra por palabra
     "hud_expanded": "amplio",      # 9.1: tamaño del HUD expandido (estrecho, amplio o grande)
     "hud_favorites": "",           # 9.2: órdenes favoritas (una por línea), como botones en el HUD
@@ -898,6 +922,8 @@ RANGES = {
     "tts_rate": (-50, 50), "tts_volume": (-50, 50), "tts_pitch": (-50, 50),
     "wake_window": (3, 30), "followup_listen": (0, 20), "live_idle": (5, 120), "live_barge_level": (5, 80), "history_turns": (0, 30), "ai_temperature": (0.0, 2.0),
     "mic_device": (-1, 999), "hud_opacity": (30, 100),
+    "night_hour": (17, 23), "adventure_secs": (20, 300),            # 12.0
+    "ack_ms": (300, 3000), "turn_hold": (0.6, 4.0),                 # 12.1
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
@@ -944,13 +970,15 @@ def _validate(key, value):
         if not 2 <= len(nums) <= 6 or sum(nums) != 100:
             raise ValueError("escribe el peso de cada periodo y que sumen 100, por ejemplo 34,33,33")
         v = ",".join(map(str, nums))
+    if key == "platform_url" and v and not v.startswith("https://"):            # 12.2
+        raise ValueError("la dirección debe empezar por https://")
     if key == "zeti_url" and v and not v.startswith("https://"):
         raise ValueError("la dirección debe empezar por https://")
     choices = {"theme": THEMES, "ai_provider": tuple(PROVIDERS),
                "zeti_order": ("lista", "apellido", "alfabetico"), "hud_expanded": ("estrecho", "amplio", "grande"),
                "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
-               "tts_backend": ("edge", "piper", "gemini"), "stt_backend": ("vosk", "whisper"),
+               "tts_backend": ("edge", "piper", "gemini", "kokoro"), "kokoro_voice": ("dora", "alex"), "stt_backend": ("vosk", "whisper"),
                "gemini_tts_model": ("gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts"),
                "stt_refine": ("auto", "gemini", "whisper", "off"), "calendar_create": ("google", "ics"),
                "listen_mode": ("auto", "vivo", "clasico"),
@@ -1546,6 +1574,12 @@ def process_command(text):
         return
     if approvals_answer(t):                            # «sí», «sí 3», «no 2» a una aprobación pendiente
         return
+    if rehearsal_capture(text, t):                     # 12.0: durante el ensayo, lo que dices es para los estudiantes simulados
+        return
+    _parts = chain_split(text)                         # 12.1: «pon un temporizador, abre la pizarra y muéstrales el QR»
+    if len(_parts) > 1:
+        run_chain(_parts)
+        return
     if live_quiz_voice(text, t):                       # 8.8: «quiz en vivo», y durante el quiz «respuesta», «siguiente»
         return
     if live_class_voice(text, t):                      # 9.6: «empieza la clase de fracciones», «siguiente momento»
@@ -1556,7 +1590,31 @@ def process_command(text):
         return
     if journal_voice(text, t):                         # 11.8: «deshaz lo último», «¿qué hiciste hoy?»
         return
+    if face_voice(text, t):                            # 12.0: «muestra tu rostro», «proyecta tu rostro en el proyector»
+        return
+    if local_voice_voice(text, t):                     # 12.1: «instala la voz Kokoro», «mide las voces», «usa la voz Kokoro»
+        return
+    if platform_voice(text, t):                        # 12.2: «pasa las notas de 7A a Zeti», «llénala», «guarda la planilla»
+        return
+    if local_brain_voice(text, t):                     # 12.2: «¿qué IA puedo usar sin internet?», «prepara la IA sin internet»
+        return
+    if memory_night_voice(text, t):                    # 12.1: «¿qué aprendiste de mí?», «ordena tu memoria»
+        return
     if beam_voice(text, t):                            # 11.8: «proyecta eso», «pon la imagen en el proyector»
+        return
+    if video_anim_voice(text, t) or video_qr_voice(text, t):    # 12.0: «hazme un video de 2 minutos que explique …», «muestra el QR del video»
+        return
+    if procedure_voice(text, t):                       # 12.0: «revisa el procedimiento de Juan», «mapa de errores de 9A», «refuerzo del error más común»
+        return
+    if night_voice(text, t):                           # 12.0: «activa el turno de noche», «¿qué me dejaste listo?»
+        return
+    if pizarra_voice(text, t):                         # 12.0: «abre la pizarra», «reconoce lo que escribí», «guarda la pizarra en PDF»
+        return
+    if solids_voice(text, t):                          # 12.0: «muéstrales los sólidos en 3D en el celular», «abre la pirámide en 3D»
+        return
+    if adventure_voice(text, t):                       # 12.0: «lanza una aventura de fracciones para 7A», «siguiente capítulo»
+        return
+    if rehearsal_voice(text, t):                       # 12.0: «ensaya la clase de factorización con 9A»
         return
     if studio_voice(text, t):                          # 11.7: «otra versión», «cámbiale el fondo a azul», «hazla horizontal», «imprímela»
         return
@@ -1890,14 +1948,24 @@ def process_command(text):
         if getattr(_tl, "live", False):
             _tl.no_order = True                        # en vivo: lo responde Gemini directamente
             return
+        if panel.wants(t) and panel_answer(text):       # 12.1: «¿qué pasa si…?» → panel con deslizadores
+            return
         # Preguntas claras -> respuesta en streaming (más rápida, sin pasar por el enrutador).
         is_question = text.strip().endswith("?") or bool(QUESTION_RE.search(t))
         # Con conectores MCP, también las preguntas pasan por el enrutador («¿qué tengo en Notion?»).
         has_mcp = settings["ai_router"] and bool(mcp_hub.catalog(1))
-        if (is_question or not settings["ai_router"]) and not getattr(_tl, "remote", False) and not has_mcp:
-            answer_question_streaming(text)
-            return
-        result = ask_ai(text, route=True)
+        _tl.fast_model = brain_for(text)                 # 12.1: dos cerebros (rápido o potente)
+        try:
+            if (is_question or not settings["ai_router"]) and not getattr(_tl, "remote", False) and not has_mcp:
+                answer_question_streaming(text)
+                return
+            ack = ack_start(text)                        # 12.1: cero silencio
+            try:
+                result = ask_ai(text, route=True)
+            finally:
+                ack.done()
+        finally:
+            _tl.fast_model = ""
         if result[0] == "skill":
             run_skill(result[1], result[2])
         elif result[0] == "mcp":
@@ -2179,6 +2247,58 @@ from nucleo.estudio import *  # noqa: F401,F403,E402
 # → nucleo/hudpro.py (lógica en momento.py, bitacora.py y mathtext.py)
 from nucleo.hudpro import *  # noqa: F401,F403,E402
 
+# ── 12.0: revisar el procedimiento a mano paso a paso (SymPy), mapa de errores del curso y refuerzo para ese error
+# → nucleo/pasoapaso.py (lógica en procedimiento.py)
+from nucleo.pasoapaso import *  # noqa: F401,F403,E402
+
+# ── 12.0: pizarra inteligente en el proyector (letra a fórmula, verificar, graficar, celular como lápiz, apuntes en PDF)
+# → nucleo/pizarron.py (lógica en pizarra.py; páginas: templates/pizarra.html y pizarra_movil.html)
+from nucleo.pizarron import *  # noqa: F401,F403,E402
+
+# ── 12.0: videos animados estilo 3Blue1Brown, narrados y con subtítulos
+# → nucleo/videomate.py (lógica en animar.py)
+from nucleo.videomate import *  # noqa: F401,F403,E402
+
+# ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
+# → nucleo/turnonoche.py (lógica en nocturno.py)
+from nucleo.turnonoche import *  # noqa: F401,F403,E402
+
+# ── 12.0: sólidos en 3D y realidad aumentada en el celular
+# → nucleo/solidos3d.py (página: templates/solidos.html)
+from nucleo.solidos3d import *  # noqa: F401,F403,E402
+
+# ── 12.0: aventura matemática por equipos en el proyector
+# → nucleo/aventurajuego.py (lógica en aventura.py; páginas: templates/aventura.html y aventura_movil.html)
+from nucleo.aventurajuego import *  # noqa: F401,F403,E402
+
+# ── 12.0: ensayar la clase con estudiantes simulados
+# → nucleo/ensayoclase.py (lógica en ensayo.py)
+from nucleo.ensayoclase import *  # noqa: F401,F403,E402
+
+# ── 12.0: rostro holográfico (HUD y proyector)
+# → nucleo/rostro.py (dibujo: static/js/avatar.js; página: templates/rostro.html)
+from nucleo.rostro import *  # noqa: F401,F403,E402
+
+# ── 12.1: más inteligente, veloz e interactivo (cero silencio, fin de turno, órdenes encadenadas, dos cerebros, paneles)
+# → nucleo/agilidad.py (lógica en agil.py, cerebro.py y panel.py)
+from nucleo.agilidad import *  # noqa: F401,F403,E402
+
+# ── 12.1: voz local Kokoro (opcional) y medición de las voces en tu equipo
+# → nucleo/vozlocal.py (lógica en kokoro_voz.py)
+from nucleo.vozlocal import *  # noqa: F401,F403,E402
+
+# ── 12.1: memoria que se ordena sola cada noche (cada dato con la cita de dónde salió)
+# → nucleo/memorianoche.py (lógica en consolidar.py)
+from nucleo.memorianoche import *  # noqa: F401,F403,E402
+
+# ── 12.2: Jarvis llena las plataformas (Zeti u otra) en su propio navegador, con tu aprobación
+# → nucleo/plataformas.py (lógica en llenador.py)
+from nucleo.plataformas import *  # noqa: F401,F403,E402
+
+# ── 12.2: cerebro local: la mejor IA que cabe en tu equipo, probada con tareas de docente
+# → nucleo/iaencasa.py (lógica en cerebrolocal.py)
+from nucleo.iaencasa import *  # noqa: F401,F403,E402
+
 
 # =============================================================================
 # ARRANQUE
@@ -2330,6 +2450,10 @@ def main():
         sources_start()                   # 11.5: libros guía
         attach_start()                    # 11.6: archivos subidos al chat
         hudpro_start()                    # 11.8: «Lo que hice hoy» con deshacer
+        procedure_start()                 # 12.0: mapa de errores de los procedimientos
+        night_start()                     # 12.0: turno de noche
+        adventure_start()                 # 12.0: reloj de la aventura matemática
+        memory_night_start()              # 12.1: memoria que se ordena sola
         load_memory()
         diario.configure(CONFIG_DIR, settings["diary_enabled"], settings["diary_days"])
         diario.purge()

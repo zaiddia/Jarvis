@@ -340,6 +340,9 @@ def handle_voice(text, raw=None, started=None):
     if via_followup and wake_rest is None and (len(J.normalize(final).split()) < 2 or not J._looks_like_command(final)):
         J.log_terminal("(no parece una orden para mí; si lo era, empieza con «Jarvis»)", "VOZ")
         return
+    final = J.turn_merge(final)                         # 12.1: la segunda parte de una frase que quedó colgando
+    if J.turn_hold(final):                             # 12.1: «haz un quiz de… eh…»: espera a que termines
+        return
     J.convo["chain"] = J.convo["chain"] + 1 if (via_followup and wake_rest is None) else 0
     J.convo["armed"] = True
     J.wake_until = 0.0

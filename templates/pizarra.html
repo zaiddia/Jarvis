@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pizarra · Jarvis</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='vendor/katex/katex.min.css', v=asset_v) }}">
+<style>
+  :root { --a: #2ee6ff; --a2: #ffb547; --ok: #3dff9a; --bad: #ff6b6b; --bg: #03060c; --card: #071320; --line: #1d3344; --text: #e6f6ff; --muted: #7d95ab; --board: #0e1116; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: system-ui, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 18px; color: var(--a); margin-right: 8px; white-space: nowrap; }
+  .tool { font-size: 15px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+  .tool:hover { border-color: var(--a); }
+  .tool.on { border-color: var(--a); background: #0b2433; }
+  .tool.main { background: var(--a); color: #03060c; font-weight: 700; border-color: var(--a); }
+  .sw { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+  .sw.on { border-color: #fff; box-shadow: 0 0 0 2px var(--a); }
+  .sep { width: 1px; height: 28px; background: var(--line); margin: 0 4px; }
+  #pg { color: var(--muted); font-size: 14px; min-width: 70px; text-align: center; }
+  #stage { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; }
+  #wrap { position: relative; background: var(--board); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; touch-action: none; }
+  #cv { display: block; width: 100%; height: 100%; cursor: crosshair; }
+  #items { position: absolute; inset: 0; pointer-events: none; }
+  .card { position: absolute; background: rgba(7, 19, 32, .92); border: 1px solid var(--a); border-radius: 12px; padding: 8px 12px; max-width: 38%; pointer-events: auto;
+          box-shadow: 0 6px 24px rgba(0,0,0,.4); animation: pop .35s ease-out; }
+  @keyframes pop { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+  .card .f { font-size: 26px; color: #ffdd55; }
+  .card .n { font-size: 15px; margin-top: 4px; }
+  .card .n.ok { color: var(--ok); } .card .n.bad { color: var(--bad); }
+  .card svg { display: block; margin-top: 6px; background: #050d17; border-radius: 8px; }
+  .card .x { position: absolute; top: 2px; right: 6px; color: var(--muted); cursor: pointer; font-size: 14px; }
+  #qr { position: absolute; right: 18px; bottom: 18px; background: #fff; border-radius: 14px; padding: 10px; text-align: center; color: #03060c; display: none; max-width: 240px; }
+  #qr img { width: 200px; height: 200px; display: block; }
+  #qr p { font-size: 13px; margin-top: 6px; word-break: break-all; }
+  #msg { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: var(--card); border: 1px solid var(--a2); color: var(--a2); padding: 8px 14px;
+         border-radius: 10px; font-size: 15px; display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>✏️ Pizarra</h1>
+  {% for k, c in colors.items() %}<span class="sw{% if loop.first %} on{% endif %}" data-c="{{ c }}" title="{{ k }}" style="background: {{ c }}"></span>{% endfor %}
+  <span class="sep"></span>
+  <button class="tool" data-w="3">Fino</button><button class="tool on" data-w="5">Medio</button><button class="tool" data-w="9">Grueso</button>
+  <button class="tool" id="eraser" title="Toca un trazo para borrarlo">🧽 Borrador</button>
+  <span class="sep"></span>
+  <button class="tool main" id="rec" title="Pasa lo último que escribiste a fórmula, verifica la cuenta y grafica">✨ Reconocer</button>
+  <button class="tool" data-a="undo" title="Ctrl+Z">↶ Deshacer</button>
+  <button class="tool" data-a="clear">🗑 Limpiar</button>
+  <span class="sep"></span>
+  <button class="tool" data-a="anterior">◀</button><span id="pg">1 / 1</span><button class="tool" data-a="siguiente">▶</button>
+  <button class="tool" data-a="nueva">＋ Página</button>
+  <span class="sep"></span>
+  <button class="tool" id="qrver" title="Los estudiantes la ven en su celular">📱 QR estudiantes</button>
+  <button class="tool" id="qrpen" title="Tu celular como lápiz (no lo proyectes)">🖊 Celular lápiz</button>
+  <button class="tool" data-a="pdf">💾 PDF</button>
+</header>
+<div id="stage"><div id="wrap"><canvas id="cv"></canvas><div id="items"></div>
+  <div id="qr"><img id="qrimg" alt="QR"><p id="qrurl"></p></div><div id="msg"></div></div></div>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='vendor/katex/katex.min.js', v=asset_v) }}"></script>
+<script>
+(() => {
+  "use strict";
+  const socket = io();
+  const cv = document.getElementById("cv"), wrap = document.getElementById("wrap"), stage = document.getElementById("stage");
+  const ctx = cv.getContext("2d"), itemsEl = document.getElementById("items");
+  let snap = { strokes: [], items: [], page: 0, pages: 1, ver: 0 };
+  let color = document.querySelector(".sw.on").dataset.c, width = 5, erasing = false, cur = null, seq = 0, buf = [], sending = false;
+  const me = Math.random().toString(36).slice(2, 7);
+
+  function fit() {
+    const W = stage.clientWidth - 20, H = stage.clientHeight - 20;
+    const w = Math.min(W, H * 16 / 9), h = w * 9 / 16;
+    wrap.style.width = w + "px"; wrap.style.height = h + "px";
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    draw();
+  }
+  function px(p) { return [p[0] * cv.width, p[1] * cv.height]; }
+  function strokePath(s) {
+    const pts = s.p; if (!pts.length) return;
+    const k = cv.width / 1280;
+    ctx.strokeStyle = s.c; ctx.fillStyle = s.c; ctx.lineWidth = s.w * k; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    if (pts.length === 1) { const [x, y] = px(pts[0]); ctx.beginPath(); ctx.arc(x, y, s.w * k / 2, 0, 7); ctx.fill(); return; }
+    ctx.beginPath(); let [x0, y0] = px(pts[0]); ctx.moveTo(x0, y0);
+    for (let i = 1; i < pts.length - 1; i++) { const [x1, y1] = px(pts[i]), [x2, y2] = px(pts[i + 1]); ctx.quadraticCurveTo(x1, y1, (x1 + x2) / 2, (y1 + y2) / 2); }
+    const [xl, yl] = px(pts[pts.length - 1]); ctx.lineTo(xl, yl); ctx.stroke();
+  }
+  function draw() {
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    for (const s of snap.strokes) strokePath(s);
+    if (cur) strokePath(cur);
+  }
+  function esc(t) { return String(t || "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+  function graphSvg(pts) {
+    const good = pts.filter((p) => p[1] !== null); if (!good.length) return "";
+    let lo = Math.min(0, ...good.map((p) => p[1])), hi = Math.max(0, ...good.map((p) => p[1]));
+    lo = Math.max(lo, -40); hi = Math.min(hi, 40); if (hi - lo < 1) hi += 1;
+    const a = pts[0][0], b = pts[pts.length - 1][0], W = 280, H = 170;
+    const X = (v) => (v - a) / (b - a) * W, Y = (v) => H - (v - lo) / (hi - lo) * H;
+    let d = "", pen = false;
+    for (const p of pts) { if (p[1] === null || p[1] < lo || p[1] > hi) { pen = false; continue; } d += (pen ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1); pen = true; }
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><line x1="0" x2="${W}" y1="${Y(0)}" y2="${Y(0)}" stroke="#7d95ab"/>` +
+      (a <= 0 && b >= 0 ? `<line y1="0" y2="${H}" x1="${X(0)}" x2="${X(0)}" stroke="#7d95ab"/>` : "") +
+      `<path d="${d}" fill="none" stroke="#ffdd55" stroke-width="2.5"/></svg>`;
+  }
+  function renderItems() {
+    itemsEl.innerHTML = "";
+    for (const it of snap.items) {
+      const c = document.createElement("div");
+      c.className = "card"; c.style.left = (it.x * 100) + "%"; c.style.top = (it.y * 100) + "%";
+      const f = document.createElement("div"); f.className = "f";
+      if (it.latex && window.katex) { try { katex.render(it.latex, f, { throwOnError: false, displayMode: false }); } catch (e) { f.textContent = it.plano; } }
+      else f.textContent = it.plano || it.texto || "";
+      c.appendChild(f);
+      if (it.nota) { const n = document.createElement("div"); n.className = "n " + (it.ok === true ? "ok" : it.ok === false ? "bad" : ""); n.textContent = (it.ok === true ? "✔ " : it.ok === false ? "✘ " : "") + it.nota; c.appendChild(n); }
+      if (it.graph) c.insertAdjacentHTML("beforeend", graphSvg(it.graph));
+      const x = document.createElement("span"); x.className = "x"; x.textContent = "✕"; x.title = "Quitar";
+      x.onclick = () => socket.emit("board_action", { a: "erase", id: it.id });
+      c.appendChild(x);
+      itemsEl.appendChild(c);
+    }
+  }
+  function apply(s) {
+    snap = s; document.getElementById("pg").textContent = `${s.page + 1} / ${s.pages}`;
+    draw(); renderItems();
+  }
+  function msg(t, ms) { const m = document.getElementById("msg"); m.textContent = t; m.style.display = "block"; clearTimeout(msg.t); msg.t = setTimeout(() => (m.style.display = "none"), ms || 3500); }
+
+  function pos(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; }
+  const queue = [];                                              // trozos de trazo por enviar, en orden
+  function flush() {
+    if (cur && buf.length) queue.push({ id: cur.id, c: cur.c, w: cur.w, p: buf.splice(0), from: me });
+    if (sending || !queue.length) return;
+    sending = true;
+    socket.emit("board_points", queue.shift(), () => { sending = false; flush(); });
+  }
+  function hit(p) {
+    const r = 0.012;
+    for (let i = snap.strokes.length - 1; i >= 0; i--) for (const q of snap.strokes[i].p) if (Math.abs(q[0] - p[0]) < r && Math.abs(q[1] - p[1]) < r * 16 / 9) return snap.strokes[i].id;
+    return null;
+  }
+  cv.addEventListener("pointerdown", (e) => {
+    cv.setPointerCapture(e.pointerId);
+    const p = pos(e);
+    if (erasing) { const id = hit(p); if (id) socket.emit("board_action", { a: "erase", id }); return; }
+    cur = { id: `${me}-${++seq}`, c: color, w: width, p: [p] }; buf = [p]; draw();
+  });
+  cv.addEventListener("pointermove", (e) => {
+    if (erasing && e.buttons) { const id = hit(pos(e)); if (id) socket.emit("board_action", { a: "erase", id }); return; }
+    if (!cur) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of evs) { const p = pos(ev); cur.p.push(p); buf.push(p); }
+    draw(); if (buf.length > 6) flush();
+  });
+  const end = () => { if (!cur) return; flush(); if (!snap.strokes.some((x) => x.id === cur.id)) snap.strokes.push(cur); cur = null; draw(); };
+  cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+
+  socket.on("board", apply);
+  socket.on("board_pts", (d) => {
+    if (d.from === me) return;                                   // lo mío ya está dibujado
+    let s = snap.strokes.find((x) => x.id === d.id);
+    if (!s) { s = { id: d.id, c: d.c, w: d.w, p: [], n: d.n }; snap.strokes.push(s); }
+    s.p.push(...d.p); draw();
+  });
+  socket.on("board_qr", (d) => {
+    const q = document.getElementById("qr"); document.getElementById("qrimg").src = d.qr;
+    document.getElementById("qrurl").textContent = (d.q === "lapiz" ? "🖊 Tu lápiz: " : "📱 Pizarra en vivo: ") + d.url;
+    q.style.display = "block"; q.onclick = () => (q.style.display = "none");
+  });
+  socket.on("connect", () => socket.emit("board_get", {}, apply));
+
+  document.querySelectorAll(".sw").forEach((b) => b.onclick = () => { document.querySelectorAll(".sw").forEach((x) => x.classList.remove("on")); b.classList.add("on"); color = b.dataset.c; erasing = false; document.getElementById("eraser").classList.remove("on"); });
+  document.querySelectorAll("[data-w]").forEach((b) => b.onclick = () => { document.querySelectorAll("[data-w]").forEach((x) => x.classList.remove("on")); b.classList.add("on"); width = +b.dataset.w; });
+  document.getElementById("eraser").onclick = (e) => { erasing = !erasing; e.currentTarget.classList.toggle("on", erasing); };
+  document.querySelectorAll("[data-a]").forEach((b) => b.onclick = () => socket.emit("board_action", { a: b.dataset.a }, (r) => {
+    if (r && r.path) msg("Guardada en PDF: " + r.name, 5000);
+  }));
+  document.getElementById("rec").onclick = () => { msg("✨ Leyendo lo que escribiste…", 6000); socket.emit("board_action", { a: "reconocer" }, (r) => { if (r && r.error) msg(r.error, 6000); }); };
+  document.getElementById("qrver").onclick = () => socket.emit("board_action", { a: "proyectar_qr", q: "ver" });
+  document.getElementById("qrpen").onclick = () => socket.emit("board_action", { a: "proyectar_qr", q: "lapiz" });
+  document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); socket.emit("board_action", { a: "undo" }); } });
+  window.addEventListener("resize", fit); fit();
+})();
+</script>
+</body>
+</html>

@@ -231,6 +231,8 @@ def _voice_cache_key(backend, item, text, rate, volume, pitch):
         who = item.get("voice") or J.settings["tts_voice"]
     elif backend == "piper":
         who = J.find_piper_voice() or "piper"
+    elif backend == "kokoro":
+        who = "kokoro|" + J.settings.get("kokoro_voice", "dora")
     else:
         g = item.get("gemini") or {}
         who = f"{J.settings['gemini_tts_voice']}|{J.settings['gemini_tts_style']}|{json.dumps(g, sort_keys=True)}"
@@ -294,9 +296,10 @@ def _synthesize(item):
     volume = J.settings["tts_volume"] if item["volume"] is None else int(item["volume"])
     pitch = J.settings["tts_pitch"] if item["pitch"] is None else int(item["pitch"])
     first = item.get("backend") or J.settings["tts_backend"]
-    order = {"gemini": ["gemini", "edge", "piper"], "edge": ["edge", "piper"], "piper": ["piper", "edge"]}.get(first, ["edge", "piper"])
+    order = {"gemini": ["gemini", "edge", "piper"], "edge": ["edge", "piper"], "piper": ["piper", "edge"],
+             "kokoro": ["kokoro", "piper", "edge"]}.get(first, ["edge", "piper"])
     if J.is_offline():
-        order = ["piper", "edge"]                          # sin internet: directo a la voz del equipo
+        order = ["kokoro", "piper", "edge"] if J.kokoro_ready() else ["piper", "edge"]   # sin internet: la voz del equipo
     last_err = None
     for b in order:
         cached = J._voice_cache_get(b, item, text, rate, volume, pitch)
@@ -309,6 +312,13 @@ def _synthesize(item):
                 if out == path:
                     J._voice_cache_put(b, item, text, rate, volume, pitch, path)
                 return out, out == path
+            if b == "kokoro":                               # 12.1: voz local Kokoro (opcional)
+                if not J.kokoro_ready():
+                    continue
+                path = os.path.join(tempfile.gettempdir(), f"jarvis_{uuid.uuid4().hex}.wav")
+                J.kokoro_synth(text, path, rate)
+                J._voice_cache_put(b, item, text, rate, volume, pitch, path)
+                return path, True
             if b == "piper":
                 if not J._ensure_piper():
                     continue

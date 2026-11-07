@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ titulo }}</title>
+<style>
+  :root { --a: #2ee6ff; --a2: #ffb547; --ok: #3dff9a; --bad: #ff6b6b; --bg: #03060c; --card: #071320; --line: #2a4458; --text: #e6f6ff; --muted: #7d95ab; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 16px; min-height: 100vh; line-height: 1.4; }
+  h1 { font-size: 20px; color: var(--a); margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+  input { width: 100%; padding: 13px; font-size: 17px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); margin-bottom: 14px; }
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .team { padding: 14px 10px; border-radius: 14px; border: 2px solid var(--line); background: var(--card); text-align: center; font-size: 17px; }
+  .team span { display: block; font-size: 32px; }
+  .team.sel { border-color: var(--a); background: #0b2433; }
+  button.go { width: 100%; padding: 15px; font-size: 18px; font-weight: 700; border: none; border-radius: 14px; background: var(--a); color: #03060c; }
+  .opts { display: grid; gap: 12px; margin-top: 12px; }
+  .opt { padding: 18px 14px; border-radius: 16px; border: 2px solid var(--line); background: var(--card); font-size: 18px; text-align: left; color: var(--text); display: flex; gap: 12px; }
+  .opt b { color: var(--a); }
+  .opt:active { transform: scale(.98); }
+  .opt.ok { border-color: var(--ok); } .opt.mine { border-color: var(--a2); }
+  .big { font-size: 22px; text-align: center; margin: 30px 0 10px; }
+  .story { font-size: 16px; color: #cfe6f5; margin: 10px 0; }
+  .me { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px; background: #071320ee; border-top: 1px solid var(--line); font-size: 15px; display: flex; justify-content: space-between; }
+  .me b { color: var(--a2); }
+  .msg { text-align: center; margin-top: 10px; color: var(--a2); }
+  .time { color: var(--a2); font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="app"><h1>{{ titulo }}</h1><p class="sub">Aventura matemática por equipos</p>
+  <label class="sub" for="nm">Tu nombre</label><input id="nm" maxlength="30" autocomplete="off">
+  <p class="sub">Escoge tu equipo</p>
+  <div class="teams">{% for e in equipos %}<div class="team" data-i="{{ loop.index0 }}"><span>{{ e.emoji }}</span>{{ e.nombre }}</div>{% endfor %}</div>
+  <button class="go" id="join">¡Unirme! ▶</button><p class="msg" id="msg"></p></div>
+<div class="me" id="me" hidden></div>
+<script>
+(() => {
+  "use strict";
+  const CODE = "{{ code }}", L = "ABCDEF", app = document.getElementById("app");
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let pid = "", team = null, ver = -1, st = null, sent = -1;
+  try { pid = localStorage.getItem("adv-" + CODE) || ""; } catch (e) {}
+  document.querySelectorAll(".team").forEach((t) => t.onclick = () => { document.querySelectorAll(".team").forEach((x) => x.classList.remove("sel")); t.classList.add("sel"); team = +t.dataset.i; });
+  const post = (u, b) => fetch(`/x/${CODE}/${u}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }).then((r) => r.json());
+  document.getElementById("join").onclick = async () => {
+    const r = await post("unirme", { nombre: document.getElementById("nm").value, equipo: team, p: pid }).catch(() => ({ msg: "Sin conexión con el salón." }));
+    if (!r.ok) { document.getElementById("msg").textContent = r.msg; return; }
+    pid = r.p; try { localStorage.setItem("adv-" + CODE, pid); } catch (e) {}
+    ver = -1; poll();
+  };
+  function view() {
+    const me = document.getElementById("me");
+    if (st.yo) { me.hidden = false; const e = st.equipos[st.yo.equipo]; me.innerHTML = `<span>${e.emoji} ${esc(e.nombre)} · ${esc(st.yo.nombre)}</span><b>${e.puntos} pts</b>`; }
+    if (!st.yo) return;
+    const f = st.fase;
+    if (f === "sala") app.innerHTML = `<p class="big">✅ ¡Estás dentro!</p><p class="story">${esc(st.intro)}</p><p class="sub" style="text-align:center">Mira el proyector: la aventura empieza pronto.</p>`;
+    else if (f === "historia") app.innerHTML = `<p class="sub">Capítulo ${st.cap + 1} de ${st.n_caps}</p><h1>${esc(st.cap_titulo)}</h1><p class="story">${esc(st.historia)}</p><p class="sub">Prepárate: viene la puerta…</p>`;
+    else if (f === "pregunta") {
+      if (st.ya || sent === st.cap) { app.innerHTML = `<p class="big">📨 Respuesta enviada</p><p class="sub" style="text-align:center">Espera a que se abra la puerta…</p>`; return; }
+      app.innerHTML = `<p class="sub">Capítulo ${st.cap + 1} · <span class="time" id="tm">${st.restante ?? ""} s</span></p><h1>${esc(st.problema)}</h1><div class="opts">${st.opciones.map((o, i) => `<button class="opt" data-i="${i}"><b>${L[i]}</b>${esc(o)}</button>`).join("")}</div><p class="msg" id="msg"></p>`;
+      app.querySelectorAll(".opt").forEach((b) => b.onclick = async () => {
+        const r = await post("responder", { p: pid, op: +b.dataset.i }).catch(() => ({ msg: "Sin conexión." }));
+        if (r.ok) { sent = st.cap; app.innerHTML = `<p class="big">📨 ${esc(r.msg)}</p>`; } else document.getElementById("msg").textContent = r.msg;
+      });
+    } else if (f === "revelar") app.innerHTML = `<p class="big">${st.acerte === true ? "🎉 ¡Acertaste!" : st.acerte === false ? "😅 Esta vez no" : "⏰ Se acabó el tiempo"}</p><p class="story">La correcta: <b>${L[st.correcta]}. ${esc(st.opciones[st.correcta])}</b></p><p class="story">${esc(st.explicacion)}</p>`;
+    else if (f === "final") { const p = st.podio.indexOf(st.yo.equipo); app.innerHTML = `<p class="big">${p === 0 ? "🏆 ¡Tu equipo ganó!" : `Tu equipo quedó de ${p + 1}.º`}</p><p class="story">${esc(st.final)}</p>`; }
+  }
+  async function poll() {
+    if (!pid) return;
+    try {
+      const r = await fetch(`/x/${CODE}/estado?p=${pid}`, { cache: "no-store" });
+      if (r.status === 404) { app.innerHTML = `<p class="big">La aventura terminó.</p>`; return; }
+      const d = await r.json();
+      if (d.ver !== ver) { ver = d.ver; st = d; if (!st.yo && pid) { pid = ""; return; } view(); }
+      else if (d.restante != null) { const t = document.getElementById("tm"); if (t) t.textContent = d.restante + " s"; }
+    } catch (e) {}
+    setTimeout(poll, 1000);
+  }
+  if (pid) poll();
+})();
+</script>
+</body>
+</html>

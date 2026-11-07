@@ -200,6 +200,12 @@ def smart_greeting():
     now = datetime.datetime.now()
     name = J.settings["address_name"].strip()
     parts = [f"Buenos días{', ' + name if name else ''}. Son las {now:%H:%M}."]
+    try:
+        night = J.night_morning_line()                 # 12.0: lo que dejó listo el turno de noche
+    except Exception:
+        night = ""
+    if night:
+        parts.append(night)
     if J.settings["weather_city"].strip() and not J.is_offline():
         w = J.weather_text()
         if w and not w.startswith(("No ", "Para ", "Ahora")):
