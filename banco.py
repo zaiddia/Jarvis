@@ -104,3 +104,77 @@ def build_quiz(tema, n=10, grado=""):
 
 def count(tema=""):
     return len(search(tema)) if tema else len(items)
+
+
+# ============================================================================ 12.12: DIFICULTAD MEDIDA CON TUS ESTUDIANTES
+MIN_N = 5                                                # con menos respuestas no se juzga la dificultad
+LEVELS = ("fácil", "media", "difícil")
+
+
+def level(q):
+    """fácil (la acierta ≥ 75 %), media, difícil (< 40 %), o "" si aún no hay suficientes respuestas."""
+    n, ok = int(q.get("n") or 0), int(q.get("ok") or 0)
+    if n < MIN_N:
+        return ""
+    p = ok / n
+    return "fácil" if p >= 0.75 else "difícil" if p < 0.40 else "media"
+
+
+def refresh_stats(exams):
+    """Recalcula aciertos por pregunta con TODAS las evaluaciones corregidas (sin contar dos veces). → preguntas con datos."""
+    acc = {}
+    for ex in exams:
+        pregs = ex.get("preguntas") or []
+        for r in (ex.get("resultados") or {}).values():
+            for i, ok in enumerate(r.get("detalle") or []):
+                if ok is None or i >= len(pregs):
+                    continue
+                k = norm((pregs[i] or {}).get("enunciado", "") if isinstance(pregs[i], dict) else pregs[i])
+                if k:
+                    a = acc.setdefault(k, [0, 0])
+                    a[0] += 1
+                    a[1] += 1 if ok else 0
+    n = 0
+    with _lock:
+        for q in items:
+            a = acc.get(norm(q["enunciado"]))
+            if a:
+                q["n"], q["ok"] = a
+                n += 1
+        save()
+    return n
+
+
+def difficulty_counts(tema=""):
+    qs = search(tema) if tema else items
+    c = {lv: 0 for lv in LEVELS}
+    c["sin datos"] = 0
+    for q in qs:
+        c[level(q) or "sin datos"] += 1
+    return c
+
+
+def build_balanced(tema, n=10, grado="", mix=(0.3, 0.5, 0.2)):
+    """Un examen con 30 % fáciles, 50 % medias y 20 % difíciles (completa con preguntas sin datos). → quiz o None."""
+    qs = search(tema, grado)
+    if len(qs) < n:
+        return None
+    by = {lv: [q for q in qs if level(q) == lv] for lv in LEVELS}
+    want = [round(n * m) for m in mix]
+    want[1] = n - want[0] - want[2]
+    pick = []
+    for lv, k in zip(LEVELS, want):
+        pick += by[lv][:k]
+    rest = [q for q in qs if q not in pick]
+    rest.sort(key=lambda q: (level(q) == "", q.get("usos", 0)))
+    pick += rest[:n - len(pick)]
+    with _lock:
+        for q in pick:
+            q["usos"] = q.get("usos", 0) + 1
+        save()
+    out = [dict(enunciado=q["enunciado"], opciones=q["opciones"], respuesta=q["respuesta"], explicacion=q.get("explicacion", "")) for q in pick]
+    order = {"fácil": 0, "media": 1, "difícil": 2, "": 1}
+    out.sort(key=lambda d: order[level(next(q for q in pick if q["enunciado"] == d["enunciado"]))])     # de la más fácil a la más difícil
+    counts = {lv: sum(1 for q in pick if level(q) == lv) for lv in LEVELS}
+    return {"titulo": f"Evaluación: {tema}", "grado": grado or (pick[0].get("grado") or ""), "tema": tema,
+            "instrucciones": "Lee cada pregunta y marca con una X la única respuesta correcta.", "preguntas": out, "niveles": counts}

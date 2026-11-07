@@ -80,6 +80,7 @@ def aula_pick():
 
 def aula_groups(size=None, count=None):
     cur, groups = aula.make_groups(size=size, count=count)
+    J.last_groups.update(curso=cur, groups=[list(g) for g in groups], t=time.time())     # 12.12: para la coevaluación
     J.aula_emit({"type": "groups", "groups": groups, "curso": cur, "view": "grupos"})
     J._maybe_open_board("grupos")
     tam = sorted({len(g) for g in groups})

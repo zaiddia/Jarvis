@@ -157,6 +157,18 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Recuperaciones, calendario escolar, QR que cambia, modo examen, coevaluación, copia, juegos y laboratorio de Python (v12.12)
+
+- **Recuperaciones con seguimiento**: «¿quiénes deben recuperar?» (por debajo de 3,0 en el periodo). Al hacer los planes («haz los planes de recuperación de 7A»), cada estudiante queda en seguimiento con su fecha límite: «Ana Gómez entregó la recuperación», «Ana Gómez sacó 3,5 en la recuperación» (queda en sus notas), «¿cómo van las recuperaciones?». Jarvis avisa dos días antes, el día y si se venció.
+- **Calendario escolar**: los festivos de Colombia calculados según la ley (no necesita internet). «¿Cuándo es el próximo festivo?», «¿mañana hay clase?», «semana de receso del 6 al 10 de octubre», «entrega de notas a coordinación el 20 de noviembre», «¿qué hay en el calendario escolar?». Avisa con tiempo, sale en el resumen de la mañana y, al agendar algo en un festivo o receso, te lo advierte.
+- **Asistencia con QR que cambia cada 30 segundos**: «toma asistencia con QR». Cada estudiante marca desde su celular con su nombre y su PIN; el código que se manda por chat ya no sirve, y un celular marca a un solo estudiante. Los que llegan después de 15 minutos quedan como «tarde». «Cierra la asistencia» la guarda en el Aula.
+- **Modo examen**: «modo examen 45 minutos». La práctica, los retos, las guías y los juegos se bloquean en los celulares y el proyector muestra solo el reloj. «Termina el examen».
+- **Coevaluación por QR**: «abre la coevaluación de 9A». Cada estudiante valora a los de su grupo (los últimos grupos que armaste) con 4 criterios de 1 a 5; al cerrarla, el promedio queda como nota de «Ser» (con al menos 2 evaluaciones).
+- **Detector de copia**: «¿hay copia en las entregas de 8A?», o sube varios trabajos con el clip y pulsa «Detectar copia». Compara fragmentos de texto o la estructura del código (cambiar el nombre de las variables no esconde la copia) e informa en Word cuánto se parecen y qué partes son iguales.
+- **Juegos de matemáticas para imprimir**: «haz un bingo de fracciones para 7A» (un cartón por estudiante y la hoja del profe), «dominó de enteros», «parejas de potencias». Los ejercicios de aritmética se generan sin IA y siempre con respuestas correctas y distintas; para otros temas, la IA propone las parejas.
+- **Laboratorio de Python en el celular**: «abre el laboratorio de Python para 8A, el reto es: …, la salida debe ser: …». Los estudiantes escriben y ejecutan su código en el celular (corre en su navegador, no en tu equipo; un ciclo infinito se corta solo) y ven si su salida es la del reto. «¿Cómo va el laboratorio?». Con tu «sí», Jarvis guarda Python en tu equipo (6 MB, verificado) para que funcione con el Wi-Fi del colegio aunque no tenga internet.
+- **Dificultad medida**: «¿qué tan difíciles son mis preguntas de fracciones?» (fácil, media o difícil según lo que respondieron tus estudiantes en las evaluaciones con hoja), «haz un examen equilibrado de fracciones de 10 preguntas».
+
 ## Modo Código, dólar en vivo, IA local verificada y Jarvis sigue el contexto (v12.11)
 
 - **Sigue el contexto del navegador**: «abre YouTube en Brave» lo abre en Brave (antes buscaba un programa llamado «youtube en el navegador brave»). Jarvis recuerda el navegador que abriste o usaste: después de «abre Brave», «abre Gmail», «busca recetas» o «pon música de… en YouTube» van a Brave. También «busca noticias en Chrome», «abre la página del colegio en Edge».

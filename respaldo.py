@@ -50,6 +50,8 @@ FILES = {
     "formularios.json": ("formularios", "Formularios de Google Forms"),
     "banco_preguntas.json": ("banco", "Banco de preguntas"),
     "vida_diaria.json": ("vidadiaria", "Gastos, pagos, listas y disparadores"),
+    "salon.json": ("salon", "Recuperaciones, asistencia por QR, coevaluación y laboratorio"),
+    "calendario_escolar.json": ("calescolar", "Calendario escolar"),
 }
 # carpeta -> (parte, descripción, extensión): cada archivo de la carpeta va en la copia
 FOLDERS = {

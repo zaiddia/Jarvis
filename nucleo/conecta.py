@@ -7,6 +7,7 @@
 Los nombres globales de Jarvis se usan como J.<nombre>.
 """
 import json
+import datetime
 import os
 import re
 import time
@@ -202,8 +203,16 @@ def event_voice(text, t):
         return True
     J.request_approval("evento", f"Agendar {eventos.spoken(ev)}", eventos.dumps(ev), on_ok=lambda: J.event_create(ev),
                        on_no=lambda: J.reply("Vale, no lo agendo.", "CALENDARIO"),
-                       say=f"Agendo {eventos.spoken(ev)}. ¿Está bien? Di «sí» o «no».")
+                       say=f"Agendo {eventos.spoken(ev)}.{J.date_warning(_ev_date(ev))} ¿Está bien? Di «sí» o «no».")
     return True
+
+
+def _ev_date(ev):
+    """12.12: la fecha del evento (para avisar si es festivo o receso)."""
+    try:
+        return datetime.date.fromisoformat(str(ev.get("fecha", ""))[:10])
+    except ValueError:
+        return datetime.date.today()
 
 
 def event_create(ev):
@@ -237,7 +246,7 @@ def handle_mail_test(data=None):
     return {"ok": True, "n": len(msgs), "importantes": sum(1 for m in msgs if not m["masivo"])}
 
 
-__all__ = [
+__all__ = ['_ev_date', 
     '_MAIL_LIST', '_MAIL_READ', '_MAIL_REPLY', '_mail_fetch', '_mail_ready', 'event_create', 'event_voice',
     'handle_gallery_add', 'handle_gallery_list', 'handle_gallery_remove', 'handle_mail_test', 'mail_cache', 'mail_read',
     'mail_reply', 'mail_voice', 'mcp_approval',

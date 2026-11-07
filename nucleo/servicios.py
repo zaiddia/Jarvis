@@ -369,6 +369,10 @@ def restore_backup(name, parts):
         J.compromisos.load()
     if "vidadiaria" in done:                           # 12.9: gastos, pagos, listas y disparadores
         J.vidadiaria.load()
+    if "salon" in done:                                # 12.12
+        J.salon.load()
+    if "calescolar" in done:
+        J.festivos.load()
     if "lecciones" in done:                            # 9.4
         J.lecciones.load()
     if "paginas" in done:

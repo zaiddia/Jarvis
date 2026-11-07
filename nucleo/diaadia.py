@@ -249,6 +249,10 @@ def brief_extras(now=None):
     """Lo del asistente general para el resumen de la mañana."""
     now = now or datetime.datetime.now()
     out = []
+    try:
+        out += J.brief_school(now.date())             # 12.12: festivos, recesos y fechas del colegio
+    except Exception:
+        pass
     soon = [(p, left) for p, _d, left in vd.upcoming(now.date(), 3)]
     if soon:
         out.append("Pagos: " + "; ".join(f"{p['nombre']} {vd.when_text(left)}" for p, left in soon) + ".")

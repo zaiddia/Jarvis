@@ -53,6 +53,10 @@
   .tk img { width: min(42vh, 40vw); height: min(42vh, 40vw); background: #fff; padding: 12px; border-radius: 14px; image-rendering: pixelated; }
   .tk-info { text-align: left; max-width: 46vw; }
   .tk-n { font-family: var(--hud); font-weight: 700; font-size: clamp(50px, 8vw, 140px); color: var(--a); }
+  .exam { text-align: center; }
+  .exam .ex-t { font-family: var(--hud); font-weight: 700; font-size: clamp(90px, 22vw, 340px); color: var(--a); line-height: 1; }
+  .exam .ex-t.urgent { color: var(--a2); }
+  .exam .ex-k { font-size: clamp(18px, 2.6vw, 40px); color: var(--muted); letter-spacing: .2em; text-transform: uppercase; margin-bottom: 2vh; }
   .tk-url { font-size: clamp(14px, 1.6vw, 26px); color: var(--muted); word-break: break-all; margin-top: 2vh; }
   .res { width: 100%; max-width: 1300px; display: flex; flex-direction: column; gap: 2.6vh; text-align: left; }
   .res-row { display: grid; grid-template-columns: minmax(0, 1fr) 8ch; gap: 1.6vw; align-items: center; font-size: clamp(16px, 2vw, 32px); }
@@ -118,6 +122,7 @@
   let tutor = { on: false, materia: "", msgs: [] };
   let lclass = { on: false }, lclassEnd = 0, tk = { open: false }, tkRes = null, tkResAt = 0;
   let show = "idle", shownAt = 0, lastTick = Date.now();
+  let ex = { on: false }, exEnd = 0;                                            // 12.12: modo examen
   let pv = null, explicit = false;                                               // 11.8: lo que se manda desde el HUD
   const p2 = (n) => String(n).padStart(2, "0");
   const hhmm = () => { const d = new Date(); return `${p2(d.getHours())}:${p2(d.getMinutes())}`; };
@@ -137,6 +142,12 @@
   function render() {
     stage.innerHTML = "";
     const box = node("div", "stage-in");
+    if (ex.on) {                                                                   // 12.12: en examen, solo el reloj
+      const w = node("div", "exam");
+      w.append(node("div", "ex-k", (ex.titulo || "Examen") + (ex.curso ? " · " + ex.curso : "")), node("div", "ex-t", fmt((exEnd - Date.now()) / 1000)));
+      w.lastChild.id = "exclock";
+      box.append(w); stage.append(box); header(); return;
+    }
     const t = st.timers[0];
     if (explicit && Date.now() - shownAt < 600000 && !live.on && (show === "content" || show === "image")) {   // 11.8: lo que mandaste manda
       if (show === "content" && pv) drawContent(box);
@@ -147,8 +158,8 @@
       const w = node("div", "tk");
       const im = node("img"); im.src = `${tk.qr || "/ticket-qr.png"}?t=${Math.floor(Date.now() / 4096)}`; im.alt = "Código QR";
       const info = node("div", "tk-info");
-      info.append(node("div", "kicker", tk.tipo === "semaforo" ? "¿Cómo te fue? Escanea y responde" : tk.tipo === "practica" ? "Práctica personal · escanea y entra con tu nombre" : tk.tipo === "entregas" ? "Entrega tu programa · escanea y entra con tu nombre" : tk.tipo === "reto" ? "🏆 Reto de la semana · escanea y participa" : tk.tipo === "guia" ? "📖 Guía viva · escanea y estudia" : tk.tipo === "podcast" ? "🎧 Podcast de repaso · escanea y escucha" : tk.tipo === "saber" ? "Mini simulacro Saber · escanea y responde" : "Ticket de salida · escanea y responde"),
-                  node("div", "tk-n", String(tk.n || 0)), node("div", "label", "respuestas"), node("div", "tk-url", tk.url || ""));
+      info.append(node("div", "kicker", tk.tipo === "semaforo" ? "¿Cómo te fue? Escanea y responde" : tk.tipo === "practica" ? "Práctica personal · escanea y entra con tu nombre" : tk.tipo === "entregas" ? "Entrega tu programa · escanea y entra con tu nombre" : tk.tipo === "reto" ? "🏆 Reto de la semana · escanea y participa" : tk.tipo === "guia" ? "📖 Guía viva · escanea y estudia" : tk.tipo === "podcast" ? "🎧 Podcast de repaso · escanea y escucha" : tk.tipo === "saber" ? "Mini simulacro Saber · escanea y responde" : tk.tipo === "asistencia" ? "Marca tu llegada · el código cambia cada 30 s" : tk.tipo === "coev" ? "Coevaluación · escanea y valora a tu grupo" : tk.tipo === "lab" ? "🐍 Laboratorio de Python · escanea y programa" : "Ticket de salida · escanea y responde"),
+                  node("div", "tk-n", String(tk.n || 0)), node("div", "label", tk.tipo === "asistencia" ? "llegaron" : tk.tipo === "lab" ? "lo resolvieron" : "respuestas"), node("div", "tk-url", tk.url || ""));
       w.append(im, info); box.append(w); stage.append(box); header(); return;
     }
     if (!live.on && tkRes && Date.now() - tkResAt < 60000) {
@@ -250,6 +261,13 @@
     el.classList.toggle("over", s < 0);
   }
   setInterval(tickClass, 500);
+  setInterval(() => {                                                              // 12.12: reloj del examen
+    const c = document.getElementById("exclock");
+    if (c && ex.on) { const left = (exEnd - Date.now()) / 1000; c.textContent = fmt(left); c.classList.toggle("urgent", left <= 300); }
+  }, 1000);
+  setInterval(() => {                                                              // 12.12: el QR de asistencia cambia solo
+    if (!ex.on && tk.open && tk.tipo === "asistencia") { const im = stage.querySelector(".tk img"); if (im) im.src = `${tk.qr}?t=${Date.now()}`; }
+  }, 4000);
   setInterval(tick, 500);
 
   const socket = io();
@@ -280,6 +298,8 @@
     render();
   });
   socket.on("connect", () => socket.emit("live_quiz_state", {}));
+  socket.on("exam", (d) => { ex = d || { on: false }; exEnd = Date.now() + (ex.left || 0) * 1000; render(); });
+  socket.on("connect", () => socket.emit("exam_state", {}, (d) => { ex = d || { on: false }; exEnd = Date.now() + (ex.left || 0) * 1000; render(); }));
 })();
 </script>
 </body>

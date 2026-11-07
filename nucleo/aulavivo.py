@@ -67,11 +67,16 @@ def recovery_voice(text, t):
             return
         path = recuperacion.build_docx(items, course, J.settings["output_dir"], J.Document, J.settings["aula_docente"],
                                        J.settings["aula_institucion"], J.settings["recovery_days"])
+        try:
+            J.register_plans(course, [f["estudiante"] for f, _p in items])     # 12.12: queda en seguimiento hasta que apruebe
+        except Exception as e:
+            J.log_terminal(f"Seguimiento de recuperaciones: {e}", "AVISO")
         J.generated_files.add(path)
         opened = J._open_doc(path)
         J.notify(f"Listo{'s' if len(items) > 1 else ''} {len(items)} plan{'es' if len(items) != 1 else ''} de recuperación de {course}, "
                  "cada uno con su carta para el acudiente" + (". Lo abrí para que lo revises." if opened else
-                                                              ". Están en Documentos, Jarvis, Planes de recuperación."), "RECUPERACIÓN")
+                                                              ". Están en Documentos, Jarvis, Planes de recuperación.")
+                 + " Les hago seguimiento hasta que aprueben: «¿cómo van las recuperaciones?».", "RECUPERACIÓN")
     if capture is not None:
         work()
     else:

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ titulo }}</title>
+<style>
+  :root { --a: #2ee6ff; --a2: #ffb547; --ok: #3dff9a; --bad: #ff6b6b; --bg: #03060c; --card: #071320; --line: #1d3344; --text: #e6f6ff; --muted: #7d95ab; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); padding: 18px 16px 48px; line-height: 1.45; }
+  h1 { font-size: 21px; color: var(--a); margin-bottom: 2px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+  select, input, textarea { width: 100%; padding: 12px; font-size: 16px; border-radius: 10px; border: 1px solid #2a4458; background: var(--card); color: var(--text); margin-bottom: 12px; }
+  textarea { min-height: 200px; font: 14px/1.4 ui-monospace, Consolas, monospace; background: #050d17; }
+  textarea.ins { min-height: 60px; }
+  button { width: 100%; padding: 14px; font-size: 17px; font-weight: 700; border: none; border-radius: 12px; background: var(--a); color: #03060c; margin-bottom: 10px; }
+  button.ghost { background: none; border: 1px solid #2a4458; color: var(--text); font-weight: 500; }
+  button:disabled { opacity: .5; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .tag { font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
+  .msg { color: var(--a2); font-size: 15px; min-height: 20px; margin: 4px 0 8px; }
+  .big { font-size: 22px; font-weight: 700; text-align: center; padding: 18px 0; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  .crit { margin: 10px 0 4px; font-size: 15px; }
+  .stars { display: flex; gap: 6px; } .stars button { margin: 0; padding: 10px 0; font-size: 16px; background: #0a1a29; color: var(--text); border: 1px solid #2a4458; }
+  .stars button.on { background: var(--a); color: #03060c; }
+  pre { white-space: pre-wrap; background: #050d17; border: 1px solid #2a4458; border-radius: 10px; padding: 12px; font: 14px/1.4 ui-monospace, Consolas, monospace; min-height: 48px; }
+  .done { opacity: .55; }
+  [hidden] { display: none !important; }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body class="page">
+<h1>{{ titulo }}</h1>
+<p class="sub">{{ curso }}</p>
+{% if modo == "lab" and reto %}<div class="card"><div class="tag">El reto</div><p>{{ reto }}</p></div>{% endif %}
+
+{% if vencido %}
+<div class="card"><p class="big bad">El código ya cambió</p><p>Vuelve a escanear el QR del tablero: cambia cada 30 segundos.</p></div>
+{% else %}
+<section id="login" class="card">
+  <select id="nombre"><option value="">Escoge tu nombre…</option>{% for n in nombres %}<option>{{ n }}</option>{% endfor %}</select>
+  <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="Tu PIN de 4 números (el mismo de la práctica)">
+  <button id="entrar">{{ "Marcar mi llegada" if modo == "asistencia" else "Entrar" }}</button>
+  <p class="msg" id="lmsg"></p>
+</section>
+<section id="hecho" class="card" hidden><p class="big ok" id="htxt"></p></section>
+
+<section id="coev" hidden>
+  <p class="msg" id="cinfo"></p>
+  <div id="peers"></div>
+</section>
+
+<section id="lab" hidden>
+  <div class="card">
+    <p id="hola" style="margin-bottom:8px"></p>
+    <textarea id="code" spellcheck="false" autocapitalize="off" placeholder="Escribe aquí tu programa en Python, por ejemplo:&#10;nombre = input()&#10;print('Hola', nombre)"></textarea>
+    <div class="tag">Entradas (si tu programa usa input(), una por línea)</div>
+    <textarea id="ins" class="ins" spellcheck="false"></textarea>
+    <button id="run">▶ Ejecutar</button>
+    <div class="tag">Salida</div>
+    <pre id="out"></pre>
+    <p class="msg" id="rmsg"></p>
+  </div>
+</section>
+{% endif %}
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const MODO = "{{ modo }}", CODE = "{{ code }}", K = "{{ k }}";
+  const BASE = { asistencia: "/as/", coev: "/co/", lab: "/py/" }[MODO] + CODE;
+  let token = "";
+  const post = (path, body) => fetch(BASE + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then((r) => r.json());
+  function dev() {
+    try { let d = localStorage.getItem("jarvis-dev"); if (!d) { d = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("jarvis-dev", d); } return d; }
+    catch (e) { return ""; }
+  }
+  const btn = $("#entrar");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const nombre = $("#nombre").value, pin = $("#pin").value.trim();
+    if (!nombre) { $("#lmsg").textContent = "Escoge tu nombre."; return; }
+    btn.disabled = true;
+    const path = MODO === "asistencia" ? "/marcar" : "/entrar";
+    post(path, { nombre, pin, k: K, dev: dev() }).then((r) => {
+      btn.disabled = false;
+      if (!r.ok) { $("#lmsg").textContent = r.msg || "No se pudo."; return; }
+      token = r.k || "";
+      $("#login").hidden = true;
+      if (MODO === "asistencia") { $("#hecho").hidden = false; $("#htxt").textContent = r.msg; return; }
+      if (MODO === "coev") return startCoev(r);
+      startLab(r);
+    }).catch(() => { btn.disabled = false; $("#lmsg").textContent = "Sin conexión con el computador del profe."; });
+  });
+
+  /* ---------- coevaluación ---------- */
+  function startCoev(r) {
+    $("#coev").hidden = false;
+    $("#cinfo").textContent = r.libre ? "Escoge hasta 3 compañeros con los que trabajaste y valóralos con sinceridad (1 = nada, 5 = siempre)."
+      : "Valora a cada compañero de tu grupo con sinceridad (1 = nada, 5 = siempre). Nadie verá lo que pusiste.";
+    const box = $("#peers");
+    const done = new Set(r.hechos || []);
+    const list = r.libre ? [] : r.companeros;
+    if (r.libre) {
+      const sel = document.createElement("select");
+      sel.innerHTML = '<option value="">Escoge un compañero…</option>' + r.companeros.map((n) => `<option>${n.replace(/</g, "&lt;")}</option>`).join("");
+      sel.addEventListener("change", () => { if (sel.value && !box.querySelector(`[data-p="${CSS.escape(sel.value)}"]`)) box.append(card(sel.value, r.criterios, done)); sel.value = ""; });
+      box.append(sel);
+    }
+    list.forEach((p) => box.append(card(p, r.criterios, done)));
+  }
+  function card(peer, crits, done) {
+    const c = document.createElement("div"); c.className = "card" + (done.has(peer) ? " done" : ""); c.dataset.p = peer;
+    const h = document.createElement("div"); h.className = "tag"; h.textContent = peer; c.append(h);
+    const vals = new Array(crits.length).fill(0);
+    crits.forEach((txt, i) => {
+      const p = document.createElement("p"); p.className = "crit"; p.textContent = txt; c.append(p);
+      const row = document.createElement("div"); row.className = "stars";
+      for (let v = 1; v <= 5; v++) {
+        const b = document.createElement("button"); b.type = "button"; b.textContent = v;
+        b.addEventListener("click", () => { vals[i] = v; row.querySelectorAll("button").forEach((x, j) => x.classList.toggle("on", j < v)); });
+        row.append(b);
+      }
+      c.append(row);
+    });
+    const send = document.createElement("button"); send.textContent = done.has(peer) ? "Cambiar mi valoración" : "Guardar"; send.style.marginTop = "12px";
+    const m = document.createElement("p"); m.className = "msg";
+    send.addEventListener("click", () => {
+      if (vals.some((v) => !v)) { m.textContent = "Califica todos los criterios."; return; }
+      send.disabled = true;
+      post("/enviar", { k: token, evaluado: peer, notas: vals }).then((r) => { send.disabled = false; m.textContent = r.msg; if (r.ok) c.classList.add("done"); });
+    });
+    c.append(send, m);
+    return c;
+  }
+
+  /* ---------- laboratorio de Python (corre en este celular, no en el computador) ---------- */
+  const WORKER = `
+    let loadErr = "", base = "__LOCAL__";
+    try { if (!base) throw 0; importScripts(base + "pyodide.js"); }
+    catch (e1) { base = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"; try { importScripts(base + "pyodide.js"); } catch (err) { loadErr = String(err); } }
+    let py = null;
+    self.onmessage = async (e) => {
+      const { code, inputs } = e.data;
+      if (loadErr) { self.postMessage({ ok: false, out: "", error: "No pude cargar Python: este celular necesita internet la primera vez." }); return; }
+      try {
+        if (!py) py = await loadPyodide({ indexURL: base });
+        let out = "";
+        py.setStdout({ batched: (s) => { out += s + "\\n"; } });
+        py.setStderr({ batched: (s) => { out += s + "\\n"; } });
+        let i = 0;
+        py.setStdin({ stdin: () => (i < inputs.length ? inputs[i++] : null) });
+        await py.runPythonAsync(code);
+        self.postMessage({ ok: true, out });
+      } catch (err) {
+        const lines = String((err && err.message) || err).trim().split("\\n");
+        let i = -1; lines.forEach((l, k) => { if (l.includes("<exec>")) i = k; });
+        const tail = (i >= 0 ? lines.slice(i) : lines.slice(-3)).map((l) => l.replace('File "<exec>", ', "")).join("\\n");
+        const last = lines[lines.length - 1] || "";
+        const ES = [["ZeroDivisionError", "Estás dividiendo entre cero."], ["NameError", "Usas un nombre (variable o función) que no existe o está mal escrito."],
+          ["IndentationError", "Revisa la sangría: los espacios al inicio de la línea."], ["SyntaxError", "Hay un error de escritura: revisa paréntesis, comillas y los dos puntos (:)."],
+          ["TypeError", "Mezclas tipos que no se pueden combinar (por ejemplo, texto con número: usa int() o str())."],
+          ["ValueError", "Un valor no tiene la forma esperada (por ejemplo, int() de algo que no es un número)."],
+          ["IndexError", "Pides una posición que no existe en la lista."], ["EOFError", "Tu programa pidió un input() y no hay más entradas: agrégalas abajo."]];
+        const hint = (ES.find(([k]) => last.startsWith(k)) || [, ""])[1];
+        self.postMessage({ ok: false, out: "", error: tail + (hint ? "\\n→ " + hint : "") });
+      }
+    };`;
+  let worker = null, firstRun = true;
+  const LOCAL = {{ "true" if py_local else "false" }} ? location.origin + "/pyodide/" : "";       // Python servido por Jarvis (sin internet)
+  function newWorker() { worker = new Worker(URL.createObjectURL(new Blob([WORKER.replace("__LOCAL__", LOCAL)], { type: "text/javascript" }))); }
+  function startLab(r) {
+    $("#lab").hidden = false;
+    $("#hola").textContent = `Hola, ${r.nombre}. Escribe tu programa y pulsa Ejecutar.` + (r.listo ? " (Ya lo resolviste ✓)" : "");
+    if (r.codigo) $("#code").value = r.codigo;
+    try { newWorker(); } catch (e) { $("#rmsg").textContent = "Este celular no puede ejecutar Python aquí."; }
+  }
+  const runBtn = $("#run");
+  if (runBtn) runBtn.addEventListener("click", () => {
+    const code = $("#code").value, raw = $("#ins").value.replace(/\n+$/, ""), inputs = raw === "" ? [] : raw.split("\n");
+    if (!code.trim()) return;
+    runBtn.disabled = true;
+    $("#out").textContent = firstRun ? "Preparando Python (la primera vez tarda unos segundos)…" : "Ejecutando…";
+    $("#rmsg").textContent = "";
+    const limit = firstRun ? 90000 : 12000;
+    const timer = setTimeout(() => {
+      worker.terminate(); newWorker(); firstRun = true;
+      finish({ ok: false, out: "", error: "Tu programa tardó demasiado. ¿Hay un ciclo que nunca termina o un input() sin entrada?" });
+    }, limit);
+    worker.onmessage = (e) => { clearTimeout(timer); firstRun = false; finish(e.data); };
+    worker.onerror = () => { clearTimeout(timer); finish({ ok: false, out: "", error: "No pude cargar Python: revisa que el celular tenga internet." }); };
+    worker.postMessage({ code, inputs });
+    function finish(res) {
+      runBtn.disabled = false;
+      const out = res.out || "";
+      $("#out").innerHTML = "";
+      $("#out").append(document.createTextNode(out));
+      if (res.error) { const s = document.createElement("span"); s.className = "bad"; s.textContent = (out ? "\n" : "") + res.error; $("#out").append(s); }
+      post("/corrida", { k: token, codigo: code, salida: out, error: res.error || "" }).then((r) => {
+        if (!r.ok) { $("#rmsg").textContent = r.msg; return; }
+        $("#rmsg").textContent = r.listo ? "✓ ¡Correcto! Tu salida es la que pide el reto." : res.error ? "Revisa el error, corrígelo y vuelve a ejecutar." : r.hay_esperada ? "Funciona, pero la salida no es la que pide el reto todavía." : "¡Funciona!";
+        $("#rmsg").className = "msg" + (r.listo ? " ok" : "");
+      }).catch(() => {});
+    }
+  });
+})();
+</script>
+</body>
+</html>

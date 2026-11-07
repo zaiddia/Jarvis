@@ -15,7 +15,8 @@ import conversiones
 from nucleo import J
 
 ACTIONS = {"describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo", "procedimiento": "Revisar procedimiento",
-           "preguntas": "Hacer un quiz", "editar": "Editar con IA", "codigo": "Revisar código", "codigo_ej": "Ejercicios con este código"}
+           "preguntas": "Hacer un quiz", "editar": "Editar con IA", "codigo": "Revisar código", "codigo_ej": "Ejercicios con este código",
+           "copia": "Detectar copia"}
 
 
 _batch = {"ids": []}             # lo último que subiste junto (una tarjeta): a eso se refieren «únelos», «¿qué dicen?»
@@ -73,7 +74,8 @@ def card_of(its):
     convs = conversiones.options_for(its)
     return {"ids": [i["id"] for i in its], "nombres": [i["nombre"] for i in its], "desc": "; ".join(adjuntos.describe(i) for i in its),
             "tipos": sorted(kinds), "preview": _preview(its[0]) if len(its) == 1 else "",
-            "acciones": [{"a": a, "t": ACTIONS[a]} for a in acts] + [{"a": "conv:" + c, "t": "→ " + conversiones.TARGETS[c]} for c in convs]}
+            "acciones": [{"a": a, "t": ACTIONS[a]} for a in acts] + [{"a": "conv:" + c, "t": "→ " + conversiones.TARGETS[c]} for c in convs]
+            + ([{"a": "copia", "t": ACTIONS["copia"]}] if len(its) >= 2 and kinds <= {"texto", "word", "pdf"} else [])}      # 12.12: ¿se copiaron?
 
 
 @J.socketio.on("attach")
@@ -226,6 +228,10 @@ def attach_run(its, action, pregunta=""):
                 J.generated_files.add(f)
             J.notify(msg, "ADJUNTOS")
             return files
+        if action == "copia":                          # 12.12: detector de copia
+            msg, path = J.copy_check_files(its)
+            J.notify(msg, "COPIA")
+            return path
         if action in ("codigo", "codigo_ej"):         # 12.11: Modo Código
             J.code_attach_action(its[0], action)
             return None

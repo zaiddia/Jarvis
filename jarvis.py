@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.11"
+VERSION = "12.12"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1653,6 +1653,10 @@ def process_command(text):
         return
     if code_review_voice(text, t) or money_voice(text, t):   # 12.11: «revisa este código: …», «¿a cómo está el dólar?»
         return
+    if salon_voice(text, t) or recovery_track_voice(text, t) or school_calendar_voice(text, t):   # 12.12: QR, examen, coevaluación, laboratorio…
+        return
+    if copy_voice(text, t) or game_voice(text, t) or difficulty_voice(text, t):            # 12.12: copia, juegos, dificultad
+        return
     if payment_voice(text, t) or expense_voice(text, t) or list_voice(text, t):   # 12.9: pagos, gastos y listas
         return
     if pc_voice(text, t):                              # 12.9: programas, mantenimiento, energía, conexiones, concentración
@@ -2351,6 +2355,12 @@ import codigo  # noqa: E402
 from nucleo.modocodigo import *  # noqa: F401,F403,E402
 from nucleo.dinero import *  # noqa: F401,F403,E402
 
+# ── 12.12: recuperaciones, calendario escolar, copia, juegos, dificultad; asistencia QR, modo examen, coevaluación, laboratorio
+import festivos  # noqa: E402
+import salon  # noqa: E402
+from nucleo.colegioplus import *  # noqa: F401,F403,E402
+from nucleo.salonplus import *  # noqa: F401,F403,E402
+
 # ── 12.0: revisar el procedimiento a mano paso a paso (SymPy), mapa de errores del curso y refuerzo para ese error
 # → nucleo/pasoapaso.py (lógica en procedimiento.py)
 from nucleo.pasoapaso import *  # noqa: F401,F403,E402
@@ -2537,6 +2547,7 @@ def main():
         cloud_start()                     # 12.8: la copia cifrada de cada noche en tu Drive
         modes_start()                     # 12.9: modo docente/general, disparadores y avisos de batería
         daily_start()                     # 12.9: avisos de pagos
+        school_start()                    # 12.12: calendario escolar y recuperaciones (avisos)
         attention_start()                 # 9.3: compromisos y pulso de atención
         teacher_plus_start()              # 9.4: lecciones y vigilante de páginas
         polish_start()                    # 9.5: tu estilo al escribir

@@ -164,7 +164,7 @@ def test_subir_y_tarjeta(jv, ad):
     a = jv.handle_attach({"files": [{"name": "a.pdf", "data": _url(_text_pdf(1))}]})
     b = jv.handle_attach({"files": [{"name": "b.pdf", "data": _url(_text_pdf(2))}]})
     card = jv.handle_attach_card({"ids": a["ids"] + b["ids"]})
-    assert card["ok"] and [x["a"] for x in card["acciones"]] == ["conv:unir"]
+    assert card["ok"] and [x["a"] for x in card["acciones"]] == ["conv:unir", "copia"]          # 12.12: y detectar copia
     assert not jv.handle_attach_action({"ids": ["nada"], "action": "resumir"})["ok"]
 
 
