@@ -5,6 +5,9 @@
 Cada orden es un atajo de teclado FIJO sobre la ventana que nombras (o la que tienes delante): Jarvis no teclea texto ni
 mueve el mouse por su cuenta. La lista está en atajos.py. Los nombres globales de Jarvis se usan como J.<nombre>.
 """
+import os
+import re
+import subprocess
 import time
 
 import atajos
@@ -76,8 +79,73 @@ def _action(aid, keys, scope, said, origin="PC"):
     J.reply(f"{said[:-1]} en «{skills._title_of(h)[:50]}».", origin)
 
 
+# ============================================================================ 12.10.1: Acceso por voz de Windows
+# Windows 11 trae «Acceso por voz»: tú diriges el mouse con la voz («mostrar números», «clic en 5», «doble clic en 5»,
+# «cuadrícula del mouse», «desplazar hacia abajo»). Jarvis lo abre y lo cierra; no hace clic por su cuenta.
+_VA_ON = re.compile(r"\b(?:activa|abre|enciende|prende|inicia|pon|arranca)(?:me)?\s+(?:el\s+)?(?:control\s+(?:del\s+(?:mouse|raton)\s+)?por\s+voz|"
+                    r"acceso\s+por\s+voz|mouse\s+por\s+voz|raton\s+por\s+voz)\b")
+_VA_OFF = re.compile(r"\b(?:desactiva|cierra|apaga|quita|deten)\s+(?:el\s+)?(?:control\s+(?:del\s+(?:mouse|raton)\s+)?por\s+voz|acceso\s+por\s+voz|"
+                     r"mouse\s+por\s+voz|raton\s+por\s+voz)\b")
+VA_HELP = ("Ya puedes manejar el mouse con tu voz. Di «mostrar números» y luego «clic en 5» o «doble clic en 5»; «cuadrícula del mouse» "
+           "para llegar a cualquier punto; «desplazar hacia abajo» para bajar. Para dejarlo, di «Jarvis, desactiva el control por voz».")
+
+
+def _va_running():
+    if J.psutil is None:
+        return False
+    for p in J.psutil.process_iter(["name"]):
+        try:
+            if str(p.info["name"] or "").lower() == "voiceaccess.exe":
+                return True
+        except Exception:
+            pass
+    return False
+
+
+def voice_access_on(origin="PC"):
+    if _va_running():
+        J.reply("El control por voz ya está activo. " + VA_HELP, origin)
+        return
+    exe = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "System32", "voiceaccess.exe")
+    try:
+        if os.path.exists(exe):
+            subprocess.Popen([exe], creationflags=0x08000000)
+        else:
+            _send(0, ("win", "ctrl", "s"))             # el atajo de Windows para Acceso por voz
+    except Exception:
+        try:
+            os.startfile("ms-settings:easeofaccess-speechrecognition")
+        except OSError:
+            pass
+        J.reply("No pude abrir el control por voz; te abrí su ajuste de Windows (Accesibilidad › Voz › Acceso por voz). Si no aparece, "
+                "actualiza Windows 11.", origin)
+        return
+    J.reply("Abrí el control por voz de Windows. La primera vez descarga el idioma y te enseña lo básico. " + VA_HELP, origin)
+
+
+def voice_access_off(origin="PC"):
+    if J.psutil is None or not _va_running():
+        J.reply("El control por voz no estaba activo.", origin)
+        return
+    for p in J.psutil.process_iter(["name"]):
+        try:
+            if str(p.info["name"] or "").lower() == "voiceaccess.exe":
+                p.terminate()
+        except Exception:
+            pass
+    J.reply("Listo, cerré el control por voz.", origin)
+
+
 def window_voice(text, t):
     """Pestañas con programa nombrado (o en Explorador, terminal…) y el catálogo de atajos."""
+    if _VA_ON.search(t) or _VA_OFF.search(t):
+        if not J.IS_WIN:
+            J.reply("El control por voz es de Windows 11.", "PC")
+        elif _VA_OFF.search(t):
+            voice_access_off()
+        else:
+            voice_access_on()
+        return True
     p = atajos.parse_tab(text)
     act = None if p else atajos.parse_action(text)
     if not p and not act:
@@ -101,4 +169,4 @@ def window_voice(text, t):
     return True
 
 
-__all__ = ['BROWSERS', 'window_voice']
+__all__ = ['BROWSERS', 'VA_HELP', '_VA_OFF', '_VA_ON', '_va_running', 'voice_access_off', 'voice_access_on', 'window_voice']

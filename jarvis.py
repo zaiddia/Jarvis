@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.10"
+VERSION = "12.10.1"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -581,7 +581,7 @@ ACTION_RULE = (
     "Spotify del inicio»; «plan de energía alto rendimiento»; «activa el ahorro de batería»; «apaga el bluetooth», «activa "
     "el wifi», «modo avión», «conéctate al wifi Casa»; «modo concentración 40 minutos»; «modo docente», «modo general»; "
     "gastos, pagos y listas («gasté 20 mil en almuerzo», «recuérdame pagar el internet el 15 de cada mes», «agrega leche "
-    "a la lista del mercado»); la casa con Home Assistant («enciende la luz de la sala»); y pestañas, carpetas y ventanas "
+    "a la lista del mercado»); la casa con Home Assistant («enciende la luz de la sala»); pestañas, carpetas y ventanas; «activa el control por voz» (el Acceso por voz de Windows, para que la persona maneje el mouse con su voz) "
     "(«cierra la pestaña del explorador», «sube una carpeta», «pon la ventana a la izquierda», «nuevo escritorio virtual»)."
 )
 

@@ -257,7 +257,8 @@ ASSISTANT_ORDERS = ("instala <programa>", "actualiza todos mis programas", "¿qu
                     "sube una carpeta", "nueva carpeta", "vista de detalles", "renombra", "guarda el archivo", "selecciona todo", "copia eso",
                     "pega aquí", "imprime esto", "acerca", "aleja", "zoom normal", "pon la ventana a la izquierda", "pon la ventana a la derecha",
                     "pasa la ventana al otro monitor", "nuevo escritorio virtual", "siguiente escritorio", "vista de tareas",
-                    "historial del portapapeles", "recorte de pantalla", "abre el explorador")
+                    "historial del portapapeles", "recorte de pantalla", "abre el explorador",
+                    "activa el control por voz", "desactiva el control por voz")
 
 
 @skills.skill("orden_asistente", "El PC y el día a día con órdenes de Jarvis: instalar, actualizar o desinstalar programas; qué "

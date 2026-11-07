@@ -71,3 +71,15 @@ def test_explorador_ventanas_y_escritorios(jv, win):
 def test_la_ia_los_conoce(jv):
     import skills
     assert "cierra la pestaña del <explorador" in skills.REGISTRY["orden_asistente"].args and "pestañas, carpetas y ventanas" in jv.ACTION_RULE
+
+
+def test_control_por_voz(jv, monkeypatch):
+    import nucleo.ventanaactiva as va
+    calls = []
+    monkeypatch.setattr(jv, "IS_WIN", True)
+    monkeypatch.setattr(va, "voice_access_on", lambda origin="PC": calls.append("on"))
+    monkeypatch.setattr(va, "voice_access_off", lambda origin="PC": calls.append("off"))
+    for text in ("activa el control por voz", "Jarvis, abre el acceso por voz", "activa el mouse por voz", "desactiva el control por voz"):
+        jv.process_command(text)
+    assert calls == ["on", "on", "on", "off"]
+    assert "clic en 5" in va.VA_HELP

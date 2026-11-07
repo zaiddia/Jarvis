@@ -157,6 +157,10 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Control por voz del mouse con Windows (v12.10.1)
+
+- «Jarvis, activa el control por voz» abre el **Acceso por voz** de Windows 11: tú manejas el mouse con la voz («mostrar números», «clic en 5», «doble clic en 5», «cuadrícula del mouse», «desplazar hacia abajo»). «Desactiva el control por voz» lo cierra. Jarvis no hace clic por su cuenta.
+
 ## Pestañas, carpetas y ventanas por voz (v12.10)
 
 - **Pestañas del programa que nombres**: «cierra la pestaña del explorador», «cierra la pestaña de Chrome», «abre una pestaña nueva en el explorador», «siguiente pestaña de Edge». Jarvis pone ese programa al frente y actúa en él. Sin nombrar programa, actúa en la ventana del frente si tiene pestañas (navegador, Explorador, Terminal, Bloc de notas, VS Code); si es Word o Excel, va a tu navegador (así no cierra tu documento).
