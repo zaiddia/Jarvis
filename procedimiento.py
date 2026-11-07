@@ -8,7 +8,8 @@ despejar») y el refuerzo justo para ese error.
 Las expresiones se leen con la lista cerrada de símbolos de verificar.py (nunca se ejecuta texto libre).
 """
 import datetime
-import json
+
+import datos
 import os
 import re
 import threading
@@ -33,6 +34,7 @@ CORTO = {"signo": "el signo al trasponer", "despeje": "despejar", "distributiva"
 
 _lock = threading.Lock()
 _path = None
+locked = False                       # 12.4: con los datos de estudiantes cifrados y sin la clave
 data = {"cursos": {}}               # curso -> [{"fecha", "estudiante", "tema", "categoria", "detalle", "paso", "ok"}]
 
 
@@ -44,25 +46,30 @@ def configure(config_dir):
 
 
 def load():
+    """12.4: guarda nombres de estudiantes: se cifra como las notas (datos.read_json / write_json)."""
+    global locked
     data["cursos"] = {}
-    if _path and os.path.exists(_path):
-        try:
-            with open(_path, encoding="utf-8") as f:
-                d = json.load(f)
-            if isinstance(d.get("cursos"), dict):
-                data["cursos"] = d["cursos"]
-        except (OSError, ValueError):
-            pass
+    locked = False
+    if not _path:
+        return
+    try:
+        d = datos.read_json(_path)
+        if isinstance(d, dict) and isinstance(d.get("cursos"), dict):
+            data["cursos"] = d["cursos"]
+    except datos.DataLocked:
+        locked = True
+    except (OSError, ValueError, TypeError):
+        pass
 
 
 def save():
-    if not _path:
+    if not _path or locked:
         return
     with _lock:
-        tmp = _path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=1)
-        os.replace(tmp, _path)
+        try:
+            datos.write_json(_path, data)
+        except OSError:
+            pass
 
 
 def record(curso, estudiante, res, tema="", fecha=None):

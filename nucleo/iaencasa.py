@@ -120,8 +120,6 @@ def local_brain_voice(text, t):
         if not J.IS_WIN:
             J.reply("Instala Ollama desde https://ollama.com y luego di «prepara la IA sin internet».", "IA LOCAL")
             return True
-        J.reply("Instalo Ollama con winget; Windows puede pedirte permiso. Te aviso al terminar.", "IA LOCAL")
-
         def inst():
             try:
                 r = subprocess.run(["winget", "install", "--id", "Ollama.Ollama", "-e", "--accept-package-agreements", "--accept-source-agreements"],
@@ -131,7 +129,11 @@ def local_brain_voice(text, t):
                 ok = False
             J.notify("Listo Ollama. Ahora di «prepara la IA sin internet»." if ok else
                      "No pude instalar Ollama solo. Bájalo de https://ollama.com e instálalo; luego di «prepara la IA sin internet».", "IA LOCAL")
-        J.start_job("Instalando Ollama", inst, "ollama")
+        J.request_approval("instalar", "Instalar Ollama en este computador (con winget)", "Es el programa que corre la IA sin internet. Windows puede "
+                           "pedirte permiso de administrador.", on_ok=lambda: (J.reply("Instalo Ollama; te aviso al terminar.", "IA LOCAL"),
+                                                                              J.start_job("Instalando Ollama", inst, "ollama")),
+                           on_no=lambda: J.reply("Vale, no lo instalo.", "IA LOCAL"), ttl=1800,
+                           say="¿Instalo Ollama en este computador? Windows puede pedirte permiso. Di «sí» o «no».")   # 12.4: con tu «sí»
         return True
     if _LB_PREP.search(t):
         if local_job["busy"]:
@@ -141,9 +143,6 @@ def local_brain_voice(text, t):
         if not p["posible"]:
             J.reply(cerebrolocal.spoken_plan(p), "IA LOCAL")
             return True
-        local_job["busy"] = True
-        J.reply(f"Preparo la IA sin internet: bajo {p['modelos'][0]} (varios GB, puede tardar un buen rato) y lo pruebo con un quiz, una cuenta "
-                "y una explicación, midiendo la velocidad. Si no pasa, pruebo uno más liviano. Te aviso.", "IA LOCAL")
 
         def prog(name, frac):
             J.log_terminal(f"Descargando {name}: {int(frac * 100)} %", "IA LOCAL")
@@ -156,7 +155,16 @@ def local_brain_voice(text, t):
             finally:
                 local_job["busy"] = False
             J.notify(msg, "IA LOCAL")
-        J.start_job("Preparando la IA sin internet", work, "ia-local")
+        def go():
+            if local_job["busy"]:
+                return
+            local_job["busy"] = True
+            J.reply(f"Preparo la IA sin internet: bajo {p['modelos'][0]} y lo pruebo con un quiz, una cuenta y una explicación, midiendo la "
+                    "velocidad. Si no pasa, pruebo uno más liviano. Te aviso.", "IA LOCAL")
+            J.start_job("Preparando la IA sin internet", work, "ia-local")
+        J.request_approval("instalar", f"Descargar la IA sin internet ({p['modelos'][0]}, varios GB)", "Ocupa espacio en el disco y la descarga puede tardar "
+                           "un buen rato.", on_ok=go, on_no=lambda: J.reply("Vale, no la descargo.", "IA LOCAL"), ttl=1800,
+                           say=f"Voy a descargar {p['modelos'][0]}, que pesa varios gigas. ¿Lo hago? Di «sí» o «no».")   # 12.4: con tu «sí»
         return True
     return False
 

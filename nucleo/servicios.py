@@ -359,6 +359,8 @@ def restore_backup(name, parts):
         J.retos.load()
     if "tarjetas" in done:                             # 11.2
         J.dominio.load()
+    if "errores" in done:                              # 12.4: mapa de errores de los procedimientos
+        J.procedimiento.load()
     if "guiasvivas" in done:                           # 11.4
         J.guiaviva.load()
     if "libros" in done:                               # 11.5

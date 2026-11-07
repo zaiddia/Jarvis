@@ -40,6 +40,7 @@ FILES = {
     "entregas.json": ("entregas", "Entregas de programación"),
     "retos.json": ("retos", "Retos de la semana y ranking"),
     "tarjetas.json": ("tarjetas", "Tarjetas de memoria y su repaso"),
+    "mapa_errores.json": ("errores", "Mapa de errores de los procedimientos"),
     "guias_vivas.json": ("guiasvivas", "Guías vivas y podcasts"),
     "compromisos.json": ("compromisos", "Compromisos y correos por responder"),
     "lecciones.json": ("lecciones", "Lecciones que le enseñaste a Jarvis"),

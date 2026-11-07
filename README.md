@@ -157,6 +157,13 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Más seguro con las notas oficiales y los datos de los estudiantes (v12.4)
+
+- **El mapa de errores se protege como las notas**: guarda nombres de estudiantes, así que ahora se cifra si tienes activado *Datos de estudiantes cifrados*, entra en las copias de seguridad y en la sincronización, y se restaura con lo demás.
+- **Guardar en la plataforma solo con tu «sí»**: «guarda la planilla» ya no pulsa Guardar de una vez; te dice cuántas notas de cuántos estudiantes va a guardar y espera tu «sí» (por voz o en la bandeja).
+- **No cambia notas que ya estaban**: al llenar la planilla, si un campo ya tenía otro valor en la plataforma, Jarvis no lo toca: te deja en la bandeja «Cambiar 3 notas que ya estaban» con cada cambio («Luis Rojas: 3,0 → 4,0») para que lo apruebes.
+- **Instalar programas solo con tu «sí»**: «instala Ollama», «prepara la IA sin internet» (varios GB) e «instala la voz Kokoro» piden tu aprobación antes de descargar o instalar nada.
+
 ## Revisar y calificar un taller, corregido (v12.3)
 
 - **«Califica el taller de Juan» ya no abre la cámara si acabas de subir la foto o el PDF**: revisa lo que subiste al chat (en los últimos 30 minutos). La cámara solo se usa si no subiste nada.

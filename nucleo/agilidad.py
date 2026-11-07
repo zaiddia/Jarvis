@@ -10,7 +10,6 @@
     resultados que se recalculan, tabla y botones.
 La lógica está en agil.py, cerebro.py y panel.py. Los nombres globales de Jarvis se usan como J.<nombre>.
 """
-import re
 import threading
 import time
 

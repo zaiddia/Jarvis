@@ -94,8 +94,6 @@ def local_voice_voice(text, t):
         if kokoro_job["busy"]:
             J.reply("Ya la estoy instalando.", "VOZ")
             return True
-        kokoro_job["busy"] = True
-        J.reply("Instalo la voz Kokoro (unos 90 MB). Tarda unos minutos; te aviso.", "VOZ")
 
         def work():
             try:
@@ -109,7 +107,15 @@ def local_voice_voice(text, t):
                 return
             res = measure_voices()
             J.notify("Lista la voz Kokoro. " + kokoro_voz.verdict(res) + " «Usa la voz Kokoro» para dejarla.", "VOZ")
-        J.start_job("Instalando la voz Kokoro", work, "kokoro")
+        def go():
+            if kokoro_job["busy"]:
+                return
+            kokoro_job["busy"] = True
+            J.reply("Instalo la voz Kokoro. Tarda unos minutos; te aviso.", "VOZ")
+            J.start_job("Instalando la voz Kokoro", work, "kokoro")
+        J.request_approval("instalar", "Instalar la voz Kokoro (unos 90 MB)", "Baja el componente kokoro-onnx y el modelo de voz.", on_ok=go,
+                           on_no=lambda: J.reply("Vale, no la instalo.", "VOZ"), ttl=1800,
+                           say="¿Instalo la voz Kokoro? Son unos 90 MB. Di «sí» o «no».")       # 12.4: con tu «sí»
         return True
     if _KO_USE.search(t):
         if not kokoro_ready():

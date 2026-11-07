@@ -155,9 +155,11 @@ def fill_page(curso):
     d = J._extract_json(raw)
     ok, bad = llenador.check(d.get("asignaciones") if isinstance(d, dict) else [], plain, data, comma)
     by_id = {c["id"]: c for c in campos}
+    changes = [x for x in ok if x["cambia"]]           # 12.4: lo que ya tenía otro valor no se cambia sin tu permiso
+    ok = [x for x in ok if not x["cambia"]]
 
-    def write():
-        for x in ok:
+    def write(items=None):
+        for x in (ok if items is None else items):
             c = by_id[x["campo"]]
             loc = c["frame"].locator(f'[data-jarvis-id="{c["fid"]}"]')
             if c["tag"] == "select":
@@ -168,7 +170,20 @@ def fill_page(curso):
                          x["cambia"])
     _run(write)
     agent["filled"] = ok
-    return llenador.summary(ok, bad, len(data))
+    msg = llenador.summary(ok, bad, len(data))
+    if changes:
+        lines = [f"{x['estudiante']} ({x['dato']}): {by_id[x['campo']]['valor']} → {x['valor']}" for x in changes]
+        msg += (f" Hay {len(changes)} nota{'s' if len(changes) != 1 else ''} que ya tenía{'n' if len(changes) != 1 else ''} otro valor en la plataforma: "
+                "no las cambié; te las dejé para que las apruebes.")
+
+        def apply_changes():
+            _run(lambda: write(changes))
+            agent["filled"] = agent["filled"] + changes
+            J.notify(f"Cambié {len(changes)} nota{'s' if len(changes) != 1 else ''} (resaltadas en naranja). Revisa y di «guarda la planilla».", "PLATAFORMA")
+        J.request_approval("plataforma", f"Cambiar {len(changes)} nota{'s' if len(changes) != 1 else ''} que ya estaba{'n' if len(changes) != 1 else ''} en la "
+                           f"plataforma ({curso})", "\n".join(lines[:40]), on_ok=apply_changes,
+                           on_no=lambda: J.notify("Vale, dejé esas notas como estaban en la plataforma.", "PLATAFORMA"), ttl=3 * 3600, quiet=True)
+    return msg
 
 
 def save_page():
@@ -272,12 +287,23 @@ def platform_voice(text, t):
             return True
         _fill_now(agent["curso"])
         return True
-    if _PF_SAVE.match(t) and agent["filled"]:
-        try:
-            J.reply(save_page(), "PLATAFORMA")
-        except Exception as e:
-            J.reply(f"No pude pulsar guardar: {e}", "PLATAFORMA")
-        agent["filled"] = []
+    if _PF_SAVE.match(t) and agent["filled"]:          # 12.4: guardar notas oficiales siempre con tu «sí»
+        filled = list(agent["filled"])
+        est = {x["estudiante"] for x in filled}
+
+        def do_save():
+            try:
+                J.notify(save_page(), "PLATAFORMA")
+            except Exception as e:
+                J.notify(f"No pude pulsar guardar: {e}", "PLATAFORMA")
+            agent["filled"] = []
+        ch = sum(1 for x in filled if x["cambia"])
+        J.request_approval("plataforma", f"Guardar en la plataforma {len(filled)} nota{'s' if len(filled) != 1 else ''} de {len(est)} "
+                           f"estudiante{'s' if len(est) != 1 else ''} ({agent['curso'] or 'la planilla'})",
+                           (f"{ch} cambian un valor que ya estaba. " if ch else "") + "Revisa la pantalla antes de aprobar: lo que llené está resaltado.",
+                           on_ok=do_save, on_no=lambda: J.notify("Vale, no guardé. Puedes revisar y pulsar tú «Guardar».", "PLATAFORMA"), ttl=3600,
+                           say=f"¿Guardo en la plataforma las {len(filled)} notas que llené{' (' + str(ch) + ' cambian un valor que ya estaba)' if ch else ''}? "
+                               "Di «sí» o «no».")
         return True
     if _PF_CLOSE.search(t) and agent["ctx"] is not None:
         browser_close()
