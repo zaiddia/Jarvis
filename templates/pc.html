@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Médico del PC</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
+<style>
+  html, body { min-height: 100%; }
+  body { background: radial-gradient(ellipse at 20% 0%, rgba(var(--a-rgb), .10), transparent 55%), var(--bg); color: var(--text);
+         font-family: var(--mono); font-size: 13px; padding: 22px clamp(16px, 3vw, 36px) 40px; user-select: text; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+  .brand { font-family: var(--hud); font-weight: 700; letter-spacing: .3em; color: var(--a); font-size: 15px; text-shadow: 0 0 12px rgba(var(--a-rgb), .55); }
+  .sp { flex: 1; } .sub { color: var(--muted); font-size: 11.5px; }
+  .hero { display: flex; gap: 22px; align-items: center; margin: 20px 0; flex-wrap: wrap; }
+  .score { width: 120px; height: 120px; border-radius: 50%; display: grid; place-content: center; text-align: center;
+           border: 6px solid var(--ring, var(--ok)); box-shadow: 0 0 22px var(--ring, var(--ok)); }
+  .score b { font-family: var(--hud); font-size: 34px; color: var(--ring, var(--ok)); } .score small { color: var(--muted); font-size: 10px; letter-spacing: .2em; }
+  .lead { color: var(--muted); max-width: 60ch; line-height: 1.5; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .card { position: relative; padding: 14px 14px 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: rgba(var(--a-rgb), .03);
+          display: flex; flex-direction: column; gap: 6px; }
+  .card::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--st); box-shadow: 0 0 10px var(--st); }
+  .card[data-e="ok"] { --st: var(--ok); } .card[data-e="aviso"] { --st: var(--warn); } .card[data-e="fallo"] { --st: var(--err); border-color: rgba(255, 77, 94, .45); }
+  .card[data-e="info"] { --st: var(--muted); }
+  .card h3 { font-family: var(--hud); font-size: 10.5px; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+  .card .val { font-size: 14.5px; font-weight: 700; line-height: 1.35; } .card .det { color: var(--muted); font-size: 12px; line-height: 1.45; }
+  .card .fx { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; } .card .btn { height: 30px; padding: 0 10px; font-size: 9.5px; }
+  h2 { font-family: var(--hud); font-size: 12px; letter-spacing: .24em; color: var(--a); margin: 26px 0 10px; }
+  .st { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  .st small { color: var(--muted); }
+  #toast { position: fixed; right: 18px; bottom: 18px; max-width: 420px; padding: 10px 14px; background: #061423; border: 1px solid var(--line-strong);
+           opacity: 0; transform: translateY(8px); transition: .25s; pointer-events: none; }
+  #toast.on { opacity: 1; transform: none; } #toast.err { border-color: rgba(255, 77, 94, .6); }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body class="page">
+<div class="wrap">
+  <header><span class="brand">MÉDICO DEL PC</span><span class="sub">v{{ version }}</span><span class="sp"></span>
+    <button class="btn btn-ghost" type="button" id="btn-r">Revisar otra vez</button></header>
+  <section class="hero">
+    <div class="score" id="score"><b id="num">—</b><small>DE 100</small></div>
+    <p class="lead" id="lead">Revisando disco, memoria, batería, arranque, antivirus y actualizaciones… Lo que cambia algo siempre te pide permiso.</p>
+  </section>
+  <div class="grid" id="grid"></div>
+  <div id="ini-box" hidden>
+    <h2>PROGRAMAS QUE ARRANCAN CON WINDOWS</h2>
+    <p class="sub" style="margin-bottom:8px">Apaga los que no necesitas al encender: el PC arranca más rápido. Siguen instalados y los puedes abrir cuando quieras.</p>
+    <div id="ini"></div>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const socket = io();
+  let toastT = 0;
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  function toast(t, err) { const n = $("#toast"); n.textContent = t; n.classList.toggle("err", !!err); n.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => n.classList.remove("on"), 6000); }
+  function drawIni(items) {
+    const box = $("#ini"); box.innerHTML = ""; $("#ini-box").hidden = !items.length;
+    items.forEach((x) => {
+      const r = el("div", "st"); const t = el("div"); t.append(el("b", "", x.nombre), el("small", "", "  " + (x.donde === "equipo" ? "· del equipo (necesita administrador)" : x.donde === "carpeta" ? "· carpeta de inicio" : "")));
+      const sw = el("label", "switch"); const c = el("input"); c.type = "checkbox"; c.checked = x.activo; c.disabled = !x.puede; sw.append(c, el("span"));
+      c.addEventListener("change", () => socket.emit("pc_startup", { nombre: x.nombre, activo: c.checked }, (res) => {
+        if (!res || !res.ok) { c.checked = !c.checked; toast((res && res.error) || "No se pudo.", true); return; }
+        toast(c.checked ? `${x.nombre} arrancará con Windows.` : `${x.nombre} ya no arrancará con Windows.`); drawIni(res.inicio);
+      }));
+      r.append(t, el("small", "", x.activo ? "activo" : "apagado"), sw); box.append(r);
+    });
+  }
+  function load() {
+    $("#lead").textContent = "Revisando…";
+    socket.emit("pc_state", {}, (s) => {
+      const ring = s.score >= 80 ? "var(--ok)" : s.score >= 55 ? "var(--warn)" : "var(--err)";
+      $("#score").style.setProperty("--ring", ring); $("#num").textContent = s.score;
+      const bad = s.checks.filter((c) => c.estado === "fallo").length, warn = s.checks.filter((c) => c.estado === "aviso").length;
+      $("#lead").textContent = bad ? `${bad} cosa${bad > 1 ? "s" : ""} urgente${bad > 1 ? "s" : ""} y ${warn} para revisar.` : warn ? `Nada urgente; ${warn} para revisar.` : "Todo en orden.";
+      if (!s.windows) $("#lead").textContent += " (Varias revisiones solo funcionan en Windows.)";
+      const g = $("#grid"); g.innerHTML = "";
+      s.checks.forEach((c) => {
+        const k = el("div", "card"); k.dataset.e = c.estado; k.append(el("h3", "", c.titulo), el("div", "val", c.valor)); if (c.detalle) k.append(el("div", "det", c.detalle));
+        if (c.arreglo.length) { const fx = el("div", "fx"); c.arreglo.forEach(([a, label]) => { const b = el("button", "btn btn-ghost", label); b.type = "button";
+          b.addEventListener("click", () => socket.emit("pc_fix", { accion: a }, (r) => { if (!r || !r.ok) { toast((r && r.error) || "No se pudo.", true); return; } if (r.inicio) { drawIni(r.inicio); $("#ini-box").scrollIntoView({ behavior: "smooth" }); } if (r.msg) toast(r.msg); }));
+          fx.append(b); }); k.append(fx); }
+        g.append(k);
+      });
+      drawIni(s.inicio || []);
+    });
+  }
+  $("#btn-r").addEventListener("click", load);
+  socket.on("connect", load);
+  socket.on("pc_changed", load);
+  socket.emit("get_settings", (r) => { if (r && r.settings && r.settings.theme) document.documentElement.dataset.theme = r.settings.theme; });
+})();
+</script>
+</body>
+</html>

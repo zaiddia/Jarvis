@@ -157,6 +157,21 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Mi día: vencimientos, recibos, medicamentos, citas, cumpleaños, presupuesto, menú, audio, médico del PC y viajes (v12.15)
+
+Todo está también en la página **Mi día** («abre mi día» o el botón del calendario en el HUD expandido), y lo importante sale en el resumen de la mañana.
+
+- **Vencimientos**: «el SOAT se vence el 15 de marzo», «la revisión técnico-mecánica se vence el…», «¿qué se me vence este mes?», «ya renové el SOAT». Aviso 30, 7 y 1 día antes (y por Telegram si lo tienes). **Renta**: «los últimos dígitos de mi cédula son 45» y luego «¿cuándo declaro renta?»: Jarvis busca tu fecha en el calendario de la DIAN de ese año.
+- **Recibos por foto**: sube la foto (o el PDF) con el clip del HUD y pulsa **Registrar recibo**, o súbela en Mi día. Jarvis anota el valor, la fecha, el negocio y la categoría en tus gastos; si es un aparato, guarda la garantía con su vencimiento. «Exporta mis gastos del mes a Excel».
+- **Medicamentos**: «recuérdame tomar losartán de 50 mg a las 8 de la mañana y a las 8 de la noche, tengo 30 pastillas», «recuérdame darle amoxicilina a mi hijo cada 8 horas desde las 6 por 7 días». Aviso a cada hora; «ya me la tomé» lo marca y descuenta. Si pasa una hora sin marcar, pregunta; cuando quedan pastillas para 5 días, avisa que compres. «Compré 30 pastillas de losartán».
+- **Citas médicas**: «tengo cita con el odontólogo el 20 a las 3 de la tarde en la EPS». Aviso la víspera y el mismo día.
+- **Cumpleaños**: «el cumpleaños de mi mamá es el 3 de mayo de 1965». Aviso 3 días antes y ese día; «escríbele un mensaje de cumpleaños a mi mamá» (lo envías tú), «ideas de regalo para Ana de 100 mil».
+- **Presupuesto**: «mi presupuesto de comida es de 800 mil», «¿cómo voy con el presupuesto?». Aviso al 80 % y al 100 %. **Suscripciones**: «¿qué suscripciones tengo?» encuentra los cobros que se repiten y cuánto suman al año.
+- **Menú y mercado**: «arma el menú de la semana para 3 personas» (lo ves en Mi día y lo que hay que comprar va a la lista del mercado), «¿qué cocino con arroz, pollo y tomate?».
+- **Documentos en audio**: sube un PDF, Word o texto y pulsa **Convertir en audio** (o «convierte este PDF en audio», o «convierte en audio https://…»). Queda en la carpeta *Audios*, por partes. Con internet usa la voz de Edge; sin internet, Piper.
+- **Médico del PC** («revisa mi PC», o el botón del chip en el HUD): disco, memoria, batería (y cuánto se ha desgastado), programas que arrancan con Windows (los apagas con un clic), antivirus, actualizaciones pendientes y días sin reiniciar. Cada problema trae su arreglo; lo que cambia algo pide tu permiso y nunca usa permisos de administrador.
+- **Viajes**: «me voy a Cartagena del 20 al 24 de noviembre» arma la lista de maleta según el pronóstico del destino, «mi vuelo sale a las 6 de la mañana». Aviso de documentos dos días antes, check-in un día antes y hora de salir al aeropuerto; si es fuera del país, el cambio de moneda.
+
 ## Generador de documentos y Mis aplicaciones (v12.14)
 
 **Generador de documentos** («abre el generador de documentos», o el botón del HUD expandido):

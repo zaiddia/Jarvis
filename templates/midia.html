@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi día</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
+<style>
+  html, body { min-height: 100%; }
+  body { background: radial-gradient(ellipse at 50% -10%, rgba(var(--a-rgb), .12), transparent 60%), var(--bg); color: var(--text);
+         font-family: var(--mono); font-size: 13px; padding: 22px clamp(16px, 3vw, 40px) 50px; user-select: text; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  header h1 { font-family: var(--hud); font-size: clamp(20px, 3vw, 28px); color: var(--a); letter-spacing: .1em; text-shadow: 0 0 14px rgba(var(--a-rgb), .5); }
+  header .sub { color: var(--muted); flex: 1; min-width: 200px; }
+  header .btn { height: 36px; padding: 0 14px; font-size: 10px; }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .sum { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: rgba(var(--a-rgb), .03); cursor: pointer; }
+  .sum b { display: block; font-size: 20px; color: var(--a); font-family: var(--hud); } .sum span { color: var(--muted); font-size: 11.5px; }
+  .sum.warn b { color: var(--warn); } .sum.bad b { color: var(--err); }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tab { padding: 8px 13px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: pointer; font-size: 12px; }
+  .tab.on { background: var(--a); color: #03060c; border-color: var(--a); font-weight: 700; }
+  .panel { border: 1px solid var(--line-strong); border-radius: 14px; padding: 16px; background: rgba(255, 255, 255, .015); }
+  .panel[hidden] { display: none; }
+  .hint { color: var(--muted); font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+  .hint code { color: var(--a); }
+  .list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+  .row .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .row .dot.warn { background: var(--warn); box-shadow: 0 0 8px var(--warn); } .row .dot.bad { background: var(--err); box-shadow: 0 0 8px var(--err); }
+  .row .dot.off { background: var(--muted); box-shadow: none; }
+  .row b { font-size: 13.5px; } .row small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+  .row .acts { display: flex; gap: 4px; } .row .acts button { padding: 5px 8px; border-radius: 6px; color: var(--muted); font-size: 11.5px; }
+  .row .acts button:hover { color: var(--a); background: rgba(var(--a-rgb), .1); } .row .acts .ok { color: var(--ok); }
+  .bar { height: 7px; border-radius: 4px; background: rgba(255, 255, 255, .07); overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; background: var(--ok); } .bar i.warn { background: var(--warn); } .bar i.bad { background: var(--err); }
+  form.add { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: end; border-top: 1px dashed var(--line); padding-top: 12px; }
+  form.add label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 11px; }
+  form.add .inp { height: 34px; width: 100%; } form.add .btn { height: 34px; }
+  .empty { color: var(--muted); padding: 10px 0; }
+  .menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .day { border: 1px solid var(--line); border-radius: 10px; padding: 10px; } .day h4 { color: var(--a); font-family: var(--hud); font-size: 10.5px; letter-spacing: .14em; margin-bottom: 6px; }
+  .day p { font-size: 12px; margin: 3px 0; color: var(--text); } .day p i { color: var(--muted); font-style: normal; }
+  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--line-strong); border-top-color: var(--a); border-radius: 50%; animation: sp .9s linear infinite; vertical-align: -2px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 10px); max-width: 560px; padding: 10px 16px; background: #061423;
+           border: 1px solid var(--line-strong); opacity: 0; transition: .25s; pointer-events: none; z-index: 9; line-height: 1.45; }
+  #toast.on { opacity: 1; transform: translate(-50%, 0); } #toast.err { border-color: rgba(255, 77, 94, .6); }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body class="page">
+<div class="wrap">
+  <header>
+    <h1>MI DÍA</h1>
+    <span class="sub">Vencimientos, medicamentos, citas, cumpleaños, presupuesto, menú y viajes. Jarvis te avisa a tiempo.</span>
+    <button class="btn btn-ghost" type="button" id="btn-recibo">📷 Subir recibo</button>
+    <button class="btn btn-ghost" type="button" id="btn-audio">🎧 Documento a audio</button>
+    <input type="file" id="f-recibo" hidden accept=".png,.jpg,.jpeg,.webp,.pdf">
+    <input type="file" id="f-audio" hidden accept=".pdf,.docx,.doc,.txt,.md,.pptx">
+  </header>
+  <div class="summary" id="summary"></div>
+  <div class="tabs" id="tabs"></div>
+
+  <section class="panel" data-p="venc">
+    <p class="hint">Por voz: <code>«el SOAT se vence el 15 de marzo»</code>, <code>«¿qué se me vence este mes?»</code>, <code>«ya renové el SOAT»</code>. Aviso 30, 7 y 1 día antes.</p>
+    <div class="list" id="l-venc"></div>
+    <form class="add" data-s="venc">
+      <label>Qué<input class="inp" name="nombre" placeholder="SOAT de la moto" required></label>
+      <label>Tipo<select class="inp" name="tipo" id="tipos"></select></label>
+      <label>Vence<input class="inp" type="date" name="fecha" required></label>
+      <label>Nota<input class="inp" name="nota" placeholder="Placa ABC123"></label>
+      <button class="btn btn-primary" type="submit">Agregar</button>
+    </form>
+  </section>
+
+  <section class="panel" data-p="meds" hidden>
+    <p class="hint">Por voz: <code>«recuérdame tomar losartán a las 8 de la mañana y a las 8 de la noche, tengo 30 pastillas»</code>, <code>«ya me la tomé»</code>, <code>«compré 30 pastillas de losartán»</code>.</p>
+    <div class="list" id="l-meds"></div>
+    <form class="add" data-s="meds">
+      <label>Medicamento<input class="inp" name="nombre" placeholder="Losartán" required></label>
+      <label>Dosis<input class="inp" name="dosis" placeholder="50 mg"></label>
+      <label>Horas (separadas por coma)<input class="inp" name="horas" placeholder="08:00, 20:00" required></label>
+      <label>Para (opcional)<input class="inp" name="persona" placeholder="mamá"></label>
+      <label>Pastillas que tienes<input class="inp" name="stock" inputmode="numeric" placeholder="30"></label>
+      <label>Hasta (opcional)<input class="inp" type="date" name="hasta"></label>
+      <button class="btn btn-primary" type="submit">Agregar</button>
+    </form>
+  </section>
+
+  <section class="panel" data-p="citas" hidden>
+    <p class="hint">Por voz: <code>«tengo cita con el odontólogo el 20 a las 3 de la tarde»</code>, <code>«¿qué citas tengo?»</code>. Aviso la víspera y el mismo día.</p>
+    <div class="list" id="l-citas"></div>
+    <form class="add" data-s="citas">
+      <label>Cita<input class="inp" name="que" placeholder="Odontología" required></label>
+      <label>Fecha<input class="inp" type="date" name="fecha" required></label>
+      <label>Hora<input class="inp" type="time" name="hora"></label>
+      <label>Lugar<input class="inp" name="lugar" placeholder="EPS Sura"></label>
+      <label>De quién<input class="inp" name="persona" placeholder="(tú)"></label>
+      <button class="btn btn-primary" type="submit">Agregar</button>
+    </form>
+  </section>
+
+  <section class="panel" data-p="cumples" hidden>
+    <p class="hint">Por voz: <code>«el cumpleaños de mi mamá es el 3 de mayo»</code>, <code>«escríbele un mensaje de cumpleaños a Ana»</code>, <code>«ideas de regalo para Ana de 100 mil»</code>.</p>
+    <div class="list" id="l-cumples"></div>
+    <form class="add" data-s="cumples">
+      <label>Nombre<input class="inp" name="nombre" placeholder="Ana" required></label>
+      <label>Fecha de nacimiento<input class="inp" type="date" name="fecha" required></label>
+      <label><span><input type="checkbox" name="con_anio"> Sé el año (para la edad)</span></label>
+      <label>Relación<input class="inp" name="relacion" placeholder="hermana"></label>
+      <button class="btn btn-primary" type="submit">Agregar</button>
+    </form>
+  </section>
+
+  <section class="panel" data-p="presupuesto" hidden>
+    <p class="hint">Por voz: <code>«mi presupuesto de comida es de 800 mil»</code>, <code>«¿cómo voy con el presupuesto?»</code>, <code>«¿qué suscripciones tengo?»</code>. Aviso al 80 % y al 100 %.</p>
+    <div class="list" id="l-presupuesto"></div>
+    <form class="add" data-s="presupuesto">
+      <label>Categoría<select class="inp" name="cat" id="cats"></select></label>
+      <label>Tope al mes<input class="inp" name="tope" placeholder="800000" required></label>
+      <button class="btn btn-primary" type="submit">Guardar</button>
+    </form>
+    <h3 style="margin:18px 0 8px;font-family:var(--hud);font-size:11px;letter-spacing:.2em;color:var(--a)">COBROS QUE SE REPITEN</h3>
+    <div class="list" id="l-subs"></div>
+  </section>
+
+  <section class="panel" data-p="comidas" hidden>
+    <p class="hint">Por voz: <code>«arma el menú de la semana para 3 personas»</code>, <code>«¿qué cocino con arroz, pollo y tomate?»</code>. La lista de mercado se llena sola.</p>
+    <div class="menu" id="menu"></div>
+    <div id="mlist" class="hint"></div>
+    <form class="add" id="f-menu">
+      <label>Personas<input class="inp" name="personas" type="number" min="1" max="12" value="2"></label>
+      <label>Presupuesto semanal<input class="inp" name="presupuesto" placeholder="150.000"></label>
+      <label>Gustos o restricciones<input class="inp" name="gustos" placeholder="sin cerdo, poca sal"></label>
+      <label>Ya tengo en casa<input class="inp" name="tengo" placeholder="arroz, huevos, papa"></label>
+      <button class="btn btn-primary" type="submit" id="btn-menu">Armar menú</button>
+    </form>
+  </section>
+
+  <section class="panel" data-p="viajes" hidden>
+    <p class="hint">Por voz: <code>«me voy a Cartagena del 20 al 24 de noviembre»</code>, <code>«mi vuelo sale a las 6 de la mañana»</code>. Lista de maleta según el clima, documentos y check-in.</p>
+    <div class="list" id="l-viajes"></div>
+    <form class="add" data-s="viajes">
+      <label>Destino<input class="inp" name="destino" placeholder="Cartagena" required></label>
+      <label>Desde<input class="inp" type="date" name="desde" required></label>
+      <label>Hasta<input class="inp" type="date" name="hasta" required></label>
+      <label>Hora del vuelo<input class="inp" type="time" name="hora_vuelo"></label>
+      <label><span><input type="checkbox" name="internacional"> Internacional</span></label>
+      <button class="btn btn-primary" type="submit">Agregar</button>
+    </form>
+  </section>
+</div>
+<div id="toast"></div>
+
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const socket = io();
+  const TABS = [["venc", "Vencimientos"], ["meds", "Medicamentos"], ["citas", "Citas"], ["cumples", "Cumpleaños"], ["presupuesto", "Presupuesto"], ["comidas", "Menú"], ["viajes", "Viajes"]];
+  const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  let S = null, cur = "venc", toastT = 0;
+  try { cur = localStorage.getItem("midia_tab") || "venc"; } catch (e) { /* sin almacenamiento */ }
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  function toast(t, err) { const n = $("#toast"); n.textContent = t; n.classList.toggle("err", !!err); n.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => n.classList.remove("on"), 7000); }
+  const money = (v) => "$" + Math.round(v || 0).toLocaleString("es-CO");
+  const fdate = (iso) => { const [y, m, d] = iso.split("-").map(Number); return `${d} ${MES[m - 1]} ${y}`; };
+  const h12 = (h) => { if (!h) return ""; let [a, b] = h.split(":").map(Number); const s = a < 12 ? "a. m." : "p. m."; a = a % 12 || 12; return `${a}:${String(b).padStart(2, "0")} ${s}`; };
+
+  function row(dot, title, sub, acts) {
+    const r = el("div", "row"); r.append(el("span", "dot " + (dot || "")));
+    const t = el("div"); t.append(el("b", "", title)); if (sub) { if (typeof sub === "string") t.append(el("small", "", sub)); else t.append(sub); } r.append(t);
+    const a = el("div", "acts"); (acts || []).forEach(([label, fn, cls]) => { const b = el("button", cls || "", label); b.type = "button"; b.addEventListener("click", fn); a.append(b); }); r.append(a);
+    return r;
+  }
+  const del = (sec, id, name) => ["✕", () => { if (confirm(`¿Borrar «${name}»?`)) socket.emit("midia_delete", { seccion: sec, id }, (s) => { S = s; draw(); }); }];
+
+  function draw() {
+    const tabs = $("#tabs"); tabs.innerHTML = "";
+    TABS.forEach(([k, n]) => { const b = el("span", "tab" + (k === cur ? " on" : ""), n); b.addEventListener("click", () => { cur = k; try { localStorage.setItem("midia_tab", k); } catch (e) {} draw(); }); tabs.append(b); });
+    document.querySelectorAll(".panel").forEach((p) => { p.hidden = p.dataset.p !== cur; });
+    // resumen
+    const sum = $("#summary"); sum.innerHTML = "";
+    const v30 = S.venc.filter((x) => x.faltan <= 30), vbad = S.venc.filter((x) => x.faltan <= 7);
+    const tomasHoy = S.meds.filter((m) => m.activo).reduce((a, m) => a + m.horas.length, 0), hechas = S.meds.filter((m) => m.activo).reduce((a, m) => a + m.hoy.length, 0);
+    const pres = S.presupuesto.length ? Math.max(...S.presupuesto.map((x) => x[3])) : null;
+    [[v30.length, "por vencer en 30 días", "venc", vbad.length ? "bad" : v30.length ? "warn" : ""],
+     [tomasHoy ? `${hechas}/${tomasHoy}` : "—", "tomas de hoy", "meds", tomasHoy && hechas < tomasHoy ? "warn" : ""],
+     [S.citas.length, "citas próximas", "citas", ""],
+     [S.cumples.filter((c) => c.faltan <= 30).length, "cumpleaños este mes", "cumples", ""],
+     [money(S.total_mes), pres != null ? `gastado · máx. ${pres} % de un tope` : "gastado este mes", "presupuesto", pres >= 100 ? "bad" : pres >= 80 ? "warn" : ""],
+     [S.viajes.length, "viajes próximos", "viajes", ""]].forEach(([v, l, k, cls]) => {
+      const s = el("div", "sum " + cls); s.append(el("b", "", String(v)), el("span", "", l)); s.addEventListener("click", () => { cur = k; draw(); }); sum.append(s);
+    });
+    // vencimientos
+    const lv = $("#l-venc"); lv.innerHTML = "";
+    if (!S.venc.length) lv.append(el("div", "empty", "Nada anotado todavía."));
+    S.venc.forEach((x) => lv.append(row(x.faltan < 0 || x.faltan <= 7 ? "bad" : x.faltan <= 30 ? "warn" : "", x.nombre,
+      `${x.tipo_txt} · vence el ${fdate(x.fecha)} · ${x.faltan < 0 ? `vencido hace ${-x.faltan} días` : x.faltan === 0 ? "hoy" : `faltan ${x.faltan} días`}${x.nota ? " · " + x.nota : ""}`, [del("venc", x.id, x.nombre)])));
+    // medicamentos
+    const lm = $("#l-meds"); lm.innerHTML = "";
+    if (!S.meds.length) lm.append(el("div", "empty", "Sin medicamentos."));
+    S.meds.forEach((m) => {
+      const falta = m.horas.filter((h) => !m.hoy.includes(h));
+      lm.append(row(!m.activo ? "off" : m.dias != null && m.dias <= 5 ? "bad" : falta.length ? "warn" : "", `${m.nombre}${m.dosis ? " · " + m.dosis : ""}${m.persona ? " (" + m.persona + ")" : ""}`,
+        `${m.horas.map(h12).join(", ")} · hoy: ${falta.length ? "falta " + falta.map(h12).join(", ") : "todo tomado ✓"}${m.stock != null ? ` · ${m.stock} pastillas (${m.dias} días)` : ""}${m.hasta ? " · hasta " + fdate(m.hasta) : ""}`,
+        [["✓ Tomada", () => socket.emit("midia_taken", { id: m.id }, (s) => { S = s; draw(); toast(`Anotado: ${m.nombre}.`); }), "ok"], del("meds", m.id, m.nombre)]));
+    });
+    // citas
+    const lc = $("#l-citas"); lc.innerHTML = "";
+    if (!S.citas.length) lc.append(el("div", "empty", "Sin citas próximas."));
+    S.citas.forEach((c) => lc.append(row(c.fecha === S.hoy ? "warn" : "", c.que, `${fdate(c.fecha)}${c.hora ? " · " + h12(c.hora) : ""}${c.lugar ? " · " + c.lugar : ""}${c.persona ? " · de " + c.persona : ""}`, [del("citas", c.id, c.que)])));
+    // cumpleaños
+    const lb = $("#l-cumples"); lb.innerHTML = "";
+    if (!S.cumples.length) lb.append(el("div", "empty", "Sin cumpleaños anotados."));
+    S.cumples.forEach((c) => lb.append(row(c.faltan === 0 ? "bad" : c.faltan <= 7 ? "warn" : "", `🎂 ${c.nombre}${c.relacion ? " · " + c.relacion : ""}`,
+      `${fdate(c.proximo)} · ${c.faltan === 0 ? "¡hoy!" : `faltan ${c.faltan} días`}${c.edad ? ` · cumple ${c.edad}` : ""}`, [del("cumples", c.id, c.nombre)])));
+    // presupuesto
+    const lp = $("#l-presupuesto"); lp.innerHTML = "";
+    if (!S.presupuesto.length) lp.append(el("div", "empty", "Sin topes. Agrega uno abajo."));
+    S.presupuesto.forEach(([cat, g, tope, pct]) => {
+      const sub = el("div"); sub.append(el("small", "", `${money(g)} de ${money(tope)} · ${pct} %`));
+      const bar = el("div", "bar"), i = el("i", pct >= 100 ? "bad" : pct >= 80 ? "warn" : ""); i.style.width = Math.min(100, pct) + "%"; bar.append(i); sub.append(bar);
+      lp.append(row(pct >= 100 ? "bad" : pct >= 80 ? "warn" : "", cat, sub, [del("presupuesto", cat, cat)]));
+    });
+    const ls = $("#l-subs"); ls.innerHTML = "";
+    if (!S.subs.length) ls.append(el("div", "empty", "Aún no veo cobros que se repitan (se detectan de tus gastos y pagos fijos)."));
+    S.subs.forEach((s) => ls.append(row("off", s.nombre, `${money(s.monto)} al mes · ${money(s.anual)} al año${s.meses ? ` · visto en ${s.meses} meses` : " · pago fijo"}`, [])));
+    // menú
+    const mn = $("#menu"); mn.innerHTML = "";
+    const cm = S.comidas || {};
+    (cm.dias || []).forEach((d) => { const c = el("div", "day"); c.append(el("h4", "", d.dia.toUpperCase())); [["Desayuno", d.desayuno], ["Almuerzo", d.almuerzo], ["Cena", d.cena]].forEach(([k, v]) => { if (v) { const p = el("p"); p.append(el("i", "", k + ": "), v); c.append(p); } }); mn.append(c); });
+    $("#mlist").textContent = (cm.lista || []).length ? `En la lista del mercado: ${cm.lista.map((x) => x.item).join(", ")}${cm.costo ? ` · unos ${money(cm.costo)}` : ""}.` : (cm.dias ? "" : "Aún no hay menú.");
+    // viajes
+    const lt = $("#l-viajes"); lt.innerHTML = "";
+    if (!S.viajes.length) lt.append(el("div", "empty", "Sin viajes."));
+    S.viajes.forEach((v) => lt.append(row("", `✈ ${v.destino}${v.internacional ? " · internacional" : ""}`,
+      `${fdate(v.desde)} → ${fdate(v.hasta)}${v.hora_vuelo ? " · vuelo " + h12(v.hora_vuelo) : ""} · lista «${v.lista}»`, [del("viajes", v.id, v.destino)])));
+  }
+
+  document.querySelectorAll("form.add[data-s]").forEach((f) => f.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(f).entries()); d.seccion = f.dataset.s;
+    f.querySelectorAll("input[type=checkbox]").forEach((c) => { d[c.name] = c.checked; });
+    socket.emit("midia_save", d, (r) => { if (!r || !r.ok) { toast((r && r.error) || "No se pudo.", true); return; } S = r; f.reset(); draw(); toast("Guardado. Jarvis te avisará a tiempo."); });
+  }));
+  $("#f-menu").addEventListener("submit", (e) => {
+    e.preventDefault(); const d = Object.fromEntries(new FormData($("#f-menu")).entries());
+    $("#btn-menu").innerHTML = '<span class="spin"></span> Armando…'; $("#btn-menu").disabled = true;
+    socket.emit("midia_menu", d, (r) => { $("#btn-menu").textContent = "Armar menú"; $("#btn-menu").disabled = false; if (!r || !r.ok) { toast((r && r.error) || "No se pudo.", true); return; } S = r; draw(); toast("Listo el menú; la lista del mercado ya tiene lo que hay que comprar."); });
+  });
+  function upload(input, para) {
+    const f = input.files[0]; if (!f) return;
+    if (f.size > 18 * 1024 * 1024) { toast("El archivo es muy grande (máximo 18 MB).", true); return; }
+    const rd = new FileReader(); toast(para === "audio" ? "Subiendo el documento…" : "Leyendo el recibo…");
+    rd.onload = () => socket.emit("midia_upload", { name: f.name, data: rd.result, para }, (r) => { if (!r || !r.ok) { toast((r && r.error) || "No se pudo.", true); return; } if (r.venc) { S = r; draw(); } toast(r.msg); });
+    rd.readAsDataURL(f); input.value = "";
+  }
+  $("#btn-recibo").addEventListener("click", () => $("#f-recibo").click());
+  $("#btn-audio").addEventListener("click", () => $("#f-audio").click());
+  $("#f-recibo").addEventListener("change", () => upload($("#f-recibo"), "recibo"));
+  $("#f-audio").addEventListener("change", () => upload($("#f-audio"), "audio"));
+
+  socket.on("connect", () => socket.emit("midia_state", {}, (s) => {
+    S = s;
+    const tp = $("#tipos"); tp.innerHTML = ""; Object.entries(s.tipos).forEach(([k, v]) => tp.append(new Option(v, k)));
+    const cs = $("#cats"); cs.innerHTML = ""; s.cats.forEach((c) => cs.append(new Option(c, c)));
+    draw();
+  }));
+  socket.emit("get_settings", (r) => { if (r && r.settings && r.settings.theme) document.documentElement.dataset.theme = r.settings.theme; });
+})();
+</script>
+</body>
+</html>

@@ -14,7 +14,7 @@ import adjuntos
 import conversiones
 from nucleo import J
 
-ACTIONS = {"describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo", "procedimiento": "Revisar procedimiento",
+ACTIONS = {"recibo": "Registrar recibo", "audio": "Convertir en audio", "describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo", "procedimiento": "Revisar procedimiento",
            "preguntas": "Hacer un quiz", "editar": "Editar con IA", "codigo": "Revisar código", "codigo_ej": "Ejercicios con este código",
            "copia": "Detectar copia"}
 
@@ -69,6 +69,8 @@ def card_of(its):
             acts = ["codigo", "codigo_ej"]
         else:
             acts += ["preguntas"] if k in ("pdf", "word", "powerpoint", "texto") else []
+            acts += ["audio"] if k in ("pdf", "word", "powerpoint", "texto") else []        # 12.15: para escucharlo
+        acts += ["recibo"] if k in ("imagen", "pdf") else []                                # 12.15: a tus gastos
     elif kinds == {"imagen"} and len(its) <= 8:
         acts = ["revisar"]                                                                  # 12.3: varias fotos = un taller de varias páginas
     convs = conversiones.options_for(its)
@@ -228,6 +230,13 @@ def attach_run(its, action, pregunta=""):
                 J.generated_files.add(f)
             J.notify(msg, "ADJUNTOS")
             return files
+        if action == "recibo":                         # 12.15: valor, fecha, negocio y garantía a tus gastos
+            J.notify(J.receipt_from(its[0]), "GASTOS")
+            return None
+        if action == "audio":                          # 12.15: el documento en audio
+            J.audio_from_item(its[0])
+            J.notify(f"Convirtiendo «{its[0]['nombre']}» en audio; te aviso cuando esté.", "AUDIO")
+            return None
         if action == "copia":                          # 12.12: detector de copia
             msg, path = J.copy_check_files(its)
             J.notify(msg, "COPIA")

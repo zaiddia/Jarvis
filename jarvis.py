@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.14"
+VERSION = "12.15"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1666,6 +1666,8 @@ def process_command(text):
         return
     if copy_voice(text, t) or game_voice(text, t) or difficulty_voice(text, t):            # 12.12: copia, juegos, dificultad
         return
+    if pc_doctor_voice(text, t) or mi_dia_voice(text, t):   # 12.15: médico del PC, vencimientos, medicamentos, citas, cumpleaños, presupuesto…
+        return
     if payment_voice(text, t) or expense_voice(text, t) or list_voice(text, t):   # 12.9: pagos, gastos y listas
         return
     if pc_voice(text, t):                              # 12.9: programas, mantenimiento, energía, conexiones, concentración
@@ -2374,6 +2376,7 @@ import festivos  # noqa: E402
 import salon  # noqa: E402
 import misapps  # noqa: E402
 import documentos  # noqa: E402
+import hogar  # noqa: E402
 from nucleo.colegioplus import *  # noqa: F401,F403,E402
 from nucleo.salonplus import *  # noqa: F401,F403,E402
 
@@ -2431,6 +2434,8 @@ from nucleo.iaencasa import *  # noqa: F401,F403,E402
 from nucleo.pildora import *  # noqa: F401,F403,E402
 from nucleo.aplicaciones import *  # noqa: F401,F403,E402
 from nucleo.generador import *  # noqa: F401,F403,E402
+from nucleo.hogarvoz import *  # noqa: F401,F403,E402
+from nucleo.medicopc import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
@@ -2566,6 +2571,7 @@ def main():
         cloud_start()                     # 12.8: la copia cifrada de cada noche en tu Drive
         modes_start()                     # 12.9: modo docente/general, disparadores y avisos de batería
         daily_start()                     # 12.9: avisos de pagos
+        midia_start()                     # 12.15: vencimientos, medicamentos, citas, cumpleaños, presupuesto y viajes
         school_start()                    # 12.12: calendario escolar y recuperaciones (avisos)
         apps_start()                      # 12.14: tus tarjetas de aplicaciones y su horario
         gen_start()                       # 12.14: historial del generador de documentos

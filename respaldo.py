@@ -53,6 +53,7 @@ FILES = {
     "salon.json": ("salon", "Recuperaciones, asistencia por QR, coevaluación y laboratorio"),
     "calendario_escolar.json": ("calescolar", "Calendario escolar"),
     "mis_apps.json": ("misapps", "Mis aplicaciones"),
+    "mi_dia.json": ("midia", "Mi día"),
 }
 # carpeta -> (parte, descripción, extensión): cada archivo de la carpeta va en la copia
 FOLDERS = {

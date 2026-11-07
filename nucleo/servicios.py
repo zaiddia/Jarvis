@@ -375,6 +375,8 @@ def restore_backup(name, parts):
         J.festivos.load()
     if "misapps" in done:                              # 12.14
         J.misapps.load()
+    if "midia" in done:                                # 12.15
+        J.hogar.load()
     if "lecciones" in done:                            # 9.4
         J.lecciones.load()
     if "paginas" in done:

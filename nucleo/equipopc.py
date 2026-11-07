@@ -586,4 +586,5 @@ def pc_voice(text, t):
 
 __all__ = ['_AIRPLANE', '_AUDIO_OUT', '_DISK', '_FOCUS', '_FOCUS_END', '_INSTALL', '_KILL_TOP', '_NIGHT', '_PLAN', '_RADIO', '_SAVER', '_SLOW',
            '_SSID_ASK', '_START_ASK', '_START_OFF', '_START_ON', '_TEMP', '_UNINSTALL', '_UPG_ALL', '_UPG_ASK', '_UPG_ONE', '_WIFI_JOIN',
+           '_clean_temp', '_kill_heaviest', '_pc_ps', '_pc_run',
            'focus_end', 'focus_start', 'heavy_processes', 'pc_state', 'pc_voice', 'set_startup', 'startup_items']

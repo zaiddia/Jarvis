@@ -253,6 +253,10 @@ def brief_extras(now=None):
         out += J.brief_school(now.date())             # 12.12: festivos, recesos y fechas del colegio
     except Exception:
         pass
+    try:
+        out += J.brief_midia(now.date())              # 12.15: vencimientos, citas, cumpleaños y medicamentos
+    except Exception:
+        pass
     soon = [(p, left) for p, _d, left in vd.upcoming(now.date(), 3)]
     if soon:
         out.append("Pagos: " + "; ".join(f"{p['nombre']} {vd.when_text(left)}" for p, left in soon) + ".")

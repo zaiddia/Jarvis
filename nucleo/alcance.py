@@ -264,7 +264,7 @@ def image_voice(text, t):
 sync_state = {"last": 0.0, "msg": "", "error": ""}
 _RELOAD = {"perfil.json": "perfil", "rutinas.json": "rutinas", "tareas.json": "tareas", "notas.json": "notas",
            "aula.json": "aula", "banco_preguntas.json": "banco", "notas_estudiantes.json": "seguimiento", "horario.json": "horario", "observador.json": "informes", "registro_clase.json": "diarioclase", "periodos.json": "periodos", "examenes.json": "examenes", "saber.json": "saber", "practica.json": "practica", "planeacion_anual.json": "anual", "entregas.json": "entregas", "retos.json": "retos", "tarjetas.json": "dominio", "mapa_errores.json": "procedimiento", "guias_vivas.json": "guiaviva", "compromisos.json": "compromisos", "lecciones.json": "lecciones", "paginas_vigiladas.json": "paginas", "estilo.json": "estilo",
-           "aprendizaje.json": "aprendizaje", "vida_diaria.json": "vidadiaria", "salon.json": "salon", "calendario_escolar.json": "festivos", "mis_apps.json": "misapps"}
+           "aprendizaje.json": "aprendizaje", "vida_diaria.json": "vidadiaria", "salon.json": "salon", "calendario_escolar.json": "festivos", "mis_apps.json": "misapps", "mi_dia.json": "hogar"}
 
 
 def sync_now():

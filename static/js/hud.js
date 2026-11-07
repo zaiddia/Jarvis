@@ -468,7 +468,9 @@
   function closeNotices() { ntc.box.hidden = true; body.classList.remove("ntcopen"); }
   $("#btn-health").addEventListener("click", () => socket.emit("open_health"));
   $("#btn-docs").addEventListener("click", () => socket.emit("open_docs_page"));        // 12.14
-  $("#btn-apps").addEventListener("click", () => socket.emit("open_apps_page"));       // 12.8: panel de salud
+  $("#btn-apps").addEventListener("click", () => socket.emit("open_apps_page"));
+  $("#btn-midia").addEventListener("click", () => socket.emit("open_midia_page"));     // 12.15
+  $("#btn-pcdoc").addEventListener("click", () => socket.emit("open_pc_page"));       // 12.8: panel de salud
   $("#btn-bell").addEventListener("click", () => (ntc.box.hidden ? openNotices() : closeNotices()));
   $("#ntc-clear").addEventListener("click", () => socket.emit("notices", { clear: true, seen: true }, drawNotices));
   socket.on("notice", (n) => { setUnread(n.unread); if (!ntc.box.hidden) socket.emit("notices", { seen: true }, drawNotices); else { $("#btn-bell").classList.remove("ring"); void $("#btn-bell").offsetWidth; $("#btn-bell").classList.add("ring"); } });
