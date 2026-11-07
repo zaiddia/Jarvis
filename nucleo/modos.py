@@ -258,7 +258,9 @@ ASSISTANT_ORDERS = ("instala <programa>", "actualiza todos mis programas", "¿qu
                     "pega aquí", "imprime esto", "acerca", "aleja", "zoom normal", "pon la ventana a la izquierda", "pon la ventana a la derecha",
                     "pasa la ventana al otro monitor", "nuevo escritorio virtual", "siguiente escritorio", "vista de tareas",
                     "historial del portapapeles", "recorte de pantalla", "abre el explorador",
-                    "activa el control por voz", "desactiva el control por voz")
+                    "activa el control por voz", "desactiva el control por voz",
+                    "abre <página> en <Brave|Chrome|Edge|Firefox>", "busca <algo> en <navegador>", "¿a cómo está el dólar?",
+                    "precio del euro", "¿cuánto vale el bitcoin?", "¿cuánto son <N> dólares en pesos?", "gasté <N> dólares en <concepto>")
 
 
 @skills.skill("orden_asistente", "El PC y el día a día con órdenes de Jarvis: instalar, actualizar o desinstalar programas; qué "
@@ -278,7 +280,9 @@ def assistant_direct(orden):
     from nucleo.ventanaactiva import window_voice
     text = str(orden or "").strip()
     t = J.normalize(text)
-    for fn in (mode_voice, trigger_voice, payment_voice, expense_voice, list_voice, pc_voice, window_voice, home_voice):
+    from nucleo.dinero import money_voice
+    from nucleo.modocodigo import code_review_voice
+    for fn in (mode_voice, trigger_voice, code_review_voice, money_voice, payment_voice, expense_voice, list_voice, pc_voice, window_voice, home_voice):
         if fn(text, t):
             return True
     J.reply(f"No supe cómo hacer «{text}». Prueba con la orden directa, por ejemplo «instala VLC» o «limpia los temporales».", "PC")

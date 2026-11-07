@@ -53,7 +53,34 @@ def pick_gguf(siblings, patron="Q4_K_M"):
 
 
 def hf_api(repo):
-    return f"https://huggingface.co/api/models/{repo}"
+    return f"https://huggingface.co/api/models/{repo}?blobs=true"      # 12.11: con «blobs», trae la huella SHA-256 de cada archivo
+
+
+def asset_sha256(releases, name):
+    """La huella SHA-256 que publica GitHub para ese archivo del motor («digest: sha256:…»), o ""."""
+    for rel in releases or []:
+        for a in rel.get("assets") or []:
+            if a.get("name") == name:
+                d = str(a.get("digest") or "")
+                return d[7:].lower() if d.lower().startswith("sha256:") else ""
+    return ""
+
+
+def hf_sha256(siblings, name):
+    """La huella SHA-256 de un archivo del modelo en Hugging Face (está en «lfs»), o ""."""
+    for s in siblings or []:
+        if isinstance(s, dict) and s.get("rfilename") == name:
+            return str((s.get("lfs") or {}).get("sha256") or "").lower()
+    return ""
+
+
+def sha256_file(path):
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(4 * 1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def hf_file(repo, name):

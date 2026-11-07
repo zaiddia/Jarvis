@@ -26,7 +26,9 @@ items = []                     # los últimos adjuntos: [{"id", "nombre", "tipo"
 MAX_BYTES = 18_000_000
 KINDS = {"imagen": (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff"), "pdf": (".pdf",), "word": (".docx",),
          "excel": (".xlsx", ".xlsm"), "csv": (".csv", ".tsv"), "powerpoint": (".pptx",), "texto": (".txt", ".md", ".json", ".html", ".htm", ".py",
-                                                                                                   ".js", ".css", ".xml")}
+                                                                                                   ".js", ".css", ".xml", ".java", ".c", ".h", ".cpp", ".cc", ".hpp",
+                                                                                                   ".cs", ".php", ".sql", ".sh", ".bat", ".ps1", ".ino", ".kt",
+                                                                                                   ".go", ".rb", ".rs", ".ts", ".mjs", ".pyw", ".pde")}
 KIND_NAMES = {"imagen": "imagen", "pdf": "PDF", "word": "documento de Word", "excel": "hoja de Excel", "csv": "tabla CSV",
               "powerpoint": "presentación", "texto": "archivo de texto"}
 

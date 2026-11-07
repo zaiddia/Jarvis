@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.10.1"
+VERSION = "12.11"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -581,7 +581,9 @@ ACTION_RULE = (
     "Spotify del inicio»; «plan de energía alto rendimiento»; «activa el ahorro de batería»; «apaga el bluetooth», «activa "
     "el wifi», «modo avión», «conéctate al wifi Casa»; «modo concentración 40 minutos»; «modo docente», «modo general»; "
     "gastos, pagos y listas («gasté 20 mil en almuerzo», «recuérdame pagar el internet el 15 de cada mes», «agrega leche "
-    "a la lista del mercado»); la casa con Home Assistant («enciende la luz de la sala»); pestañas, carpetas y ventanas; «activa el control por voz» (el Acceso por voz de Windows, para que la persona maneje el mouse con su voz) "
+    "a la lista del mercado»); la casa con Home Assistant («enciende la luz de la sala»); pestañas, carpetas y ventanas; «activa el control por voz» (el Acceso por voz de Windows, para que la persona maneje el mouse con su voz); "
+    "revisar código («revisa este código: …» o un archivo .py subido); el dólar, el euro y el bitcoin («¿a cómo está el dólar?»); "
+    "abrir páginas en un navegador concreto («abre YouTube en Brave») "
     "(«cierra la pestaña del explorador», «sube una carpeta», «pon la ventana a la izquierda», «nuevo escritorio virtual»)."
 )
 
@@ -1649,6 +1651,8 @@ def process_command(text):
         return
     if mode_voice(text, t) or trigger_voice(text, t):  # 12.9: «modo general», «cuando conecte el cargador, …»
         return
+    if code_review_voice(text, t) or money_voice(text, t):   # 12.11: «revisa este código: …», «¿a cómo está el dólar?»
+        return
     if payment_voice(text, t) or expense_voice(text, t) or list_voice(text, t):   # 12.9: pagos, gastos y listas
         return
     if pc_voice(text, t):                              # 12.9: programas, mantenimiento, energía, conexiones, concentración
@@ -2341,6 +2345,11 @@ from nucleo.diaadia import *  # noqa: F401,F403,E402
 
 # ── 12.10: acciones de la ventana (atajos fijos: pestañas por programa, Explorador, ventanas, escritorios) → nucleo/ventanaactiva.py
 from nucleo.ventanaactiva import *  # noqa: F401,F403,E402
+
+# ── 12.11: Modo Código (revisar, explicar y mejorar código) y dólar/euro/cripto → nucleo/modocodigo.py, nucleo/dinero.py
+import codigo  # noqa: E402
+from nucleo.modocodigo import *  # noqa: F401,F403,E402
+from nucleo.dinero import *  # noqa: F401,F403,E402
 
 # ── 12.0: revisar el procedimiento a mano paso a paso (SymPy), mapa de errores del curso y refuerzo para ese error
 # → nucleo/pasoapaso.py (lógica en procedimiento.py)

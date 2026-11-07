@@ -306,10 +306,135 @@ def _foreground_loop():
         try:
             h = user32.GetForegroundWindow()
             if h and is_action_target(_class_of(h), _pid_of(h), user32.GetWindowLongW(h, -20)):
+                if h != _last_ext["hwnd"]:
+                    _note_window(h)                    # 12.11: recuerda tu navegador y tu Explorador
                 _last_ext["hwnd"] = h
         except Exception:
             pass
         time.sleep(0.35)
+
+
+# ----------------------------------------------------------------------------- 12.11: contexto (navegador y Explorador)
+BROWSER_PROCS = {"brave": "brave.exe", "chrome": "chrome.exe", "google chrome": "chrome.exe", "edge": "msedge.exe",
+                 "microsoft edge": "msedge.exe", "firefox": "firefox.exe", "mozilla firefox": "firefox.exe", "opera": "opera.exe",
+                 "opera gx": "opera.exe", "vivaldi": "vivaldi.exe"}
+BROWSER_NAMES = {"brave.exe": "Brave", "chrome.exe": "Chrome", "msedge.exe": "Edge", "firefox.exe": "Firefox", "opera.exe": "Opera",
+                 "vivaldi.exe": "Vivaldi"}
+context = {"browser": "", "browser_t": 0.0, "explorer": 0, "explorer_t": 0.0}
+CONTEXT_SECS = 45 * 60
+
+
+def _note_window(h):
+    try:
+        proc = (_proc_name(_pid_of(h)) or "").lower()
+    except Exception:
+        return
+    if proc in BROWSER_NAMES:
+        context.update(browser=proc, browser_t=time.time())
+    elif proc == "explorer.exe" and _class_of(h) == "CabinetWClass":
+        context.update(explorer=h, explorer_t=time.time())
+
+
+def note_browser(proc):
+    if proc:
+        context.update(browser=proc.lower(), browser_t=time.time())
+
+
+def context_browser():
+    """El navegador que estás usando (el último que abriste o usaste en los últimos 45 min), o ""."""
+    return context["browser"] if context["browser"] and time.time() - context["browser_t"] < CONTEXT_SECS else ""
+
+
+def browser_exe(proc):
+    """La ruta del navegador: del que está abierto, del registro de Windows o de donde se instala siempre."""
+    if not IS_WIN or not proc:
+        return ""
+    if psutil:
+        for p in psutil.process_iter(["name", "exe"]):
+            try:
+                if str(p.info["name"] or "").lower() == proc and p.info["exe"]:
+                    return p.info["exe"]
+            except Exception:
+                pass
+    try:
+        import winreg
+        for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+            try:
+                with winreg.OpenKey(hive, "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\" + proc) as k:
+                    path = winreg.QueryValueEx(k, "")[0]
+                    if path and os.path.exists(path.strip('"')):
+                        return path.strip('"')
+            except OSError:
+                pass
+    except ImportError:
+        pass
+    pf, pf86, local = os.environ.get("ProgramFiles", ""), os.environ.get("ProgramFiles(x86)", ""), os.environ.get("LOCALAPPDATA", "")
+    rel = {"brave.exe": [r"BraveSoftware\Brave-Browser\Application\brave.exe"], "chrome.exe": [r"Google\Chrome\Application\chrome.exe"],
+           "msedge.exe": [r"Microsoft\Edge\Application\msedge.exe"], "firefox.exe": [r"Mozilla Firefox\firefox.exe"],
+           "opera.exe": [r"Programs\Opera\opera.exe", r"Programs\Opera GX\opera.exe"], "vivaldi.exe": [r"Vivaldi\Application\vivaldi.exe"]}
+    for base in (pf, pf86, local):
+        for r in rel.get(proc, []):
+            path = os.path.join(base, r) if base else ""
+            if path and os.path.exists(path):
+                return path
+    return ""
+
+
+def open_url(url, browser_proc=""):
+    """Abre la página en el navegador que pediste o en el que estás usando (si no, el predeterminado). → nombre del navegador o ""."""
+    proc = browser_proc or context_browser()
+    if proc and IS_WIN:
+        exe = browser_exe(proc)
+        if exe:
+            subprocess.Popen([exe, url], creationflags=CREATE_NO_WINDOW)
+            note_browser(proc)
+            return BROWSER_NAMES.get(proc, proc)
+    webbrowser.open(url)
+    return ""
+
+
+def split_browser(text):
+    """«recetas en brave» → ("recetas", "brave.exe"); sin navegador → (texto, "")."""
+    m = re.match(r"^(.+?)\s+en\s+(?:el\s+|mi\s+)?(?:navegador\s+)?(?:de\s+)?(" + "|".join(sorted(BROWSER_PROCS, key=len, reverse=True)) + r")\s*$",
+                 str(text or "").strip(), re.I)
+    return (m.group(1).strip(), BROWSER_PROCS[normalize(m.group(2))]) if m else (str(text or "").strip(), "")
+
+
+def _in_browser(name):
+    return f" en {name}" if name else " en el navegador"
+
+
+def context_explorer():
+    """La ventana del Explorador que estás usando (si sigue abierta y la usaste en los últimos 45 min), o 0."""
+    h = context["explorer"]
+    if IS_WIN and h and user32.IsWindow(h) and time.time() - context["explorer_t"] < CONTEXT_SECS:
+        return h
+    return 0
+
+
+def explorer_navigate(target, hwnd):
+    """Lleva esa ventana del Explorador a la carpeta (sin teclear nada: con la interfaz de Windows). → True si se pudo."""
+    try:
+        import pythoncom
+        import win32com.client
+        pythoncom.CoInitialize()
+        shell = win32com.client.Dispatch("Shell.Application")
+        path = target
+        if str(target).startswith("shell:"):
+            ns = shell.NameSpace(target)
+            path = ns.Self.Path if ns is not None else target
+        for w in shell.Windows():
+            try:
+                if int(w.HWND) == int(hwnd):
+                    w.Navigate2(path)
+                    focus_window(hwnd)
+                    context.update(explorer=hwnd, explorer_t=time.time())
+                    return True
+            except Exception:
+                continue
+    except Exception:
+        return False
+    return False
 
 
 def target_window():
@@ -508,6 +633,24 @@ def open_app(nombre):
         _launch(custom[key])
         return f"Abriendo {key}."
 
+    # 12.11: «youtube en brave», «gmail en el navegador chrome», «la página del colegio en edge»
+    m = re.match(r"^(.+?)\s+en\s+(?:el\s+|mi\s+)?(?:navegador\s+)?(?:de\s+)?(" + "|".join(sorted(BROWSER_PROCS, key=len, reverse=True)) +
+                 r"|el navegador|navegador)$", q)
+    if m:
+        what, b = m.group(1).strip(), m.group(2)
+        proc = BROWSER_PROCS.get(b, "")
+        sk = _best_match(re.sub(r"^(?:la pagina de |la web de |el sitio de )", "", what), SITES, 0.8)
+        if sk:
+            url, label = SITES[sk], sk
+        elif re.fullmatch(r"[a-z0-9\-]+(\.[a-z0-9\-]+)+(/\S*)?", what):
+            url, label = "https://" + what, what
+        else:
+            url, label = "https://www.google.com/search?q=" + urllib.parse.quote_plus(what), f"la búsqueda «{what}»"
+        if proc and IS_WIN and not browser_exe(proc):
+            raise SkillError(f"No encontré {BROWSER_NAMES.get(proc, b)} instalado en este equipo.")
+        name = open_url(url, proc)
+        return f"Abriendo {label}{_in_browser(name)}."
+
     m = re.match(r"^(?:la )?(?:configuracion|ajustes)(?: de(?:l)?(?: la| el| los)?)?\s*(.*)$", q)
     sub = m.group(1).strip() if m else (q if q in SETTINGS_PAGES else "")
     if m or sub:
@@ -515,15 +658,24 @@ def open_app(nombre):
         _launch(SETTINGS_PAGES[page_key] if page_key else "ms-settings:")
         return f"Abriendo la configuración de {page_key}." if page_key else "Abriendo la configuración de Windows."
 
-    fq = re.sub(r"^carpeta(?: de)?\s+", "", q)
+    fq = re.sub(r"^(?:la )?carpeta(?: de)?\s+", "", q)
     fk = _best_match(fq, FOLDERS, 0.86)
     if fk:
+        h = context_explorer()                         # 12.11: en el Explorador que ya tienes abierto, no en otro
+        if h and explorer_navigate(FOLDERS[fk], h):
+            return f"Te llevé a {fk} en el Explorador que tenías abierto."
         _launch(FOLDERS[fk])
         return f"Abriendo {fk}."
 
     if re.fullmatch(r"[a-z0-9\-]+(\.[a-z0-9\-]+)+(/\S*)?", q):
-        webbrowser.open("https://" + q)
-        return f"Abriendo {q}."
+        name = open_url("https://" + q)
+        return f"Abriendo {q}{_in_browser(name)}."
+
+    if context_browser():                              # 12.11: estás usando un navegador: la página va ahí, sin buscar programas
+        sk = _best_match(q, SITES, 0.8)
+        if sk:
+            name = open_url(SITES[sk])
+            return f"Abriendo {sk}{_in_browser(name)}."
 
     bk = _best_match(q, BUILTIN_APPS, 0.86)
     if bk and IS_WIN:
@@ -542,12 +694,15 @@ def open_app(nombre):
         if hit:
             display, kind, target = hit
             _launch_app(kind, target)
+            bp = next((p for n, p in BROWSER_PROCS.items() if normalize(display) == n or normalize(display).startswith(n + " ")), "")
+            if bp:
+                note_browser(bp)                       # 12.11: abriste un navegador: lo que pidas en la web va ahí
             return f"Abriendo {display}."
 
     sk = _best_match(q, SITES, 0.8)
     if sk:
-        webbrowser.open(SITES[sk])
-        return f"Abriendo {sk} en el navegador."
+        name = open_url(SITES[sk])
+        return f"Abriendo {sk}{_in_browser(name)}."
 
     raise SkillError(f"No encontré «{nombre}» entre tus aplicaciones. Prueba con el nombre "
                      "que aparece en el menú Inicio o añádelo como atajo en Ajustes › Control del PC.")
@@ -841,8 +996,9 @@ def browser_search(consulta):
     if not consulta:
         raise SkillError("¿Qué quieres que busque?", need="consulta")
     # Abrir la pestaña con la búsqueda ya hecha es lo más fiable (no depende del foco ni del teclado).
-    webbrowser.open("https://www.google.com/search?q=" + urllib.parse.quote_plus(consulta))
-    return f"Abrí una pestaña nueva buscando «{consulta}»."
+    consulta, bp = split_browser(consulta)
+    name = open_url("https://www.google.com/search?q=" + urllib.parse.quote_plus(consulta), bp)
+    return f"Abrí una pestaña nueva{_in_browser(name) if name else ''} buscando «{consulta}»."
 
 
 @skill("pestana", "Cambia, abre o cierra pestañas del navegador",
@@ -1053,14 +1209,15 @@ def open_web(url):
     u = url.strip()
     if not re.match(r"^https?://", u):
         u = "https://" + u.replace(" punto ", ".").replace(" ", "")
-    webbrowser.open(u)
-    return f"Abriendo {u}."
+    name = open_url(u)
+    return f"Abriendo {u}{_in_browser(name)}."
 
 
 @skill("buscar_web", "Busca algo en Google", "consulta", windows_only=False)
 def web_search(consulta):
-    webbrowser.open("https://www.google.com/search?q=" + urllib.parse.quote_plus(consulta))
-    return f"Buscando «{consulta}» en Google."
+    consulta, bp = split_browser(consulta)              # 12.11: «busca recetas en brave»
+    name = open_url("https://www.google.com/search?q=" + urllib.parse.quote_plus(consulta), bp)
+    return f"Buscando «{consulta}» en Google" + (f" ({name})." if name else ".")
 
 
 @skill("youtube", "Reproduce o busca un video o canción en YouTube", "consulta", windows_only=False)
@@ -1071,10 +1228,10 @@ def youtube(consulta):
                                      headers={"User-Agent": "Mozilla/5.0", "Accept-Language": "es"})
         html = urllib.request.urlopen(req, timeout=6).read().decode("utf-8", "ignore")
         vid = re.search(r'"videoId":"([\w-]{11})"', html).group(1)
-        webbrowser.open(f"https://www.youtube.com/watch?v={vid}")
+        open_url(f"https://www.youtube.com/watch?v={vid}")
         return f"Reproduciendo «{consulta}» en YouTube."
     except Exception:
-        webbrowser.open("https://www.youtube.com/results?search_query=" + urllib.parse.quote_plus(consulta))
+        open_url("https://www.youtube.com/results?search_query=" + urllib.parse.quote_plus(consulta))
         return f"Buscando «{consulta}» en YouTube."
 
 

@@ -136,8 +136,25 @@ def voice_access_off(origin="PC"):
     J.reply("Listo, cerré el control por voz.", origin)
 
 
+_GO_FOLDER = re.compile(r"^(?:jarvis\s+)?(?:ve|vete|ir|llevame|pasa(?:te)?|entra|cambia(?:te)?)\s+a\s+(?:la\s+carpeta\s+(?:de\s+)?|mis\s+)?"
+                        r"(descargas|documentos|escritorio|imagenes|fotos|musica|videos|este equipo|mi pc)$")
+
+
 def window_voice(text, t):
     """Pestañas con programa nombrado (o en Explorador, terminal…) y el catálogo de atajos."""
+    m = _GO_FOLDER.match(t)
+    if m:                                              # 12.11: en el Explorador que ya tienes abierto
+        if not J.IS_WIN:
+            J.reply("Eso solo lo puedo hacer en Windows.", "PC")
+            return True
+        h = skills.context_explorer() or (atajos.pick_window(skills.list_windows(), ("explorer.exe",)) or {}).get("hwnd", 0)
+        target = skills.FOLDERS[m.group(1)]
+        if h and skills.explorer_navigate(target, h):
+            J.reply(f"Listo, en {m.group(1)}.", "PC")
+        else:
+            skills._launch(target)
+            J.reply(f"Abriendo {m.group(1)}.", "PC")
+        return True
     if _VA_ON.search(t) or _VA_OFF.search(t):
         if not J.IS_WIN:
             J.reply("El control por voz es de Windows 11.", "PC")
@@ -169,4 +186,4 @@ def window_voice(text, t):
     return True
 
 
-__all__ = ['BROWSERS', 'VA_HELP', '_VA_OFF', '_VA_ON', '_va_running', 'voice_access_off', 'voice_access_on', 'window_voice']
+__all__ = ['BROWSERS', '_GO_FOLDER', 'VA_HELP', '_VA_OFF', '_VA_ON', '_va_running', 'voice_access_off', 'voice_access_on', 'window_voice']

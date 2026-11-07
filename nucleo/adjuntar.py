@@ -15,7 +15,7 @@ import conversiones
 from nucleo import J
 
 ACTIONS = {"describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo", "procedimiento": "Revisar procedimiento",
-           "preguntas": "Hacer un quiz", "editar": "Editar con IA"}
+           "preguntas": "Hacer un quiz", "editar": "Editar con IA", "codigo": "Revisar código", "codigo_ej": "Ejercicios con este código"}
 
 
 _batch = {"ids": []}             # lo último que subiste junto (una tarjeta): a eso se refieren «únelos», «¿qué dicen?»
@@ -64,7 +64,10 @@ def card_of(its):
         acts += ["tabla"] if k in ("imagen", "pdf", "word") else []
         acts += ["revisar", "procedimiento", "editar"] if k == "imagen" else []           # 12.0: paso a paso
         acts += ["revisar"] if k == "pdf" else []                                          # 12.3: un taller en PDF
-        acts += ["preguntas"] if k in ("pdf", "word", "powerpoint", "texto") else []
+        if k == "texto" and its[0]["nombre"].lower().endswith(J.codigo.CODE_EXTS):          # 12.11: Modo Código
+            acts = ["codigo", "codigo_ej"]
+        else:
+            acts += ["preguntas"] if k in ("pdf", "word", "powerpoint", "texto") else []
     elif kinds == {"imagen"} and len(its) <= 8:
         acts = ["revisar"]                                                                  # 12.3: varias fotos = un taller de varias páginas
     convs = conversiones.options_for(its)
@@ -223,6 +226,9 @@ def attach_run(its, action, pregunta=""):
                 J.generated_files.add(f)
             J.notify(msg, "ADJUNTOS")
             return files
+        if action in ("codigo", "codigo_ej"):         # 12.11: Modo Código
+            J.code_attach_action(its[0], action)
+            return None
         if action == "revisar":
             J.review_set_from(its)
             J.start_review("actual")

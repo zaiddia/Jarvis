@@ -233,18 +233,35 @@ def _mt_fetch(url, dst, progress=None, label=""):
     return dst
 
 
+def verify_download(path, want, label):
+    """12.11: que lo descargado sea exactamente lo publicado (huella SHA-256). Si no coincide, se borra y no se usa."""
+    if not want:
+        J.log_terminal(f"Sin huella publicada para {label}: no la pude verificar.", "IA LOCAL")
+        return False
+    if motorlocal.sha256_file(path) != want:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+        raise ValueError(f"la huella de {label} no coincide con la publicada (archivo dañado o alterado); lo borré y no lo uso")
+    J.log_terminal(f"Huella de {label} verificada.", "IA LOCAL")
+    return True
+
+
 def install_engine(progress=None, gpu=False):
     """Baja el motor llama.cpp para este sistema (12.7: o su versión con tarjeta gráfica). → ruta de llama-server."""
     exe = _exe_for("gpu" if gpu else "cpu")
     if exe:
         return exe
-    rel = motorlocal.pick_release(J._motor_get_json(motorlocal.RELEASES_API), J.IS_WIN, gpu)
+    releases = J._motor_get_json(motorlocal.RELEASES_API)
+    rel = motorlocal.pick_release(releases, J.IS_WIN, gpu)
     if not rel:
         raise ValueError("no encontré el motor para este sistema en las versiones de llama.cpp")
     url, name, tag = rel
     dest = _dir("bin", "gpu") if gpu else _dir("bin")
     os.makedirs(dest, exist_ok=True)
     arc = J._motor_fetch(url, _dir(name), progress, "el motor con la tarjeta gráfica" if gpu else "el motor")
+    verify_download(arc, motorlocal.asset_sha256(releases, name), "el motor")           # 12.11
     if arc.endswith(".zip"):
         with zipfile.ZipFile(arc) as z:
             z.extractall(dest)
@@ -275,6 +292,7 @@ def install_model(mid=None, progress=None):
     dst = _dir("modelos", os.path.basename(name))
     if not os.path.exists(dst):
         J._motor_fetch(motorlocal.hf_file(m["repo"], name), dst, progress, m["nombre"])
+        verify_download(dst, motorlocal.hf_sha256(info.get("siblings") or [], name), m["nombre"])     # 12.11
     J.settings["motor_model"] = os.path.basename(dst)
     try:
         J.save_settings_file()
@@ -299,6 +317,7 @@ def install_vision(progress=None):
     dst = _dir("vision", os.path.basename(model))
     if not os.path.exists(dst):
         J._motor_fetch(motorlocal.hf_file(m["repo"], name), dst, progress, "la visión de " + m["nombre"])
+        verify_download(dst, motorlocal.hf_sha256(info.get("siblings") or [], name), "la visión de " + m["nombre"])
     engine["no_mm"] = False
     return m["nombre"]
 
@@ -498,6 +517,6 @@ def motor_start_services():
 _motor_get_json = _mt_get_json
 _motor_fetch = _mt_fetch
 
-__all__ = ['IDLE_STOP', '_MOTOR_EYES', '_MOTOR_INST', 'install_vision', 'motor_mmproj', 'motor_sees', 'motor_vision_job', 'vision_plan', '_motor_fetch', '_motor_get_json', 'engine', 'handle_motor', 'install_engine', 'install_model', 'motor_ask',
+__all__ = ['IDLE_STOP', 'verify_download', '_MOTOR_EYES', '_MOTOR_INST', 'install_vision', 'motor_mmproj', 'motor_sees', 'motor_vision_job', 'vision_plan', '_motor_fetch', '_motor_get_json', 'engine', 'handle_motor', 'install_engine', 'install_model', 'motor_ask',
            'motor_bench', 'motor_ensure', 'motor_install_job', 'motor_pick_backend', 'motor_warmup', 'motor_name', 'motor_paths', 'motor_ready', 'motor_recommend', 'motor_start', 'motor_start_services',
            'motor_status', 'motor_stop', 'motor_voice', 'motorlocal']

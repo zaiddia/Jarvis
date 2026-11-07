@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Modo Código, dólar en vivo, IA local verificada y Jarvis sigue el contexto (v12.11)
+
+- **Sigue el contexto del navegador**: «abre YouTube en Brave» lo abre en Brave (antes buscaba un programa llamado «youtube en el navegador brave»). Jarvis recuerda el navegador que abriste o usaste: después de «abre Brave», «abre Gmail», «busca recetas» o «pon música de… en YouTube» van a Brave. También «busca noticias en Chrome», «abre la página del colegio en Edge».
+- **Sigue el contexto del Explorador**: con una ventana del Explorador abierta, «abre descargas», «abre documentos», «ve a escritorio» cambian de carpeta en esa misma ventana en vez de abrir otra.
+- **Modo Código** (Tecnología e Informática): sube un archivo de código con el clip (.py, .js, .html, .css, .java, .c, .cpp, .ino, .php, .sql…) y pulsa «Revisar código» o «Ejercicios con este código», o escribe «revisa este código:» y debajo el código. Primero un analizador encuentra los errores de sintaxis reales con su línea (Python, JSON, HTML, llaves y paréntesis), sin ejecutar nada; después la IA explica qué hace, encuentra errores de lógica, sugiere mejoras y da el código corregido. Informe en Word en Documentos › Jarvis › Código. También «explícame este código», «corrige mi programa», «haz ejercicios con este código».
+- **Dólar, euro y cripto en vivo**: «¿a cómo está el dólar?» (TRM oficial del día), «precio del euro», «¿cuánto vale el bitcoin?», «¿cuánto son 50 dólares en pesos?», «convierte 200 mil pesos a dólares». Y «gasté 50 dólares en un curso» queda en tus gastos en pesos con la TRM.
+- **La IA local, verificada**: el motor, el modelo y su visión se comprueban con su huella SHA-256 publicada antes de usarlos; si no coincide, se borran.
+
 ## Control por voz del mouse con Windows (v12.10.1)
 
 - «Jarvis, activa el control por voz» abre el **Acceso por voz** de Windows 11: tú manejas el mouse con la voz («mostrar números», «clic en 5», «doble clic en 5», «cuadrícula del mouse», «desplazar hacia abajo»). «Desactiva el control por voz» lo cierra. Jarvis no hace clic por su cuenta.
