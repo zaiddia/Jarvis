@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.13"
+VERSION = "12.13.1"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1250,6 +1250,11 @@ def set_state(**changes):
         state.update(changes)
         snapshot = dict(state)
     socketio.emit("state", snapshot)
+    if "mode" in changes and "pill_on_mode" in globals():      # 12.13.1: al decir «Jarvis» se abre la píldora
+        try:
+            pill_on_mode(snapshot["mode"])
+        except Exception:
+            pass
 
 
 def refresh_mode():

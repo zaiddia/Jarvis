@@ -696,3 +696,5 @@ body.solid.pill-mode { background: #04090f; }
 body.pill-mode > :not(#pill):not(script) { visibility: hidden !important; pointer-events: none !important; }
 body.pill-mode #pill { visibility: visible !important; pointer-events: auto !important; }
 @media (prefers-reduced-motion: reduce) { .pill-dot { animation: none; } }
+.pill[data-mic="off"] .pill-dot { background: var(--muted); box-shadow: none; animation: none; opacity: .8; }
+.pill[data-mic="err"] .pill-dot { background: var(--err); box-shadow: 0 0 8px rgba(255, 77, 94, .9); animation: none; }

@@ -391,7 +391,7 @@
   if (typeof io === "undefined") { setPreview("No se pudo cargar Socket.IO.", "dim"); return; }
   const socket = io();
   window.JarvisHUD = {                                    // 12.13: para la píldora (pildora.js)
-    socket, mode: () => st.mode || "idle", settings: () => current, native: () => native,
+    socket, mode: () => st.mode || "idle", mic: () => st.mic || "off", settings: () => current, native: () => native,
     pending: () => pendingN, dictating: () => dictating, poke: () => poke(),
     dragging: () => body.classList.contains("dragging"), input: el.input,
   };

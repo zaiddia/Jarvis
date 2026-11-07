@@ -157,6 +157,13 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## La píldora se abre al decir «Jarvis» y la escucha nunca la espera (v12.13.1)
+
+- Al decir «Jarvis» (solo o con la orden de una vez), mientras piensa o cuando te responde, **Jarvis mismo abre la píldora**; antes dependía de la página del HUD y a veces no se abría.
+- Mover o cambiar el tamaño de la ventana se hace aparte: la escucha pide abrir la píldora y sigue oyéndote al instante, aunque Windows tarde en mover la ventana.
+- La píldora muestra si te puede oír: **punto azul** = te escucha; **gris** = micrófono en pausa; **rojo** = el micrófono falló (pasa el ratón para ver el detalle).
+- Arreglado: un abrir y cerrar muy rápido podía dejar el HUD recortado en forma de óvalo.
+
 ## El HUD se esconde como píldora en el borde derecho (v12.13)
 
 - Cuando no lo usas, el HUD se vuelve una **píldora delgada pegada al borde derecho** de la pantalla y deja libre el escritorio. Pasa el ratón por la píldora y se abre ahí mismo, a la misma altura.

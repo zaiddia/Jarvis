@@ -39,6 +39,9 @@
     pillEl.classList.toggle("attn", n > 0);
     badge.hidden = !(docked && unread > 0);
     pillEl.dataset.state = H.mode();
+    const mic = H.mic();                                                   // 12.13.1: si no te puede oír, la píldora lo muestra
+    pillEl.dataset.mic = mic === "on" ? "on" : mic === "error" ? "err" : "off";
+    pillEl.title = mic === "on" ? "Jarvis te escucha · pasa el ratón para abrir" : mic === "error" ? "El micrófono falló · pasa el ratón para ver" : "Micrófono en pausa · pasa el ratón para abrir";
   }
 
   function open() { if (docked && !waiting && Date.now() - dockedAt > 700) {   // recién escondida: el ratón ya no está ahí
@@ -57,12 +60,12 @@
   pillEl.addEventListener("pointerenter", () => { if (docked) { clearTimeout(enterT); enterT = setTimeout(open, HOVER_MS); } });
 
   socket.on("hud_pill", (d) => {
-    if (d && d.refused) { waiting = false; hover = true; touch(); return; }   // el ratón sigue encima
+    if (d && d.refused) { waiting = false; touch(); return; }   // el ratón sigue encima: espera otro rato
     setDocked(!!(d && d.on));
   });
   socket.on("connect", () => socket.emit("hud_pill_state", {}, (d) => { if (d) setDocked(!!d.on); }));
   socket.on("state", (s) => {
-    if (s && s.mode && s.mode !== "idle") { touch(); if (docked && enabled() && (s.mode === "awaiting" || s.mode === "speaking")) open(); }
+    if (s && s.mode && s.mode !== "idle") touch();          // 12.13.1: al decir «Jarvis» la abre Jarvis mismo (no depende de esta página)
     drawBadge();
   });
   socket.on("chat", (item) => { touch(); if (docked && item && item.role !== "user") { unread++; drawBadge(); } });

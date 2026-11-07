@@ -43,9 +43,9 @@ def hud(jv, monkeypatch):
     monkeypatch.setitem(jv.settings, "hud_expanded", "amplio")
     old = dict(jv.hud)
     jv.hud.update(window=win, size="compacto", x=922, y=556, w=430, h=150, visible=True)
-    pildora.pill.update(docked=False, cy=None)
+    pildora.pill.update(docked=False, cy=None, sync=True)
     yield jv, win, emitted
-    pildora.pill.update(docked=False, cy=None)
+    pildora.pill.update(docked=False, cy=None, sync=False)
     jv.hud.clear()
     jv.hud.update(old)
 
@@ -132,3 +132,41 @@ def test_por_voz(hud, ask, monkeypatch):
 def test_ajustes_validos(jv):  # noqa: D103
     assert jv.DEFAULT_SETTINGS["hud_auto_hide"] is True and jv.DEFAULT_SETTINGS["hud_hide_secs"] == 5
     assert jv._validate("hud_hide_secs", 1) == 2 and jv._validate("hud_hide_secs", 300) == 60
+
+
+def test_al_decir_jarvis_se_abre_sin_depender_de_la_pagina(hud):
+    jv, win, _ = hud
+    jv.hud_dock(True)
+    jv.set_state(mode="idle")
+    jv.set_state(mode="awaiting")                              # «Jarvis»
+    assert not jv.pill_docked()
+    jv.hud_dock(True)
+    jv.set_state(mode="thinking")                              # «Jarvis, abre YouTube» de una vez
+    assert not jv.pill_docked()
+    jv.set_state(mode="idle")
+    jv.hud_dock(True)
+    jv.hud["visible"] = False                                  # en modo sigilo no aparece
+    jv.set_state(mode="speaking")
+    assert jv.pill_docked()
+    jv.hud["visible"] = True
+    jv.set_state(mode="idle")
+
+
+def test_mover_la_ventana_no_frena_la_escucha(hud):
+    """La escucha pide abrir la píldora y sigue al instante, aunque la ventana tarde en moverse."""
+    import threading
+    import time
+    jv, win, _ = hud
+    jv.hud_dock(True)
+    pildora.pill["sync"] = False
+    gate = threading.Event()
+    slow = win.resize
+    win.resize = lambda w, h: (gate.wait(2), slow(w, h))
+    t0 = time.time()
+    assert jv.hud_dock(False) is True and time.time() - t0 < 0.2
+    gate.set()
+    for _ in range(100):
+        if not jv.pill_docked() and ("resize", 430, 150) in win.calls:
+            break
+        time.sleep(0.02)
+    assert ("resize", 430, 150) in win.calls

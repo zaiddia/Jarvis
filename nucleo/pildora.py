@@ -7,6 +7,7 @@
 - Antes de esconderse se comprueba en Windows que el ratón no esté sobre el HUD (solo se lee
   dónde está el puntero; Jarvis no lo mueve).
 """
+import queue
 import re
 import threading
 import time
@@ -15,7 +16,7 @@ from nucleo import J
 
 PILL_W, PILL_H = 22, 104          # píxeles lógicos
 _EDGE_GAP = 8                     # separación del HUD abierto con el borde derecho
-pill = {"docked": False, "lock": threading.Lock(), "cy": None}
+pill = {"docked": False, "lock": threading.Lock(), "cy": None, "queue": queue.Queue(), "thread": None, "sync": False}
 
 
 def pill_enabled():
@@ -67,8 +68,9 @@ def cursor_over_hud():
         return False
 
 
-def _shape(rounded):
-    """En Windows recorta la ventana con forma de píldora (con fondo sólido se vería un rectángulo)."""
+def _shape():
+    """En Windows recorta la ventana con forma de píldora (con fondo sólido se vería un rectángulo).
+    Mira el estado al aplicarse, así un abrir/cerrar rápido no deja el HUD recortado."""
     def go():
         rect = _win_rect()
         if not rect:
@@ -77,20 +79,19 @@ def _shape(rounded):
             import ctypes
             hwnd, l, t, r, b = rect
             gdi, user32 = ctypes.windll.gdi32, ctypes.windll.user32
-            if rounded:
-                w, h = r - l, b - t
+            w, h = r - l, b - t
+            if pill["docked"] and w < 80:
                 rgn = gdi.CreateRoundRectRgn(0, 0, w + 1, h + 1, w, w)
                 user32.SetWindowRgn(hwnd, rgn, True)       # Windows se queda con la región
             else:
                 user32.SetWindowRgn(hwnd, 0, True)
         except Exception as e:
             J.log_terminal(f"No se pudo dar forma a la píldora: {e}", "AVISO")
-    threading.Timer(0.12, go).start()
+    threading.Timer(0.15, go).start()
 
 
-def hud_dock(on, force=False):
-    """on=True: esconde el HUD como píldora en el borde derecho. on=False: lo abre junto a la píldora.
-    → True si cambió."""
+def _dock_now(on, force=False):
+    """Hace el cambio de ventana (en el hilo de la píldora). → True si cambió."""
     win = J.hud.get("window")
     if win is None:
         return False
@@ -109,20 +110,52 @@ def hud_dock(on, force=False):
                 J.socketio.emit("hud_pill", {"on": True})
                 win.resize(PILL_W, PILL_H)
                 win.move(x, y)
-                _shape(True)
             else:
                 w, h = J.hud_dims(J.hud["size"])
                 x, y = _open_xy(w, h, pill["cy"] if pill["cy"] is not None else J.hud["y"] + PILL_H / 2)
                 pill["docked"] = False
                 J.hud.update(x=x, y=y, w=w, h=h, ignore_moves_until=time.time() + 2.0)
-                _shape(False)
+                J.socketio.emit("hud_pill", {"on": False})
                 win.resize(w, h)
                 win.move(x, y)
-                J.socketio.emit("hud_pill", {"on": False})
+            _shape()
         except Exception as e:
             J.log_terminal(f"No se pudo cambiar la píldora del HUD: {e}", "AVISO")
             return False
     return True
+
+
+def _dock_worker():
+    while True:
+        on, force = pill["queue"].get()
+        while not pill["queue"].empty():               # solo cuenta lo último que se pidió
+            on, force = pill["queue"].get()
+        try:
+            _dock_now(on, force)
+        except Exception as e:
+            J.log_terminal(f"Píldora del HUD: {e}", "AVISO")
+
+
+def hud_dock(on, force=False):
+    """on=True: esconde el HUD como píldora en el borde derecho. on=False: lo abre junto a la píldora.
+    Nunca hace esperar a quien lo pide: mover la ventana puede tardar, y si lo pide la escucha
+    (al decir «Jarvis») no debe frenar el micrófono. → True si quedó pedido."""
+    if J.hud.get("window") is None:
+        return False
+    if pill.get("sync"):                               # pruebas
+        return _dock_now(on, force)
+    with pill["lock"]:
+        if pill["thread"] is None:
+            pill["thread"] = threading.Thread(target=_dock_worker, daemon=True, name="pildora")
+            pill["thread"].start()
+    pill["queue"].put((bool(on), bool(force)))
+    return True
+
+
+def pill_on_mode(mode):
+    """Lo llama set_state: al decir «Jarvis», mientras piensa o al responder, la píldora se abre."""
+    if mode in ("awaiting", "thinking", "speaking") and pill["docked"] and pill_enabled() and J.hud.get("visible"):
+        J.hud_dock(False)
 
 
 def pill_docked():
@@ -187,6 +220,8 @@ __all__ = [
     'PILL_H',
     'PILL_W',
     '_EDGE_GAP',
+    '_dock_now',
+    '_dock_worker',
     '_PL_NOW',
     '_PL_OFF',
     '_PL_ON',
@@ -202,5 +237,6 @@ __all__ = [
     'pill',
     'pill_docked',
     'pill_enabled',
+    'pill_on_mode',
     'pill_voice',
 ]
