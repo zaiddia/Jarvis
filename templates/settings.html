@@ -178,6 +178,14 @@
       <label class="switch"><input type="checkbox" id="f-dim" data-key="hud_dim_idle"><span></span></label>
     </div>
     <div class="field">
+      <div class="ft"><label for="f-pill">Esconderse como píldora</label><p>Si no lo usas, el HUD se vuelve una píldora delgada en el borde derecho de la pantalla y deja libre el escritorio. Pasa el ratón por la píldora para abrirlo. No se esconde con el ratón encima, mientras escribes ni mientras Jarvis te escucha o te habla. Por voz: «escóndete a la derecha», «no te escondas».</p></div>
+      <label class="switch"><input type="checkbox" id="f-pill" data-key="hud_auto_hide"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-pill-secs">Esconderse después de</label><p>Segundos sin usar el HUD (ni el ratón encima) antes de volverse píldora.</p></div>
+      <div class="range"><input type="range" id="f-pill-secs" min="2" max="30" step="1" data-key="hud_hide_secs" data-unit=" s"><output></output></div>
+    </div>
+    <div class="field">
       <div class="ft"><label for="f-subs">Subtítulos</label><p>Mientras Jarvis habla, el HUD muestra lo que dice, palabra por palabra (al ritmo aproximado de la voz).</p></div>
       <label class="switch"><input type="checkbox" id="f-subs" data-key="hud_subtitles"><span></span></label>
     </div>

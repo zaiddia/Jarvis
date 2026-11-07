@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.12"
+VERSION = "12.13"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -857,6 +857,8 @@ DEFAULT_SETTINGS = {
     "hud_subtitles": True,         # 8.6: subtítulos de lo que dice Jarvis, palabra por palabra
     "hud_expanded": "amplio",      # 9.1: tamaño del HUD expandido (estrecho, amplio o grande)
     "hud_favorites": "",           # 9.2: órdenes favoritas (una por línea), como botones en el HUD
+    "hud_auto_hide": True,         # 12.13: el HUD se esconde como píldora en el borde derecho
+    "hud_hide_secs": 5,            # 12.13: segundos sin usarlo antes de esconderse
     "drive_auto": False,           # 8.7: subir a tu Drive cada material que Jarvis cree
     "drive_folder_id": "",
     "zeti_since": "",              # 8.7: notas desde esta fecha (AAAA-MM-DD), p. ej. el inicio del periodo
@@ -950,7 +952,7 @@ LEGACY_DEFAULT_MODELS = {"gemini_model": ("gemini-2.5-flash", "gemini-2.0-flash"
 RANGES = {
     "tts_rate": (-50, 50), "tts_volume": (-50, 50), "tts_pitch": (-50, 50),
     "wake_window": (3, 30), "followup_listen": (0, 20), "live_idle": (5, 120), "live_barge_level": (5, 80), "history_turns": (0, 30), "ai_temperature": (0.0, 2.0),
-    "mic_device": (-1, 999), "hud_opacity": (30, 100),
+    "mic_device": (-1, 999), "hud_opacity": (30, 100), "hud_hide_secs": (2, 60),
     "night_hour": (17, 23), "adventure_secs": (20, 300),            # 12.0
     "cloud_hour": (0, 23),                                          # 12.8
     "battery_low": (10, 50),                                        # 12.9
@@ -1791,6 +1793,9 @@ def process_command(text):
               "Di «modo matemáticas» para fórmulas, o «terminar dictado» para parar.", "PC")
         return
 
+    if pill_voice(text, t):                         # 12.13: la píldora del borde derecho
+        return
+
     # Modo sigilo: ocultar o mostrar el panel por voz (sigue escuchando el micrófono)
     # Mostrar (se comprueba antes que ocultar para que «sal del modo sigilo» funcione)
     if re.search(r"\bsal del? (?:modo )?sigilo\b|\bmuestrate\b|\baparece\b"
@@ -2412,6 +2417,7 @@ from nucleo.plataformas import *  # noqa: F401,F403,E402
 # ── 12.2: cerebro local: la mejor IA que cabe en tu equipo, probada con tareas de docente
 # → nucleo/iaencasa.py (lógica en cerebrolocal.py)
 from nucleo.iaencasa import *  # noqa: F401,F403,E402
+from nucleo.pildora import *  # noqa: F401,F403,E402
 
 
 # =============================================================================

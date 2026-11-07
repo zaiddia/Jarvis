@@ -671,3 +671,28 @@ body.has-face .reactor-svg { display: none; }
 /* 12.7: los errores de Jarvis se distinguen (en el estilo clásico, con su borde rojo) */
 html:not([data-look="aurora"]) .msg.jarvis.err .msg-body { border-color: rgba(255, 77, 94, .55); background: rgba(255, 77, 94, .08); color: #ffd0d5; box-shadow: inset 3px 0 0 var(--err); }
 html:not([data-look="aurora"]) .msg.jarvis.err .msg-meta { color: var(--err); }
+
+/* ---------------- 12.13: el HUD como píldora en el borde derecho ---------------- */
+.pill { position: fixed; inset: 0; z-index: 9999; border-radius: 999px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, rgba(var(--a-rgb), .16), rgba(4, 10, 18, .96) 30%, rgba(4, 10, 18, .96) 70%, rgba(var(--a-rgb), .16));
+  border: 1px solid rgba(var(--a-rgb), .45); box-shadow: inset 0 0 10px rgba(var(--a-rgb), .18); }
+.pill[hidden] { display: none; }
+.pill::before { content: ""; position: absolute; left: 50%; top: 14px; bottom: 14px; width: 2px; transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, rgba(var(--a-rgb), .55), transparent); border-radius: 2px; }
+.pill-dot { position: relative; width: 10px; height: 10px; border-radius: 50%; background: var(--a);
+  box-shadow: 0 0 8px rgba(var(--a-rgb), .9), 0 0 2px #fff inset; animation: pillBreath 3.2s ease-in-out infinite; }
+.pill[data-state="awaiting"] .pill-dot, .pill[data-state="speaking"] .pill-dot { animation-duration: .9s; }
+.pill[data-state="thinking"] .pill-dot { background: var(--a2, #8a7dff); animation-duration: 1.4s; }
+.pill.attn { border-color: rgba(255, 181, 71, .7); }
+.pill.attn .pill-dot { background: var(--warn); box-shadow: 0 0 9px rgba(255, 181, 71, .9); }
+.pill-badge { position: absolute; top: 9px; left: 50%; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%;
+  background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.pill-badge[hidden] { display: none; }
+.pill:hover { border-color: rgba(var(--a-rgb), .85); }
+@keyframes pillBreath { 0%, 100% { transform: scale(.8); opacity: .65; } 50% { transform: scale(1.1); opacity: 1; } }
+body.pill-mode { background: transparent; }
+body.solid.pill-mode { background: #04090f; }
+body.pill-mode > :not(#pill):not(script) { visibility: hidden !important; pointer-events: none !important; }
+body.pill-mode #pill { visibility: visible !important; pointer-events: auto !important; }
+@media (prefers-reduced-motion: reduce) { .pill-dot { animation: none; } }

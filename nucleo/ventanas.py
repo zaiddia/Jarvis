@@ -172,7 +172,7 @@ def create_hud(start_hidden=False, loader=False):
         J.HUD_TITLE, width=w, height=h, x=x, y=y, **page,
         frameless=True, easy_drag=False, transparent=not solid, resizable=False,
         on_top=J.settings["hud_on_top"], hidden=start_hidden, shadow=False,
-        background_color=J.HUD_SOLID_BG if solid else "#000000", min_size=(80, 80))
+        background_color=J.HUD_SOLID_BG if solid else "#000000", min_size=(20, 60))   # 12.13: la píldora mide 22 px de ancho
     win.events.moved += J._on_hud_moved
     win.events.shown += J._on_hud_shown
     win.events.closing += J._on_hud_closing
@@ -194,7 +194,8 @@ def _open_browser_hud():
     webbrowser.open(f"{J.URL}/?size=expandido")
 
 
-def hud_show():
+def hud_show(expand=True):
+    """expand=False: si está como píldora, la deja así (p. ej. al terminar una captura de pantalla)."""
     win = J.hud["window"]
     if win is None:
         if not J.hud.get("browser_opened"):
@@ -204,6 +205,8 @@ def hud_show():
     win.show()
     J.hud["visible"] = True
     J.socketio.emit("hud_visible", {"visible": True})
+    if expand and J.pill_docked():                 # 12.13: lo pediste (bandeja, voz, aviso): se abre la píldora
+        J.hud_dock(False)
 
 
 def hud_hide():
@@ -228,7 +231,7 @@ def _temp_hide(hidden):
             J.hud_hide()
     elif J.hud["temp_hidden"]:
         J.hud["temp_hidden"] = False
-        J.hud_show()
+        J.hud_show(expand=False)
 
 
 def hud_set_size(size):
@@ -238,6 +241,9 @@ def hud_set_size(size):
     J.hud["size"] = size
     J.socketio.emit("hud_size", {"size": size})
     if win is None:
+        return
+    if J.pill_docked():                            # 12.13: desde la píldora se abre ya con el tamaño nuevo
+        J.hud_dock(False)
         return
     nw, nh = J.hud_dims(size)
     ax, ay, aw, ah = J._work_area()
@@ -253,7 +259,7 @@ def hud_set_size(size):
 
 def hud_reposition():
     win = J.hud["window"]
-    if win is None or J.settings["hud_position"] == "libre":
+    if win is None or J.settings["hud_position"] == "libre" or J.pill_docked():
         return
     w, h = J.hud_dims(J.hud["size"])
     x, y = J._corner_xy(J.hud["size"], J.settings["hud_position"])

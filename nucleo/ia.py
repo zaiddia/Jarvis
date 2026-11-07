@@ -947,6 +947,7 @@ CAPABILITIES = [
     ("Mensajería", ["manda un whatsapp a Juan que llego tarde", "manda un telegram diciendo reunión a las 3"]),
     ("Pantalla y archivos", ["toma una captura de pantalla", "busca el archivo informe", "brillo al 70"]),
     ("Modo sigilo", ["modo sigilo", "mostrar panel"]),
+    ("Píldora del borde derecho (12.13)", ["escóndete a la derecha", "escóndete solo", "no te escondas"]),
     ("Sistema (piden confirmación)", ["bloquea el equipo", "apaga el equipo", "vacía la papelera", "actualízate"]),
     ("Inteligencia artificial", ["cualquier pregunta: ¿cuál es la capital de Francia?", "escríbeme un poema"]),
 ]

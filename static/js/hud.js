@@ -390,6 +390,11 @@
   /* ---------------- Socket ---------------- */
   if (typeof io === "undefined") { setPreview("No se pudo cargar Socket.IO.", "dim"); return; }
   const socket = io();
+  window.JarvisHUD = {                                    // 12.13: para la píldora (pildora.js)
+    socket, mode: () => st.mode || "idle", settings: () => current, native: () => native,
+    pending: () => pendingN, dictating: () => dictating, poke: () => poke(),
+    dragging: () => body.classList.contains("dragging"), input: el.input,
+  };
 
   /* ================= 8.6: panel «Hoy», tarjetas de archivos, sugerencias, paleta y subtítulos ================= */
   const dash = $("#dash"), viewHoy = $("#view-hoy"), chips = $("#chips"), xtabHoy = $("#xtab-hoy");

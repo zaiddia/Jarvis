@@ -96,6 +96,8 @@ def apply_settings(data):
         J.hud["window"].on_top = J.settings["hud_on_top"]
     if "hud_position" in changed:
         J.hud_reposition()
+    if "hud_auto_hide" in changed and not J.settings["hud_auto_hide"] and J.pill_docked():   # 12.13
+        J.hud_dock(False)
     if "hud_expanded" in changed and J.hud.get("size") == "expandido":   # 9.1: cambia de tamaño al momento
         J.hud_set_size("expandido")
     if changed & {"diary_enabled", "diary_days"}:

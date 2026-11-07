@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## El HUD se esconde como píldora en el borde derecho (v12.13)
+
+- Cuando no lo usas, el HUD se vuelve una **píldora delgada pegada al borde derecho** de la pantalla y deja libre el escritorio. Pasa el ratón por la píldora y se abre ahí mismo, a la misma altura.
+- Se vuelve a esconder tras **5 segundos** sin usarlo. No se esconde mientras tengas el ratón encima del HUD, mientras escribes una orden, con la paleta (`Ctrl+K`) o los avisos abiertos, durante el dictado ni mientras Jarvis te escucha, piensa o te habla.
+- Cuando dices «Jarvis» o te responde, se abre solo para que veas la respuesta. La píldora late más rápido mientras habla, se pone ámbar si algo espera tu aprobación y muestra un punto verde si llegó un mensaje.
+- Por voz: «escóndete a la derecha» (ya), «no te escondas» (se queda fijo), «escóndete solo» (vuelve la píldora). En **Ajustes › HUD › Ventana flotante**: activar o desactivar y cuántos segundos espera (de 2 a 30).
+- Jarvis solo lee dónde está el puntero para no esconderse debajo de él; nunca lo mueve.
+
 ## Recuperaciones, calendario escolar, QR que cambia, modo examen, coevaluación, copia, juegos y laboratorio de Python (v12.12)
 
 - **Recuperaciones con seguimiento**: «¿quiénes deben recuperar?» (por debajo de 3,0 en el periodo). Al hacer los planes («haz los planes de recuperación de 7A»), cada estudiante queda en seguimiento con su fecha límite: «Ana Gómez entregó la recuperación», «Ana Gómez sacó 3,5 en la recuperación» (queda en sus notas), «¿cómo van las recuperaciones?». Jarvis avisa dos días antes, el día y si se venció.
