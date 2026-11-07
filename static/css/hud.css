@@ -658,3 +658,9 @@ body.has-face .reactor-svg { display: none; }
 .rv-res.err { color: #ff8a95; }
 .rv-res .rv-nota { color: var(--ok); font-size: 1.1em; }
 .rv-res .rv-err { color: #ffb4bb; margin-top: 2px; overflow-wrap: anywhere; }
+
+/* 12.5: qué IA responde */
+.ai-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; margin-right: 6px; border: 1px solid rgba(var(--a-rgb), .45); border-radius: 999px;
+  font-size: calc(11px * var(--fs, 1)); color: var(--a); max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: rgba(var(--a-rgb), .06); }
+.ai-chip[data-donde="local"] { color: #c9a8ff; border-color: rgba(180, 140, 255, .55); background: rgba(180, 140, 255, .08); }
+.ai-chip[data-donde="ninguna"] { color: #ff8a95; border-color: rgba(255, 77, 94, .55); background: rgba(255, 77, 94, .08); }

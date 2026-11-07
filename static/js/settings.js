@@ -179,15 +179,37 @@
     st.textContent = text; st.className = "status" + cls;
   }
 
+  function renderAiNow(a) {                                                      // 12.5: qué IA responde ahora
+    const el = $("#ai-now");
+    if (!el || !a) return;
+    el.textContent = a.donde === "nube" ? `☁ IA en la nube: ${a.proveedor}${a.modelo ? " · " + a.modelo : ""}.`
+      : a.donde === "local" ? `⌂ IA de tu equipo: ${a.modelo}${a.sin_internet ? " (sin internet)" : ""}.` : `✕ ${a.texto}.`;
+    el.className = "status" + (a.donde === "ninguna" ? " err" : " ok");
+  }
   function renderOffline() {
     const o = (meta && meta.offline_info) || {};
-    const st = $("#offline-status");
-    st.className = "status" + (o.local_model ? " ok" : " err");
-    st.textContent = (o.offline ? "Ahora mismo: SIN INTERNET. " : "")
-      + (o.local_model ? `IA local lista: ${o.local_model}.`
-        : "No encontré una IA local: instala Ollama (ollama.com) y un modelo. Sin ella, sin internet solo funcionan las órdenes del PC.")
-      + (o.piper ? " Voz sin internet: lista." : " Voz sin internet: falta Piper (ejecuta descargar_voz.py).");
+    renderAiNow(o.ahora);
+    const now = $("#offline-now"), list = $("#offline-list"), btns = $("#offline-btns"), st = $("#offline-status");
+    const a = o.ahora || {};
+    now.textContent = o.offline ? "Ahora mismo: SIN INTERNET." : a.donde === "nube" ? `Ahora respondes con la IA en la nube (${a.proveedor}): todo funciona. Esto solo hace falta si se cae el internet.` : "";
+    now.className = "status" + (o.offline ? " err" : "");
+    list.textContent = ""; btns.textContent = ""; st.textContent = "";
+    const item = (ok, txt) => { const li = document.createElement("li"); li.textContent = (ok ? "✓ " : "○ ") + txt; li.className = ok ? "ok" : "falta"; list.append(li); };
+    item(!!o.local_model, o.ia || "");
+    item(!!o.piper, o.voz || "");
+    const btn = (label, what) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "btn btn-ghost"; b.textContent = label;
+      b.addEventListener("click", () => socket.emit("offline_setup", { what }, (r) => { st.textContent = (r && r.msg) || ""; st.className = "status" + (r && r.ok ? " ok" : " err"); }));
+      btns.append(b);
+    };
+    if (o.ia_paso === "componente" && !o.frozen) btn("Instalar el componente de Ollama", "componente");
+    if (o.ia_paso === "instalar") btn("Instalar Ollama", "instalar");
+    if (o.ia_paso === "abrir") btn("Abrir Ollama", "abrir");
+    if (o.ia_paso === "modelo" || o.ia_paso === "instalar") btn("Preparar la IA sin internet", "modelo");
+    if (o.voz_paso === "voz" && !o.frozen) btn("Instalar la voz sin internet", "voz");
+    if (o.voz_paso === "voz" && o.frozen) item(false, "En la versión .exe la voz Piper se instala con la versión de Python de Jarvis.");
   }
+
 
   function showTtsBackend(bk) {
     $$("[data-ttsbk]").forEach((n) => { n.hidden = n.dataset.ttsbk !== bk; });
@@ -257,6 +279,7 @@
 
   /* ---------------- Socket ---------------- */
   const socket = io();
+  socket.on("ai_now", (a) => renderAiNow(a));                                   // 12.5: qué IA responde, en vivo
   socket.on("connect", () => {
     socket.emit("get_settings", (res) => {
       meta = res;

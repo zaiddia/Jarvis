@@ -619,8 +619,7 @@ def handle_get_settings():
                       "key": bool(J._live_order(include_paused=True)), "model": J._live_load().get("combo", [""])[0],
                       "keys": {p: bool(J._live_key(p)) for p in J.LIVE_PROVIDERS},
                       "openai_voices": envivo.OPENAI_VOICES, "deepgram_voices": envivo.DEEPGRAM_VOICES},
-        "offline_info": {"offline": J.net["offline"], "local_model": J.local_ai_model(refresh=True),
-                         "piper": bool(J.PIPER_INSTALLED and J.find_piper_voice())},
+        "offline_info": J.offline_detail(),           # 12.5: qué falta, pieza por pieza, y qué IA responde ahora
         "default_system_prompt": J.DEFAULT_SYSTEM_PROMPT,
         "providers": {k: {"short": v["short"], "kind": v["kind"], "default_model": v.get("model", "")}
                       for k, v in J.PROVIDERS.items()},

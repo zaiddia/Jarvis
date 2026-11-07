@@ -457,6 +457,9 @@
     </div>
     <datalist id="models-list"></datalist>
     <div class="field">
+      <div class="ft"><label>Ahora responde</label><p class="status" id="ai-now">…</p></div>
+    </div>
+    <div class="field">
       <div class="ft"><label>Probar conexión</label><p class="status" id="ai-status">Sin comprobar.</p></div>
       <button class="btn btn-ghost" type="button" id="btn-test-ai"><svg class="i"><use href="#i-plug"/></svg>Probar</button>
     </div>
@@ -498,7 +501,11 @@
 
     <div class="group">Si se cae el internet</div>
     <div class="field">
-      <div class="ft"><label for="f-offline">Seguir funcionando sin internet</label><p>Si se va la conexión, Jarvis lo nota solo y pasa a lo que hay en tu equipo: la IA de <b>Ollama</b>, la voz <b>Piper</b> y el reconocimiento local. Cuando vuelve el internet, regresa a lo de siempre y te avisa.</p><p class="status" id="offline-status"></p></div>
+      <div class="ft"><label for="f-offline">Seguir funcionando sin internet</label><p>Si se va la conexión, Jarvis lo nota solo y pasa a lo que hay en tu equipo: la IA de <b>Ollama</b>, la voz <b>Piper</b> y el reconocimiento local. Cuando vuelve el internet, regresa a lo de siempre y te avisa. Es <b>opcional</b>: con internet, Jarvis usa la IA de la nube.</p>
+        <p class="status" id="offline-now"></p>
+        <ul class="offline-list" id="offline-list"></ul>
+        <div class="row" id="offline-btns" style="flex-wrap:wrap;gap:6px"></div>
+        <p class="status" id="offline-status"></p></div>
       <label class="switch"><input type="checkbox" id="f-offline" data-key="offline_auto"><span></span></label>
     </div>
     <div class="field stack">

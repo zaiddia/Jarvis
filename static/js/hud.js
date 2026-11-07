@@ -903,6 +903,22 @@
     if (on) $("#proj-t").textContent = "Proyectando: " + (d.title || (d.kind === "imagen" ? "imagen" : "respuesta"));
   });
   projPill.addEventListener("click", () => socket.emit("project_clear", {}));
+  /* ---------- 12.5: qué IA responde (nube o la de tu equipo) ---------- */
+  const aiChip = $("#ai-chip");
+  function drawAiNow(a) {
+    if (!a || !aiChip) return;
+    aiChip.hidden = false;
+    aiChip.dataset.donde = a.donde;
+    $("#ai-chip-t").textContent = a.donde === "nube" ? `☁ ${a.proveedor}` : a.donde === "local" ? `⌂ Local · ${a.modelo}` : "✕ Sin IA";
+    aiChip.title = (a.donde === "nube" ? `Responde la IA en la nube: ${a.proveedor}${a.modelo ? " · " + a.modelo : ""}.`
+      : a.donde === "local" ? `Responde la IA de tu equipo: ${a.modelo}${a.sin_internet ? " (no hay internet)" : ""}.` : a.texto + ".")
+      + (a.donde !== "local" ? (a.respaldo ? ` Si se cae el internet: ${a.respaldo}.` : " Si se cae el internet: no hay IA de respaldo (Ajustes › IA).") : "")
+      + " Clic: Ajustes de IA.";
+  }
+  socket.on("ai_now", drawAiNow);
+  socket.on("connect", () => socket.emit("ai_now", {}, drawAiNow));
+  aiChip.addEventListener("click", () => socket.emit("open_settings"));
+
   /* ---------- 11.8: tamaño de la letra ---------- */
   function textSize(dir) {
     const order = ["normal", "grande", "proyector"];

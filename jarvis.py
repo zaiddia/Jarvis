@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.4"
+VERSION = "12.5"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1588,6 +1588,8 @@ def process_command(text):
         return
     if activities_voice(text, t):                      # 9.6: «¿qué actividades funcionaron en fracciones?»
         return
+    if ai_who_voice(text, t):                          # 12.5: «¿qué IA estás usando?», «instala la voz sin internet»
+        return
     if journal_voice(text, t):                         # 11.8: «deshaz lo último», «¿qué hiciste hoy?»
         return
     if face_voice(text, t):                            # 12.0: «muestra tu rostro», «proyecta tu rostro en el proyector»
@@ -2247,6 +2249,9 @@ from nucleo.estudio import *  # noqa: F401,F403,E402
 # → nucleo/hudpro.py (lógica en momento.py, bitacora.py y mathtext.py)
 from nucleo.hudpro import *  # noqa: F401,F403,E402
 
+# ── 12.5: qué IA responde (nube o local) y qué falta para funcionar sin internet → nucleo/estadoia.py
+from nucleo.estadoia import *  # noqa: F401,F403,E402
+
 # ── 12.0: revisar el procedimiento a mano paso a paso (SymPy), mapa de errores del curso y refuerzo para ese error
 # → nucleo/pasoapaso.py (lógica en procedimiento.py)
 from nucleo.pasoapaso import *  # noqa: F401,F403,E402
@@ -2450,6 +2455,7 @@ def main():
         sources_start()                   # 11.5: libros guía
         attach_start()                    # 11.6: archivos subidos al chat
         hudpro_start()                    # 11.8: «Lo que hice hoy» con deshacer
+        ai_state_start()                  # 12.5: qué IA responde, a la vista
         procedure_start()                 # 12.0: mapa de errores de los procedimientos
         night_start()                     # 12.0: turno de noche
         adventure_start()                 # 12.0: reloj de la aventura matemática

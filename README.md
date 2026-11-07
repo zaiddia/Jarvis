@@ -157,6 +157,12 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Qué IA responde, a la vista (v12.5)
+
+- **En el HUD, junto a «Aa», se ve qué IA está respondiendo**: «☁ Gemini» (la de la nube), «⌂ Local · llama3.2» (la de tu equipo, por ejemplo cuando no hay internet) o «✕ Sin IA». Al pasar el ratón dice el modelo y si hay IA de respaldo para cuando se caiga el internet; un clic abre los Ajustes. También en *Ajustes › IA › Ahora responde*, y por voz: «¿qué IA estás usando?».
+- **«Si se cae el internet» ahora explica qué falta, pieza por pieza**, y ya no sale en rojo como si fuera un error: con internet, Jarvis funciona con la IA de la nube y esto es opcional. Te dice si Ollama no está instalado, si está instalado pero cerrado o si no tiene modelo, y si falta la voz Piper.
+- **Botones para dejarlo listo** (siempre con tu «sí»): *Instalar Ollama*, *Abrir Ollama*, *Preparar la IA sin internet*, *Instalar el componente de Ollama* e *Instalar la voz sin internet* (ya no hay que ejecutar descargar_voz.py). Por voz: «instala la voz sin internet».
+
 ## Más seguro con las notas oficiales y los datos de los estudiantes (v12.4)
 
 - **El mapa de errores se protege como las notas**: guarda nombres de estudiantes, así que ahora se cifra si tienes activado *Datos de estudiantes cifrados*, entra en las copias de seguridad y en la sincronización, y se restaura con lo demás.
