@@ -54,7 +54,7 @@ def jv():
     jarvis.push_chat = lambda *a, **k: None
     jarvis.socketio.emit = lambda *a, **k: None
     if hasattr(os, "startfile"):                    # en Windows nunca se abre un archivo de verdad (colgaba el CI con el .ics)
-        os.startfile = lambda *a, **k: rec.other.append("abrir archivo")
+        os.startfile = lambda *a, **k: None
 
     def run_skill(name, args, confirmed=False):
         sk = jarvis.skills.REGISTRY.get(name)
