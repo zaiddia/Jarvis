@@ -157,6 +157,27 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Generador de documentos y Mis aplicaciones (v12.14)
+
+**Generador de documentos** («abre el generador de documentos», o el botón del HUD expandido):
+- Formatos **Word, PDF, Texto, Excel, PowerPoint y CSV**.
+- Plantillas: documento libre, informe, guía de aprendizaje, taller, evaluación con hoja de respuestas, planeador de clase, rúbrica, circular para padres, acta, y **planilla de notas** y **lista de asistencia** del curso (estas dos sin IA, con la lista del Aula).
+- Curso, asignatura, extensión (1, 2 o 5 páginas) y encabezado con tu nombre e institución.
+- **Partir de un archivo** que subas a la página (PDF, Word, foto…): solo se lee ese archivo.
+- **Vista previa** antes de guardar y cambios por partes («cambia la pregunta 3», «más corto»). El mismo borrador se puede guardar en Word y en PDF.
+- **Historial** con Abrir, Carpeta, Proyectar y Drive. Los archivos quedan en la carpeta *Documentos*.
+- Por voz: «hazme un acta en PDF de la reunión de padres», «redacta una circular en Word sobre la salida pedagógica». Los talleres, guías y evaluaciones por voz siguen como siempre.
+
+**Mis aplicaciones** («abre mis aplicaciones», el botón del HUD expandido o Ajustes › Control del PC):
+- Tarjetas con nombre, tipo (programa, web, carpeta o archivo), varias frases y la ruta; botones Probar/Abrir, Editar, Eliminar y «+».
+- **Examinar…** abre el selector de Windows para escoger el programa o la carpeta, y **Agregar desde los programas encontrados** usa los del menú Inicio.
+- Navegador por tarjeta (Brave, Chrome, Edge…), y «abre música en Chrome» lo cambia por esa vez.
+- Avisa si una frase ya la usa otra tarjeta, si es muy corta o si es una orden que Jarvis ya conoce.
+- **Grupos** («prepara la clase» abre Campus, PowerPoint y la carpeta del curso) y **horario** (Campus entre semana a las 6:50).
+- **Probar una frase**: muestra qué haría Jarvis sin abrir nada.
+- Las más usadas, y la ★ de cada tarjeta la pone como botón en el HUD.
+- Tus atajos de texto (`nombre = destino`) pasaron solos a tarjetas; lo que escribas ahí también se vuelve tarjeta.
+
 ## El micrófono ya no se pausa sin querer desde la píldora (v12.13.2)
 
 - **Causa**: al abrirse, la ventana pasaba un instante con el tamaño de la píldora mostrando el HUD apretado, y justo bajo el ratón quedaba el **botón del micrófono**. Un segundo clic (o doble clic) sobre la píldora lo pausaba, y como esa pausa se guarda, Jarvis dejaba de escucharte.

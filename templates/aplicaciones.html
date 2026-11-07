@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis aplicaciones</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
+<style>
+  html, body { min-height: 100%; }
+  body { background: radial-gradient(ellipse at 50% -10%, rgba(var(--a-rgb), .12), transparent 60%), var(--bg); color: var(--text);
+         font-family: var(--mono); font-size: 13px; padding: 22px clamp(16px, 3vw, 40px) 90px; user-select: text; }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+  .hero { text-align: center; padding: 22px 16px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(180deg, rgba(var(--a-rgb), .07), transparent); }
+  .hero h1 { font-family: var(--hud); font-size: clamp(20px, 3vw, 30px); color: var(--a); letter-spacing: .08em; text-shadow: 0 0 16px rgba(var(--a-rgb), .5);
+             display: inline-flex; gap: 12px; align-items: center; }
+  .hero h1 svg { width: 1em; height: 1em; }
+  .hero p { color: var(--muted); margin-top: 6px; }
+  .tools { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; margin: 16px 0 6px; }
+  @media (max-width: 860px) { .tools { grid-template-columns: 1fr; } }
+  .box { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: rgba(var(--a-rgb), .025); }
+  .box h3 { font-family: var(--hud); font-size: 10px; letter-spacing: .22em; color: var(--a); text-transform: uppercase; margin-bottom: 8px; }
+  .try { display: flex; gap: 8px; } .try .inp { flex: 1; height: 36px; }
+  .try-out { margin-top: 8px; color: var(--muted); min-height: 18px; line-height: 1.45; }
+  .try-out b { color: var(--a); }
+  .top { display: flex; flex-wrap: wrap; gap: 6px; }
+  .top span { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; }
+  .filter { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0 10px; align-items: center; }
+  .filter .inp { height: 34px; width: 220px; }
+  .filter .btn { height: 34px; padding: 0 12px; font-size: 9.5px; }
+  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: pointer; font-size: 12px; }
+  .chip.on { color: #03060c; background: var(--a); border-color: var(--a); font-weight: 700; }
+  .sec { font-family: var(--hud); font-size: 11px; letter-spacing: .24em; color: var(--a); margin: 22px 0 10px; display: flex; gap: 10px; align-items: center; }
+  .sec::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+  .card { border: 1px solid var(--line-strong); border-radius: 14px; padding: 14px; background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .01));
+          display: flex; flex-direction: column; gap: 10px; transition: .18s; }
+  .card:hover { box-shadow: 0 0 20px rgba(var(--a-rgb), .18); border-color: var(--a); }
+  .card .hd { display: flex; align-items: center; gap: 10px; }
+  .card .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: rgba(var(--a-rgb), .12); color: var(--a); flex-shrink: 0; }
+  .card .ic svg { width: 18px; height: 18px; }
+  .card .nm { font-size: 16px; color: var(--a); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { font-family: var(--hud); font-size: 8.5px; letter-spacing: .14em; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--muted); }
+  .star { color: var(--muted); font-size: 16px; padding: 0 4px; } .star.on { color: #ffd166; }
+  .ph { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ph span { padding: 4px 9px; border-radius: 999px; border: 1px solid rgba(var(--a-rgb), .35); color: #bfefff; font-size: 11.5px; background: rgba(var(--a-rgb), .06); }
+  .dst { font-size: 11.5px; color: var(--muted); background: rgba(0, 0, 0, .25); border-left: 2px solid var(--a); padding: 7px 9px; border-radius: 6px; word-break: break-all; }
+  .meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+  .acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: auto; }
+  .acts .btn { height: 32px; padding: 0 6px; font-size: 9.5px; letter-spacing: .06em; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .btn-ok { background: #2fbf71; color: #031a0d; }
+  .fab { position: fixed; right: 26px; bottom: 26px; width: 56px; height: 56px; border-radius: 50%; background: var(--a); color: #03060c; font-size: 32px;
+         line-height: 1; display: grid; place-items: center; box-shadow: 0 0 24px rgba(var(--a-rgb), .6); cursor: pointer; border: 0; z-index: 4; }
+  .fab:hover { filter: brightness(1.1); transform: scale(1.04); }
+  .empty { color: var(--muted); padding: 18px; border: 1px dashed var(--line); border-radius: 12px; text-align: center; }
+  dialog { margin: auto; border: 1px solid var(--line-strong); border-radius: 16px; background: #050b14; color: var(--text); width: min(640px, 94vw); padding: 0;
+           box-shadow: 0 0 40px rgba(var(--a-rgb), .25); }
+  dialog::backdrop { background: rgba(0, 0, 0, .6); }
+  .dlg { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; max-height: 86vh; overflow: auto; }
+  .dlg h2 { font-family: var(--hud); font-size: 13px; letter-spacing: .2em; color: var(--a); }
+  .dlg label.f { display: flex; flex-direction: column; gap: 5px; color: var(--muted); font-size: 11px; }
+  .dlg .inp { width: 100%; height: 36px; } .dlg textarea.inp { height: auto; min-height: 70px; padding: 8px 10px; resize: vertical; font-family: var(--mono); }
+  .dlg .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dlg .pathrow { display: flex; gap: 8px; } .dlg .pathrow .inp { flex: 1; }
+  .seg2 { display: flex; gap: 6px; flex-wrap: wrap; }
+  .days { display: flex; gap: 4px; flex-wrap: wrap; } .days label { display: flex; align-items: center; gap: 3px; font-size: 11.5px; color: var(--text); }
+  .warn { color: var(--warn); font-size: 12px; line-height: 1.45; }
+  .dlg .foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  .pick { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 6px; }
+  .pick label { display: flex; gap: 8px; align-items: center; padding: 3px 4px; }
+  .inst { max-height: 50vh; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
+  .inst div { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 8px; }
+  .inst div:hover { background: rgba(var(--a-rgb), .08); }
+  .inst small { color: var(--muted); }
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 10px); max-width: 520px; padding: 10px 16px; background: #061423;
+           border: 1px solid var(--line-strong); opacity: 0; transition: .25s; pointer-events: none; z-index: 9; }
+  #toast.on { opacity: 1; transform: translate(-50%, 0); } #toast.err { border-color: rgba(255, 77, 94, .6); }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body class="page">
+<div class="wrap">
+  <div class="hero">
+    <h1><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.5 3.2c2.9-.8 5.6-.6 6.3.1.7.7.9 3.4.1 6.3-.6 2.1-2 4.2-4 5.9l-.4 3.3a1 1 0 0 1-.5.7l-2.8 1.6a.6.6 0 0 1-.9-.5l-.2-2.9-2.8-2.8-2.9-.2a.6.6 0 0 1-.5-.9L7.5 11a1 1 0 0 1 .7-.5l3.3-.4c1.7-2 3.8-3.4 5.9-4zM16 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM5.6 15.5c.8-.3 1.8.1 2.5.8s1.1 1.7.8 2.5c-.5 1.5-3.6 2-4.7 2.1.1-1.1.6-4.2 1.4-5.4z"/></svg>Mis aplicaciones</h1>
+    <p>Programas, webs, carpetas y archivos que Jarvis abre con tus frases. También grupos y horario.</p>
+  </div>
+
+  <div class="tools">
+    <div class="box">
+      <h3>Probar una frase (no abre nada)</h3>
+      <div class="try"><input class="inp" id="try" placeholder="Ejemplo: abre el canal"><button class="btn btn-ghost" type="button" id="btn-try">Probar</button></div>
+      <div class="try-out" id="try-out"></div>
+    </div>
+    <div class="box">
+      <h3>Las más usadas</h3>
+      <div class="top" id="top"></div>
+    </div>
+  </div>
+
+  <div class="filter">
+    <input class="inp" id="q" placeholder="Buscar…">
+    <span class="chip on" data-t="">Todas</span><span class="chip" data-t="app">Programas</span><span class="chip" data-t="web">Web</span>
+    <span class="chip" data-t="carpeta">Carpetas</span><span class="chip" data-t="archivo">Archivos</span>
+    <span style="flex:1"></span>
+    <button class="btn btn-ghost" type="button" id="btn-inst">Agregar desde los programas encontrados</button>
+    <button class="btn btn-ghost" type="button" id="btn-group">Nuevo grupo</button>
+  </div>
+
+  <div class="sec" id="sec-groups" hidden>GRUPOS</div>
+  <div class="grid" id="groups"></div>
+  <div class="sec">TARJETAS</div>
+  <div class="grid" id="cards"></div>
+</div>
+<button class="fab" type="button" id="fab" title="Agregar una aplicación">+</button>
+
+<dialog id="dlg"><form class="dlg" method="dialog" id="form">
+  <h2 id="dlg-t">NUEVA TARJETA</h2>
+  <div class="two">
+    <label class="f">Nombre<input class="inp" id="f-nombre" required maxlength="60" placeholder="Campus"></label>
+    <label class="f">Tipo<select class="inp" id="f-tipo"></select></label>
+  </div>
+  <label class="f" id="lab-dst">Qué abrir
+    <span class="pathrow"><input class="inp" id="f-destino" placeholder="C:\Program Files\… o https://…"><button class="btn btn-ghost" type="button" id="btn-browse">Examinar…</button></span>
+  </label>
+  <label class="f" id="lab-br">Navegador<select class="inp" id="f-nav"></select></label>
+  <label class="f">Frases para abrirla (una por línea)<textarea class="inp" id="f-frases" placeholder="abre el campus&#10;abre campus"></textarea></label>
+  <div class="warn" id="f-warn"></div>
+  <label class="f"><span><input type="checkbox" id="f-sch"> Abrir sola en un horario</span></label>
+  <div class="two" id="sch-box" hidden>
+    <label class="f">Hora<input class="inp" id="f-hora" type="time" value="06:50"></label>
+    <div class="f"><span style="color:var(--muted);font-size:11px">Días</span><div class="days" id="f-dias"></div></div>
+  </div>
+  <div class="foot"><button class="btn btn-ghost" value="cancel" type="button" id="btn-cancel">Cancelar</button><button class="btn btn-primary" type="button" id="btn-ok">Guardar</button></div>
+</form></dialog>
+
+<dialog id="gdlg"><form class="dlg" method="dialog">
+  <h2 id="g-t">NUEVO GRUPO</h2>
+  <label class="f">Nombre<input class="inp" id="g-nombre" maxlength="60" placeholder="Modo clase"></label>
+  <label class="f">Frases (una por línea)<textarea class="inp" id="g-frases" placeholder="modo clase&#10;prepara la clase"></textarea></label>
+  <div class="warn" id="g-warn"></div>
+  <span style="color:var(--muted);font-size:11px">Qué abre (en este orden)</span>
+  <div class="pick" id="g-pick"></div>
+  <label class="f"><span><input type="checkbox" id="g-sch"> Abrir solo en un horario</span></label>
+  <div class="two" id="g-sch-box" hidden>
+    <label class="f">Hora<input class="inp" id="g-hora" type="time" value="06:50"></label>
+    <div class="f"><span style="color:var(--muted);font-size:11px">Días</span><div class="days" id="g-dias"></div></div>
+  </div>
+  <div class="foot"><button class="btn btn-ghost" type="button" id="g-cancel">Cancelar</button><button class="btn btn-primary" type="button" id="g-ok">Guardar</button></div>
+</form></dialog>
+
+<dialog id="idlg"><div class="dlg">
+  <h2>PROGRAMAS ENCONTRADOS</h2>
+  <input class="inp" id="i-q" placeholder="Buscar un programa…">
+  <div class="inst" id="inst"></div>
+  <div class="foot"><button class="btn btn-ghost" type="button" id="i-close">Cerrar</button></div>
+</div></dialog>
+<div id="toast"></div>
+
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const socket = io();
+  const ICONS = {
+    app: '<rect x="3" y="4" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 21h8M12 18v3" stroke="currentColor" stroke-width="1.8"/>',
+    web: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18" fill="none" stroke="currentColor" stroke-width="1.6"/>',
+    carpeta: '<path d="M3 6h7l2 2h9v11H3z" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+    archivo: '<path d="M6 3h8l4 4v14H6z M14 3v4h4" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+    grupo: '<rect x="4" y="4" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+  };
+  let S = null, edit = null, gedit = null, filterT = "", toastT = 0, installed = [];
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  function toast(t, err) { const n = $("#toast"); n.textContent = t; n.classList.toggle("err", !!err); n.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => n.classList.remove("on"), 5000); }
+  const lines = (v) => v.split(/\n+/).map((x) => x.trim()).filter(Boolean);
+
+  function card(x, isGroup) {
+    const c = el("div", "card");
+    const hd = el("div", "hd"), ic = el("div", "ic");
+    ic.innerHTML = `<svg viewBox="0 0 24 24">${ICONS[isGroup ? "grupo" : x.tipo]}</svg>`;
+    hd.append(ic, el("div", "nm", x.nombre), el("span", "badge", isGroup ? "GRUPO" : S.tipos[x.tipo].toUpperCase()));
+    const fav = el("button", "star" + (S.favoritos.includes(x.frases[0]) ? " on" : ""), S.favoritos.includes(x.frases[0]) ? "★" : "☆");
+    fav.type = "button"; fav.title = "Botón en el HUD";
+    fav.addEventListener("click", () => socket.emit("apps_fav", { id: x.id }, (r) => { if (r && r.ok) { S.favoritos = r.favoritos; draw(); toast(S.favoritos.includes(x.frases[0]) ? "Ahora sale como botón en el HUD." : "Quitado del HUD."); } }));
+    hd.append(fav);
+    c.append(hd);
+    const ph = el("div", "ph"); x.frases.forEach((f) => ph.append(el("span", "", `"${f}"`))); c.append(ph);
+    if (isGroup) {
+      const names = x.items.map((i) => (S.apps.find((a) => a.id === i) || {}).nombre).filter(Boolean);
+      c.append(el("div", "dst", "Abre: " + names.join(" → ")));
+    } else {
+      const br = (S.navegadores.find((b) => b[0] && b[0] === x.navegador) || [])[1];
+      c.append(el("div", "dst", x.destino + (br ? `  ·  en ${br}` : "")));
+    }
+    const meta = el("div", "meta");
+    if (x.horario_txt) meta.append(el("span", "", "⏰ " + x.horario_txt));
+    if (x.usos) meta.append(el("span", "", `${x.usos} ${x.usos === 1 ? "vez" : "veces"}`));
+    if (meta.children.length) c.append(meta);
+    const acts = el("div", "acts");
+    const t = el("button", "btn btn-ok", isGroup ? "▶ Abrir" : x.tipo === "web" ? "↗ Abrir" : "▶ Probar"); t.type = "button";
+    t.addEventListener("click", () => socket.emit("apps_test", { id: x.id }, (r) => toast(r && r.ok ? r.msg : (r && r.error) || "No se pudo.", !(r && r.ok))));
+    const e = el("button", "btn btn-ghost", "✎ Editar"); e.type = "button"; e.addEventListener("click", () => (isGroup ? openGroup(x) : openCard(x)));
+    const d = el("button", "btn btn-danger", "🗑 Eliminar"); d.type = "button";
+    let armed = 0;
+    d.addEventListener("click", () => {
+      if (Date.now() - armed > 3000) { armed = Date.now(); d.textContent = "¿Seguro?"; setTimeout(() => { d.textContent = "🗑 Eliminar"; }, 3000); return; }
+      socket.emit("apps_delete", { id: x.id }, (r) => { S = r; draw(); toast(`«${x.nombre}» eliminada.`); });
+    });
+    acts.append(t, e, d); c.append(acts);
+    return c;
+  }
+
+  function draw() {
+    const q = $("#q").value.trim().toLowerCase();
+    const hit = (x) => !q || (x.nombre + " " + x.frases.join(" ") + " " + (x.destino || "")).toLowerCase().includes(q);
+    const cards = $("#cards"), groups = $("#groups"); cards.innerHTML = ""; groups.innerHTML = "";
+    const gs = S.grupos.filter(hit);
+    $("#sec-groups").hidden = !gs.length || !!filterT;
+    if (!filterT) gs.forEach((g) => groups.append(card(g, true)));
+    const as = S.apps.filter((a) => hit(a) && (!filterT || a.tipo === filterT));
+    as.forEach((a) => cards.append(card(a, false)));
+    if (!as.length) cards.append(el("div", "empty", S.apps.length ? "Nada coincide con la búsqueda." : "Aún no tienes tarjetas. Pulsa «+» o «Agregar desde los programas encontrados»."));
+    const top = $("#top"); top.innerHTML = "";
+    const all = S.apps.concat(S.grupos);
+    S.top.forEach((id) => { const x = all.find((y) => y.id === id); if (x) top.append(el("span", "", `${x.nombre} · ${x.usos}`)); });
+    if (!top.children.length) top.append(el("span", "", "Aún nada: se llena a medida que las uses."));
+  }
+
+  function days(box, sel) {
+    box.innerHTML = "";
+    S.dias.forEach((d, i) => { const l = el("label"); const c = el("input"); c.type = "checkbox"; c.value = i; c.checked = sel.includes(i); l.append(c, d.slice(0, 3)); box.append(l); });
+  }
+  const pickedDays = (box) => [...box.querySelectorAll("input:checked")].map((c) => +c.value);
+
+  function openCard(x) {
+    edit = x || null;
+    $("#dlg-t").textContent = x ? "EDITAR TARJETA" : "NUEVA TARJETA";
+    $("#f-nombre").value = x ? x.nombre : ""; $("#f-tipo").value = x ? x.tipo : "app"; $("#f-destino").value = x ? x.destino : "";
+    $("#f-nav").value = x ? x.navegador || "" : ""; $("#f-frases").value = x ? x.frases.join("\n") : "";
+    $("#f-sch").checked = !!(x && x.horario); $("#sch-box").hidden = !$("#f-sch").checked;
+    $("#f-hora").value = x && x.horario ? x.horario.hora : "06:50"; days($("#f-dias"), x && x.horario ? x.horario.dias : [0, 1, 2, 3, 4]);
+    $("#f-warn").textContent = ""; syncTipo(); $("#dlg").showModal(); $("#f-nombre").focus();
+  }
+  function syncTipo() {
+    const t = $("#f-tipo").value;
+    $("#lab-br").hidden = t !== "web";
+    $("#btn-browse").hidden = t === "web" || !S.examinar;
+    $("#f-destino").placeholder = { app: "C:\\Program Files\\…\\programa.exe", web: "https://…", carpeta: "C:\\Users\\…\\Documentos\\Clases", archivo: "C:\\…\\horario.pdf" }[t];
+  }
+  $("#f-tipo").addEventListener("change", syncTipo);
+  $("#f-sch").addEventListener("change", () => { $("#sch-box").hidden = !$("#f-sch").checked; });
+  $("#g-sch").addEventListener("change", () => { $("#g-sch-box").hidden = !$("#g-sch").checked; });
+  let chkT = 0;
+  $("#f-frases").addEventListener("input", () => { clearTimeout(chkT); chkT = setTimeout(() => socket.emit("apps_check", { frases: lines($("#f-frases").value), id: edit && edit.id }, (r) => { $("#f-warn").textContent = (r.avisos || []).join(" "); }), 350); });
+  $("#btn-browse").addEventListener("click", () => socket.emit("apps_browse", { tipo: $("#f-tipo").value }, (r) => {
+    if (!r || !r.ok) { if (r && !r.cancel) toast(r.error || "No se pudo.", true); return; }
+    $("#f-destino").value = r.ruta;
+    if (!$("#f-nombre").value.trim()) $("#f-nombre").value = r.nombre;
+    if (!$("#f-frases").value.trim()) $("#f-frases").value = `abre ${r.nombre.toLowerCase()}`;
+  }));
+  $("#btn-cancel").addEventListener("click", () => $("#dlg").close());
+  $("#btn-ok").addEventListener("click", () => {
+    const d = { id: edit && edit.id, nombre: $("#f-nombre").value, tipo: $("#f-tipo").value, destino: $("#f-destino").value, navegador: $("#f-nav").value,
+      frases: lines($("#f-frases").value), appid: !!(edit && edit.appid && edit.destino === $("#f-destino").value),
+      horario: $("#f-sch").checked ? { hora: $("#f-hora").value, dias: pickedDays($("#f-dias")) } : null };
+    socket.emit("apps_save", d, (r) => {
+      if (!r || !r.ok) { $("#f-warn").textContent = (r && r.error) || "No se pudo guardar."; return; }
+      S = r; draw(); $("#dlg").close();
+      toast((r.avisos || []).length ? "Guardada. Ojo: " + r.avisos.join(" ") : `Guardada. Di «${d.frases[0] || "abre " + d.nombre.toLowerCase()}».`, (r.avisos || []).length > 0);
+    });
+  });
+
+  function openGroup(g) {
+    if (S.apps.length < 2) { toast("Primero crea al menos dos tarjetas.", true); return; }
+    gedit = g || null;
+    $("#g-t").textContent = g ? "EDITAR GRUPO" : "NUEVO GRUPO";
+    $("#g-nombre").value = g ? g.nombre : ""; $("#g-frases").value = g ? g.frases.join("\n") : ""; $("#g-warn").textContent = "";
+    const box = $("#g-pick"); box.innerHTML = "";
+    const order = g ? g.items.concat(S.apps.map((a) => a.id).filter((i) => !g.items.includes(i))) : S.apps.map((a) => a.id);
+    order.forEach((id) => { const a = S.apps.find((x) => x.id === id); if (!a) return; const l = el("label"); const c = el("input"); c.type = "checkbox"; c.value = id; c.checked = !!(g && g.items.includes(id)); l.append(c, `${a.nombre}  (${S.tipos[a.tipo]})`); box.append(l); });
+    $("#g-sch").checked = !!(g && g.horario); $("#g-sch-box").hidden = !$("#g-sch").checked;
+    $("#g-hora").value = g && g.horario ? g.horario.hora : "06:50"; days($("#g-dias"), g && g.horario ? g.horario.dias : [0, 1, 2, 3, 4]);
+    $("#gdlg").showModal();
+  }
+  $("#btn-group").addEventListener("click", () => openGroup(null));
+  $("#g-cancel").addEventListener("click", () => $("#gdlg").close());
+  $("#g-ok").addEventListener("click", () => {
+    const d = { grupo: true, id: gedit && gedit.id, nombre: $("#g-nombre").value, frases: lines($("#g-frases").value),
+      items: [...$("#g-pick").querySelectorAll("input:checked")].map((c) => c.value),
+      horario: $("#g-sch").checked ? { hora: $("#g-hora").value, dias: pickedDays($("#g-dias")) } : null };
+    socket.emit("apps_save", d, (r) => {
+      if (!r || !r.ok) { $("#g-warn").textContent = (r && r.error) || "No se pudo guardar."; return; }
+      S = r; draw(); $("#gdlg").close(); toast((r.avisos || []).length ? "Guardado. Ojo: " + r.avisos.join(" ") : "Grupo guardado.");
+    });
+  });
+
+  function drawInst() {
+    const q = $("#i-q").value.trim().toLowerCase(), box = $("#inst"); box.innerHTML = "";
+    const list = installed.filter((a) => !q || a.nombre.toLowerCase().includes(q)).slice(0, 250);
+    if (!list.length) box.append(el("small", "", installed.length ? "Nada coincide." : "Buscando los programas del menú Inicio… vuelve a abrir esto en unos segundos."));
+    list.forEach((a) => {
+      const r = el("div"); r.append(el("span", "", a.nombre));
+      if (a.ya) r.append(el("small", "", "ya está")); else {
+        const b = el("button", "btn btn-ghost", "Agregar"); b.type = "button"; b.style.height = "28px";
+        b.addEventListener("click", () => socket.emit("apps_save", { nombre: a.nombre, tipo: "app", destino: a.destino, appid: a.appid, frases: [`abre ${a.nombre.toLowerCase()}`] }, (res) => {
+          if (!res || !res.ok) { toast((res && res.error) || "No se pudo.", true); return; }
+          S = res; a.ya = true; draw(); drawInst(); toast(`Agregado: di «abre ${a.nombre.toLowerCase()}».`);
+        }));
+        r.append(b);
+      }
+      box.append(r);
+    });
+  }
+  $("#btn-inst").addEventListener("click", () => socket.emit("apps_installed", {}, (r) => { installed = (r && r.apps) || []; $("#i-q").value = ""; drawInst(); $("#idlg").showModal(); $("#i-q").focus(); }));
+  $("#i-q").addEventListener("input", drawInst);
+  $("#i-close").addEventListener("click", () => $("#idlg").close());
+
+  $("#btn-try").addEventListener("click", () => {
+    const f = $("#try").value.trim(); if (!f) return;
+    socket.emit("apps_try", { frase: f }, (r) => { const o = $("#try-out"); o.innerHTML = ""; const b = el("b", "", { tarjeta: "Tu tarjeta · ", atajo: "Atajo · ", jarvis: "Jarvis · ", nada: "Sin coincidencia · ", orden: "Otra orden · " }[r.quien] || ""); o.append(b, r.texto); });
+  });
+  $("#try").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#btn-try").click(); });
+  $("#q").addEventListener("input", draw);
+  document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => { document.querySelectorAll(".chip").forEach((x) => x.classList.remove("on")); c.classList.add("on"); filterT = c.dataset.t; draw(); }));
+  $("#fab").addEventListener("click", () => openCard(null));
+
+  socket.on("connect", () => socket.emit("apps_state", {}, (s) => {
+    S = s;
+    const tipo = $("#f-tipo"); tipo.innerHTML = ""; Object.entries(s.tipos).forEach(([k, v]) => tipo.append(new Option(v, k)));
+    const nav = $("#f-nav"); nav.innerHTML = ""; s.navegadores.forEach(([k, v]) => nav.append(new Option(v, k)));
+    draw();
+  }));
+  socket.emit("get_settings", (r) => { if (r && r.settings && r.settings.theme) document.documentElement.dataset.theme = r.settings.theme; });
+})();
+</script>
+</body>
+</html>

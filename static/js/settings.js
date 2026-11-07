@@ -1225,6 +1225,7 @@
   $("#btn-reset-prompt").addEventListener("click", () => { $("#f-prompt").value = meta?.default_system_prompt || ""; setDirty(true); });
 
   /* Control del PC */
+  $("#btn-myapps").addEventListener("click", () => socket.emit("open_apps_page"));     // 12.14
   $("#btn-reindex").addEventListener("click", () => {
     const btn = $("#btn-reindex");
     btn.disabled = true;

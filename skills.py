@@ -99,6 +99,7 @@ _ctx = {
     "output_dir": lambda: os.path.join(os.path.expanduser("~"), "Documents", "Jarvis"),
     "hide_hud": lambda hidden: None,
     "custom": lambda: "",
+    "apps_open": lambda q: None,                     # 12.14: las tarjetas de «Mis aplicaciones»
     "talleres_dir": lambda: "",
     "contacts": lambda: "",
     "setting": lambda key: "",
@@ -626,6 +627,10 @@ def open_app(nombre):
     q = clean_target(nombre)
     if not q:
         raise SkillError("¿Qué quieres que abra?", need="nombre")
+
+    mine = _ctx["apps_open"](q)                      # 12.14: primero tus tarjetas
+    if mine:
+        return mine
 
     custom = _custom_commands()
     key = _best_match(q, custom, 0.85)

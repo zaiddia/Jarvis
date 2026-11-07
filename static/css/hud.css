@@ -705,3 +705,4 @@ body.pill-mode #pill { visibility: visible !important; pointer-events: auto !imp
   body > :not(#pill):not(script) { visibility: hidden !important; pointer-events: none !important; }
 }
 .pill[data-mic="wait"] .pill-dot { opacity: .5; animation-duration: 1.2s; }
+body:not([data-size="expandido"]) .win-btns .xonly { display: none; }

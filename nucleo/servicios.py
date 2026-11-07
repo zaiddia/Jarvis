@@ -373,6 +373,8 @@ def restore_backup(name, parts):
         J.salon.load()
     if "calescolar" in done:
         J.festivos.load()
+    if "misapps" in done:                              # 12.14
+        J.misapps.load()
     if "lecciones" in done:                            # 9.4
         J.lecciones.load()
     if "paginas" in done:

@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.13.2"
+VERSION = "12.14"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1640,6 +1640,8 @@ def process_command(text):
     if len(_parts) > 1:
         run_chain(_parts)
         return
+    if apps_voice(text, t):                            # 12.14: tus frases de «Mis aplicaciones» (y «abre mis aplicaciones»)
+        return
     if live_quiz_voice(text, t):                       # 8.8: «quiz en vivo», y durante el quiz «respuesta», «siguiente»
         return
     if live_class_voice(text, t):                      # 9.6: «empieza la clase de fracciones», «siguiente momento»
@@ -1941,6 +1943,8 @@ def process_command(text):
     if research_voice(text, t):                        # «investiga a fondo…» → informe con fuentes
         return
     if search_voice(text, t):                          # «busca en internet… / averigua…»
+        return
+    if docs_voice(text, t):                         # 12.14: «abre el generador de documentos», «hazme un acta en PDF…»
         return
     if office_voice(text, t):
         return
@@ -2368,6 +2372,8 @@ from nucleo.dinero import *  # noqa: F401,F403,E402
 # ── 12.12: recuperaciones, calendario escolar, copia, juegos, dificultad; asistencia QR, modo examen, coevaluación, laboratorio
 import festivos  # noqa: E402
 import salon  # noqa: E402
+import misapps  # noqa: E402
+import documentos  # noqa: E402
 from nucleo.colegioplus import *  # noqa: F401,F403,E402
 from nucleo.salonplus import *  # noqa: F401,F403,E402
 
@@ -2423,6 +2429,8 @@ from nucleo.plataformas import *  # noqa: F401,F403,E402
 # → nucleo/iaencasa.py (lógica en cerebrolocal.py)
 from nucleo.iaencasa import *  # noqa: F401,F403,E402
 from nucleo.pildora import *  # noqa: F401,F403,E402
+from nucleo.aplicaciones import *  # noqa: F401,F403,E402
+from nucleo.generador import *  # noqa: F401,F403,E402
 
 
 # =============================================================================
@@ -2559,6 +2567,8 @@ def main():
         modes_start()                     # 12.9: modo docente/general, disparadores y avisos de batería
         daily_start()                     # 12.9: avisos de pagos
         school_start()                    # 12.12: calendario escolar y recuperaciones (avisos)
+        apps_start()                      # 12.14: tus tarjetas de aplicaciones y su horario
+        gen_start()                       # 12.14: historial del generador de documentos
         attention_start()                 # 9.3: compromisos y pulso de atención
         teacher_plus_start()              # 9.4: lecciones y vigilante de páginas
         polish_start()                    # 9.5: tu estilo al escribir

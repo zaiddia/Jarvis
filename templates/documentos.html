@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de documentos</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
+<style>
+  html, body { min-height: 100%; }
+  body { background: radial-gradient(ellipse at 50% -10%, rgba(var(--a-rgb), .13), transparent 60%), var(--bg); color: var(--text);
+         font-family: var(--mono); font-size: 13px; padding: 26px clamp(16px, 3vw, 40px) 50px; user-select: text; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 22px; }
+  header h1 { font-family: var(--hud); font-weight: 700; letter-spacing: .14em; font-size: clamp(20px, 3.2vw, 32px); color: var(--a);
+              text-shadow: 0 0 18px rgba(var(--a-rgb), .55); display: inline-flex; align-items: center; gap: 12px; }
+  header h1 svg { width: .95em; height: .95em; }
+  header p { color: var(--muted); margin-top: 6px; letter-spacing: .04em; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+  .panel { border: 1px solid var(--line-strong); background: linear-gradient(180deg, rgba(var(--a-rgb), .06), rgba(var(--a-rgb), .015));
+           padding: 20px; border-radius: 14px; box-shadow: 0 0 26px rgba(var(--a-rgb), .08), inset 0 0 30px rgba(var(--a-rgb), .03); }
+  .ttl { font-family: var(--hud); font-size: 11px; letter-spacing: .24em; color: var(--a); text-transform: uppercase; margin: 2px 0 12px;
+         display: flex; align-items: center; gap: 10px; }
+  .ttl::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .formats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 640px) { .formats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .fmt { --c: var(--a); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 6px 11px; border-radius: 12px;
+         border: 1px solid var(--line); background: rgba(255, 255, 255, .015); color: var(--c); cursor: pointer; transition: .18s; }
+  .fmt svg { width: 30px; height: 30px; }
+  .fmt b { font-family: var(--hud); font-size: 9.5px; letter-spacing: .16em; }
+  .fmt:hover { border-color: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 35%, transparent); }
+  .fmt.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); box-shadow: 0 0 18px color-mix(in srgb, var(--c) 40%, transparent); }
+  .fmt:disabled { opacity: .28; cursor: not-allowed; box-shadow: none; }
+  .fmt[data-f="word"] { --c: #4f8cff; } .fmt[data-f="pdf"] { --c: #ff4d5e; } .fmt[data-f="texto"] { --c: #c9d6e2; }
+  .fmt[data-f="excel"] { --c: #2fbf71; } .fmt[data-f="powerpoint"] { --c: #ff7a3d; } .fmt[data-f="csv"] { --c: #3dcf8e; }
+  .tpls { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: pointer; font-size: 12px; transition: .15s; }
+  .chip:hover { color: var(--text); border-color: var(--line-strong); }
+  .chip.on { color: #03060c; background: var(--a); border-color: var(--a); font-weight: 700; }
+  .chip:disabled { opacity: .3; cursor: not-allowed; }
+  .row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+  @media (max-width: 640px) { .row { grid-template-columns: 1fr 1fr; } }
+  label.f { display: flex; flex-direction: column; gap: 5px; color: var(--muted); font-size: 11px; letter-spacing: .06em; }
+  .inp { width: 100%; }
+  select.inp { height: 36px; }
+  textarea.inp { min-height: 120px; resize: vertical; line-height: 1.5; padding: 10px 12px; font-family: var(--mono); }
+  .src { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .src .name { color: var(--a); font-size: 12px; }
+  .src .x { color: var(--muted); cursor: pointer; }
+  .opts { display: flex; align-items: center; gap: 10px; margin-top: 12px; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
+  .go { display: flex; justify-content: center; margin-top: 18px; }
+  .go .btn { height: 44px; padding: 0 30px; border-radius: 999px; font-size: 11px; letter-spacing: .14em; clip-path: none; }
+  .hint { color: var(--muted); font-size: 11.5px; text-align: center; margin-top: 8px; min-height: 16px; }
+  .prev { min-height: 260px; max-height: 62vh; overflow: auto; background: #f7f9fb; color: #1d2733; border-radius: 10px; padding: 22px 24px;
+          font-family: Calibri, "Segoe UI", system-ui, sans-serif; font-size: 13.5px; line-height: 1.5; }
+  .prev.empty { display: grid; place-items: center; color: #7a8796; text-align: center; background: rgba(255, 255, 255, .03); color: var(--muted);
+                font-family: var(--mono); border: 1px dashed var(--line); }
+  .prev h1 { font-size: 21px; color: #0e2842; margin-bottom: 4px; }
+  .prev .sub { color: #5b6778; font-style: italic; margin-bottom: 12px; }
+  .prev h2 { font-size: 15px; color: #0f768a; margin: 14px 0 6px; }
+  .prev p { margin: 0 0 8px; }
+  .prev ul, .prev ol { margin: 0 0 8px 22px; }
+  .prev .q { font-weight: 700; margin-top: 8px; }
+  .prev .op { margin-left: 18px; }
+  .prev table { border-collapse: collapse; width: 100%; margin: 6px 0 10px; font-size: 12px; }
+  .prev th { background: #0f768a; color: #fff; text-align: left; }
+  .prev th, .prev td { border: 1px solid #c9d3dd; padding: 4px 6px; vertical-align: top; }
+  .prev .slide { border: 1px solid #d5dde6; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; background: #fff; }
+  .prev .slide small { color: #f28c28; font-weight: 700; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+  .actions .inp { flex: 1 1 100%; min-width: 200px; height: 38px; }
+  .actions .btn { height: 38px; }
+  .ver { color: var(--muted); font-size: 11px; }
+  .hist { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow: auto; }
+  .h { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; }
+  .h .tag { font-family: var(--hud); font-size: 8.5px; letter-spacing: .12em; padding: 4px 7px; border-radius: 6px; border: 1px solid currentColor; }
+  .h .t { overflow: hidden; } .h .t b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; }
+  .h .t small { color: var(--muted); font-size: 11px; }
+  .h .acts { grid-column: 1 / -1; display: flex; gap: 2px; flex-wrap: wrap; margin: -2px 0 -4px -6px; } .h .acts button { padding: 5px 7px; color: var(--muted); border-radius: 6px; font-size: 11px; }
+  .h .acts button:hover { color: var(--a); background: rgba(var(--a-rgb), .1); }
+  .h.gone { opacity: .5; }
+  .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(0, 0, 0, .25); border-top-color: #03060c; border-radius: 50%; animation: sp .9s linear infinite; vertical-align: -2px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  #toast { position: fixed; right: 18px; bottom: 18px; max-width: 420px; padding: 10px 14px; background: #061423; border: 1px solid var(--line-strong);
+           color: var(--text); opacity: 0; transform: translateY(8px); transition: .25s; pointer-events: none; z-index: 9; }
+  #toast.on { opacity: 1; transform: none; }
+  #toast.err { border-color: rgba(255, 77, 94, .6); }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body class="page">
+<div class="wrap">
+  <header>
+    <h1><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm7 1.5V8h4.5L13 3.5zM8 12h8v1.6H8zm0 3.2h8v1.6H8zm0 3.2h5.5V20H8z"/></svg>GENERADOR DE DOCUMENTOS</h1>
+    <p>Describe lo que necesitas; Jarvis lo redacta, te muestra la vista previa y lo guarda en el formato que escojas.</p>
+  </header>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="ttl">1 · Formato</div>
+      <div class="formats" id="formats"></div>
+
+      <div class="ttl" style="margin-top:20px">2 · Plantilla</div>
+      <div class="tpls" id="tpls"></div>
+
+      <div class="row">
+        <label class="f">Curso<select class="inp" id="curso"><option value="">—</option></select></label>
+        <label class="f">Asignatura<select class="inp" id="asig"><option value="">—</option></select></label>
+        <label class="f">Extensión<select class="inp" id="largo"></select></label>
+        <label class="f" id="notas-box" hidden>Notas<select class="inp" id="notas"><option>3</option><option>4</option><option selected>5</option><option>6</option><option>8</option><option>10</option></select></label>
+      </div>
+
+      <div class="ttl" style="margin-top:20px">3 · Describe el contenido</div>
+      <textarea class="inp" id="pedido" placeholder="Ejemplo: taller de fracciones equivalentes con 8 ejercicios y un problema de la vida diaria, para séptimo"></textarea>
+
+      <div class="src">
+        <button class="btn btn-ghost" type="button" id="btn-src">Partir de un archivo…</button>
+        <input type="file" id="file" hidden accept=".pdf,.docx,.doc,.txt,.md,.pptx,.xlsx,.csv,.png,.jpg,.jpeg,.webp">
+        <span class="name" id="src-name"></span><span class="x" id="src-x" hidden title="Quitar">✕</span>
+        <span class="ver">Solo se lee el archivo que subas aquí.</span>
+      </div>
+      <div class="opts">
+        <label class="switch"><input type="checkbox" id="head" checked><span></span></label>
+        <span id="head-txt">Encabezado con tu nombre e institución</span>
+      </div>
+
+      <div class="go"><button class="btn btn-primary" type="button" id="btn-gen">✎ Generar documento</button></div>
+      <div class="hint" id="hint"></div>
+    </section>
+
+    <section class="panel">
+      <div class="ttl">Vista previa <span class="ver" id="ver"></span></div>
+      <div class="prev empty" id="prev">Aquí verás el documento antes de guardarlo.</div>
+      <div class="actions" id="acts" hidden>
+        <input class="inp" id="cambio" placeholder="Pide un cambio: «cambia la pregunta 3», «más corto», «agrega un ejemplo»">
+        <button class="btn btn-ghost" type="button" id="btn-rev">Cambiar</button>
+        <button class="btn btn-primary" type="button" id="btn-save">Guardar</button>
+      </div>
+
+      <div class="ttl" style="margin-top:22px">Historial</div>
+      <div class="hist" id="hist"></div>
+    </section>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const socket = io();
+  const ICON = {
+    word: '<path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 11l1.3 6 1.7-4.5 1.7 4.5L14 11" fill="none" stroke="currentColor" stroke-width="1.6"/>',
+    pdf: '<path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="12" y="17.5" font-size="6.2" text-anchor="middle" fill="currentColor" font-family="Arial" font-weight="700">PDF</text>',
+    texto: '<path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 12h7M8.5 15h7M8.5 18h4.5" stroke="currentColor" stroke-width="1.6"/>',
+    excel: '<path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 11l5 7M14 11l-5 7" stroke="currentColor" stroke-width="1.7"/>',
+    powerpoint: '<path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 18v-7h2.6a2.1 2.1 0 0 1 0 4.2H10" fill="none" stroke="currentColor" stroke-width="1.7"/>',
+    csv: '<path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="12" y="17.5" font-size="6.2" text-anchor="middle" fill="currentColor" font-family="Arial" font-weight="700">CSV</text>',
+  };
+  const TAG = { word: "#4f8cff", pdf: "#ff4d5e", texto: "#c9d6e2", excel: "#2fbf71", powerpoint: "#ff7a3d", csv: "#3dcf8e" };
+  let S = null, fmt = "word", tpl = "libre", src = null, draft = null, busy = false;
+  let toastT = 0;
+  function toast(t, err) { const n = $("#toast"); n.textContent = t; n.classList.toggle("err", !!err); n.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => n.classList.remove("on"), 5500); }
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function drawFormats() {
+    const box = $("#formats"); box.innerHTML = "";
+    Object.entries(S.formatos).forEach(([k, name]) => {
+      const b = el("button", "fmt" + (k === fmt ? " on" : "")); b.type = "button"; b.dataset.f = k;
+      b.innerHTML = `<svg viewBox="0 0 24 24">${ICON[k]}</svg><b>${name.toUpperCase()}</b>`;
+      b.disabled = !S.plantillas[tpl].formatos.includes(k);
+      b.title = b.disabled ? `«${S.plantillas[tpl].nombre}» no va en ${name}` : name;
+      b.addEventListener("click", () => { fmt = k; drawFormats(); drawTpls(); });
+      box.append(b);
+    });
+  }
+  function drawTpls() {
+    const box = $("#tpls"); box.innerHTML = "";
+    Object.entries(S.plantillas).forEach(([k, p]) => {
+      const b = el("button", "chip" + (k === tpl ? " on" : ""), p.nombre); b.type = "button";
+      b.disabled = !p.formatos.includes(fmt);
+      b.addEventListener("click", () => { tpl = k; drawTpls(); drawFormats(); syncLocal(); });
+      box.append(b);
+    });
+  }
+  function syncLocal() {
+    const local = S.plantillas[tpl].local;
+    $("#notas-box").hidden = tpl !== "notas";
+    $("#pedido").disabled = local; $("#btn-src").disabled = local;
+    $("#pedido").placeholder = local ? "Se arma con la lista del curso que escojas (no necesita IA)." :
+      "Ejemplo: taller de fracciones equivalentes con 8 ejercicios y un problema de la vida diaria, para séptimo";
+  }
+  function fill(sel, items, first) { sel.innerHTML = ""; if (first != null) sel.append(new Option(first, "")); items.forEach((x) => sel.append(Array.isArray(x) ? new Option(x[1], x[0]) : new Option(x, x))); }
+
+  function render(d) {
+    const p = $("#prev"); p.className = "prev"; p.innerHTML = "";
+    const m = d.model;
+    p.append(el("h1", "", m.titulo)); if (m.subtitulo) p.append(el("div", "sub", m.subtitulo));
+    if (d.kind === "slides") {
+      m.diapositivas.forEach((s, i) => {
+        const c = el("div", "slide"); c.append(el("small", "", `DIAPOSITIVA ${i + 1}`)); c.append(el("h2", "", s.titulo));
+        if (s.pregunta) c.append(el("p", "", "¿? " + s.pregunta));
+        if ((s.puntos || []).length) { const ul = el("ul"); s.puntos.forEach((x) => ul.append(el("li", "", x))); c.append(ul); }
+        p.append(c);
+      });
+    } else if (d.kind === "table") {
+      p.append(table(m));
+    } else {
+      m.secciones.forEach((s) => {
+        if (s.titulo) p.append(el("h2", "", s.titulo));
+        s.parrafos.forEach((x) => p.append(el("p", "", x)));
+        if (s.vinetas.length) { const ul = el("ul"); s.vinetas.forEach((x) => ul.append(el("li", "", x))); p.append(ul); }
+        if (s.pasos.length) { const ol = el("ol"); s.pasos.forEach((x) => ol.append(el("li", "", x))); p.append(ol); }
+        s.preguntas.forEach((q, i) => { p.append(el("div", "q", `${i + 1}. ${q.enunciado}`)); q.opciones.forEach((o) => p.append(el("div", "op", o))); });
+        if (s.tabla) p.append(table(s.tabla));
+      });
+    }
+    $("#ver").textContent = `· versión ${d.version}`;
+    $("#acts").hidden = false;
+    $("#btn-save").textContent = `Guardar en ${S.formatos[d.formato]}`;
+  }
+  function table(t) {
+    const tb = el("table"), tr = el("tr"); t.columnas.forEach((c) => tr.append(el("th", "", c))); tb.append(tr);
+    t.filas.slice(0, 120).forEach((r) => { const row = el("tr"); r.forEach((v) => row.append(el("td", "", String(v)))); tb.append(row); });
+    return tb;
+  }
+
+  function drawHist(items) {
+    const box = $("#hist"); box.innerHTML = "";
+    if (!items.length) { box.append(el("div", "ver", "Lo que guardes aparece aquí, con botones para abrir, proyectar o subir a Drive.")); return; }
+    items.forEach((h) => {
+      const r = el("div", "h" + (h.existe ? "" : " gone"));
+      const tag = el("span", "tag", (S.formatos[h.formato] || h.formato).toUpperCase()); tag.style.color = TAG[h.formato] || "var(--a)";
+      const t = el("div", "t"); t.append(el("b", "", h.titulo)); t.append(el("small", "", `${h.fecha}${(S.plantillas[h.plantilla] || {}).nombre ? " · " + S.plantillas[h.plantilla].nombre : ""}${h.existe ? "" : " · ya no está en su carpeta"}`));
+      const acts = el("div", "acts");
+      [["abrir", "Abrir"], ["carpeta", "Carpeta"], ["proyectar", "Proyectar"], ["drive", "Drive"], ["quitar", "✕"]].forEach(([a, label]) => {
+        const b = el("button", "", label); b.type = "button"; b.title = a === "quitar" ? "Quitar del historial (el archivo sigue en su carpeta)" : label;
+        b.addEventListener("click", () => socket.emit("doc_action", { id: h.id, accion: a }, (res) => {
+          if (!res || !res.ok) { toast((res && res.error) || "No se pudo.", true); return; }
+          if (res.historial) drawHist(res.historial);
+          if (res.msg) toast(res.msg);
+        }));
+        acts.append(b);
+      });
+      r.append(tag, t, acts); box.append(r);
+    });
+  }
+
+  function setBusy(on, label) {
+    busy = on;
+    ["#btn-gen", "#btn-rev", "#btn-save"].forEach((s) => { $(s).disabled = on; });
+    $("#btn-gen").innerHTML = on ? `<span class="spin"></span> ${label || "Generando…"}` : "✎ Generar documento";
+    $("#hint").textContent = on ? "La IA está redactando; suele tardar menos de un minuto." : "";
+  }
+
+  $("#btn-gen").addEventListener("click", () => {
+    if (busy) return;
+    const pedido = $("#pedido").value.trim();
+    if (!S.plantillas[tpl].local && !pedido && !src) { toast("Describe el contenido del documento.", true); $("#pedido").focus(); return; }
+    if (S.plantillas[tpl].local && !$("#curso").value) { toast("Escoge el curso para armar la lista.", true); return; }
+    setBusy(true, "Generando…");
+    socket.emit("doc_generate", { formato: fmt, plantilla: tpl, pedido, curso: $("#curso").value, asignatura: $("#asig").value,
+      largo: $("#largo").value, notas: $("#notas").value, archivo: src && src.id, encabezado: $("#head").checked },
+      (r) => { if (!r || !r.ok) { setBusy(false); toast((r && r.error) || "No se pudo empezar.", true); } });
+  });
+  $("#btn-rev").addEventListener("click", () => {
+    const c = $("#cambio").value.trim();
+    if (!draft || !c || busy) { if (!c) $("#cambio").focus(); return; }
+    setBusy(true, "Cambiando…");
+    socket.emit("doc_revise", { id: draft.id, cambio: c }, (r) => { if (!r || !r.ok) { setBusy(false); toast((r && r.error) || "No se pudo.", true); } });
+  });
+  $("#cambio").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#btn-rev").click(); });
+  $("#btn-save").addEventListener("click", () => {
+    if (!draft || busy) return;
+    socket.emit("doc_save", { id: draft.id, abrir: true }, (r) => {
+      if (!r || !r.ok) { toast((r && r.error) || "No se pudo guardar.", true); return; }
+      toast(`Guardado: ${r.item.titulo} (${S.formatos[r.item.formato]}), en la carpeta Documentos.`);
+      drawHist(r.historial);
+    });
+  });
+  socket.on("doc_draft", (r) => {
+    setBusy(false);
+    if (!r.ok) { toast(r.error || "No me salió bien.", true); return; }
+    draft = r; render(r); $("#cambio").value = "";
+  });
+
+  $("#btn-src").addEventListener("click", () => $("#file").click());
+  $("#file").addEventListener("change", () => {
+    const f = $("#file").files[0]; if (!f) return;
+    if (f.size > 18 * 1024 * 1024) { toast("El archivo es muy grande (máximo 18 MB).", true); return; }
+    const rd = new FileReader();
+    $("#src-name").textContent = "Subiendo…";
+    rd.onload = () => socket.emit("doc_upload", { name: f.name, data: rd.result }, (r) => {
+      if (!r || !r.ok) { src = null; $("#src-name").textContent = ""; toast((r && r.error) || "No se pudo subir.", true); return; }
+      src = r; $("#src-name").textContent = "📎 " + r.nombre; $("#src-x").hidden = false;
+    });
+    rd.readAsDataURL(f); $("#file").value = "";
+  });
+  $("#src-x").addEventListener("click", () => { src = null; $("#src-name").textContent = ""; $("#src-x").hidden = true; });
+
+  socket.on("connect", () => socket.emit("doc_state", {}, (s) => {
+    S = s;
+    fill($("#curso"), s.cursos, "—"); if (s.activo) $("#curso").value = s.activo;
+    fill($("#asig"), s.asignaturas, "—");
+    fill($("#largo"), Object.entries(s.largos)); $("#largo").value = "medio";
+    $("#head-txt").textContent = s.docente || s.institucion ? `Encabezado: ${[s.institucion, s.docente].filter(Boolean).join(" · ")}` :
+      "Encabezado con tu nombre e institución (escríbelos en el Tablero del aula)";
+    drawFormats(); drawTpls(); syncLocal(); drawHist(s.historial || []);
+    if (s.ocupado) setBusy(true, "Generando…");
+  }));
+  socket.emit("get_settings", (r) => { if (r && r.settings && r.settings.theme) document.documentElement.dataset.theme = r.settings.theme; });
+})();
+</script>
+</body>
+</html>
