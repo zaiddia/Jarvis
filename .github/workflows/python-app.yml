@@ -44,7 +44,7 @@ jobs:
             python -m pip install $_ 2>&1 | Out-Null
             if ($LASTEXITCODE -ne 0) { $fallos += $_; Write-Host "::warning::No se instaló $_" }
           }
-          python -m pip install pytest pyflakes pyyaml
+          python -m pip install pytest pytest-timeout pyflakes pyyaml
           if ($fallos.Count -gt 0) { Write-Host "Sin instalar: $($fallos -join ', ')" }
 
       - name: Revisar el código
@@ -52,7 +52,7 @@ jobs:
 
       - name: Pruebas de comprensión
         run: |
-          python -m pytest -q -rs tests 2>&1 | Tee-Object -FilePath pruebas.txt
+          python -m pytest -q -rs --timeout=120 tests 2>&1 | Tee-Object -FilePath pruebas.txt
           $code = $LASTEXITCODE
           $last = (Get-Content pruebas.txt | Where-Object { $_ -match "passed|failed" } | Select-Object -Last 1)
           $skips = (Get-Content pruebas.txt | Where-Object { $_ -match "^SKIPPED" }) -join " | "
