@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.6"
+VERSION = "12.7"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -652,7 +652,8 @@ VOICE_RULE = (
 DEFAULT_SETTINGS = {
     # General / HUD
     "theme": "cyan",
-    "look": "aurora",              # 12.6: estilo de toda la interfaz: "aurora" (azul noche, tarjetas redondeadas) o "clasico" (visor futurista)
+    "look": "clasico",             # 12.6: estilo de toda la interfaz: "clasico" (visor futurista) o "aurora" (azul noche, tarjetas redondeadas)
+    "look_chosen": False,          # 12.7: True cuando tú escoges el estilo en Ajustes (si no, se usa el clásico)
     "hud_start_size": "compacto",
     "hud_position": "inf-der",
     "hud_x": -1,
@@ -711,7 +712,8 @@ DEFAULT_SETTINGS = {
     "offline_auto": True,          # sin internet: usar la IA de tu equipo (Ollama) y la voz Piper
     "offline_model": "",
     "motor_model": "",             # 12.6: el modelo .gguf de la IA integrada (vacío = el que esté descargado)
-    "motor_autostop": True,        # 12.6: apagar la IA integrada a los 20 min sin uso (libera memoria)
+    "motor_autostop": True,
+    "motor_backend": "auto",       # 12.7: "auto" (la más rápida: tarjeta gráfica o procesador), "gpu" o "cpu"        # 12.6: apagar la IA integrada a los 20 min sin uso (libera memoria)
     "update_repo": "zaiddia/Jarvis",  # repositorio de GitHub con las versiones (usuario/nombre)
     "update_auto": True,           # mirar una vez al día si hay versión nueva (solo avisa)
     "github_api_key": "",          # solo para repositorios privados
@@ -1103,6 +1105,8 @@ def load_settings():
                 settings[k] = _file_values[k] = _validate(k, v)
             except Exception:
                 pass
+    if settings.get("look") == "aurora" and not settings.get("look_chosen"):
+        settings["look"] = "clasico"                # 12.7: la 12.6 puso Aurora sin preguntar; vuelve el clásico (Aurora queda en Ajustes)
     for k, old in LEGACY_DEFAULT_MODELS.items():
         if settings.get(k) in old:
             settings[k] = DEFAULT_SETTINGS[k]

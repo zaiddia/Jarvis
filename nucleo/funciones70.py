@@ -600,7 +600,7 @@ mobile_app = Flask("jarvis_movil", template_folder=J.get_resource_path("template
 
 @mobile_app.context_processor
 def _mobile_look():
-    return {"look": J.settings.get("look", "aurora")}          # 12.6: el mismo estilo en las páginas del celular
+    return {"look": J.settings.get("look", "clasico")}          # 12.6: el mismo estilo en las páginas del celular
 
 
 def _mobile_ok():

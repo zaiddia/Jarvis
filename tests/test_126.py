@@ -97,5 +97,5 @@ def test_estilo_aurora_en_todas_las_paginas(jv):
     assert "{{" not in css and "{%" not in css and "{#" not in css               # no confunde a Jinja
     with jv.app.test_request_context("/"):
         from flask import render_template
-        assert 'data-look="aurora"' in render_template("bienvenida.html")
+        assert 'data-look="clasico"' in render_template("bienvenida.html")
     assert jv._validate("look", "clasico") == "clasico"

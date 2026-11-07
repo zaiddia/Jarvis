@@ -50,6 +50,8 @@ def apply_settings(data):
         elif not str(data.get(k) or "").strip():
             data.pop(k, None)
 
+    if "look" in data and data.get("look") != J.settings.get("look"):
+        data["look_chosen"] = True                     # 12.7: lo escogiste tú
     changed = set()
     with J.settings_lock:
         for k, v in data.items():

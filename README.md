@@ -157,6 +157,16 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Vuelve el estilo clásico y la IA local más rápida (v12.7)
+
+- **El HUD y toda la aplicación vuelven al estilo clásico** (el visor futurista de antes). Aurora queda como opción en *Ajustes › General › Estilo*. Además, en el clásico los errores de Jarvis ahora se distinguen con borde rojo.
+- **La IA integrada responde más rápido**:
+  - **Tarjeta gráfica**: en Windows se baja también la versión del motor que usa la tarjeta gráfica (Vulkan: Intel, AMD o NVIDIA); Jarvis mide las dos en tu equipo y deja la más rápida. Si la tarjeta falla, vuelve sola al procesador.
+  - **No vuelve a leer lo mismo**: la parte fija de las instrucciones de Jarvis va primero y el motor reusa lo ya leído en cada pregunta (antes las releía completas); al encenderse, la deja leída de una vez.
+  - **Lee menos**: con la IA local, el contexto del momento se resume y recuerda los 3 últimos turnos; las respuestas son más cortas.
+  - Usa los núcleos reales del procesador y un solo turno a la vez con todo el contexto.
+  - Si eliges «Jarvis local» como IA, queda encendida desde que abre Jarvis (no se apaga sola).
+
 ## Nuevo estilo «Aurora» e IA local integrada, sin Ollama (v12.6)
 
 - **Estilo Aurora en todo Jarvis**: azul noche con brillo índigo, acento cian y degradado cian → violeta, tarjetas y burbujas redondeadas, botones en píldora y el botón de enviar con degradado. Tus mensajes van en burbuja de degradado; los de Jarvis, en tarjeta oscura con una barra cian a la izquierda (roja cuando es un error). Se aplica al HUD, Ajustes, Aula, proyector y las páginas del celular y del salón. Los colores de acento siguen funcionando. *Ajustes › General › Estilo*: «Aurora» o «Clásico» (el visor de antes).

@@ -389,6 +389,8 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
             {"type": "image_url", "image_url": {"url": f"data:{J._img_mime(ip)};base64," + J._png_b64(ip)}} for ip in J._img_list(image_path)]
     tp = sp.get("tokens_param", "max_tokens")
     body = {"model": cfg["model"], "messages": msgs, tp: max_tokens}
+    if cfg.get("ai_provider") == "motor":
+        body["cache_prompt"] = True                    # 12.7: la IA integrada reusa lo ya leído
     if not sp.get("no_temp"):
         body["temperature"] = J.settings["ai_temperature"]
     if json_mode:
@@ -533,7 +535,7 @@ def _with_fallback(cfg, fn):
 def _cloud_chat(cfg, messages, json_mode=False, image_path=None, max_tokens=None):
     if cfg.get("ai_provider") == "motor":              # 12.6: la IA integrada se enciende sola si hace falta
         J.motor_ensure()
-        return J.motorlocal.clean_reply(J.openai_chat(cfg, messages, json_mode, max_tokens or 1024))
+        return J.motorlocal.clean_reply(J.openai_chat(cfg, messages, json_mode, max_tokens or (900 if json_mode else 450)))
     tokens = max_tokens or (1024 if json_mode else 2048)
     if cfg["kind"] == "gemini":
         return J.gemini_chat(cfg, messages, json_mode, tokens, image_path)
@@ -916,10 +918,25 @@ def _extract_json(text):
         raise
 
 
+def system_static():
+    """12.7: la parte FIJA de las instrucciones va primero (igual en cada pregunta del día): así la IA local (y la de la
+    nube) reusa lo ya leído y responde antes. Lo que cambia con cada orden va después."""
+    return (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + J.MATH_RULE +
+            f" Hoy es {J.fecha_hablada(datetime.date.today())}.")
+
+
+def _is_local_ai(cfg=None):
+    cfg = cfg or J._ai_cfg()
+    return cfg["kind"] == "ollama" or bool(cfg.get("spec", {}).get("local"))
+
+
 def ask_ai(prompt, route=False):
     """Devuelve ('chat', respuesta) o ('skill', nombre, args)."""
-    system = (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + f" Hoy es {J.fecha_hablada(datetime.date.today())}." + J._notes_ctx()
-              + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.persona_ctx() + J.MATH_RULE)   # 9.4: tus lecciones y el modo tutor
+    local = J._is_local_ai()
+    dynamic = J._notes_ctx() + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.persona_ctx()   # 9.4: tus lecciones y el modo tutor
+    if local:                                          # 12.7: en el equipo, menos texto que leer = respuesta más rápida
+        dynamic = J.motorlocal.trim_context(dynamic, 1500)
+    system = J.system_static() + dynamic
     if route:
         # Seguridad: la IA solo ve acciones NO destructivas. Apagar, reiniciar, vaciar la
         # papelera, etc. nunca se activan por interpretación: solo con la orden directa exacta.
@@ -931,6 +948,8 @@ def ask_ai(prompt, route=False):
     user_msg = {"role": "user", "content": prompt}
     keep = J.settings["history_turns"] * 2
     history = J.chat_history[-keep:] if keep else []
+    if local:
+        history = history[-6:]                         # 12.7: la IA local recuerda los 3 últimos turnos (lee menos)
     try:
         raw = J.ai_chat([{"role": "system", "content": system}, *history, user_msg], json_mode=route)
     except J.AIError as e:
@@ -1116,7 +1135,7 @@ __all__ = [
     '_net_worker',
     '_oa_body',
     '_oa_headers',
-    '_img_list', '_img_mime', '_png_b64',
+    '_img_list', '_img_mime', '_is_local_ai', '_png_b64', 'system_static',
     '_post',
     '_recommend_model',
     '_sse_lines',

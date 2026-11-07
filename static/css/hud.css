@@ -664,3 +664,6 @@ body.has-face .reactor-svg { display: none; }
   font-size: calc(11px * var(--fs, 1)); color: var(--a); max-width: 190px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: rgba(var(--a-rgb), .06); }
 .ai-chip[data-donde="local"] { color: #c9a8ff; border-color: rgba(180, 140, 255, .55); background: rgba(180, 140, 255, .08); }
 .ai-chip[data-donde="ninguna"] { color: #ff8a95; border-color: rgba(255, 77, 94, .55); background: rgba(255, 77, 94, .08); }
+/* 12.7: los errores de Jarvis se distinguen (en el estilo clásico, con su borde rojo) */
+html:not([data-look="aurora"]) .msg.jarvis.err .msg-body { border-color: rgba(255, 77, 94, .55); background: rgba(255, 77, 94, .08); color: #ffd0d5; box-shadow: inset 3px 0 0 var(--err); }
+html:not([data-look="aurora"]) .msg.jarvis.err .msg-meta { color: var(--err); }

@@ -205,7 +205,7 @@
   function applySettings(s) {
     current = s || {};
     setTheme(current.theme);
-    root.dataset.look = current.look || "aurora";                                // 12.6: estilo Aurora o Clásico
+    root.dataset.look = current.look || "clasico";                                // 12.6: estilo Aurora o Clásico
     body.dataset.text = current.hud_text_size || "normal";                       // 11.8: tamaño de la letra
     setFace(!!current.hud_avatar);                                                // 12.0: rostro holográfico en vez del reactor
     el.shell.style.setProperty("--alpha", body.classList.contains("solid")

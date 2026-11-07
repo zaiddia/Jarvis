@@ -100,7 +100,7 @@
     showTtsBackend(s.tts_backend);
     showSttBackend(s.stt_backend);
     setTheme(s.theme);
-    document.documentElement.dataset.look = s.look || "aurora";
+    document.documentElement.dataset.look = s.look || "clasico";
     setDirty(false);
     clears.clear();
   }
@@ -428,7 +428,7 @@
   function closeWindow() {
     if (dirty && !confirm("Hay cambios sin guardar. ¿Cerrar de todos modos?")) return;
     setTheme(saved.theme);
-    document.documentElement.dataset.look = saved.look || "aurora";
+    document.documentElement.dataset.look = saved.look || "clasico";
     socket.emit("close_settings");
     setTimeout(() => window.close(), 150);
   }

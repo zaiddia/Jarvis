@@ -18,13 +18,16 @@ CATALOG = [
 ]
 
 
-def asset_suffix(is_win=True):
-    return "bin-win-cpu-x64.zip" if is_win else "bin-ubuntu-x64.tar.gz"
+def asset_suffix(is_win=True, gpu=False):
+    """12.7: con tarjeta gráfica, la versión Vulkan (sirve para casi cualquier GPU: Intel, AMD o NVIDIA)."""
+    if is_win:
+        return "bin-win-vulkan-x64.zip" if gpu else "bin-win-cpu-x64.zip"
+    return "bin-ubuntu-vulkan-x64.tar.gz" if gpu else "bin-ubuntu-x64.tar.gz"
 
 
-def pick_release(releases, is_win=True):
+def pick_release(releases, is_win=True, gpu=False):
     """(url, nombre, versión) del motor más nuevo que tenga el archivo para este sistema (no todas las versiones lo traen)."""
-    suf = asset_suffix(is_win)
+    suf = asset_suffix(is_win, gpu)
     for rel in releases or []:
         for a in rel.get("assets") or []:
             if str(a.get("name", "")).endswith(suf) and a.get("browser_download_url", "").startswith("https://"):
@@ -63,20 +66,41 @@ def by_id(mid):
     return next((m for m in CATALOG if m["id"] == mid), None)
 
 
-def server_args(exe, model_path, port=PORT, ctx=4096, threads=0):
-    a = [exe, "-m", model_path, "--host", "127.0.0.1", "--port", str(port), "-c", str(ctx), "--jinja", "--no-webui"]
+def server_args(exe, model_path, port=PORT, ctx=4096, threads=0, threads_batch=0, gpu=False):
+    """12.7, más rápida: un solo turno a la vez con todo el contexto (-np 1), reusa lo ya leído del mensaje anterior
+    (--cache-reuse: el «system prompt» de Jarvis no se vuelve a procesar en cada pregunta), atención rápida (-fa auto)
+    y, si hay tarjeta gráfica, el modelo entero en ella (-ngl 99)."""
+    a = [exe, "-m", model_path, "--host", "127.0.0.1", "--port", str(port), "-c", str(ctx), "--jinja", "--no-webui",
+         "-np", "1", "--cache-reuse", "256", "-fa", "auto", "-ngl", "99" if gpu else "0"]
     if threads:
         a += ["-t", str(threads)]
+    if threads_batch:
+        a += ["-tb", str(threads_batch)]
     return a
 
 
-def find_exe(folder, is_win=True):
-    """llama-server dentro de lo que se descomprimió (puede venir en una subcarpeta)."""
+def find_exe(folder, is_win=True, skip=("gpu",)):
+    """llama-server dentro de lo que se descomprimió (puede venir en una subcarpeta). La versión GPU vive en «gpu»."""
     want = "llama-server.exe" if is_win else "llama-server"
-    for root, _dirs, files in os.walk(folder):
+    for root, dirs, files in os.walk(folder):
+        dirs[:] = [d for d in dirs if d not in skip]
         if want in files:
             return os.path.join(root, want)
     return ""
+
+
+def tokens_per_second(resp):
+    """La velocidad que informa llama-server en «timings» (palabras-token por segundo al responder)."""
+    try:
+        return float((resp.get("timings") or {}).get("predicted_per_second") or 0)
+    except (AttributeError, TypeError, ValueError):
+        return 0.0
+
+
+def trim_context(text, limit=1500):
+    """Para la IA local: el contexto dinámico más corto (cada carácter es tiempo de lectura en un computador sin GPU)."""
+    text = str(text or "")
+    return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0] + "…"
 
 
 _THINK = re.compile(r"<think>.*?</think>\s*", re.S)

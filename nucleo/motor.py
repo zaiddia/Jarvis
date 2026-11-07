@@ -26,9 +26,23 @@ def _dir(*parts):
     return os.path.join(J.CONFIG_DIR, "motor", *parts)
 
 
+def _exe_for(backend):
+    if backend == "gpu":
+        return motorlocal.find_exe(_dir("bin", "gpu"), J.IS_WIN, skip=()) if os.path.isdir(_dir("bin", "gpu")) else ""
+    return motorlocal.find_exe(_dir("bin"), J.IS_WIN) if os.path.isdir(_dir("bin")) else ""
+
+
+def _backend():
+    """«gpu» si está instalada la versión con tarjeta gráfica y no se descartó; si no, «cpu»."""
+    want = J.settings.get("motor_backend", "auto")
+    if want != "cpu" and _exe_for("gpu"):
+        return "gpu"
+    return "cpu"
+
+
 def motor_paths():
     """(ruta de llama-server o "", ruta del modelo o "")."""
-    exe = motorlocal.find_exe(_dir("bin"), J.IS_WIN) if os.path.isdir(_dir("bin")) else ""
+    exe = _exe_for(_backend()) or _exe_for("cpu")
     want = J.settings.get("motor_model", "").strip()
     mdir = _dir("modelos")
     models = sorted(f for f in os.listdir(mdir) if f.lower().endswith(".gguf")) if os.path.isdir(mdir) else []
@@ -68,22 +82,55 @@ def motor_start(wait=120):
         exe, model = J.motor_paths()
         if not (exe and model):
             return False
+        gpu = _backend() == "gpu" and exe == _exe_for("gpu")
         if not _mt_alive():
-            threads = max(1, (os.cpu_count() or 4) - 1)
-            engine["proc"] = subprocess.Popen(motorlocal.server_args(exe, model, threads=threads), cwd=os.path.dirname(exe),
-                                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            phys = (J.psutil.cpu_count(logical=False) if J.psutil else None) or max(1, (os.cpu_count() or 4) // 2)
+            engine["proc"] = subprocess.Popen(motorlocal.server_args(exe, model, threads=phys, threads_batch=os.cpu_count() or phys, gpu=gpu),
+                                              cwd=os.path.dirname(exe), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                               creationflags=0x08000000 if J.IS_WIN else 0)
-            J.log_terminal(f"Enciendo la IA integrada ({motor_name()})…", "IA LOCAL")
+            engine["gpu"] = gpu
+            J.log_terminal(f"Enciendo la IA integrada ({motor_name()}{', con la tarjeta gráfica' if gpu else ''})…", "IA LOCAL")
         t0 = time.time()
         while time.time() - t0 < wait:
             if not _mt_alive():
-                J.log_terminal("La IA integrada no pudo arrancar (¿poca memoria?).", "IA LOCAL")
                 engine["proc"] = None
+                if engine.get("gpu"):                  # 12.7: la tarjeta gráfica no sirvió: se usa el procesador
+                    J.log_terminal("La IA integrada no arrancó con la tarjeta gráfica; uso el procesador.", "IA LOCAL")
+                    J.settings["motor_backend"] = "cpu"
+                    engine["gpu"] = False
+                    engine["lock"].release()
+                    try:
+                        return J.motor_start(wait)
+                    finally:
+                        engine["lock"].acquire()
+                J.log_terminal("La IA integrada no pudo arrancar (¿poca memoria?).", "IA LOCAL")
                 return False
             if _health():
+                threading.Thread(target=J.motor_warmup, daemon=True).start()
                 return True
             time.sleep(0.5)
         return False
+
+
+def motor_warmup():
+    """12.7: deja leído el comienzo fijo de las instrucciones de Jarvis, así la primera pregunta no espera."""
+    try:
+        cfg = J._ai_cfg({"ai_provider": "motor"})
+        J._post(cfg["base"] + "/chat/completions", {}, {"model": "jarvis", "max_tokens": 1, "cache_prompt": True,
+                                                         "messages": [{"role": "system", "content": J.system_static()},
+                                                                      {"role": "user", "content": "hola"}]}, {})
+    except Exception:
+        pass
+
+
+def motor_bench():
+    """Tokens por segundo de la IA integrada encendida (para escoger tarjeta gráfica o procesador)."""
+    cfg = J._ai_cfg({"ai_provider": "motor"})
+    t0 = time.time()
+    r = J._post(cfg["base"] + "/chat/completions", {}, {"model": "jarvis", "max_tokens": 48, "temperature": 0,
+                                                        "messages": [{"role": "user", "content": "Explica en dos frases qué es una fracción."}]}, {})
+    tps = motorlocal.tokens_per_second(r)
+    return tps or (48 / max(0.1, time.time() - t0))
 
 
 def motor_stop():
@@ -118,7 +165,7 @@ def _idle_worker():
         try:
             if J.net.get("offline") and J.settings.get("offline_auto") and J.motor_ready() and not _mt_alive() and not engine["job"]:
                 threading.Thread(target=J.motor_start, daemon=True).start()     # sin internet: se enciende antes de que preguntes
-            keep = J.settings.get("ai_provider") == "motor" and not J.settings.get("motor_autostop", True)
+            keep = J.settings.get("ai_provider") == "motor" or not J.settings.get("motor_autostop", True)   # 12.7: si es tu IA, siempre lista
             if _mt_alive() and not keep and time.time() - engine["last"] > IDLE_STOP and not J.net.get("offline"):
                 motor_stop()
                 J.log_terminal("Apagué la IA integrada (no se usaba) para liberar memoria.", "IA LOCAL")
@@ -161,30 +208,31 @@ def _mt_fetch(url, dst, progress=None, label=""):
     return dst
 
 
-def install_engine(progress=None):
-    """Baja el motor llama.cpp para este sistema. → ruta de llama-server."""
-    exe, _m = J.motor_paths()
+def install_engine(progress=None, gpu=False):
+    """Baja el motor llama.cpp para este sistema (12.7: o su versión con tarjeta gráfica). → ruta de llama-server."""
+    exe = _exe_for("gpu" if gpu else "cpu")
     if exe:
         return exe
-    rel = motorlocal.pick_release(J._motor_get_json(motorlocal.RELEASES_API), J.IS_WIN)
+    rel = motorlocal.pick_release(J._motor_get_json(motorlocal.RELEASES_API), J.IS_WIN, gpu)
     if not rel:
         raise ValueError("no encontré el motor para este sistema en las versiones de llama.cpp")
     url, name, tag = rel
-    os.makedirs(_dir("bin"), exist_ok=True)
-    arc = J._motor_fetch(url, _dir(name), progress, "el motor")
+    dest = _dir("bin", "gpu") if gpu else _dir("bin")
+    os.makedirs(dest, exist_ok=True)
+    arc = J._motor_fetch(url, _dir(name), progress, "el motor con la tarjeta gráfica" if gpu else "el motor")
     if arc.endswith(".zip"):
         with zipfile.ZipFile(arc) as z:
-            z.extractall(_dir("bin"))
+            z.extractall(dest)
     else:
         with tarfile.open(arc) as t:
-            t.extractall(_dir("bin"), filter="data")
+            t.extractall(dest, filter="data")
     os.remove(arc)
-    exe = motorlocal.find_exe(_dir("bin"), J.IS_WIN)
+    exe = motorlocal.find_exe(dest, J.IS_WIN, skip=() if gpu else ("gpu",))
     if not exe:
         raise ValueError("el archivo del motor no trae llama-server")
     if not J.IS_WIN:
         os.chmod(exe, 0o755)
-    with open(_dir("bin", "version.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(dest, "version.txt"), "w", encoding="utf-8") as f:
         f.write(tag)
     return exe
 
@@ -232,12 +280,19 @@ def motor_install_job(mid=None):
         try:
             J.install_engine(prog)
             path = J.install_model(mid, prog)
-            engine["msg"] = "Probando…"
+            if J.IS_WIN:                               # 12.7: también la versión con tarjeta gráfica; se queda la más rápida
+                try:
+                    J.install_engine(prog, gpu=True)
+                except Exception:
+                    pass
+            engine["msg"] = "Probando la velocidad…"
+            speed = J.motor_pick_backend()
             ok = J.motor_start(180)
             if ok:
                 r = J.motor_ask([{"role": "user", "content": "Responde en una frase: ¿cuánto es 7 por 8?"}], max_tokens=40)
-                msg = (f"Lista la IA integrada ({os.path.splitext(os.path.basename(path))[0]}). Respondió: «{r[:80]}». Si se cae el internet, la uso sola; "
-                       "no hace falta Ollama.")
+                where = "con la tarjeta gráfica" if _backend() == "gpu" else "con el procesador"
+                msg = (f"Lista la IA integrada ({os.path.splitext(os.path.basename(path))[0]}, {where}" + (f", unas {speed:.0f} palabras por segundo" if speed else "")
+                       + f"). Respondió: «{r[:80]}». Si se cae el internet, la uso sola; no hace falta Ollama.")
             else:
                 msg = "Descargué la IA integrada, pero no arrancó en este equipo (puede faltar memoria). Prueba un modelo más liviano en Ajustes › IA."
         except Exception as e:
@@ -252,6 +307,28 @@ def motor_install_job(mid=None):
     return True
 
 
+def motor_pick_backend():
+    """12.7: prueba la tarjeta gráfica y el procesador y deja el más rápido. → tokens por segundo del elegido."""
+    res = {}
+    for be in (["gpu", "cpu"] if _exe_for("gpu") else ["cpu"]):
+        motor_stop()
+        J.settings["motor_backend"] = be
+        try:
+            if J.motor_start(180) and _backend() == be:
+                res[be] = J.motor_bench()
+        except Exception:
+            pass
+    motor_stop()
+    best = max(res, key=res.get) if res else "cpu"
+    J.settings["motor_backend"] = best
+    try:
+        J.save_settings_file()
+    except OSError:
+        pass
+    J.log_terminal("Velocidad de la IA integrada: " + ", ".join(f"{k} {v:.1f} tok/s" for k, v in res.items()) + f" → uso {best}.", "IA LOCAL")
+    return res.get(best, 0.0)
+
+
 def motor_ask(messages, max_tokens=400, json_mode=False):
     """Pregunta directa a la IA integrada (para la prueba y para el respaldo sin internet)."""
     J.motor_ensure()
@@ -263,6 +340,7 @@ def motor_status():
     exe, model = J.motor_paths()
     rec = J.motor_recommend()
     return {"motor": bool(exe), "modelo": os.path.basename(model) if model else "", "corriendo": _mt_alive(), "instalando": engine["job"],
+            "gpu": _backend() == "gpu",
             "msg": engine["msg"], "recomendado": rec["nombre"] if rec else "", "recomendado_gb": rec["gb"] if rec else 0,
             "catalogo": [{"id": m["id"], "nombre": m["nombre"], "gb": m["gb"]} for m in motorlocal.CATALOG]}
 
@@ -306,11 +384,13 @@ def motor_voice(text, t):
 
 def motor_start_services():
     threading.Thread(target=_idle_worker, daemon=True, name="motor-idle").start()
+    if J.settings.get("ai_provider") == "motor" and J.motor_ready():      # 12.7: si es tu IA, queda lista desde que abre Jarvis
+        threading.Thread(target=J.motor_start, daemon=True, name="motor-precarga").start()
 
 
 _motor_get_json = _mt_get_json
 _motor_fetch = _mt_fetch
 
 __all__ = ['IDLE_STOP', '_MOTOR_INST', '_motor_fetch', '_motor_get_json', 'engine', 'handle_motor', 'install_engine', 'install_model', 'motor_ask',
-           'motor_ensure', 'motor_install_job', 'motor_name', 'motor_paths', 'motor_ready', 'motor_recommend', 'motor_start', 'motor_start_services',
+           'motor_bench', 'motor_ensure', 'motor_install_job', 'motor_pick_backend', 'motor_warmup', 'motor_name', 'motor_paths', 'motor_ready', 'motor_recommend', 'motor_start', 'motor_start_services',
            'motor_status', 'motor_stop', 'motor_voice', 'motorlocal']

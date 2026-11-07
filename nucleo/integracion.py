@@ -317,7 +317,7 @@ def _orb_mark(resp):
 def _asset_version():
     """9.1: ?v=versión en los .css y .js, para que la ventana del HUD no use los de la versión anterior.
     12.6: y el estilo de la interfaz («aurora» o «clasico») en <html data-look>."""
-    return {"asset_v": J.VERSION, "look": J.settings.get("look", "aurora")}
+    return {"asset_v": J.VERSION, "look": J.settings.get("look", "clasico")}
 
 
 @J.socketio.on("open_windhawk_folder")
