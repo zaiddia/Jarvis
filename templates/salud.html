@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salud de Jarvis</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
+<style>
+  html, body { min-height: 100%; }
+  body { background: radial-gradient(ellipse at 20% 0%, rgba(var(--a-rgb), .10), transparent 55%), var(--bg); color: var(--text);
+         font-family: var(--mono); font-size: 13px; padding: 22px clamp(16px, 3vw, 36px) 40px; user-select: text; }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+  .brand { font-family: var(--hud); font-weight: 700; letter-spacing: .32em; color: var(--a); font-size: 15px; text-shadow: 0 0 12px rgba(var(--a-rgb), .55); }
+  .sub { color: var(--muted); font-size: 11.5px; }
+  header .sp { flex: 1; }
+  .hero { display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center; margin: 22px 0 18px; }
+  .ring { position: relative; width: 150px; height: 150px; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 9; }
+  .ring .bg { stroke: rgba(var(--a-rgb), .12); }
+  .ring .fg { stroke: var(--ring, var(--ok)); stroke-linecap: round; transition: stroke-dashoffset 1s ease, stroke .4s; filter: drop-shadow(0 0 6px var(--ring, var(--ok))); }
+  .ring .num { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .ring .num b { font-family: var(--hud); font-size: 38px; color: var(--ring, var(--ok)); line-height: 1; }
+  .ring .num small { color: var(--muted); font-size: 10px; letter-spacing: .2em; margin-top: 4px; }
+  .verdict { font-family: var(--hud); font-weight: 700; font-size: 17px; letter-spacing: .12em; text-transform: uppercase; }
+  .counts { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .counts span { padding: 5px 10px; border: 1px solid var(--line); clip-path: var(--cut-sm); font-size: 12px; }
+  .counts .c-ok { color: var(--ok); } .counts .c-aviso { color: var(--warn); } .counts .c-fallo { color: var(--err); }
+  .lead { color: var(--muted); margin-top: 8px; max-width: 70ch; line-height: 1.5; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .card { position: relative; padding: 14px 14px 14px 18px; background: linear-gradient(180deg, rgba(var(--a-rgb), .06), rgba(var(--a-rgb), .015));
+          border: 1px solid var(--line); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+          display: flex; flex-direction: column; gap: 6px; min-height: 128px; }
+  .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--st); box-shadow: 0 0 10px var(--st); }
+  .card[data-e="ok"] { --st: var(--ok); } .card[data-e="aviso"] { --st: var(--warn); } .card[data-e="fallo"] { --st: var(--err); border-color: rgba(255, 77, 94, .45); }
+  .card[data-e="info"] { --st: var(--muted); }
+  .card h3 { display: flex; align-items: center; gap: 8px; font-family: var(--hud); font-weight: 500; font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .card h3 i { width: 8px; height: 8px; border-radius: 50%; background: var(--st); box-shadow: 0 0 6px var(--st); }
+  .card .val { font-size: 15.5px; font-weight: 700; color: var(--text); line-height: 1.3; }
+  .card .det { color: var(--muted); font-size: 12px; line-height: 1.45; flex: 1; }
+  .card .btn { align-self: flex-start; height: 32px; padding: 0 12px; font-size: 9.5px; }
+  h2 { font-family: var(--hud); font-size: 12px; letter-spacing: .26em; color: var(--a); text-transform: uppercase; margin: 28px 0 10px; display: flex; align-items: center; gap: 12px; }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .check { border: 1px solid var(--line); padding: 4px 14px 12px; }
+  .check .g { font-family: var(--hud); font-size: 10px; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; margin: 12px 0 4px; }
+  .check .it { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; line-height: 1.45; }
+  .check .it b { width: 16px; flex-shrink: 0; text-align: center; }
+  .check .ok b { color: var(--ok); } .check .aviso b { color: var(--warn); } .check .fallo b { color: var(--err); } .check .info b { color: var(--muted); }
+  .check .it .tx { flex: 1; }
+  .check .it .text-btn { padding: 0 6px; color: var(--a); }
+  .empty { color: var(--muted); padding: 10px 0; }
+  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--line-strong); border-top-color: var(--a); border-radius: 50%; animation: sp 0.9s linear infinite; vertical-align: -2px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  #toast { position: fixed; right: 18px; bottom: 18px; max-width: 380px; padding: 10px 14px; background: #061423; border: 1px solid var(--line-strong); color: var(--text); opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; }
+  #toast.on { opacity: 1; transform: none; }
+  @media (max-width: 560px) { .hero { grid-template-columns: 1fr; justify-items: start; } .ring { width: 120px; height: 120px; } }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body class="page">
+<header>
+  <span class="brand">SALUD · JARVIS</span>
+  <span class="sub" id="ver">v{{ version }}</span>
+  <span class="sp"></span>
+  <span class="sub" id="at">—</span>
+  <button class="btn btn-ghost" type="button" id="btn-refresh">Actualizar</button>
+  <button class="btn btn-primary" type="button" id="btn-full">Prueba completa</button>
+</header>
+
+<section class="hero">
+  <div class="ring" id="ring">
+    <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="ring-fg" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="326.7"/></svg>
+    <div class="num"><b id="score">—</b><small>DE 100</small></div>
+  </div>
+  <div>
+    <div class="verdict" id="verdict">Revisando…</div>
+    <div class="counts" id="counts"></div>
+    <p class="lead" id="lead">Lo que funciona, lo que falta y cómo arreglarlo. Se actualiza solo cada 15 segundos.</p>
+  </div>
+</section>
+
+<div class="grid" id="grid"></div>
+
+<h2>Prueba completa</h2>
+<div class="check" id="check"><p class="empty">Pulsa «Prueba completa»: pruebo de verdad la IA, internet, la voz y si hay versión nueva (tarda unos segundos).</p></div>
+<div id="toast" role="status"></div>
+
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const socket = io();
+  const MARK = { ok: "✓", aviso: "!", fallo: "✕", info: "•" };
+  let toastT = 0, busy = false;
+  function toast(t) { const n = $("#toast"); n.textContent = t; n.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => n.classList.remove("on"), 5000); }
+  function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  function render(s) {
+    if (!s || !s.cards) return;
+    $("#at").textContent = "actualizado " + s.at;
+    const sc = s.score, C = 326.7;
+    const col = sc >= 85 ? "var(--ok)" : sc >= 60 ? "var(--warn)" : "var(--err)";
+    $("#ring").style.setProperty("--ring", col);
+    $("#ring-fg").style.strokeDashoffset = String(C * (1 - sc / 100));
+    $("#score").textContent = sc;
+    const n = { ok: 0, aviso: 0, fallo: 0 };
+    s.cards.forEach((c) => { if (c.estado in n) n[c.estado]++; });
+    $("#verdict").textContent = n.fallo ? "Requiere atención" : n.aviso ? "Funciona, con avisos" : "Todo en orden";
+    $("#verdict").style.color = col;
+    const cn = $("#counts"); cn.innerHTML = "";
+    [["ok", "funcionando"], ["aviso", "avisos"], ["fallo", "fallos"]].forEach(([k, w]) => cn.append(el("span", "c-" + k, `${MARK[k]} ${n[k]} ${w}`)));
+    const bad = s.cards.find((c) => c.estado === "fallo") || s.cards.find((c) => c.estado === "aviso");
+    $("#lead").textContent = bad ? `Lo primero: ${bad.titulo.toLowerCase()} — ${bad.valor}. ${bad.detalle || ""}` : "Todo lo importante funciona. Se actualiza solo cada 15 segundos.";
+    const g = $("#grid"); g.innerHTML = "";
+    s.cards.forEach((c) => {
+      const d = el("article", "card"); d.dataset.e = c.estado;
+      const h = el("h3"); h.append(el("i"), document.createTextNode(c.titulo)); d.append(h);
+      d.append(el("div", "val", c.valor), el("div", "det", c.detalle || ""));
+      if (c.accion) {
+        const b = el("button", "btn btn-ghost", c.accion.label); b.type = "button";
+        b.addEventListener("click", () => {
+          b.disabled = true;
+          const done = (r) => { b.disabled = false; if (r && (r.msg || r.error)) toast(r.msg || r.error); setTimeout(load, 800); };
+          if (c.accion.socket === "open_settings") { socket.emit("open_settings"); b.disabled = false; return; }
+          socket.emit(c.accion.socket, c.accion.data || {}, done);
+        });
+        d.append(b);
+      }
+      g.append(d);
+    });
+    if (s.check) renderCheck(s.check.items, s.check.at, s.check.busy);
+  }
+
+  function renderCheck(items, at, running) {
+    const box = $("#check");
+    if (running || busy) { box.innerHTML = ""; const p = el("p", "empty"); p.append(el("span", "spin"), document.createTextNode("  Probando todo… unos segundos.")); box.append(p); return; }
+    if (!items || !items.length) return;
+    box.innerHTML = "";
+    let grp = "";
+    items.forEach((i) => {
+      if (i.grupo !== grp) { grp = i.grupo; box.append(el("div", "g", grp)); }
+      const r = el("div", "it " + i.estado); r.append(el("b", "", MARK[i.estado] || "•"), el("span", "tx", i.texto));
+      if (i.arreglo) {
+        const b = el("button", "text-btn", i.arreglo.startsWith("ms-settings:") ? "Abrir en Windows" : "Arreglar"); b.type = "button";
+        b.addEventListener("click", () => socket.emit("health_fix", { arreglo: i.arreglo }, (x) => { if (x && x.error) toast(x.error); }));
+        r.append(b);
+      }
+      box.append(r);
+    });
+    if (at) box.append(el("p", "empty", "Prueba hecha: " + at));
+  }
+
+  function load() { socket.emit("health_snapshot", {}, render); }
+  socket.on("connect", () => {
+    load();
+    socket.emit("get_settings", (r) => { if (r && r.settings && r.settings.theme) document.documentElement.dataset.theme = r.settings.theme; });
+  });
+  socket.on("system_check", (d) => { busy = false; $("#btn-full").disabled = false; renderCheck(d.items, d.at, false); load(); });
+  socket.on("motor", () => setTimeout(load, 500));
+  $("#btn-refresh").addEventListener("click", load);
+  $("#btn-full").addEventListener("click", () => {
+    busy = true; $("#btn-full").disabled = true; renderCheck([], "", true);
+    socket.emit("health_full", {});
+  });
+  setInterval(load, 15000);
+})();
+</script>
+</body>
+</html>

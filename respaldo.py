@@ -197,8 +197,16 @@ def inspect(path):
         parts = []
         for fname, (part, desc) in FILES.items():
             if fname in names:
+                raw = z.read(fname)
+                if datos.is_encrypted(raw):                # 12.8: los datos cifrados también se pueden restaurar
+                    try:
+                        cnt = _count(part, datos.loads(raw))
+                    except (datos.DataLocked, ValueError):
+                        cnt = None
+                    parts.append({"part": part, "desc": desc + " (cifrado)", "count": cnt})
+                    continue
                 try:
-                    data = json.loads(z.read(fname).decode("utf-8"))
+                    data = json.loads(raw.decode("utf-8"))
                 except ValueError:
                     continue
                 parts.append({"part": part, "desc": desc, "count": _count(part, data)})

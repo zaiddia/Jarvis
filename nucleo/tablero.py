@@ -371,7 +371,8 @@ def handle_palette(data=None):
     extra = ["pasa el quiz a Forms", "trae las notas del formulario", "dame el resumen semanal", "¿qué clase tengo ahora?",
              "prepárame la próxima clase de ", "anota en el observador de  que ", "haz el informe para los padres de ",
              "crea 10 preguntas tipo saber de ", "haz la malla curricular de ", "adapta el taller de  para un estudiante con ",
-             "genera el informe de errores", "modo proyector", "exporta las notas de  para Zeti"]
+             "genera el informe de errores", "modo proyector", "exporta las notas de  para Zeti",
+             "haz los boletines de ", "abre el panel de salud"]
     try:
         smart = J.smart_palette()                      # 11.8: lo de ahora primero, con el curso ya puesto
     except Exception:

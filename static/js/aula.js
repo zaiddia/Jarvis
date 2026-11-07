@@ -160,6 +160,10 @@
     const hoy = new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" });
     $("#att-count").textContent = `${A.activo} · presentes ${list.length - aus.size} de ${list.length} · ${hoy}`;
   }
+  $("#btn-boletines").addEventListener("click", () => {                              // 12.8: boletines del periodo
+    toast("Haciendo los boletines del curso… te aviso cuando estén.", "ok");
+    socket.emit("boletines", { curso: A.activo }, (r) => { if (r && r.ok === false) toast(r.error, "err"); });
+  });
   $("#btn-export").addEventListener("click", () => socket.emit("aula_export", {}, (r) => {
     if (r && r.ok === false) toast(r.error, "err");
   }));
@@ -447,6 +451,9 @@
     if (ev.type === "pick") spinTo(ev.name, ev.quedan, ev.total);
     if (ev.type === "groups") renderGroups(ev.groups);
     if (ev.type === "attendance" || ev.type === "course") apply(ev);
+    if (ev.type === "boletines") {
+      toast(`Listos ${ev.n} boletines`, "ok", { label: "Abrir", fn: () => socket.emit("aula_open", { path: ev.path }) }, 9000);
+    }
     if (ev.type === "exported") {
       toast(`Asistencia guardada: ${ev.name}`, "ok", { label: "Abrir", fn: () => socket.emit("aula_open", { path: ev.path }) });
     }

@@ -42,3 +42,5 @@ pypdfium2
 imageio-ffmpeg
 # 12.2: el navegador con el que Jarvis llena las plataformas (usa el Edge o Chrome que ya tienes)
 playwright
+# 12.8: boletines del periodo en PDF
+fpdf2

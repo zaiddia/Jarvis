@@ -251,7 +251,7 @@ def backup_folder():
     return J.settings["backup_dir"].strip() or os.path.join(J.settings["output_dir"], "Respaldos")
 
 
-def make_backup(kind="manual", include_secrets=None):
+def make_backup(kind="manual", include_secrets=None, upload=True):
     with J._bak_lock:
         res = respaldo.create(J.CONFIG_DIR, J.backup_folder(), J.settings, J.SECRET_FIELDS,
                               J.settings["backup_secrets"] if include_secrets is None else include_secrets,
@@ -259,7 +259,7 @@ def make_backup(kind="manual", include_secrets=None):
         if kind in ("auto", "antes"):
             respaldo.prune(J.backup_folder(), J.BACKUP_KEEP_AUTO, kind)
     J.log_terminal(f"Copia de seguridad guardada: {res['path']}", "RESPALDO")
-    if kind in ("auto", "manual"):
+    if kind in ("auto", "manual") and upload:
         J.after_backup(res)                            # 8.9: también a tu Drive
     return res
 

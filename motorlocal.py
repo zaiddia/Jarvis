@@ -11,11 +11,17 @@ RELEASES_API = "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_pag
 # Modelos que se probaron bien en español para tareas de docente (cuantización Q4_K_M: buena calidad y liviana).
 CATALOG = [
     {"id": "qwen3-4b", "nombre": "Qwen3 4B Instruct (recomendado)", "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF", "patron": "Q4_K_M", "gb": 2.5,
-     "ram": 8},
-    {"id": "gemma3-4b", "nombre": "Gemma 3 4B", "repo": "unsloth/gemma-3-4b-it-GGUF", "patron": "Q4_K_M", "gb": 2.5, "ram": 8},
-    {"id": "llama3.2-3b", "nombre": "Llama 3.2 3B", "repo": "unsloth/Llama-3.2-3B-Instruct-GGUF", "patron": "Q4_K_M", "gb": 2.0, "ram": 6},
-    {"id": "gemma3-1b", "nombre": "Gemma 3 1B (liviano)", "repo": "unsloth/gemma-3-1b-it-GGUF", "patron": "Q4_K_M", "gb": 0.8, "ram": 4},
+     "ram": 8, "archivo": r"qwen3-4b-instruct"},
+    {"id": "qwen3-vl-4b", "nombre": "Qwen3 VL 4B (también ve imágenes)", "repo": "lmstudio-community/Qwen3-VL-4B-Instruct-GGUF", "patron": "Q4_K_M",
+     "gb": 2.5, "ram": 8, "vision": True, "vision_gb": 0.8, "archivo": r"qwen3-vl-4b"},
+    {"id": "gemma3-4b", "nombre": "Gemma 3 4B (también ve imágenes)", "repo": "unsloth/gemma-3-4b-it-GGUF", "patron": "Q4_K_M", "gb": 2.5, "ram": 8,
+     "vision": True, "vision_gb": 0.8, "archivo": r"gemma-3-4b"},
+    {"id": "llama3.2-3b", "nombre": "Llama 3.2 3B", "repo": "unsloth/Llama-3.2-3B-Instruct-GGUF", "patron": "Q4_K_M", "gb": 2.0, "ram": 6,
+     "archivo": r"llama-3\.2-3b"},
+    {"id": "gemma3-1b", "nombre": "Gemma 3 1B (liviano)", "repo": "unsloth/gemma-3-1b-it-GGUF", "patron": "Q4_K_M", "gb": 0.8, "ram": 4,
+     "archivo": r"gemma-3-1b"},
 ]
+VISION_ID = "qwen3-vl-4b"           # 12.8: el que se instala para que vea, si tu modelo no puede
 
 
 def asset_suffix(is_win=True, gpu=False):
@@ -54,9 +60,28 @@ def hf_file(repo, name):
     return f"https://huggingface.co/{repo}/resolve/main/{name}"
 
 
+def pick_mmproj(siblings):
+    """12.8: el archivo de visión («mmproj») del modelo: el F16 si está (buena calidad y la mitad que el F32). → nombre o ""."""
+    names = [s.get("rfilename", s) if isinstance(s, dict) else str(s) for s in siblings or []]
+    mm = [n for n in names if n.lower().endswith(".gguf") and "mmproj" in n.lower()]
+    for pref in ("f16", "bf16", "q8", "f32"):
+        hit = sorted((n for n in mm if re.search(rf"[-_.]{pref}[-_.]", n.lower() + ".")), key=len)
+        if hit:
+            return hit[0]
+    return sorted(mm, key=len)[0] if mm else ""
+
+
+def entry_for_file(model_file):
+    """La entrada del catálogo de un .gguf ya descargado (por su nombre), o None si lo pusiste tú."""
+    low = os.path.basename(str(model_file or "")).lower()
+    return next((m for m in CATALOG if re.search(m["archivo"], low)), None)
+
+
 def recommend(ram_gb, free_gb):
     """El mejor modelo del catálogo que cabe en la memoria y en el disco. → entrada o None."""
     for m in CATALOG:
+        if m.get("vision"):
+            continue                                   # para escribir, el Qwen3 de solo texto es mejor; los de visión, a pedido
         if ram_gb >= m["ram"] and free_gb >= m["gb"] + 1.0:
             return m
     return None
@@ -66,12 +91,14 @@ def by_id(mid):
     return next((m for m in CATALOG if m["id"] == mid), None)
 
 
-def server_args(exe, model_path, port=PORT, ctx=4096, threads=0, threads_batch=0, gpu=False):
+def server_args(exe, model_path, port=PORT, ctx=4096, threads=0, threads_batch=0, gpu=False, mmproj=""):
     """12.7, más rápida: un solo turno a la vez con todo el contexto (-np 1), reusa lo ya leído del mensaje anterior
     (--cache-reuse: el «system prompt» de Jarvis no se vuelve a procesar en cada pregunta), atención rápida (-fa auto)
     y, si hay tarjeta gráfica, el modelo entero en ella (-ngl 99)."""
     a = [exe, "-m", model_path, "--host", "127.0.0.1", "--port", str(port), "-c", str(ctx), "--jinja", "--no-webui",
          "-np", "1", "--cache-reuse", "256", "-fa", "auto", "-ngl", "99" if gpu else "0"]
+    if mmproj:
+        a += ["--mmproj", mmproj]                      # 12.8: los ojos del modelo (las imágenes se leen con este archivo)
     if threads:
         a += ["-t", str(threads)]
     if threads_batch:

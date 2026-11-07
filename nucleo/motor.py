@@ -60,6 +60,20 @@ def motor_name():
     return os.path.splitext(os.path.basename(model))[0] if model else ""
 
 
+def motor_mmproj():
+    """12.8: el archivo de visión del modelo en uso (motor/vision/<modelo>.gguf), o "" si no tiene o no sirvió."""
+    _exe, model = J.motor_paths()
+    if not model or engine.get("no_mm"):
+        return ""
+    p = _dir("vision", os.path.basename(model))
+    return p if os.path.exists(p) else ""
+
+
+def motor_sees():
+    """¿La IA integrada puede ver imágenes? (instalada y con su archivo de visión)."""
+    return bool(J.motor_ready() and motor_mmproj())
+
+
 def _mt_alive():
     p = engine["proc"]
     return p is not None and p.poll() is None
@@ -83,17 +97,28 @@ def motor_start(wait=120):
         if not (exe and model):
             return False
         gpu = _backend() == "gpu" and exe == _exe_for("gpu")
+        mm = motor_mmproj()
         if not _mt_alive():
             phys = (J.psutil.cpu_count(logical=False) if J.psutil else None) or max(1, (os.cpu_count() or 4) // 2)
-            engine["proc"] = subprocess.Popen(motorlocal.server_args(exe, model, threads=phys, threads_batch=os.cpu_count() or phys, gpu=gpu),
+            engine["proc"] = subprocess.Popen(motorlocal.server_args(exe, model, ctx=8192 if mm else 4096, threads=phys,
+                                                                     threads_batch=os.cpu_count() or phys, gpu=gpu, mmproj=mm),
                                               cwd=os.path.dirname(exe), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                               creationflags=0x08000000 if J.IS_WIN else 0)
-            engine["gpu"] = gpu
-            J.log_terminal(f"Enciendo la IA integrada ({motor_name()}{', con la tarjeta gráfica' if gpu else ''})…", "IA LOCAL")
+            engine["gpu"], engine["mm"] = gpu, bool(mm)
+            J.log_terminal(f"Enciendo la IA integrada ({motor_name()}{', con la tarjeta gráfica' if gpu else ''}{', con visión' if mm else ''})…",
+                           "IA LOCAL")
         t0 = time.time()
         while time.time() - t0 < wait:
             if not _mt_alive():
                 engine["proc"] = None
+                if engine.get("mm"):                   # 12.8: con la visión no arrancó (memoria o motor viejo): sin ella
+                    J.log_terminal("La IA integrada no arrancó con la visión; la enciendo solo para texto.", "IA LOCAL")
+                    engine["no_mm"], engine["mm"] = True, False
+                    engine["lock"].release()
+                    try:
+                        return J.motor_start(wait)
+                    finally:
+                        engine["lock"].acquire()
                 if engine.get("gpu"):                  # 12.7: la tarjeta gráfica no sirvió: se usa el procesador
                     J.log_terminal("La IA integrada no arrancó con la tarjeta gráfica; uso el procesador.", "IA LOCAL")
                     J.settings["motor_backend"] = "cpu"
@@ -258,6 +283,68 @@ def install_model(mid=None, progress=None):
     return dst
 
 
+def install_vision(progress=None):
+    """12.8: los «ojos» de la IA integrada. Si tu modelo puede ver, baja solo su archivo de visión; si no, baja el modelo
+    Qwen3 VL 4B (escribe tan bien como el otro y además ve) y lo deja como tu modelo. → nombre del modelo que ve."""
+    _exe, model = J.motor_paths()
+    m = motorlocal.entry_for_file(model)
+    if not (m and m.get("vision")):
+        m = motorlocal.by_id(motorlocal.VISION_ID)
+        model = J.install_model(m["id"], progress)
+    info = J._motor_get_json(motorlocal.hf_api(m["repo"]))
+    name = motorlocal.pick_mmproj(info.get("siblings") or [])
+    if not name:
+        raise ValueError(f"{m['nombre']} no trae el archivo de visión")
+    os.makedirs(_dir("vision"), exist_ok=True)
+    dst = _dir("vision", os.path.basename(model))
+    if not os.path.exists(dst):
+        J._motor_fetch(motorlocal.hf_file(m["repo"], name), dst, progress, "la visión de " + m["nombre"])
+    engine["no_mm"] = False
+    return m["nombre"]
+
+
+def vision_plan():
+    """Qué haría «darle visión»: (texto para pedir permiso, GB a bajar)."""
+    _exe, model = J.motor_paths()
+    m = motorlocal.entry_for_file(model)
+    if m and m.get("vision"):
+        return f"Darle visión a la IA integrada ({m['nombre']}: unos {m['vision_gb']} GB)", m["vision_gb"]
+    v = motorlocal.by_id(motorlocal.VISION_ID)
+    return (f"Darle visión a la IA integrada: baja {v['nombre']} y su visión (unos {v['gb'] + v['vision_gb']:.1f} GB) y lo deja como tu "
+            "modelo local"), v["gb"] + v["vision_gb"]
+
+
+def motor_vision_job():
+    if engine["job"]:
+        return False
+    engine["job"] = True
+
+    def prog(label, frac):
+        engine["msg"] = f"Descargando {label}: {int(frac * 100)} %"
+        J.socketio.emit("motor", J.motor_status())
+
+    def work():
+        try:
+            if not J.motor_ready():
+                J.install_engine(prog)
+            name = J.install_vision(prog)
+            motor_stop()
+            engine["msg"] = "Probando que vea…"
+            ok = J.motor_start(240) and motor_sees()
+            msg = (f"Lista: la IA integrada ya ve imágenes ({name}). Sin internet puedo revisar talleres en foto, leer la pizarra y "
+                   "describir lo que subas." if ok else
+                   "Bajé la visión, pero el motor no arrancó con ella (puede faltar memoria). Sigo usando la IA local solo para texto.")
+        except Exception as e:
+            msg = f"No pude darle visión a la IA integrada: {str(e)[:160]}"
+        finally:
+            engine["job"] = False
+            engine["msg"] = ""
+        J.notify(msg, "IA LOCAL")
+        J.socketio.emit("motor", J.motor_status())
+    J.start_job("Dándole visión a la IA integrada", work, "motor-vision")
+    return True
+
+
 def motor_recommend():
     ram = J.psutil.virtual_memory().total / 1e9 if J.psutil else 8.0
     try:
@@ -280,6 +367,11 @@ def motor_install_job(mid=None):
         try:
             J.install_engine(prog)
             path = J.install_model(mid, prog)
+            if (motorlocal.entry_for_file(path) or {}).get("vision"):     # 12.8: si el modelo puede ver, también sus ojos
+                try:
+                    J.install_vision(prog)
+                except Exception as e:
+                    J.log_terminal(f"No bajé la visión del modelo: {e}", "IA LOCAL")
             if J.IS_WIN:                               # 12.7: también la versión con tarjeta gráfica; se queda la más rápida
                 try:
                     J.install_engine(prog, gpu=True)
@@ -340,7 +432,7 @@ def motor_status():
     exe, model = J.motor_paths()
     rec = J.motor_recommend()
     return {"motor": bool(exe), "modelo": os.path.basename(model) if model else "", "corriendo": _mt_alive(), "instalando": engine["job"],
-            "gpu": _backend() == "gpu",
+            "gpu": _backend() == "gpu", "ve": motor_sees(),
             "msg": engine["msg"], "recomendado": rec["nombre"] if rec else "", "recomendado_gb": rec["gb"] if rec else 0,
             "catalogo": [{"id": m["id"], "nombre": m["nombre"], "gb": m["gb"]} for m in motorlocal.CATALOG]}
 
@@ -359,6 +451,14 @@ def handle_motor(data=None):
                            on_ok=lambda: J.motor_install_job(m["id"]), on_no=lambda: None, ttl=1800,
                            say=f"¿Instalo la IA integrada {m['nombre']}? Son unos {m['gb']} gigas, una sola vez. Di «sí» o «no».")
         return {"ok": True, "msg": "Te pedí permiso en el HUD: di «sí» o apruébalo en la bandeja.", **J.motor_status()}
+    if act == "vision":
+        if motor_sees():
+            return {"ok": True, "msg": "La IA integrada ya ve imágenes.", **J.motor_status()}
+        title, gb = vision_plan()
+        J.request_approval("instalar", title, "Se baja una sola vez a la carpeta de Jarvis. Después, sin internet, puede revisar talleres en "
+                           "foto, leer la pizarra y describir imágenes.", on_ok=J.motor_vision_job, on_no=lambda: None, ttl=1800,
+                           say=f"¿Le doy visión a la IA integrada? Son unos {gb:.1f} gigas, una sola vez. Di «sí» o «no».")
+        return {"ok": True, "msg": "Te pedí permiso en el HUD: di «sí» o apruébalo en la bandeja.", **J.motor_status()}
     if act == "apagar":
         motor_stop()
         return {"ok": True, "msg": "Apagué la IA integrada.", **J.motor_status()}
@@ -372,7 +472,14 @@ _MOTOR_INST = re.compile(r"\b(?:instala|descarga|prepara|baja)\s+(?:la\s+)?(?:ia
                          r"\b(?:ia|cerebro) (?:integrad[oa]|sin ollama)\b")
 
 
+_MOTOR_EYES = re.compile(r"\b(?:dale|darle|ponle|instala(?:le)?|activa(?:le)?)\s+(?:la\s+)?vision\s+(?:a\s+)?(?:la\s+)?(?:ia|inteligencia artificial)"
+                         r"(?:\s+(?:local|integrada|sin internet))?\b|\bque la (?:ia|inteligencia artificial) (?:local|integrada|sin internet) (?:vea|pueda ver)\b")
+
+
 def motor_voice(text, t):
+    if _MOTOR_EYES.search(t):
+        J.reply(J.handle_motor({"action": "vision"})["msg"], "IA LOCAL")
+        return True
     if not _MOTOR_INST.search(t):
         return False
     if J.motor_ready():
@@ -391,6 +498,6 @@ def motor_start_services():
 _motor_get_json = _mt_get_json
 _motor_fetch = _mt_fetch
 
-__all__ = ['IDLE_STOP', '_MOTOR_INST', '_motor_fetch', '_motor_get_json', 'engine', 'handle_motor', 'install_engine', 'install_model', 'motor_ask',
+__all__ = ['IDLE_STOP', '_MOTOR_EYES', '_MOTOR_INST', 'install_vision', 'motor_mmproj', 'motor_sees', 'motor_vision_job', 'vision_plan', '_motor_fetch', '_motor_get_json', 'engine', 'handle_motor', 'install_engine', 'install_model', 'motor_ask',
            'motor_bench', 'motor_ensure', 'motor_install_job', 'motor_pick_backend', 'motor_warmup', 'motor_name', 'motor_paths', 'motor_ready', 'motor_recommend', 'motor_start', 'motor_start_services',
            'motor_status', 'motor_stop', 'motor_voice', 'motorlocal']

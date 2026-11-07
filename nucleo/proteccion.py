@@ -2,12 +2,15 @@
 
 Los nombres globales de Jarvis se usan como J.<nombre>.
 """
+import datetime
 import os
 import re
 import threading
+import time
 
 import aula
 import classroom
+import copianube
 import datos
 import diarioclase
 import dominio
@@ -101,21 +104,51 @@ def students_info():
 
 
 # ============================================================================ COPIA DE SEGURIDAD EN DRIVE
-def backup_to_drive(path):
-    """Sube la copia (.zip) a «Jarvis/Respaldos» de tu Drive y deja solo las últimas. Devuelve el nombre o lanza error."""
-    client = J.classroom_client()
+def _drive_backup_folder(client):
     root = gservicios.ensure_folder(client, J.settings["drive_folder_id"])
     sub = gservicios.ensure_subfolder(client, root, "Respaldos", J.settings["drive_backup_folder_id"])
     if root != J.settings["drive_folder_id"] or sub != J.settings["drive_backup_folder_id"]:
         J.apply_settings({"drive_folder_id": root, "drive_backup_folder_id": sub})
-    f = gservicios.upload(client, path, sub)
+    return sub
+
+
+def _sealed_copy(path):
+    """12.8: la copia cifrada con tu clave (y la clave de los datos de estudiantes adentro). → ruta del .jvbk temporal."""
+    with open(path, "rb") as f:
+        raw = f.read()
+    blob = copianube.seal(copianube.with_key(raw, J.settings.get("data_key", "")), J.settings["cloud_pass"])
+    tmp_dir = os.path.join(J.CONFIG_DIR, "tmp")
+    os.makedirs(tmp_dir, exist_ok=True)
+    out = os.path.join(tmp_dir, copianube.cloud_name(path))
+    with open(out, "wb") as f:
+        f.write(blob)
+    return out
+
+
+def backup_to_drive(path):
+    """Sube la copia a «Jarvis/Respaldos» de tu Drive y deja solo las últimas. 12.8: si pusiste la clave de las copias,
+    va cifrada entera (.jvbk). Devuelve el nombre o lanza error."""
+    client = J.classroom_client()
+    sub = _drive_backup_folder(client)
+    sealed = bool(J.settings.get("cloud_pass"))
+    up = _sealed_copy(path) if sealed else path
+    try:
+        f = gservicios.upload(client, up, sub)
+    finally:
+        if sealed:
+            try:
+                os.remove(up)
+            except OSError:
+                pass
     keep = J.settings["drive_backup_keep"]
-    for old in [x for x in gservicios.list_folder(client, sub) if x["name"].endswith(".zip")][keep:]:
+    for old in [x for x in gservicios.list_folder(client, sub) if copianube.is_copy(x["name"])][keep:]:
         try:
             gservicios.delete(client, old["id"])
         except classroom.ClassroomError:
             pass
-    return f.get("name", os.path.basename(path))
+    if sealed:
+        J.apply_settings({"cloud_last": datetime.datetime.now().isoformat(timespec="seconds"), "cloud_last_error": ""})
+    return f.get("name", os.path.basename(up))
 
 
 def after_backup(res):
@@ -153,6 +186,168 @@ def backup_drive_voice(text, t):
     return True
 
 
+# ============================================================================ 12.8: CADA NOCHE, CIFRADA, EN TU DRIVE
+cloud_state = {"busy": False, "tried": 0.0}
+
+
+def cloud_ready():
+    """(lista, qué falta)."""
+    if not J.settings.get("cloud_nightly"):
+        return False, "la copia de cada noche está apagada"
+    if not J.gdrive_ready():
+        return False, "falta conectar tu cuenta de Google (Ajustes › Memoria › Cuenta de Google)"
+    if not J.settings.get("cloud_pass"):
+        return False, "falta poner la clave de las copias (Ajustes › Memoria › Copias de seguridad)"
+    if not datos.available():
+        return False, "falta la librería «cryptography»"
+    return True, ""
+
+
+def cloud_backup_now(kind="auto"):
+    """Hace la copia y la sube cifrada. → nombre en Drive (lanza error si no se pudo)."""
+    if cloud_state["busy"]:
+        raise RuntimeError("ya estoy subiendo una copia")
+    cloud_state["busy"] = True
+    try:
+        res = J.make_backup(kind, upload=False)
+        return backup_to_drive(res["path"])
+    except Exception as e:
+        J.apply_settings({"cloud_last_error": f"{datetime.datetime.now():%Y-%m-%d %H:%M} · {str(e)[:160]}"})
+        raise
+    finally:
+        cloud_state["busy"] = False
+
+
+def _cloud_worker():
+    time.sleep(240)
+    while True:
+        try:
+            ok, _why = cloud_ready()
+            if ok and not J.is_offline() and time.time() - cloud_state["tried"] > 3600 and \
+                    copianube.due(datetime.datetime.now(), J.settings.get("cloud_last", ""), int(J.settings.get("cloud_hour", 21))):
+                cloud_state["tried"] = time.time()
+                name = cloud_backup_now("auto")
+                J.log_terminal(f"Copia de la noche, cifrada, en tu Drive: {name}", "RESPALDO")
+        except Exception as e:
+            J.note_error("RESPALDO", e)
+            J.log_terminal(f"No pude subir la copia de la noche a Drive: {e}", "AVISO")
+        time.sleep(600)
+
+
+def cloud_info():
+    ok, why = cloud_ready()
+    return {"ok": True, "lista": ok, "falta": why, "google": bool(J.gdrive_ready()), "clave": bool(J.settings.get("cloud_pass")),
+            "activa": bool(J.settings.get("cloud_nightly")), "hora": J.settings.get("cloud_hour", 21),
+            "ultima": J.settings.get("cloud_last", ""), "error": J.settings.get("cloud_last_error", ""), "subiendo": cloud_state["busy"]}
+
+
+def cloud_list():
+    client = J.classroom_client()
+    sub = _drive_backup_folder(client)
+    return [{"id": x["id"], "nombre": x["name"], "fecha": x.get("createdTime", ""), "kb": max(1, int(x.get("size") or 0) // 1024),
+             "cifrada": x["name"].lower().endswith(copianube.EXT)} for x in gservicios.list_folder(client, sub) if copianube.is_copy(x["name"])]
+
+
+def cloud_fetch(file_id, password=""):
+    """Trae una copia de tu Drive a la carpeta de copias (la descifra con tu clave). Lo que se restaura lo eliges después,
+    como con cualquier copia: aquí nada se reemplaza. → {"name", "info", "clave_datos"}."""
+    import respaldo
+    client = J.classroom_client()
+    meta = next((x for x in cloud_list() if x["id"] == file_id), None)
+    if not meta:
+        raise ValueError("esa copia ya no está en tu Drive")
+    blob = gservicios.download(client, file_id)
+    key_note = ""
+    if copianube.is_sealed(blob):
+        raw = copianube.unseal(blob, password or J.settings.get("cloud_pass", ""))
+        raw, data_key = copianube.split_key(raw)
+        if data_key and data_key != J.settings.get("data_key"):
+            if not J.settings.get("data_key") or students_locked():
+                unlock_students(data_key)              # equipo nuevo: la clave de las notas viene en la copia
+                key_note = "puse"
+            else:
+                key_note = "distinta"
+    else:
+        raw = blob
+    folder = J.backup_folder()
+    os.makedirs(folder, exist_ok=True)
+    name = f"Jarvis respaldo de la nube {datetime.datetime.now():%Y-%m-%d %H%M%S}.zip"
+    path = os.path.join(folder, name)
+    with open(path, "wb") as f:
+        f.write(raw)
+    try:
+        info = respaldo.inspect(path)
+    except respaldo.BackupError:
+        os.remove(path)
+        raise
+    return {"name": name, "info": info, "clave_datos": key_note}
+
+
+@J.socketio.on("cloud_backup")
+def handle_cloud_backup(data=None):
+    d = data or {}
+    act = str(d.get("action") or "")
+    try:
+        if act == "listar":
+            return {**cloud_info(), "items": cloud_list()}
+        if act == "ahora":
+            if not J.settings.get("cloud_pass"):
+                return {**cloud_info(), "ok": False, "error": "Primero escribe la clave de las copias y guarda."}
+            name = cloud_backup_now("manual")
+            return {**cloud_info(), "msg": f"Copia cifrada subida a tu Drive: {name}."}
+        if act == "traer":
+            r = cloud_fetch(str(d.get("id") or ""), str(d.get("clave") or ""))
+            return {**cloud_info(), **r, **J._bak_list()}
+    except copianube.WrongPassword:
+        return {**cloud_info(), "ok": False, "error": "Esa no es la clave de esa copia."}
+    except Exception as e:
+        return {**cloud_info(), "ok": False, "error": str(e)[:200]}
+    return cloud_info()
+
+
+_CLOUD_WHEN = re.compile(r"\b(?:cuando (?:fue|hiciste|se hizo)|hay) (?:la )?(?:ultima )?(?:copia|respaldo)\b.*\b(?:nube|drive)\b|"
+                         r"\b(?:ultima copia|ultimo respaldo) (?:en la nube|en drive|de la nube)\b")
+_CLOUD_FETCH = re.compile(r"\b(?:trae|traeme|descarga|baja|recupera)\b.*\b(?:copia|respaldo)\b.*\b(?:nube|drive)\b")
+
+
+def cloud_voice(text, t):
+    if _CLOUD_FETCH.search(t):
+        if not J.gdrive_ready():
+            J.reply("Primero conecta tu cuenta de Google en Ajustes › Memoria › Cuenta de Google.", "RESPALDO")
+            return True
+        try:
+            items = cloud_list()
+            if not items:
+                J.reply("No hay copias en tu Drive todavía.", "RESPALDO")
+                return True
+            r = cloud_fetch(items[0]["id"])
+        except copianube.WrongPassword:
+            J.reply("La copia de tu Drive tiene otra clave: escríbela en Ajustes › Memoria › Copias de seguridad, «Traer de mi Drive».",
+                    "RESPALDO")
+            return True
+        except Exception as e:
+            J.reply(f"No pude traer la copia: {str(e)[:160]}", "RESPALDO")
+            return True
+        J.reply(f"Traje la copia más reciente de tu Drive. Para restaurarla, en Ajustes › Memoria › Copias de seguridad pulsa «Restaurar…» "
+                "y elige qué recuperar; nada se reemplazó todavía." + (" Ya puse la clave de las notas que venía en la copia." if r["clave_datos"] == "puse"
+                                                                        else ""), "RESPALDO")
+        return True
+    if _CLOUD_WHEN.search(t):
+        i = cloud_info()
+        if i["ultima"]:
+            J.reply(f"La última copia cifrada en tu Drive fue el {i['ultima'][:10]} a las {i['ultima'][11:16]}."
+                    + ("" if i["lista"] else f" Ojo: {i['falta']}."), "RESPALDO")
+        else:
+            J.reply("Todavía no hay copias cifradas en tu Drive" + (f": {i['falta']}." if i["falta"] else "; la primera sale esta noche."),
+                    "RESPALDO")
+        return True
+    return False
+
+
+def cloud_start():
+    threading.Thread(target=_cloud_worker, daemon=True, name="copia-nube").start()
+
+
 def students_start():
     """Tras leer los ajustes (con la clave): abre lo que se cargó antes de tenerla."""
     for m in STUDENT_FILES.values():
@@ -164,6 +359,7 @@ def students_start():
                        "recuperación en Ajustes › Memoria para abrirlos.", "AVISO")
 
 
-__all__ = ['STUDENT_FILES', '_BK_RE', '_resave_all', 'after_backup', 'backup_drive_voice', 'backup_to_drive',
+__all__ = ['STUDENT_FILES', '_BK_RE', '_CLOUD_FETCH', '_CLOUD_WHEN', '_drive_backup_folder', '_sealed_copy', 'cloud_backup_now', 'cloud_fetch',
+           'cloud_info', 'cloud_list', 'cloud_ready', 'cloud_start', 'cloud_state', 'cloud_voice', 'handle_cloud_backup', '_resave_all', 'after_backup', 'backup_drive_voice', 'backup_to_drive',
            'handle_students_info', 'handle_students_protect', 'protect_students', 'students_info', 'students_locked', 'students_start',
            'unlock_students']

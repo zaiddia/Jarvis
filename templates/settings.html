@@ -456,6 +456,11 @@
           <button class="btn btn-ghost" type="button" id="btn-motor-toggle">Encender</button>
         </div>
       </div>
+      <div class="field">
+        <div class="ft"><label>Que vea imágenes (12.8)</label><p>Con visión, sin internet la IA integrada revisa talleres en foto, lee la pizarra y describe lo que subas. Baja una sola vez su archivo de visión (unos 0,8 GB); si tu modelo no puede ver, baja Qwen3 VL 4B, que escribe igual de bien y además ve. También: «Jarvis, dale visión a la IA local».</p>
+          <p class="status" id="motor-vision-status"></p></div>
+        <button class="btn btn-ghost" type="button" id="btn-motor-vision">Darle visión</button>
+      </div>
     </div>
     <div data-provider="openai" hidden>
       <div class="field stack">
@@ -1328,6 +1333,7 @@
     <p class="pane-intro">Revisa el micrófono, el reconocimiento de voz, la voz, internet, la IA, las integraciones y si hay versión nueva, y te dice qué falla y cómo arreglarlo. También: di «Jarvis, prueba completa» o escribe <code>/prueba</code> en Telegram.</p>
     <div class="row-btns">
       <button class="btn btn-primary" type="button" id="btn-check">Hacer la prueba completa</button>
+      <button class="btn btn-ghost" type="button" id="btn-health">Abrir el panel de salud</button>
       <button class="btn btn-ghost" type="button" id="btn-check-copy" hidden>Copiar el informe</button>
       <button class="btn btn-ghost" type="button" id="btn-welcome">Repetir la bienvenida</button>
     </div>
@@ -1376,6 +1382,28 @@
       </div>
       <p class="status" id="backup-status"></p>
       <div class="bak-list" id="backup-list"></div>
+    </div>
+    <div class="group">Copia cifrada cada noche en tu Drive (12.8)</div>
+    <p class="note">Cada noche Jarvis sube a «Jarvis › Respaldos» de tu Drive una copia <b>cifrada entera</b> con una clave que eliges tú: nadie la puede abrir sin esa clave, ni siquiera Google. Si se daña o se pierde el equipo, instalas Jarvis en otro, conectas Google, escribes la clave y la recuperas con todo, también las notas cifradas. Si el equipo está apagado a esa hora, la copia se hace la siguiente vez que lo enciendas. Necesita la cuenta de Google conectada (sección Cuenta de Google).</p>
+    <div class="field">
+      <div class="ft"><label for="f-cloud-nightly">Copia cifrada cada noche</label><p>Se guardan las últimas 10 en tu Drive.</p></div>
+      <label class="switch"><input type="checkbox" id="f-cloud-nightly" data-key="cloud_nightly"><span></span></label>
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-cloud-pass">Clave de las copias</label><p>Al menos 8 caracteres. <b>Anótala en un lugar seguro</b>: sin ella no se pueden abrir las copias de la nube. Con la clave puesta, también las demás copias que van a Drive viajan cifradas.</p></div>
+      <input class="inp" type="password" id="f-cloud-pass" data-key="cloud_pass" placeholder="Tu clave de las copias" autocomplete="new-password" style="max-width:260px">
+    </div>
+    <div class="field">
+      <div class="ft"><label for="f-cloud-hour">Desde qué hora</label><p>La copia de la noche se hace a partir de esta hora (0 a 23).</p></div>
+      <input class="inp" type="number" min="0" max="23" id="f-cloud-hour" data-key="cloud_hour" style="max-width:90px">
+    </div>
+    <div class="field stack">
+      <p class="status" id="cloud-status">…</p>
+      <div class="row wrap">
+        <button class="btn btn-primary" type="button" id="btn-cloud-now">Subir copia cifrada ahora</button>
+        <button class="btn btn-ghost" type="button" id="btn-cloud-list">Traer de mi Drive…</button>
+      </div>
+      <div class="bak-list" id="cloud-list"></div>
     </div>
 
     <div class="group">Actualizaciones</div>

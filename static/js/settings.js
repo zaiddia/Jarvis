@@ -295,10 +295,17 @@
     st.className = "status" + (m.modelo ? " ok" : "");
     ins.textContent = m.modelo ? "Cambiar de modelo" : "Instalar la IA integrada"; ins.disabled = !!m.instalando;
     tg.hidden = !m.modelo; tg.textContent = m.corriendo ? "Apagar" : "Encender";
+    const vs = $("#motor-vision-status"), vb = $("#btn-motor-vision");                // 12.8: que vea
+    if (vs && vb) {
+      vs.textContent = m.ve ? "Ya ve imágenes: sin internet revisa talleres en foto y lee la pizarra." : m.modelo ? "Ahora solo entiende texto." : "Primero instala la IA integrada (o pulsa aquí y se instala con visión).";
+      vs.className = "status" + (m.ve ? " ok" : "");
+      vb.hidden = !!m.ve; vb.disabled = !!m.instalando;
+    }
   }
   socket.on("motor", renderMotor);
   socket.emit("motor", {}, renderMotor);
   $("#btn-motor-install").addEventListener("click", () => socket.emit("motor", { action: "instalar", modelo: $("#f-motor-pick").value }, (r) => { renderMotor(r); $("#motor-status").textContent = r.msg || ""; }));
+  $("#btn-motor-vision").addEventListener("click", () => socket.emit("motor", { action: "vision" }, (r) => { renderMotor(r); $("#motor-vision-status").textContent = r.msg || ""; }));
   $("#btn-motor-toggle").addEventListener("click", () => socket.emit("motor", { action: $("#btn-motor-toggle").textContent === "Apagar" ? "apagar" : "encender" }, (r) => { renderMotor(r); setTimeout(() => socket.emit("motor", {}, renderMotor), 8000); }));
   socket.on("connect", () => {
     socket.emit("get_settings", (res) => {
@@ -593,6 +600,55 @@
       });
     };
     rd.readAsDataURL(f);
+  });
+
+  $("#btn-health").addEventListener("click", () => socket.emit("open_health"));       // 12.8: panel de salud
+  /* 12.8: copia cifrada cada noche en tu Drive */
+  function fmtAgo(iso) { return iso ? fmtDate(iso) : "nunca"; }
+  function renderCloud(r) {
+    const st = $("#cloud-status");
+    if (!st || !r) return;
+    if (r.ok === false && r.error) { st.textContent = r.error; st.className = "status err"; return; }
+    st.textContent = (r.lista ? `Activa: cada noche desde las ${r.hora}:00. Última copia cifrada: ${fmtAgo(r.ultima)}.` : `Sin copia en la nube: ${r.falta}.`)
+      + (r.error ? ` Último fallo: ${r.error}` : "") + (r.msg ? " " + r.msg : "");
+    st.className = "status" + (r.lista && r.ultima ? " ok" : r.lista ? "" : " err");
+  }
+  function renderCloudList(r) {
+    const box = $("#cloud-list");
+    box.innerHTML = "";
+    const items = (r && r.items) || [];
+    if (!items.length) { box.innerHTML = '<p class="note">No hay copias en tu Drive todavía.</p>'; return; }
+    items.slice(0, 10).forEach((it) => {
+      const row = document.createElement("div");
+      row.className = "bak-row";
+      row.innerHTML = '<div class="bak-main"><b></b><span class="bak-tag"></span><small></small></div><input class="inp" type="password" placeholder="Clave (si es de otro equipo)" style="max-width:190px"><button class="btn btn-ghost" type="button">Traer</button>';
+      row.querySelector("b").textContent = fmtDate(it.fecha);
+      row.querySelector(".bak-tag").textContent = it.cifrada ? "cifrada" : "sin cifrar";
+      row.querySelector("small").textContent = `${it.nombre} · ${it.kb} KB`;
+      const inp = row.querySelector("input"); if (!it.cifrada) inp.hidden = true;
+      const b = row.querySelector("button");
+      b.addEventListener("click", () => {
+        b.disabled = true; bakStatus("Trayendo la copia de tu Drive…");
+        socket.emit("cloud_backup", { action: "traer", id: it.id, clave: inp.value }, (res) => {
+          b.disabled = false;
+          if (!res.ok) { bakStatus(res.error, "err"); toast(res.error, "err", 7000); return; }
+          bakStatus("Copia traída de tu Drive: elige qué restaurar (nada se reemplazó todavía)." + (res.clave_datos === "puse" ? " Ya puse la clave de las notas que venía en la copia." : res.clave_datos === "distinta" ? " Ojo: sus notas usan otra clave de recuperación." : ""), "ok");
+          renderBackups(res, res.name);
+          $("#backup-list").scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      });
+      box.append(row);
+    });
+  }
+  socket.emit("cloud_backup", {}, renderCloud);
+  $("#btn-cloud-now").addEventListener("click", () => {
+    if (dirty) { toast("Guarda primero los cambios (la clave de las copias).", "err"); return; }
+    const b = $("#btn-cloud-now"); b.disabled = true; $("#cloud-status").textContent = "Subiendo la copia cifrada…";
+    socket.emit("cloud_backup", { action: "ahora" }, (r) => { b.disabled = false; renderCloud(r); if (r.ok !== false) toast("Copia cifrada en tu Drive.", "ok"); });
+  });
+  $("#btn-cloud-list").addEventListener("click", () => {
+    $("#cloud-list").innerHTML = '<p class="note">Buscando en tu Drive…</p>';
+    socket.emit("cloud_backup", { action: "listar" }, (r) => { if (r.ok === false) { $("#cloud-list").innerHTML = ""; renderCloud(r); return; } renderCloud(r); renderCloudList(r); });
   });
 
   /* Actualizaciones */

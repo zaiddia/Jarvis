@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.7"
+VERSION = "12.8"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -873,6 +873,11 @@ DEFAULT_SETTINGS = {
     "backup_drive": True,          # 8.9: cada copia de seguridad también a tu Drive (si conectaste Google)
     "drive_backup_folder_id": "",
     "drive_backup_keep": 10,
+    "cloud_nightly": True,         # 12.8: copia cifrada cada noche en tu Drive (necesita Google y la clave de las copias)
+    "cloud_pass": "",              # 12.8: la clave de esas copias (la eliges tú; sin ella no se abren, ni en Google)
+    "cloud_hour": 21,              # 12.8: desde esta hora se hace la copia de la noche
+    "cloud_last": "",              # 12.8: cuándo se subió la última copia cifrada
+    "cloud_last_error": "",
     "attention_pulse": True,       # 9.3: cada hora, avisar solo de lo nuevo que necesita tu atención
     "attention_from": 7,
     "attention_to": 19,
@@ -918,7 +923,7 @@ for _pid, _sp in PROVIDERS.items():
 API_KEY_FIELDS = tuple(k for k in DEFAULT_SETTINGS if k.endswith("_api_key"))
 # Nunca salen hacia las páginas (solo «guardado sí/no»): claves y el enlace secreto del calendario
 SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls", "telegram_token", "email_app_password", "mobile_token",
-                                   "classroom_client_secret", "classroom_refresh", "whatsapp_apikey", "data_key") + (
+                                   "classroom_client_secret", "classroom_refresh", "whatsapp_apikey", "data_key", "cloud_pass") + (
     ("spotify_client_secret",) if "spotify_client_secret" in DEFAULT_SETTINGS else ())
 AI_SETTING_KEYS = ({"ai_provider", "ollama_host", "ollama_model", "openai_base_url"}
                    | set(API_KEY_FIELDS) | {f"{p}_model" for p in PROVIDERS})
@@ -930,6 +935,7 @@ RANGES = {
     "wake_window": (3, 30), "followup_listen": (0, 20), "live_idle": (5, 120), "live_barge_level": (5, 80), "history_turns": (0, 30), "ai_temperature": (0.0, 2.0),
     "mic_device": (-1, 999), "hud_opacity": (30, 100),
     "night_hour": (17, 23), "adventure_secs": (20, 300),            # 12.0
+    "cloud_hour": (0, 23),                                          # 12.8
     "ack_ms": (300, 3000), "turn_hold": (0.6, 4.0),                 # 12.1
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
@@ -977,6 +983,8 @@ def _validate(key, value):
         if not 2 <= len(nums) <= 6 or sum(nums) != 100:
             raise ValueError("escribe el peso de cada periodo y que sumen 100, por ejemplo 34,33,33")
         v = ",".join(map(str, nums))
+    if key == "cloud_pass" and 0 < len(v) < 8:                                   # 12.8
+        raise ValueError("la clave de las copias debe tener al menos 8 caracteres")
     if key == "platform_url" and v and not v.startswith("https://"):            # 12.2
         raise ValueError("la dirección debe empezar por https://")
     if key == "zeti_url" and v and not v.startswith("https://"):
@@ -1597,7 +1605,13 @@ def process_command(text):
         return
     if activities_voice(text, t):                      # 9.6: «¿qué actividades funcionaron en fracciones?»
         return
-    if motor_voice(text, t):                           # 12.6: «instala la IA integrada»
+    if motor_voice(text, t):                           # 12.6: «instala la IA integrada» · 12.8: «dale visión a la IA local»
+        return
+    if health_panel_voice(text, t):                    # 12.8: «abre el panel de salud»
+        return
+    if boletin_voice(text, t):                         # 12.8: «haz los boletines de 7A», «boletín de Ana de 7A»
+        return
+    if cloud_voice(text, t):                           # 12.8: «trae la copia de mi Drive», «¿cuándo fue la última copia en la nube?»
         return
     if ai_who_voice(text, t):                          # 12.5: «¿qué IA estás usando?», «instala la voz sin internet»
         return
@@ -2266,6 +2280,12 @@ from nucleo.estadoia import *  # noqa: F401,F403,E402
 # ── 12.6: la IA local integrada (motor llama.cpp dentro de Jarvis, sin Ollama) → nucleo/motor.py (lógica en motorlocal.py)
 from nucleo.motor import *  # noqa: F401,F403,E402
 
+# ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)
+from nucleo.boletines import *  # noqa: F401,F403,E402
+
+# ── 12.8: panel de salud de Jarvis → nucleo/panelsalud.py
+from nucleo.panelsalud import *  # noqa: F401,F403,E402
+
 # ── 12.0: revisar el procedimiento a mano paso a paso (SymPy), mapa de errores del curso y refuerzo para ese error
 # → nucleo/pasoapaso.py (lógica en procedimiento.py)
 from nucleo.pasoapaso import *  # noqa: F401,F403,E402
@@ -2449,6 +2469,7 @@ def main():
         hud_plus_start()                  # 8.6: el panel «Hoy» del HUD se actualiza solo
         class_plus_start()                # 8.8: diario de clase y quiz en vivo
         students_start()                  # 8.9: abre los datos de estudiantes cifrados (con la clave ya leída)
+        cloud_start()                     # 12.8: la copia cifrada de cada noche en tu Drive
         attention_start()                 # 9.3: compromisos y pulso de atención
         teacher_plus_start()              # 9.4: lecciones y vigilante de páginas
         polish_start()                    # 9.5: tu estilo al escribir

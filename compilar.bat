@@ -38,6 +38,7 @@ python -c "import pypdfium2" 2>nul && set "ML=%ML% --collect-all pypdfium2 --col
 python -c "import faster_whisper" 2>nul && set "ML=%ML% --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime"
 python -c "import imageio_ffmpeg" 2>nul && set "ML=%ML% --collect-all imageio_ffmpeg"
 python -c "import playwright" 2>nul && set "ML=%ML% --collect-all playwright"
+python -c "import fpdf" 2>nul && set "ML=%ML% --collect-all fpdf"
 pyinstaller --noconfirm --clean --onedir --windowed --name jarvis --icon "%ICONO%" ^
   --add-data "model_es;model_es" ^
   --add-data "templates;templates" ^

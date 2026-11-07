@@ -77,6 +77,8 @@ def _capture_screen(hide_hud=True, max_w=1280):
 def _vision_cfg():
     """Proveedor que puede ver imágenes: el elegido si puede; si no, Gemini con tu clave."""
     cfg = J._ai_cfg()
+    if cfg.get("ai_provider") == "motor" and J.motor_sees():      # 12.8: la IA integrada con visión (sin internet)
+        return cfg, None
     if cfg["kind"] == "ollama":
         if J.ollama is None:
             return None, "Para la visión con Ollama falta la librería 'ollama'."
@@ -86,8 +88,11 @@ def _vision_cfg():
     g = J._gemini_for_stt()
     if g:
         return g, None
-    return None, (f"Con {cfg['label']} no puedo ver la pantalla. Funciona con Gemini, Claude, ChatGPT "
-                  "u Ollama con un modelo de visión; o guarda una clave de Gemini en Ajustes, sección IA.")
+    if J.motor_sees():
+        return J._ai_cfg({"ai_provider": "motor"}), None
+    return None, (f"Con {cfg['label']} no puedo ver imágenes. Funciona con Gemini, Claude, ChatGPT "
+                  "u Ollama con un modelo de visión; guarda una clave de Gemini en Ajustes, sección IA, o di "
+                  "«Jarvis, dale visión a la IA local» para que vea sin internet.")
 
 
 def _vision_chunks(cfg, prompt, path, history=()):

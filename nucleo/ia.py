@@ -169,6 +169,23 @@ def _png_b64(path):
         return base64.b64encode(f.read()).decode()
 
 
+def _img_small(path, max_px=1024):
+    """12.8: para la IA integrada, la imagen más pequeña (JPEG de máx. 1024 px): la lee varias veces más rápido sin perder
+    lo que importa de un taller o de la pizarra. → (mime, base64)."""
+    import base64
+    import io
+    try:
+        from PIL import Image, ImageOps
+        with Image.open(path) as im:
+            im = ImageOps.exif_transpose(im).convert("RGB")
+            im.thumbnail((max_px, max_px))
+            buf = io.BytesIO()
+            im.save(buf, "JPEG", quality=88)
+        return "image/jpeg", base64.b64encode(buf.getvalue()).decode()
+    except Exception:
+        return J._img_mime(path), J._png_b64(path)
+
+
 def _img_mime(path):
     """12.3: el tipo real de la imagen (una foto .jpg declarada como PNG la rechaza Claude)."""
     try:
@@ -385,8 +402,12 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
     sp = cfg["spec"]
     msgs = [dict(m) for m in messages]
     if image_path and msgs:
-        msgs[-1]["content"] = [{"type": "text", "text": msgs[-1]["content"]}] + [
-            {"type": "image_url", "image_url": {"url": f"data:{J._img_mime(ip)};base64," + J._png_b64(ip)}} for ip in J._img_list(image_path)]
+        local = cfg.get("ai_provider") == "motor"
+        parts = []
+        for ip in J._img_list(image_path):
+            mime, b64 = J._img_small(ip) if local else (J._img_mime(ip), J._png_b64(ip))
+            parts.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64," + b64}})
+        msgs[-1]["content"] = [{"type": "text", "text": msgs[-1]["content"]}] + parts
     tp = sp.get("tokens_param", "max_tokens")
     body = {"model": cfg["model"], "messages": msgs, tp: max_tokens}
     if cfg.get("ai_provider") == "motor":
@@ -403,7 +424,8 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
 
 def openai_chat(cfg, messages, json_mode=False, max_tokens=1024, image_path=None):
     body, opt = J._oa_body(cfg, messages, max_tokens, json_mode, image_path=image_path)
-    data = J._post(cfg["base"] + "/chat/completions", J._oa_headers(cfg), body, opt)
+    data = J._post(cfg["base"] + "/chat/completions", J._oa_headers(cfg), body, opt,
+                   timeout=600 if cfg.get("ai_provider") == "motor" else 180)      # 12.8: la IA del equipo, con fotos, tarda más
     try:
         return (data["choices"][0]["message"].get("content") or "").strip()
     except (KeyError, IndexError, TypeError):
@@ -535,7 +557,11 @@ def _with_fallback(cfg, fn):
 def _cloud_chat(cfg, messages, json_mode=False, image_path=None, max_tokens=None):
     if cfg.get("ai_provider") == "motor":              # 12.6: la IA integrada se enciende sola si hace falta
         J.motor_ensure()
-        return J.motorlocal.clean_reply(J.openai_chat(cfg, messages, json_mode, max_tokens or (900 if json_mode else 450)))
+        if image_path and not J.motor_sees():
+            raise J.AIError("La IA integrada no ve imágenes.", kind="config",
+                            why="la IA integrada todavía no ve imágenes: di «Jarvis, dale visión a la IA local»")
+        return J.motorlocal.clean_reply(J.openai_chat(cfg, messages, json_mode, max_tokens or (900 if json_mode else 450),
+                                                      image_path=image_path))
     tokens = max_tokens or (1024 if json_mode else 2048)
     if cfg["kind"] == "gemini":
         return J.gemini_chat(cfg, messages, json_mode, tokens, image_path)
@@ -848,6 +874,9 @@ CAPABILITIES = [
                  "silencia las notificaciones", "activa las notificaciones",
                  "crea una rutina buenos días a las 7 de lunes a viernes que diga el clima y mis pendientes"]),
     ("Prueba completa", ["prueba completa", "revisa todo", "(en Telegram) /prueba"]),
+    ("Salud de Jarvis (12.8)", ["abre el panel de salud", "¿cómo está tu salud?", "¿cuándo fue la última copia en la nube?",
+                                "trae la copia de mi Drive", "dale visión a la IA local"]),
+    ("Boletines del periodo (12.8)", ["haz los boletines de 7A", "boletín de Ana Gómez de 7A", "boletines de todos los cursos"]),
     ("Avísame cuando termine", ["avísame cuando termine la descarga", "avísame cuando se cierre Zoom",
                                 "avísame cuando termine de instalar", "¿qué estás vigilando?"]),
     ("Diario", ["¿qué hice ayer?", "¿qué hice hoy?", "resume mi semana", "borra mi diario"]),
@@ -1135,7 +1164,7 @@ __all__ = [
     '_net_worker',
     '_oa_body',
     '_oa_headers',
-    '_img_list', '_img_mime', '_is_local_ai', '_png_b64', 'system_static',
+    '_img_list', '_img_mime', '_img_small', '_is_local_ai', '_png_b64', 'system_static',
     '_post',
     '_recommend_model',
     '_sse_lines',

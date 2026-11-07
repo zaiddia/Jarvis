@@ -135,6 +135,20 @@ def list_folder(client, folder_id):
     return d.get("files") or []
 
 
+def download(client, file_id, limit=64 * 1024 * 1024):
+    """12.8: el contenido de un archivo que subió Jarvis (por ejemplo, una copia de seguridad). → bytes."""
+    import urllib.error
+    import urllib.request
+    req = urllib.request.Request(DRIVE_API + f"files/{file_id}?alt=media", headers={"Authorization": f"Bearer {client._access()}"})
+    try:
+        with client.opener(req, timeout=120) as r:
+            return r.read(limit)
+    except urllib.error.HTTPError as e:
+        raise OSError(f"Google respondió {e.code} al descargar")
+    except urllib.error.URLError as e:
+        raise OSError(f"sin conexión con Google ({e.reason})")
+
+
 def delete(client, file_id):
     client.call("DELETE", f"files/{file_id}", base=DRIVE_API)
 
