@@ -364,7 +364,12 @@
       acts.forEach((a) => { const b = mk("button", "", a.t); b.type = "button"; b.addEventListener("click", () => run(a.cmd)); g.append(b); });
       w.append(g);
     }
-    w.append(mk("div", "wt", "Ctrl+K busca una orden · arrastra un archivo para leerlo · «hazme una ilustración de…»"));
+    const q = mk("div", "wq");                                                   // 12.18: accesos de un toque
+    [["☀", "Clima", () => run("¿cómo está el clima?")], ["✓", "Pendientes", () => run("mis pendientes")], ["📅", "Mi día", () => socket.emit("open_midia_page")],
+     ["📄", "Documento", () => socket.emit("open_docs_page")], ["🧭", "Guía", () => socket.emit("open_guide_page")], ["🩺", "Revisar PC", () => run("revisa mi pc")]]
+      .forEach(([ic, t, fn]) => { const b = mk("button", "wqb"); b.type = "button"; b.append(mk("span", "wqi", ic), mk("span", "", t)); b.addEventListener("click", fn); q.append(b); });
+    w.append(q);
+    w.append(mk("div", "wt", "Ctrl+K busca una orden · Ctrl+M abre el menú · arrastra un archivo para leerlo"));
   }
 
   function logClass(line) {
@@ -677,6 +682,7 @@
     if (d.midia) {                                           // 12.16: «Mi día» en el mismo panel, con sus botones
       const m = d.midia, k = card("Mi día", "", "Mi día");
       const line = (txt, meta, cls, cmd) => { const r = mk("div", "drow" + (cls ? " " + cls : "") + (cmd ? " click" : "")); r.append(mk("span", "", txt)); if (meta) r.append(mk("span", "dmeta", meta)); if (cmd) r.addEventListener("click", () => run(cmd)); k.append(r); };
+      body.classList.toggle("dnd", !!m.dnd);                     // 12.18: el menú sabe si está activo
       if (m.dnd) line(`🔕 No molestar (${m.dnd.motivo})`, m.dnd.guardados ? `${m.dnd.guardados} guardados` : (m.dnd.hasta ? `hasta ${m.dnd.hasta}` : ""), "", m.dnd.guardados ? "¿qué me perdí?" : "");
       if (m.toma) line(`💊 ${m.toma.t}`, m.toma.tarde ? `pendiente ${m.toma.h} · ✓ ya` : `a las ${m.toma.h}`, m.toma.tarde ? "hot" : "", m.toma.tarde ? `ya me tomé ${m.toma.t}` : "");
       (m.citas || []).forEach((c) => line("🩺 " + c, "", "soon"));
@@ -1595,9 +1601,36 @@
     setTimeout(() => { if (Date.now() - quitArmed >= 4000) { btnQuit.classList.remove("armed"); btnQuit.title = "Salir de Jarvis"; } }, 4200);
   });
   $("#btn-settings").addEventListener("click", () => {
+    closeDock();
     if (native) socket.emit("open_settings");
     else window.open("/ajustes", "_blank");
   });
+
+  /* ================= 12.18: el menú (accesos con nombre en vez de íconos sueltos) ================= */
+  const dock = $("#dock"), btnMenu = $("#btn-menu");
+  function openDock() {
+    if (body.dataset.size !== "expandido") setSize("expandido");          // en compacto no cabe: se expande primero
+    if (!ntc.box.hidden) closeNotices();
+    dock.hidden = false; body.classList.add("dockopen"); btnMenu.setAttribute("aria-expanded", "true");
+    const micOn = current.mic_enabled !== false;
+    const q = $('[data-dq="mic"]', dock); q.classList.toggle("on", micOn); $("span", q).textContent = micOn ? "Micrófono activo" : "Micrófono en pausa";
+    const first = $(".dk", dock); if (first) first.focus({ preventScroll: true });
+  }
+  function closeDock() { if (dock.hidden) return; dock.hidden = true; body.classList.remove("dockopen"); btnMenu.setAttribute("aria-expanded", "false"); }
+  btnMenu.addEventListener("click", (e) => { e.stopPropagation(); dock.hidden ? openDock() : closeDock(); });
+  document.addEventListener("click", (e) => { if (!dock.hidden && !dock.contains(e.target) && e.target !== btnMenu) closeDock(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !dock.hidden) { closeDock(); btnMenu.focus(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "m") { e.preventDefault(); dock.hidden ? openDock() : closeDock(); }
+  });
+  $$(".dk", dock).forEach((b) => b.addEventListener("click", () => setTimeout(closeDock, 120)));
+  $$("[data-dq]", dock).forEach((b) => b.addEventListener("click", () => {
+    const a = b.dataset.dq;
+    if (a === "mic") { closeDock(); setTimeout(() => socket.emit("toggle_mic"), 950); }   // espera a que la ventana quede quieta
+    else if (a === "dnd") { closeDock(); run(body.classList.contains("dnd") ? "ya puedes hablar" : "no me molestes por una hora"); }
+    else if (a === "new") { closeDock(); $("#btn-clear").click(); }
+    else if (a === "pal") { closeDock(); openPal(); }
+  }));
   // 12.13.2: en la píldora (o mientras la ventana cambia de tamaño) el botón del micrófono quedaba justo
   // bajo el ratón y un clic lo pausaba sin querer. Ahora solo responde con el HUD abierto y quieto.
   let lastResize = 0, seenW = window.innerWidth, seenH = window.innerHeight;

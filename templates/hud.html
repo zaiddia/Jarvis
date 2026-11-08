@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/hud.css', v=asset_v) }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='vendor/katex/katex.min.css', v=asset_v) }}">
 <style>{% include "_aurora.css" %}</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hud2.css', v=asset_v) }}">
 </head>
 <body class="hud-body" data-size="compacto" data-state="idle">
 
@@ -35,6 +36,8 @@
   <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
   <symbol id="i-chip" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2"/><path d="M16.75 13.5v6.5M13.5 16.75H20"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><circle cx="6" cy="6" r="1.6"/><circle cx="12" cy="6" r="1.6"/><circle cx="18" cy="6" r="1.6"/><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/><circle cx="6" cy="18" r="1.6"/><circle cx="12" cy="18" r="1.6"/><circle cx="18" cy="18" r="1.6"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
   <symbol id="i-screen" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></symbol>
 </svg>
 
@@ -79,18 +82,11 @@
       <i id="led-mic" title="Micrófono"></i><i id="led-ai" title="IA"></i><i id="led-tts" title="Voz"></i><i id="led-cop" class="cop" title="Copiloto: mirando tu pantalla" hidden></i><i id="led-net" class="net" title="Sin internet: Jarvis usa lo que hay en tu equipo" hidden></i>
     </div>
     <div class="win-btns">
+      <button type="button" id="btn-menu" class="menu-btn" title="Menú: Mi día, documentos, aplicaciones, ajustes…" aria-haspopup="true" aria-expanded="false"><svg class="i"><use href="#i-menu"/></svg><span class="mlbl">Menú</span></button>
+      <button type="button" id="btn-bell" title="Avisos"><svg class="i"><use href="#i-bell"/></svg><b class="badge" id="bell-n" hidden></b></button>
       <button type="button" id="btn-size" title="Expandir"><svg class="i"><use href="#i-expand"/></svg></button>
       <button type="button" id="btn-orb" title="Reducir a orbe"><svg class="i"><use href="#i-orb"/></svg></button>
-      <button type="button" id="btn-docs" class="xonly" title="Generador de documentos"><svg class="i"><use href="#i-file"/></svg></button>
-      <button type="button" id="btn-guide" class="xonly" title="Guía: lo que sé hacer"><svg class="i"><use href="#i-help"/></svg></button>
-      <button type="button" id="btn-midia" class="xonly" title="Mi día"><svg class="i"><use href="#i-cal"/></svg></button>
-      <button type="button" id="btn-pcdoc" class="xonly" title="Médico del PC"><svg class="i"><use href="#i-chip"/></svg></button>
-      <button type="button" id="btn-apps" class="xonly" title="Mis aplicaciones"><svg class="i"><use href="#i-grid"/></svg></button>
-      <button type="button" id="btn-health" title="Salud de Jarvis"><svg class="i"><use href="#i-pulse"/></svg></button>
-      <button type="button" id="btn-bell" title="Avisos"><svg class="i"><use href="#i-bell"/></svg><b class="badge" id="bell-n" hidden></b></button>
-      <button type="button" id="btn-settings" title="Ajustes"><svg class="i"><use href="#i-sliders"/></svg></button>
       <button type="button" id="btn-hide" title="Ocultar (Ctrl+Alt+J para volver)"><svg class="i"><use href="#i-minus"/></svg></button>
-      <button type="button" id="btn-quit" class="danger" title="Salir de Jarvis"><svg class="i"><use href="#i-power"/></svg></button>
     </div>
   </div>
 
@@ -121,7 +117,7 @@
       <button type="button" class="ai-chip mode-chip" id="mode-chip" title="Modo de Jarvis (clic para cambiar)" hidden><span id="mode-chip-i"></span><span class="lbl" id="mode-chip-t"></span></button>
       <button type="button" class="ai-chip" id="ai-chip" title="Qué IA responde" hidden><span id="ai-chip-t"></span></button>
       <button type="button" class="text-btn" id="btn-text" title="Tamaño de la letra (Ctrl + y Ctrl −)">Aa</button>
-      <button type="button" class="text-btn" id="btn-clear" title="Nueva conversación"><svg class="i"><use href="#i-trash"/></svg>Nueva</button>
+      <button type="button" class="text-btn" id="btn-clear" title="Nueva conversación"><svg class="i"><use href="#i-trash"/></svg><span class="tlbl">Nueva</span></button>
       <button type="button" class="text-btn icon" id="btn-dash" title="Ocultar el panel Hoy"><svg class="i"><use href="#i-panel"/></svg></button>
     </div>
     <div class="jobs" id="jobs" hidden></div>
@@ -135,6 +131,29 @@
 
   <!-- 8.6: sugerencias según el momento -->
   <div class="chips" id="chips"></div>
+
+  <!-- 12.18: menú con nombre en vez de íconos sueltos -->
+  <div class="dock" id="dock" hidden role="menu" aria-label="Menú de Jarvis">
+    <div class="dock-h"><span>Menú</span><small id="dock-sub">Elige a dónde ir</small></div>
+    <div class="dock-grid">
+      <button type="button" class="dk" id="btn-midia" role="menuitem"><svg class="i"><use href="#i-cal"/></svg><b>Mi día</b><small>Vencimientos, salud, presupuesto, viajes</small></button>
+      <button type="button" class="dk" id="btn-docs" role="menuitem"><svg class="i"><use href="#i-file"/></svg><b>Documentos</b><small>Word, PDF, Excel y PowerPoint con IA</small></button>
+      <button type="button" class="dk" id="btn-apps" role="menuitem"><svg class="i"><use href="#i-grid"/></svg><b>Aplicaciones</b><small>Tus programas, webs y carpetas</small></button>
+      <button type="button" class="dk" id="btn-pcdoc" role="menuitem"><svg class="i"><use href="#i-chip"/></svg><b>Médico del PC</b><small>Disco, batería, arranque, antivirus</small></button>
+      <button type="button" class="dk" id="btn-guide" role="menuitem"><svg class="i"><use href="#i-help"/></svg><b>Guía</b><small>Todo lo que sé hacer, para probar</small></button>
+      <button type="button" class="dk" id="btn-health" role="menuitem"><svg class="i"><use href="#i-pulse"/></svg><b>Salud de Jarvis</b><small>Prueba completa y errores</small></button>
+    </div>
+    <div class="dock-q">
+      <button type="button" class="dq" data-dq="mic"><svg class="i"><use href="#i-mic"/></svg><span>Micrófono</span></button>
+      <button type="button" class="dq" data-dq="dnd"><svg class="i"><use href="#i-moon"/></svg><span>No molestar</span></button>
+      <button type="button" class="dq" data-dq="new"><svg class="i"><use href="#i-trash"/></svg><span>Nueva charla</span></button>
+      <button type="button" class="dq" data-dq="pal"><svg class="i"><use href="#i-search"/></svg><span>Buscar orden</span></button>
+    </div>
+    <div class="dock-f">
+      <button type="button" class="dk-row" id="btn-settings"><svg class="i"><use href="#i-sliders"/></svg>Ajustes</button>
+      <button type="button" class="dk-row danger" id="btn-quit" title="Salir de Jarvis"><svg class="i"><use href="#i-power"/></svg>Salir de Jarvis</button>
+    </div>
+  </div>
 
   <!-- 9.2: campana de avisos -->
   <div class="ntc" id="ntc" hidden role="dialog" aria-label="Avisos">

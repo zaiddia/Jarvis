@@ -157,6 +157,21 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## HUD rediseñado (v12.18)
+
+- **Cabecera limpia**: el estado (En espera, Escuchando, Pensando, Hablando) sale en una pastilla con luz de color. Arriba quedan solo 5 botones: **Menú**, avisos, tamaño, orbe y ocultar.
+- **Menú nuevo** (botón «Menú» o **Ctrl+M**). Reúne todo lo que antes eran iconos sueltos:
+  - Mi día, Documentos, Aplicaciones, Médico del PC, Guía y Salud de Jarvis, cada uno con su descripción.
+  - Accesos rápidos: micrófono, no molestar, nueva charla y buscar orden.
+  - Ajustes y Salir. «Salir» queda lejos de «Ocultar» para no cerrarlo por error.
+  - Se cierra con Esc o haciendo clic afuera.
+- **Bienvenida con accesos**: Clima, Pendientes, Mi día, Documento, Guía y Revisar PC, a un clic. Las sugerencias ya no salen repetidas abajo cuando el chat está vacío.
+- **Conversación más clara**: las respuestas de Jarvis llevan una línea de luz a la izquierda y lo que tú dices sale a la derecha en otro color. Las pestañas son botones redondeados.
+- **Panel «Hoy» en tarjetas**: lo que está por vencer se resalta en naranja y se corrigió la primera letra de color raro.
+- **Barra de escritura**: brilla al escribir. El micrófono se enciende con un anillo cuando Jarvis escucha.
+- **Línea de energía** arriba del HUD que se mueve mientras Jarvis escucha, piensa o habla.
+- Funciona igual en la vista compacta, la expandida, la angosta y el aspecto Aurora. Si el equipo pide menos animaciones, se respetan.
+
 ## Ajustes rediseñados (v12.17)
 
 - **Barra lateral por secciones** (Esencial, Voz y escucha, Inteligencia, Tu trabajo, Conexiones, Sistema) con íconos, en vez de 12 pestañas planas. Lo que estaba revuelto quedó en su lugar: **Aula y colegio** (horario, estudiantes, áreas, planeación, periodos, seguimiento), **Cuentas y mensajes** (Google, correo, Telegram, WhatsApp, Spotify, casa inteligente, clima), **Datos y copias** (copias de seguridad y la copia cifrada en Drive) y **Windows y celular**.
