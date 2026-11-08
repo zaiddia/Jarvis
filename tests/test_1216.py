@@ -199,3 +199,13 @@ def test_no_molestar(base, ask, monkeypatch):
     monkeypatch.setitem(jv.settings, "dnd_auto", True)
     monkeypatch.setattr(jv, "_foreground_title", lambda: "Documento1 - Word")
     assert jv.dnd_reason() == ""
+
+
+def test_contrasena_de_aplicacion_limpia(jv):
+    clean = sys.modules["nucleo.gcorreo"].clean_app_password
+    assert clean("abcd efgh ijkl mnop") == "abcdefghijklmnop"
+    assert clean("abcd-efgh-ijkl-mnop") == "abcdefghijklmnop" and clean("abcdefghijklmnop.") == "abcdefghijklmnop"
+    assert clean("​abcd efgh ijkl mnop﻿") == "abcdefghijklmnop" and clean("«abcdefghijklmnop»") == "abcdefghijklmnop"
+    assert clean("MiClaveNormal2024!") == "MiClaveNormal2024!"                    # una clave normal no se «arregla»
+    r = jv.email_test("ana@gmail.com", "MiClaveNormal2024!")
+    assert not r["ok"] and "sin números" in r["msg"]

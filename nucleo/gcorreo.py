@@ -12,9 +12,16 @@ import gmail
 from nucleo import J
 
 
+def clean_app_password(pw):
+    """La contraseña de aplicación limpia. Google la muestra como «abcd efgh ijkl mnop» (16 letras); al copiarla se cuelan
+    espacios, caracteres invisibles, guiones, puntos o comillas. Si quitando eso quedan justo 16 letras, esas son."""
+    pw = re.sub(r"[\s\u00a0\u200b-\u200f\u2060\ufeff]+", "", str(pw or ""))
+    letters = re.sub(r"[^A-Za-z]", "", pw)
+    return letters if len(pw) != 16 and len(letters) == 16 else pw
+
+
 def email_password():
-    """La contraseña de aplicación sin espacios (Google la muestra como «abcd efgh ijkl mnop»)."""
-    return re.sub(r"\s+", "", J.settings["email_app_password"])
+    return clean_app_password(J.settings["email_app_password"])
 
 
 def gmail_ready():
@@ -70,15 +77,17 @@ def email_test(address="", password=""):
             return {"ok": False, "msg": f"Tu cuenta de Google está conectada, pero Gmail no responde: {e}. Activa la "
                                         "«Gmail API» en tu proyecto de Google Cloud y vuelve a conectar."}
     addr = (address or J.settings["email_address"]).strip()
-    pw = re.sub(r"\s+", "", password or J.settings["email_app_password"])
+    pw = clean_app_password(password or J.settings["email_app_password"])
     if not correo.valid_sender(addr):
         return {"ok": False, "msg": "Escribe tu dirección de Gmail."}
     if not pw:
         return {"ok": False, "msg": "Escribe la contraseña de aplicación (16 letras), o usa «Conectar con Google»."}
     if len(pw) != 16 and addr.lower().endswith(("@gmail.com", "@googlemail.com")):
-        return {"ok": False, "msg": f"La contraseña tiene {len(pw)} caracteres y la de aplicación de Google tiene 16 letras. "
-                                    "Tu clave normal no sirve: créala en myaccount.google.com/apppasswords (necesita la "
-                                    "verificación en dos pasos), o usa «Conectar con Google»."}
+        letters = len(re.sub(r"[^A-Za-z]", "", pw))
+        return {"ok": False, "msg": f"La contraseña tiene {len(pw)} caracteres ({letters} letras) y la de aplicación de Google tiene "
+                                    "exactamente 16 letras, sin números. Si es tu clave normal de Gmail, esa no sirve: crea una en "
+                                    "myaccount.google.com/apppasswords (necesita la verificación en dos pasos) y pégala aquí. "
+                                    "Si ya la copiaste de Google, bórrala y pégala otra vez completa. O usa «Conectar con Google»."}
     import smtplib
     import ssl
     host, port = correo.SMTP.get(addr.split("@")[-1].lower(), ("smtp.gmail.com", 587))

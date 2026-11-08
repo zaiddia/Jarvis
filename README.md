@@ -157,6 +157,11 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Contraseña de aplicación de Gmail más tolerante (v12.16.1)
+
+- Al pegar la contraseña de aplicación se colaban caracteres que no se ven (o un punto, guion o comillas) y Jarvis decía que tenía 17 caracteres. Ahora los quita solo: si quedan exactamente 16 letras, esa es.
+- Si de verdad no es una contraseña de aplicación (por ejemplo tu clave normal, que suele tener números), el mensaje lo explica mejor.
+
 ## Guía, Telegram con archivos, compartir con la familia, resumen del mes, no molestar y autoprueba (v12.16)
 
 - **Guía de lo que sé hacer** («abre la guía», «¿qué puedes hacer?» o el botón «?» del HUD expandido): casi 300 ejemplos por grupos (colegio, PC, Mi día, dinero, web, mensajes, casa…), con buscador y botón **Probar**. «¿Qué puedes hacer con el presupuesto?» responde con los ejemplos que coinciden.
