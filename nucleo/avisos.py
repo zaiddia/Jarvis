@@ -275,7 +275,7 @@ def _tg_handle(msg):
         # aún no hay chat configurado: le dice su número para que lo pongas en Ajustes
         J.log_terminal(f"Telegram: escribió {who} (chat id {chat}). Si eres tú, pon {chat} en Ajustes › "
                      "Integraciones › Chat id.", "TELEGRAM")
-        J.telegram_send(f"Hola {who}. Tu chat id es {chat}. Escríbelo en Jarvis (Ajustes › Integraciones › Chat id) "
+        J.telegram_send(f"Hola {who}. Tu chat id es {chat}. Escríbelo en Jarvis (Ajustes › Cuentas y mensajes › Telegram) "
                       "para que pueda obedecerte desde aquí.", chat)
         return
     if chat != allowed:

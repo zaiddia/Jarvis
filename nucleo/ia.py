@@ -245,7 +245,7 @@ def _ai_cfg(override=None):
 
 def _need_key(cfg):
     if cfg["kind"] != "ollama" and not cfg["spec"].get("custom") and not cfg["spec"].get("no_key") and not cfg["key"]:
-        raise J.AIError(f"Falta la clave de API de {cfg['label']} (Ajustes › IA).", kind="config",
+        raise J.AIError(f"Falta la clave de API de {cfg['label']} (Ajustes › Inteligencia artificial).", kind="config",
                       why=f"falta poner la clave de {cfg['label']} en Ajustes, sección IA")
 
 
@@ -530,7 +530,7 @@ def _ensure_model(cfg):
         return cfg
     best = J._recommend_model(cfg["ai_provider"], J.ai_list_models(cfg))
     if not best:
-        raise J.AIError("No hay modelo seleccionado. Elige uno en Ajustes › IA.", kind="config",
+        raise J.AIError("No hay modelo seleccionado. Elige uno en Ajustes › Inteligencia artificial.", kind="config",
                       why="no hay modelo elegido. Elige uno en Ajustes, sección IA")
     return J._switch_model(cfg, best, "no había ninguno elegido")
 
@@ -587,7 +587,7 @@ def _current_model(cfg):
 def ai_chat(messages, json_mode=False, max_tokens=None):
     cfg = J._ai_cfg()
     if cfg["kind"] == "ollama" and not cfg["model"]:
-        raise J.AIError("No hay modelo seleccionado. Elige uno en Ajustes › IA.", kind="config",
+        raise J.AIError("No hay modelo seleccionado. Elige uno en Ajustes › Inteligencia artificial.", kind="config",
                       why="no hay modelo elegido. Elige uno en Ajustes, sección IA")
     J.thinking += 1
     J.refresh_mode()
@@ -914,7 +914,7 @@ CAPABILITIES = [
     ("Habilidades", ["busca la fotosíntesis en wikipedia", "cómo se dice buenos días en inglés", "modo concentración",
                      "dame un dato curioso de los volcanes", "¿qué habilidades tengo?"]),
     ("Leer el tablero", ["lee lo que hay en el tablero", "pasa esta hoja a Word", "haz un quiz con lo que hay en el tablero"]),
-    ("Conectores (MCP)", ["lo que ofrezcan los conectores que añadas en Ajustes › Integraciones"]),
+    ("Conectores (MCP)", ["lo que ofrezcan los conectores que añadas en Ajustes › Windows y celular"]),
     ("Lo que sabe de ti", ["mi hermana se llama Ana", "me gusta el vallenato", "¿cómo se llama mi hermana?",
                            "¿qué sabes de mí?", "olvida que me gusta el vallenato"]),
     ("Calendario", ["¿qué tengo hoy?", "¿cuál es mi próxima clase?", "¿qué sigue?", "¿qué tengo esta semana?",

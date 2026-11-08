@@ -3,7 +3,7 @@
 En Claude Desktop › Configuración › Desarrollador › Editar configuración, añade:
     {"mcpServers": {"jarvis": {"command": "C:\\\\Jarvis\\\\.venv\\\\Scripts\\\\python.exe",
                                "args": ["C:\\\\Jarvis\\\\jarvis_mcp.py"]}}}
-(Jarvis te muestra las rutas exactas en Ajustes › Integraciones › Conectores MCP.)
+(Jarvis te muestra las rutas exactas en Ajustes › Windows y celular › Conectores MCP.)
 
 Este programa no hace nada por sí mismo: le pasa la orden al Jarvis que está abierto en tu equipo, por
 la dirección local y con un código secreto que solo tu usuario de Windows puede leer. Jarvis aplica las

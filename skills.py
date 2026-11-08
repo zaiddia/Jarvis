@@ -1271,7 +1271,7 @@ def resolve_contact(nombre):
 def whatsapp(contacto, mensaje):
     num = resolve_contact(contacto)
     if not num:
-        raise SkillError(f"No tengo a «{contacto}» en la agenda. Añádelo en Ajustes › Integraciones, "
+        raise SkillError(f"No tengo a «{contacto}» en la agenda. Añádelo en Ajustes › Cuentas y mensajes, "
                          "o dime el número con el código de país.")
     if not mensaje.strip():
         raise SkillError("¿Qué mensaje le envío?", need="mensaje")
@@ -1315,7 +1315,7 @@ def telegram(mensaje):
     token = _ctx["setting"]("telegram_token").strip()
     chat = _ctx["setting"]("telegram_chat").strip()
     if not (token and chat):
-        raise SkillError("Falta configurar Telegram. Pon el token del bot y el chat en Ajustes › Integraciones.")
+        raise SkillError("Falta configurar Telegram. Pon el token del bot y el chat en Ajustes › Cuentas y mensajes.")
     if not mensaje.strip():
         raise SkillError("¿Qué mensaje envío por Telegram?", need="mensaje")
     url = (f"https://api.telegram.org/bot{token}/sendMessage?chat_id={urllib.parse.quote(chat)}"

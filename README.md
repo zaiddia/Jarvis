@@ -157,6 +157,15 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Ajustes rediseñados (v12.17)
+
+- **Barra lateral por secciones** (Esencial, Voz y escucha, Inteligencia, Tu trabajo, Conexiones, Sistema) con íconos, en vez de 12 pestañas planas. Lo que estaba revuelto quedó en su lugar: **Aula y colegio** (horario, estudiantes, áreas, planeación, periodos, seguimiento), **Cuentas y mensajes** (Google, correo, Telegram, WhatsApp, Spotify, casa inteligente, clima), **Datos y copias** (copias de seguridad y la copia cifrada en Drive) y **Windows y celular**.
+- **Resumen**: al abrir Ajustes ves cómo está todo (IA, micrófono, palabra de activación, voz, Google, correo, Telegram, copia en Drive, datos de estudiantes, HUD) con un porcentaje y lo que falta. Cada tarjeta te lleva directo al ajuste y lo resalta.
+- **Cada grupo es una tarjeta**; el ajuste que cambias queda marcado hasta que guardes, y la **barra de guardado** aparece abajo solo cuando hay cambios (con «Descartar»).
+- **Búsqueda** con conteo de resultados por sección en la barra lateral. Atajos: `Ctrl+K` buscar, `Ctrl+S` guardar, `Alt+↑/↓` cambiar de sección. Cada sección tiene su enlace (por ejemplo `/ajustes#cuentas`).
+- La ventana se abre más grande (se ajusta a tu pantalla) y en ventanas angostas las secciones pasan arriba. Funciona con los dos estilos (clásico y aurora) y todos los colores.
+- Los mensajes de Jarvis que dicen dónde está un ajuste («Ajustes › Cuentas y mensajes › Cuenta de Google», «Ajustes › Aula y colegio › Horario»…) ya apuntan a la sección nueva.
+
 ## La copia en Drive dice qué falta (v12.16.2)
 
 - Sin la cuenta de Google conectada, la copia cifrada de cada noche (y todo lo que usa Drive, Calendar o Gmail) mostraba «'NoneType' object has no attribute 'call'». Ahora dice qué falta: conectar la cuenta en Ajustes › Memoria › Cuenta de Google, o volver a conectar para dar el permiso de Drive.

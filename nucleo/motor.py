@@ -179,7 +179,7 @@ def motor_ensure():
         return
     if not J.motor_ready():
         raise J.AIError("La IA integrada no está instalada.", kind="config",
-                        why="la IA integrada no está instalada. En Ajustes › IA pulsa «Instalar la IA integrada»")
+                        why="la IA integrada no está instalada. En Ajustes › Inteligencia artificial pulsa «Instalar la IA integrada»")
     if not J.motor_start():
         raise J.AIError("La IA integrada no arrancó.", kind="net", why="la IA integrada no pudo arrancar; puede faltar memoria")
 
@@ -405,7 +405,7 @@ def motor_install_job(mid=None):
                 msg = (f"Lista la IA integrada ({os.path.splitext(os.path.basename(path))[0]}, {where}" + (f", unas {speed:.0f} palabras por segundo" if speed else "")
                        + f"). Respondió: «{r[:80]}». Si se cae el internet, la uso sola; no hace falta Ollama.")
             else:
-                msg = "Descargué la IA integrada, pero no arrancó en este equipo (puede faltar memoria). Prueba un modelo más liviano en Ajustes › IA."
+                msg = "Descargué la IA integrada, pero no arrancó en este equipo (puede faltar memoria). Prueba un modelo más liviano en Ajustes › Inteligencia artificial."
         except Exception as e:
             msg = f"No pude instalar la IA integrada: {str(e)[:160]}"
         finally:

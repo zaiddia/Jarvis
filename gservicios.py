@@ -161,7 +161,7 @@ def share_link(client, file_id):
 
 
 # 12.16.2: sin la cuenta de Google conectada, un mensaje claro en vez de «'NoneType' object has no attribute 'call'»
-NO_GOOGLE = ("tu cuenta de Google no está conectada. Ve a Ajustes › Memoria › Cuenta de Google y pulsa «Conectar con Google» "
+NO_GOOGLE = ("tu cuenta de Google no está conectada. Ve a Ajustes › Cuentas y mensajes › Cuenta de Google y pulsa «Conectar con Google» "
              "(con el permiso de Drive)")
 
 

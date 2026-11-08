@@ -254,7 +254,7 @@ def ai_who_voice(text, t):
     else:
         msg = a["texto"] + ". "
     msg += ("Si se cae el internet, sigo con " + d["local_model"] + "." if d["local_model"] else
-            "Si se cae el internet no tengo IA de respaldo: " + d["ia"][:1].lower() + d["ia"][1:] + " En Ajustes › IA te dejo el botón para prepararla.")
+            "Si se cae el internet no tengo IA de respaldo: " + d["ia"][:1].lower() + d["ia"][1:] + " En Ajustes › Inteligencia artificial te dejo el botón para prepararla.")
     J.reply(msg, "IA")
     return True
 

@@ -129,7 +129,7 @@ def email_voice(text, t):
     if not J._MAIL_RE.search(t):
         return False
     if not J.mail_method():                            # 8.5: cuenta de Google o contraseña de aplicación
-        J.reply("Para enviar correos conecta tu correo en Ajustes › Integraciones › Correo: con «Conectar con Google» "
+        J.reply("Para enviar correos conecta tu correo en Ajustes › Cuentas y mensajes › Correo: con «Conectar con Google» "
                 "o con una contraseña de aplicación.", "CORREO")
         return True
     # ¿a quién?
@@ -142,7 +142,7 @@ def email_voice(text, t):
         return True
     dest = correo.resolve_recipient(quien, J._mail_book())
     if not dest:
-        J.reply(f"No tengo el correo de «{quien}». Agrégalo en Ajustes › Integraciones › Agenda de correos, "
+        J.reply(f"No tengo el correo de «{quien}». Agrégalo en Ajustes › Cuentas y mensajes › Agenda, "
               "o dime el correo completo.", "CORREO")
         return True
     if not mensaje:

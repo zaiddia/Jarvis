@@ -71,7 +71,7 @@ def morning_voice(text, t):
     if not _MV_RE.search(t):
         return False
     if not J.telegram_ready():
-        J.reply("Para mandarte el resumen en audio necesito Telegram conectado (Ajustes › Integraciones). Te lo digo aquí: " +
+        J.reply("Para mandarte el resumen en audio necesito Telegram conectado (Ajustes › Cuentas y mensajes). Te lo digo aquí: " +
                 J.morning_brief_text(), "RESUMEN")
         return True
     J.start_job("Preparando el resumen en audio", lambda: J.notify("Te mandé el resumen de la mañana en audio a Telegram." if J.send_morning_voice()
@@ -224,7 +224,7 @@ def text_feedback_voice(text, t):
         estudiante, curso = (name or who.group(1).strip().title()), (course or "")
     rub = re.search(r"\bcon la rubrica\s*:?\s*(.+)$", parts[0], re.I)
     if J.state.get("ai") != "ok":
-        J.reply("Para revisar textos necesito la IA conectada (Ajustes › IA).", "RETROALIMENTACIÓN")
+        J.reply("Para revisar textos necesito la IA conectada (Ajustes › Inteligencia artificial).", "RETROALIMENTACIÓN")
         return True
     J.reply("Leo el texto y preparo la retroalimentación…", "RETROALIMENTACIÓN")
     capture = getattr(J._tl, "capture", None)

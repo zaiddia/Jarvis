@@ -174,7 +174,7 @@ def backup_drive_voice(text, t):
     if not _BK_RE.search(t):
         return False
     if not J.gdrive_ready():
-        J.reply("Para guardar copias en tu Drive pulsa «Conectar con Google» en Ajustes › Memoria › Cuenta de Google.", "RESPALDO")
+        J.reply("Para guardar copias en tu Drive pulsa «Conectar con Google» en Ajustes › Cuentas y mensajes › Cuenta de Google.", "RESPALDO")
         return True
     res = J.make_backup("manual")
     try:
@@ -196,9 +196,9 @@ def cloud_ready():
     if not J.settings.get("cloud_nightly"):
         return False, "la copia de cada noche está apagada"
     if not J.gdrive_ready():
-        return False, "falta conectar tu cuenta de Google (Ajustes › Memoria › Cuenta de Google)"
+        return False, "falta conectar tu cuenta de Google (Ajustes › Cuentas y mensajes › Cuenta de Google)"
     if not J.settings.get("cloud_pass"):
-        return False, "falta poner la clave de las copias (Ajustes › Memoria › Copias de seguridad)"
+        return False, "falta poner la clave de las copias (Ajustes › Datos y copias)"
     if not datos.available():
         return False, "falta la librería «cryptography»"
     return True, ""
@@ -289,7 +289,7 @@ def handle_cloud_backup(data=None):
     d = data or {}
     act = str(d.get("action") or "")
     if act in ("listar", "ahora", "traer") and not J.gdrive_ready():          # 12.16.2: el motivo claro
-        why = ("tu cuenta de Google no está conectada: ve a Ajustes › Memoria › Cuenta de Google y pulsa «Conectar con Google»"
+        why = ("tu cuenta de Google no está conectada: ve a Ajustes › Cuentas y mensajes › Cuenta de Google y pulsa «Conectar con Google»"
                if not J.classroom_client() else "a tu conexión de Google le falta el permiso de Drive: pulsa otra vez «Conectar con Google» "
                "y acepta todo lo que pide")
         return {**cloud_info(), "ok": False, "error": f"No puedo usar tu Drive: {why}."}
@@ -319,7 +319,7 @@ _CLOUD_FETCH = re.compile(r"\b(?:trae|traeme|descarga|baja|recupera)\b.*\b(?:cop
 def cloud_voice(text, t):
     if _CLOUD_FETCH.search(t):
         if not J.gdrive_ready():
-            J.reply("Primero conecta tu cuenta de Google en Ajustes › Memoria › Cuenta de Google.", "RESPALDO")
+            J.reply("Primero conecta tu cuenta de Google en Ajustes › Cuentas y mensajes › Cuenta de Google.", "RESPALDO")
             return True
         try:
             items = cloud_list()
@@ -328,13 +328,13 @@ def cloud_voice(text, t):
                 return True
             r = cloud_fetch(items[0]["id"])
         except copianube.WrongPassword:
-            J.reply("La copia de tu Drive tiene otra clave: escríbela en Ajustes › Memoria › Copias de seguridad, «Traer de mi Drive».",
+            J.reply("La copia de tu Drive tiene otra clave: escríbela en Ajustes › Datos y copias, «Traer de mi Drive».",
                     "RESPALDO")
             return True
         except Exception as e:
             J.reply(f"No pude traer la copia: {str(e)[:160]}", "RESPALDO")
             return True
-        J.reply(f"Traje la copia más reciente de tu Drive. Para restaurarla, en Ajustes › Memoria › Copias de seguridad pulsa «Restaurar…» "
+        J.reply(f"Traje la copia más reciente de tu Drive. Para restaurarla, en Ajustes › Datos y copias pulsa «Restaurar…» "
                 "y elige qué recuperar; nada se reemplazó todavía." + (" Ya puse la clave de las notas que venía en la copia." if r["clave_datos"] == "puse"
                                                                         else ""), "RESPALDO")
         return True
@@ -362,7 +362,7 @@ def students_start():
     left = students_locked()
     if left:
         J.log_terminal("Hay datos de estudiantes cifrados con otra clave (" + ", ".join(left) + "): pega la clave de "
-                       "recuperación en Ajustes › Memoria para abrirlos.", "AVISO")
+                       "recuperación en Ajustes › Aula y colegio › Datos de estudiantes para abrirlos.", "AVISO")
 
 
 __all__ = ['STUDENT_FILES', '_BK_RE', '_CLOUD_FETCH', '_CLOUD_WHEN', '_drive_backup_folder', '_sealed_copy', 'cloud_backup_now', 'cloud_fetch',

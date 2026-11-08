@@ -49,7 +49,7 @@ def mail_send(to_addr, asunto, cuerpo, in_reply_to=""):
             J.log_terminal(f"Gmail con tu cuenta de Google falló ({e}); pruebo con la contraseña de aplicación.", "AVISO")
     if not J.email_password():
         raise RuntimeError("el correo no está conectado: pulsa «Conectar con Google» o pon una contraseña de aplicación "
-                           "(Ajustes › Integraciones › Correo).")
+                           "(Ajustes › Cuentas y mensajes › Correo).")
     return correo.send(J.settings["email_address"].strip(), J.email_password(), to_addr, asunto, cuerpo, name,
                        in_reply_to=in_reply_to)
 
@@ -63,7 +63,7 @@ def mail_fetch_recent(days=3):
             if not J.email_password():
                 raise RuntimeError(f"Gmail: {e}")
     if not J.email_password():
-        raise RuntimeError("el correo no está conectado (Ajustes › Integraciones › Correo).")
+        raise RuntimeError("el correo no está conectado (Ajustes › Cuentas y mensajes › Correo).")
     return bandeja.fetch_recent(J.settings["email_address"], J.email_password(), days=days)
 
 

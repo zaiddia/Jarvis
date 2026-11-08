@@ -78,7 +78,7 @@ def tell_text(kind, who):
 def _ask_send(person, title, msg):
     num = skills.resolve_contact(person)
     if not num:
-        J.reply(f"No tengo a «{person}» en la agenda. Agrégalo en Ajustes › Integraciones (nombre = número) y me lo vuelves a pedir.", "FAMILIA")
+        J.reply(f"No tengo a «{person}» en la agenda. Agrégalo en Ajustes › Cuentas y mensajes (nombre = número) y me lo vuelves a pedir.", "FAMILIA")
         return
     J.request_approval("mensaje", f"WhatsApp a {person}: {title}", msg[:900],
                        on_ok=lambda: J.run_skill("whatsapp", {"contacto": person, "mensaje": msg}),
@@ -183,7 +183,7 @@ def import_birthdays():
     """→ mensaje."""
     c = J.classroom_client()
     if not c:
-        return "Primero conecta tu cuenta de Google en Ajustes › Memoria › Cuenta de Google."
+        return "Primero conecta tu cuenta de Google en Ajustes › Cuentas y mensajes › Cuenta de Google."
     if CONTACTS_SCOPE not in str(J.settings.get("google_scopes") or ""):
         return ("Para leer los cumpleaños de tus contactos necesito un permiso nuevo: pulsa otra vez «Conectar con Google» en Ajustes "
                 "y acepta «Ver tus contactos». Si Google dice que la API no está activa, actívala (People API) en tu proyecto de Google Cloud.")

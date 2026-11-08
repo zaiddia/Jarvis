@@ -154,19 +154,19 @@ def extra_checks():
     elif secrets_protected():
         add(G, "ok", f"Tus {n_keys} clave(s) están cifradas: solo tu usuario de Windows puede abrirlas.")
     elif secreto.available():
-        add(G, "aviso", "Tus claves se guardan sin cifrar.", "ajustes:acerca")
+        add(G, "aviso", "Tus claves se guardan sin cifrar.", "ajustes:datos")
     try:                                               # 8.9: datos de estudiantes
         si = J.students_info()
         if si["locked"]:
             add(G, "fallo", "Hay datos de estudiantes cifrados con otra clave: " + ", ".join(si["locked"]) +
-                ". Pega la clave de recuperación en Memoria › Datos de estudiantes.", "ajustes:memoria")
+                ". Pega la clave de recuperación en Aula y colegio › Datos de estudiantes.", "ajustes:aula")
         elif si["on"]:
             add(G, "ok", "Los datos de estudiantes (notas, observador, cursos, diario) están cifrados.")
         elif J.PORTABLE:
             pass
         else:
             add(G, "aviso", "Los datos de estudiantes se guardan sin cifrar (son datos de menores): actívalo en Memoria › "
-                "Datos de estudiantes.", "ajustes:memoria")
+                "Datos de estudiantes.", "ajustes:aula")
     except Exception:
         pass
     if secrets_lost:
@@ -176,21 +176,21 @@ def extra_checks():
     G = "Conexiones"
     if s["whatsapp_phone"] or s["whatsapp_apikey"]:
         ok = J.whatsapp_ready()
-        add(G, "ok" if ok else "fallo", "WhatsApp configurado (prueba el envío en Ajustes › Integraciones)." if ok else
+        add(G, "ok" if ok else "fallo", "WhatsApp configurado (prueba el envío en Ajustes › Cuentas y mensajes)." if ok else
             "WhatsApp a medias: falta el número con +57 o la clave de CallMeBot.", "" if ok else "ajustes:integraciones")
     if s["classroom_client_id"]:
         if not s["classroom_refresh"]:
-            add(G, "aviso", "Classroom: pusiste el ID pero falta pulsar «Conectar».", "ajustes:memoria")
+            add(G, "aviso", "Classroom: pusiste el ID pero falta pulsar «Conectar».", "ajustes:cuentas")
         else:
             try:
                 n = len(J.classroom_courses(force=True))
                 add(G, "ok", f"Classroom conectado: {n} clase(s).")
             except Exception as e:
-                add(G, "fallo", f"Classroom no responde: {e}", "ajustes:memoria")
+                add(G, "fallo", f"Classroom no responde: {e}", "ajustes:cuentas")
             missing = [n for n, ok in (("Gmail", J.gmail_ready()), ("Calendar", J.gcal_ready()), ("Drive", J.gdrive_ready())) if not ok]
             if missing:                                # 8.7: permisos que llegaron con versiones nuevas
                 add(G, "info", "Tu conexión con Google aún no tiene permiso para " + ", ".join(missing) +
-                    ": pulsa «Conectar» otra vez en Memoria › Cuenta de Google si quieres usarlos.", "ajustes:memoria")
+                    ": pulsa «Conectar» otra vez en Cuentas y mensajes › Cuenta de Google si quieres usarlos.", "ajustes:cuentas")
     if s["email_read"] and s["email_address"]:
         r = J.handle_mail_test()
         add(G, "ok" if r.get("ok") else "fallo", f"Correo: leo tu bandeja ({r.get('n', 0)} recientes)." if r.get("ok") else

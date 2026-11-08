@@ -45,7 +45,7 @@ def descargar(clave):
         urllib.request.urlretrieve(url, destino, progress)
         print()
     print(f"\nListo. Voz guardada en {DEST}")
-    print("En Jarvis: Ajustes › Voz › Motor de voz = Piper (offline).")
+    print("En Jarvis: Ajustes › Voz de Jarvis › Motor de voz = Piper (offline).")
 
 
 def main():

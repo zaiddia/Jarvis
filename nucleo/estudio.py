@@ -28,9 +28,9 @@ def image_backend():
     o = J._ai_cfg({"ai_provider": "chatgpt"})
     o = o if o.get("key") else None
     if pref == "gemini":
-        return ("gemini", g) if g else (None, "para crear imágenes con Gemini necesito su clave (Ajustes › IA)")
+        return ("gemini", g) if g else (None, "para crear imágenes con Gemini necesito su clave (Ajustes › Inteligencia artificial)")
     if pref == "chatgpt":
-        return ("chatgpt", o) if o else (None, "para crear imágenes con ChatGPT necesito su clave (Ajustes › IA)")
+        return ("chatgpt", o) if o else (None, "para crear imágenes con ChatGPT necesito su clave (Ajustes › Inteligencia artificial)")
     order = [("chatgpt", o), ("gemini", g)] if J.settings.get("ai_provider") == "chatgpt" else [("gemini", g), ("chatgpt", o)]
     for name, cfg in order:
         if not cfg:
@@ -39,8 +39,8 @@ def image_backend():
             continue
         return name, cfg
     if g:
-        return None, "tu cuenta de Gemini no tiene un modelo de imágenes disponible; pon una clave de ChatGPT en Ajustes › IA o revisa tu cuenta de Gemini"
-    return None, "para crear imágenes necesito tu clave de Gemini o de ChatGPT (Ajustes › IA)"
+        return None, "tu cuenta de Gemini no tiene un modelo de imágenes disponible; pon una clave de ChatGPT en Ajustes › Inteligencia artificial o revisa tu cuenta de Gemini"
+    return None, "para crear imágenes necesito tu clave de Gemini o de ChatGPT (Ajustes › Inteligencia artificial)"
 
 
 def openai_image_model(cfg):

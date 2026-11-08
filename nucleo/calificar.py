@@ -428,7 +428,7 @@ def grading_voice(text, t):
                     "CALIFICAR")
         else:
             J.reply(f"Listo para calificar «{ex['titulo']}». Arrastra las fotos de las hojas al HUD. Para tomarlas con el celular, activa el "
-                    "«panel del celular» en Ajustes › Integraciones. Al terminar: «terminé de calificar».", "CALIFICAR")
+                    "«panel del celular» en Ajustes › Windows y celular. Al terminar: «terminé de calificar».", "CALIFICAR")
         return True
     if _GR_END.search(t):
         if getattr(J._tl, "capture", None) is not None:

@@ -701,7 +701,7 @@ def handle_preview_voice(data):
     gem = {}
     if backend == "gemini":
         if not J._gemini_for_stt():
-            return {"ok": False, "error": "Para la voz de Gemini guarda primero tu clave de Gemini (Ajustes › IA)."}
+            return {"ok": False, "error": "Para la voz de Gemini guarda primero tu clave de Gemini (Ajustes › Inteligencia artificial)."}
         J._gtts["pause_until"] = 0.0                       # probar = reintentar aunque estuviera en pausa
         for k in ("gemini_tts_voice", "gemini_tts_model", "gemini_tts_style"):
             if data.get(k) is not None:

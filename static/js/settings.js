@@ -18,7 +18,11 @@
     setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 320); }, ms);
   }
   function setTheme(name) { document.documentElement.dataset.theme = name || "cyan"; }
-  function setDirty(v) { dirty = v; $("#dirty").textContent = v ? "● Cambios sin guardar" : ""; }
+  function setDirty(v) {
+    dirty = v; $("#dirty").textContent = v ? "Cambios sin guardar" : "";
+    $("#savebar").classList.toggle("show", !!v); $("#btn-discard").hidden = !v;          // 12.17: la barra aparece solo con cambios
+    if (!v) $$(".field.changed").forEach((f) => f.classList.remove("changed"));
+  }
 
   const fields = () => $$("[data-key]", form);
 
@@ -98,6 +102,7 @@
     });
     showProvider(s.ai_provider);
     showTtsBackend(s.tts_backend);
+    setTimeout(() => renderOverview(s), 0);                                              // 12.17: el panel Resumen
     showSttBackend(s.stt_backend);
     setTheme(s.theme);
     document.documentElement.dataset.look = s.look || "clasico";
@@ -358,11 +363,27 @@
   socket.on("disconnect", () => toast("Se perdió el enlace con Jarvis.", "err"));
 
   /* ---------------- Interacción ---------------- */
-  $$(".tab").forEach((t) => t.addEventListener("click", () => {
+  // 12.17: barra lateral por secciones; el título, la sección y el enlace (#ia) cambian con la pestaña
+  function sectionOf(tab) { let el = tab.previousElementSibling; while (el && !el.classList.contains("snav-sec")) el = el.previousElementSibling; return el ? el.textContent : "Ajustes"; }
+  function goTab(id, anchor) {
+    const t = $(`.tab[data-tab="${id}"]`);
+    if (!t) return;
     $$(".tab").forEach((x) => x.classList.toggle("active", x === t));
-    $$(".pane").forEach((p) => p.classList.toggle("active", p.dataset.pane === t.dataset.tab));
+    $$(".pane").forEach((p) => p.classList.toggle("active", p.dataset.pane === id));
+    $("#page-title").textContent = t.textContent.trim();
+    $("#crumb").textContent = sectionOf(t);
+    try { history.replaceState(null, "", "#" + id); } catch (e) { /* sin historial */ }
     form.scrollTop = 0;
-  }));
+    if (anchor) {
+      const el = typeof anchor === "string" ? $(anchor) : anchor;
+      const box = el && (el.closest(".field") || el.closest(".sgroup") || el);
+      if (box) setTimeout(() => { box.scrollIntoView({ behavior: "smooth", block: "center" }); box.classList.remove("flash"); void box.offsetWidth; box.classList.add("flash"); if (el.focus && el.matches("input,select,textarea")) el.focus({ preventScroll: true }); }, 60);
+    }
+  }
+  window.jarvisGoTab = goTab;
+  $$(".tab").forEach((t) => t.addEventListener("click", () => goTab(t.dataset.tab)));
+  const startTab = (location.hash || "").slice(1);
+  if (startTab && $(`.tab[data-tab="${startTab}"]`)) goTab(startTab);
 
   // 8.4: buscador de ajustes (en todas las pestañas a la vez)
   const plain = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -374,32 +395,34 @@
     const words = plain(q).split(/\s+/).filter((w) => w.length > 1);
     const on = words.length > 0;
     form.classList.toggle("searching", on);
-    $(".tabs").classList.toggle("dim", on);
+    $(".snav").classList.toggle("dim", on);
     let total = 0;
     $$(".pane").forEach((pane) => {
-      const sections = [];
-      [...pane.children].forEach((el) => {
-        if (el.classList.contains("group")) { sections.push({ g: el, items: [] }); return; }
-        if (!sections.length) sections.push({ g: null, items: [] });
-        sections[sections.length - 1].items.push(el);
-      });
       let paneHits = 0;
-      sections.forEach((s) => {
-        const gHit = on && s.g && words.every((w) => plain(s.g.textContent).includes(w));
+      pane.querySelectorAll(":scope > .sgroup").forEach((card) => {
+        const g = card.querySelector(".group");
+        const gHit = on && g && words.every((w) => plain(g.textContent).includes(w));
         let hits = 0;
-        s.items.forEach((el) => {
-          const hit = !on || gHit || words.every((w) => plain(el.textContent + " " + [...el.querySelectorAll("input,textarea")].map((i) => i.placeholder || "").join(" ")).includes(w));
+        [...card.children].filter((el) => !el.classList.contains("group")).forEach((el) => {
+          const txt = el.textContent + " " + [...el.querySelectorAll("input,textarea")].map((i) => i.placeholder || "").join(" ");
+          const hit = !on || gHit || words.every((w) => plain(txt).includes(w));
           el.classList.toggle("s-hide", on && !hit);
           if (hit) hits++;
         });
-        if (s.g) s.g.classList.toggle("s-hide", on && !hits);
-        paneHits += on ? hits : 1;
+        card.classList.toggle("s-hide", on && !hits);
+        paneHits += on ? hits : 0;
       });
+      [...pane.children].filter((el) => !el.classList.contains("sgroup") && !el.classList.contains("pane-head")).forEach((el) => el.classList.toggle("s-hide", on));
       pane.classList.toggle("s-empty", on && !paneHits);
+      const badge = $(`.tab[data-tab="${pane.dataset.pane}"] .hits`);
+      if (badge) badge.textContent = on && paneHits ? paneHits : "";
       total += paneHits;
     });
     noRes.hidden = !on || total > 0;
     noRes.textContent = on ? `No encuentro ajustes con «${q}». Prueba con otra palabra (voz, telegram, clave, horario…).` : "";
+    const act = $(".tab.active");
+    $("#page-title").textContent = on ? `${total} resultado${total === 1 ? "" : "s"} para «${q.trim()}»` : (act ? act.textContent.trim() : "Ajustes");
+    $("#crumb").textContent = on ? "Búsqueda" : (act ? sectionOf(act) : "Ajustes");
     if (on) form.scrollTop = 0;
   }
   $("#s-search").addEventListener("input", (e) => runSearch(e.target.value));
@@ -418,6 +441,70 @@
     if (f.dataset.key) setDirty(true);
   });
   form.addEventListener("change", (e) => { if (e.target.dataset.key) setDirty(true); });
+  form.addEventListener("input", (e) => { const f = e.target.closest(".field"); if (f && e.target.dataset.key) f.classList.add("changed"); });
+  form.addEventListener("change", (e) => { const f = e.target.closest(".field"); if (f && e.target.dataset.key) f.classList.add("changed"); });
+  $("#btn-discard").addEventListener("click", () => { if (confirm("¿Descartar los cambios sin guardar?")) { dirty = false; location.reload(); } });
+  // 12.17: atajos de la ventana
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("#s-search").focus(); $("#s-search").select(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); if (dirty) $("#btn-save").click(); }
+    else if (e.altKey && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      e.preventDefault(); const tabs = $$(".tab"); const i = tabs.findIndex((t) => t.classList.contains("active"));
+      const n = tabs[(i + (e.key === "ArrowDown" ? 1 : -1) + tabs.length) % tabs.length]; goTab(n.dataset.tab);
+    }
+  });
+  $("#btn-open-guide").addEventListener("click", () => socket.emit("open_guide_page"));
+
+  /* ---------------- 12.17: panel Resumen ---------------- */
+  function optText(sel) { const el = $(sel); return el && el.selectedIndex >= 0 ? el.options[el.selectedIndex].text.split(" — ")[0] : ""; }
+  function renderOverview(s) {
+    if (!s) return;
+    const prov = s.ai_provider || "";
+    const keyOk = prov === "ollama" || prov === "local" || !!s[`${prov}_api_key_set`] || (s.env_keys || []).some((k) => k.toLowerCase().startsWith(prov));
+    const google = !!s.classroom_refresh_set;
+    const tiles = [
+      { k: "ia", t: "Inteligencia artificial", st: keyOk ? "ok" : "bad", v: keyOk ? (optText("#f-provider") || prov) : "Falta la clave", go: "ia", a: "#f-provider", imp: 1 },
+      { k: "mic", t: "Micrófono", st: s.mic_enabled ? "ok" : "warn", v: s.mic_enabled ? optText("#f-listen-mode") || "Escuchando" : "En pausa", go: "escucha", a: "#f-mic-enabled", imp: 1 },
+      { k: "wake", t: "Palabra de activación", st: s.wake_word_enabled ? "ok" : "off", v: s.wake_word_enabled ? String(s.wake_words || "jarvis").split(",").slice(0, 3).join(", ") + (String(s.wake_words || "").split(",").length > 3 ? "…" : "") : "Apagada", go: "escucha", a: "#f-wake-words" },
+      { k: "voz", t: "Voz", st: "ok", v: optText("#f-voice") || s.tts_voice || "—", go: "voz", a: "#f-voice" },
+      { k: "google", t: "Cuenta de Google", st: google ? "ok" : "warn", v: google ? "Conectada" : "Sin conectar", go: "cuentas", a: "#btn-cr-connect", imp: 1 },
+      { k: "correo", t: "Correo", st: google || s.email_app_password_set ? "ok" : "off", v: google ? "Con tu cuenta de Google" : s.email_app_password_set ? "Contraseña de aplicación" : "Sin configurar", go: "cuentas", a: "#btn-email-google" },
+      { k: "tg", t: "Telegram", st: s.telegram_token_set && s.telegram_chat ? "ok" : "off", v: s.telegram_token_set && s.telegram_chat ? "Conectado al celular" : "Sin configurar", go: "cuentas", a: "#f-tg-token" },
+      { k: "nube", t: "Copia en tu Drive", st: s.cloud_nightly && s.cloud_pass_set && google ? "ok" : s.cloud_nightly ? "warn" : "off", v: s.cloud_nightly && s.cloud_pass_set && google ? "Cada noche, cifrada" : !google ? "Falta Google" : !s.cloud_pass_set ? "Falta la clave" : "Apagada", go: "datos", a: "#f-cloud-pass", imp: 1 },
+      { k: "datos", t: "Datos de estudiantes", st: s.protect_students ? "ok" : "warn", v: s.protect_students ? "Cifrados" : "Sin cifrar", go: "aula", a: "[data-key='protect_students']" },
+      { k: "hud", t: "HUD", st: "ok", v: (s.hud_auto_hide ? "Píldora automática · " : "") + (optText("#f-position") || "flotante"), go: "hud", a: "[data-key='hud_auto_hide']" },
+    ];
+    const grid = $("#ov-grid"); if (!grid) return;
+    grid.innerHTML = "";
+    tiles.forEach((x) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = `tile ${x.st}`;
+      b.innerHTML = `<span class="tdot"></span><small></small><b></b><em>${x.st === "ok" ? "Ver" : "Configurar"} →</em>`;
+      b.querySelector("small").textContent = x.t; b.querySelector("b").textContent = x.v;
+      b.addEventListener("click", () => goTab(x.go, x.a));
+      grid.appendChild(b);
+    });
+    const imp = tiles.filter((x) => x.imp), good = imp.filter((x) => x.st === "ok").length;
+    const score = Math.round(100 * tiles.filter((x) => x.st === "ok").length / tiles.length);
+    $("#ov-score").textContent = score + "%";
+    $(".ov-core").style.setProperty("--pct", score);
+    $("#ov-hello").textContent = `Hola${s.address_name ? ", " + s.address_name : ""}`;
+    const todo = imp.filter((x) => x.st !== "ok").map((x) => x.t.toLowerCase());
+    $("#ov-summary").textContent = todo.length ? `Lo esencial está ${good} de ${imp.length}. Te falta: ${todo.join(", ")}. Pulsa una tarjeta para ir directo al ajuste.`
+      : "Todo lo esencial está listo. Pulsa cualquier tarjeta para cambiarla.";
+    const chips = $("#chips"); chips.innerHTML = "";
+    tiles.filter((x) => ["ia", "mic", "google", "tg"].includes(x.k)).forEach((x) => {
+      const c = document.createElement("button"); c.type = "button"; c.className = `chip ${x.st}`; c.title = `${x.t}: ${x.v}`;
+      c.innerHTML = `<i></i>${{ ia: "IA", mic: "Mic", google: "Google", tg: "Telegram" }[x.k]}`;
+      c.addEventListener("click", () => goTab(x.go, x.a)); chips.appendChild(c);
+    });
+  }
+  $$("[data-qa]").forEach((b) => b.addEventListener("click", () => {
+    const a = b.dataset.qa;
+    if (a === "check") { goTab("acerca", "#btn-check"); setTimeout(() => $("#btn-check").click(), 300); }
+    else if (a === "update") { goTab("acerca", "#btn-update-check"); setTimeout(() => $("#btn-update-check").click(), 300); }
+    else if (a === "guide") socket.emit("open_guide_page");
+    else if (a === "backup") goTab("datos");
+  }));
 
   $("#btn-save").addEventListener("click", () => {
     const btn = $("#btn-save");
@@ -830,8 +917,9 @@
       } else if (it.arreglo && it.arreglo.startsWith("ajustes:")) {
         const b = document.createElement("button");
         b.type = "button"; b.className = "text-btn"; b.textContent = "Ir al ajuste";
-        const tab = { ia: "ia", integraciones: "integra", memoria: "memoria", agente: "agente", acerca: "acerca" }[it.arreglo.split(":")[1]];
-        b.addEventListener("click", () => { const el = document.querySelector(`.tab[data-tab="${tab}"]`); if (el) el.click(); });
+        const key = it.arreglo.split(":")[1];
+        const tab = { integraciones: "cuentas", google: "cuentas" }[key] || key;                // 12.17: secciones nuevas
+        b.addEventListener("click", () => goTab(tab));
         li.appendChild(b);
       } else if (it.arreglo === "actualizar") {
         const b = document.createElement("button");
@@ -1034,7 +1122,7 @@
   $("#btn-email-google").addEventListener("click", () => {
     const g = $("#email-google-status");
     g.className = "status";
-    g.textContent = "Se abrió Google en tu navegador: elige tu cuenta y autoriza a Jarvis… (si dice que falta el ID de cliente, configúralo en Memoria › Cuenta de Google)";
+    g.textContent = "Se abrió Google en tu navegador: elige tu cuenta y autoriza a Jarvis… (si dice que falta el ID de cliente, configúralo en Cuentas y mensajes › Cuenta de Google)";
     socket.emit("classroom_connect", {});
   });
   socket.on("connect", () => socket.emit("classroom_status", {}, renderCr));

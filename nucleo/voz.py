@@ -85,7 +85,7 @@ def _piper_synth(text, path, rate, volume):
     J._ensure_piper()
     model = J.find_piper_voice()
     if not model:
-        raise RuntimeError("No hay voz de Piper. Ejecuta descargar_voz.py o indícala en Ajustes › Voz.")
+        raise RuntimeError("No hay voz de Piper. Ejecuta descargar_voz.py o indícala en Ajustes › Voz de Jarvis.")
     voice = J._get_piper(model)
     # rate -50..+50 % -> length_scale (más alto = más lento); volume -50..+50 -> 0.5..1.5
     cfg = J.SynthesisConfig(length_scale=max(0.5, min(2.0, 1.0 - rate / 100.0)),

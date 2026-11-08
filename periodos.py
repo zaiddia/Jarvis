@@ -1,7 +1,7 @@
 """Valoraciones de los periodos ya cerrados (10.2), para el acumulado del año (VF) y lo que falta (VRA), como en Zeti.
 
 Se llenan solas al cerrar cada periodo con Jarvis, o pegando la tabla de Zeti de un periodo
-(Ajustes › Memoria › Periodos anteriores). Son datos de estudiantes: se cifran con los demás si lo activaste.
+(Ajustes › Aula y colegio › Periodos anteriores). Son datos de estudiantes: se cifran con los demás si lo activaste.
 """
 import re
 import threading

@@ -324,7 +324,7 @@ def project_voice(text, t):
     if not proyectos.is_project(t):
         return False
     if J.state.get("ai") != "ok":
-        J.reply("Para hacer proyectos de varios pasos necesito la IA conectada (Ajustes › IA).", "PROYECTO")
+        J.reply("Para hacer proyectos de varios pasos necesito la IA conectada (Ajustes › Inteligencia artificial).", "PROYECTO")
         return True
     if project_run["busy"]:
         J.reply("Ya estoy con un proyecto. Pregúntame cómo va, o di «cancela el proyecto».", "PROYECTO")

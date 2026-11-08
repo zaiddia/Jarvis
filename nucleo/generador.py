@@ -234,7 +234,7 @@ def handle_doc_action(data=None):
         return {"ok": True, "msg": "En el proyector."}
     if act == "drive":
         if not J.gdrive_ready():
-            return {"ok": False, "error": "Conecta tu cuenta de Google en Ajustes › Integraciones para subir a Drive."}
+            return {"ok": False, "error": "Conecta tu cuenta de Google en Ajustes › Cuentas y mensajes para subir a Drive."}
         try:
             f = J.drive_upload(it["ruta"])
             return {"ok": True, "msg": "Subido a tu carpeta Jarvis de Drive.", "link": (f or {}).get("webViewLink", "")}

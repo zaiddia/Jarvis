@@ -65,7 +65,7 @@ def propose_week(today=None, say=True):
     monday = semana.next_monday(today) if today.weekday() >= 4 else today - datetime.timedelta(days=today.weekday())
     if not horario.items:
         if say:
-            J.reply("Para prepararte la semana necesito tu horario (Ajustes › Memoria › Horario, o dime «los lunes de 7 a 8 "
+            J.reply("Para prepararte la semana necesito tu horario (Ajustes › Aula y colegio › Horario, o dime «los lunes de 7 a 8 "
                     "tengo 7A matemáticas»).", "SEMANA")
         return None
     plan, sin_tema = semana.week_plan(horario.items, J.week_topic, monday, J.settings["week_prep_quiz"])
@@ -253,7 +253,7 @@ def inbox_drafts(force=False, say=False):
     """Redacta las respuestas de los correos que piden respuesta y las deja por aprobar. Devuelve cuántas."""
     if not (J.settings["email_read"] and J.mail_method()) or J.state.get("ai") != "ok":
         if say:
-            J.reply("Para redactar respuestas necesito el correo conectado (Ajustes › Integraciones › Correo) y la IA.", "CORREO")
+            J.reply("Para redactar respuestas necesito el correo conectado (Ajustes › Cuentas y mensajes › Correo) y la IA.", "CORREO")
         return 0
     try:
         msgs = J._mail_fetch(force=True)

@@ -137,13 +137,13 @@ def book_voice(text, t):
         bs = libro.index["libros"]
         J.reply(("Tus libros guía: " + "; ".join(f"«{v['nombre']}» ({v['paginas']} páginas" + (f", {v['asignatura']}" if v["asignatura"] else "") + ")"
                                                  for v in bs.values()) + ". Los uso como base al preparar material.") if bs else
-                "No tienes libros guía. Súbelos en Ajustes › Memoria › Libro guía (PDF, Word o texto).", "LIBRO GUÍA")
+                "No tienes libros guía. Súbelos en Ajustes › Aula y colegio › Libro guía (PDF, Word o texto).", "LIBRO GUÍA")
         return True
     m = _BK_ASK.match(t)
     if not m:
         return False
     if not libro.index["libros"]:
-        J.reply("No tienes libros guía. Súbelos en Ajustes › Memoria › Libro guía.", "LIBRO GUÍA")
+        J.reply("No tienes libros guía. Súbelos en Ajustes › Aula y colegio › Libro guía.", "LIBRO GUÍA")
         return True
     hits = libro.search(m.group(1), "", 3)
     if not hits:

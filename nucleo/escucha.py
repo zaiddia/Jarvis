@@ -301,7 +301,7 @@ def handle_voice(text, raw=None, started=None):
         if wake_rest is None and not window_open:      # conversación del ambiente: no sale del PC
             late = 0 < t0 - J.wake_until < 8
             J.log_terminal(f'"{text}"' + ("  (llegó después de que dejé de escucharte: di «Jarvis» y la orden "
-                                        "seguidas, o sube «Tiempo de espera» en Ajustes › Escucha)" if late else ""), "VOZ")
+                                        "seguidas, o sube «Tiempo de espera» en Ajustes › Micrófono)" if late else ""), "VOZ")
             return
         if wake_rest is not None and not asked and J.live_mode() == "vivo":
             J.log_terminal(f'"{text}"', "VOZ")
@@ -561,7 +561,7 @@ def audio_loop():
             stream = J._get_pa().open(**kwargs)
         except Exception as e:
             J.set_state(mic="error")
-            J.log_terminal(f"No se pudo abrir el micrófono: {e}. Elige otro en Ajustes › Escucha.", "ERROR")
+            J.log_terminal(f"No se pudo abrir el micrófono: {e}. Elige otro en Ajustes › Micrófono.", "ERROR")
             J.mic_restart.wait(timeout=30)
             continue
 

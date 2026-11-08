@@ -119,7 +119,7 @@
   function setTheme(name) { root.dataset.theme = name || "cyan"; }
 
   function hint() {
-    if (st.mic === "error") return "El micrófono falló · mira el registro o elige otro en Ajustes › Escucha";
+    if (st.mic === "error") return "El micrófono falló · mira el registro o elige otro en Ajustes › Micrófono";
     if (st.mic !== "on") return current.mic_enabled === false ? "Micrófono en pausa · pulsa el botón del micrófono para activarlo"
       : "Activando el micrófono…";
     if (!current.wake_word_enabled) return "Te escucho · habla o escribe una orden";
@@ -762,7 +762,7 @@
       dash.append(k);
     }
     if (d.hice && d.hice.length) dash.append(doneCard(d.hice));   // 11.8: lo que hice hoy, con deshacer
-    if (dash.children.length === 1) dash.append(mk("p", "dempty", "Nada urgente. Escribe tu horario en Ajustes › Memoria para ver aquí tus clases."));
+    if (dash.children.length === 1) dash.append(mk("p", "dempty", "Nada urgente. Escribe tu horario en Ajustes › Aula y colegio para ver aquí tus clases."));
     renderChips(d.sugerencias || []);
     pendingN = (d.bandeja || []).length;
     drawOrb(d.orbe);
@@ -943,7 +943,7 @@
     $("#ai-chip-t").textContent = a.donde === "nube" ? `☁ ${a.proveedor}` : a.donde === "local" ? `⌂ Local · ${a.modelo}` : "✕ Sin IA";
     aiChip.title = (a.donde === "nube" ? `Responde la IA en la nube: ${a.proveedor}${a.modelo ? " · " + a.modelo : ""}.`
       : a.donde === "local" ? `Responde la IA de tu equipo: ${a.modelo}${a.sin_internet ? " (no hay internet)" : ""}.` : a.texto + ".")
-      + (a.donde !== "local" ? (a.respaldo ? ` Si se cae el internet: ${a.respaldo}.` : " Si se cae el internet: no hay IA de respaldo (Ajustes › IA).") : "")
+      + (a.donde !== "local" ? (a.respaldo ? ` Si se cae el internet: ${a.respaldo}.` : " Si se cae el internet: no hay IA de respaldo (Ajustes › Inteligencia artificial).") : "")
       + " Clic: Ajustes de IA.";
   }
   socket.on("ai_now", drawAiNow);

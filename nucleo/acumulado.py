@@ -67,7 +67,7 @@ def _yf(x):
 def spoken_status(curso, est, s):
     if s["faltan_previos"]:
         return (f"De {est} no tengo la valoración del periodo {', '.join(map(str, s['faltan_previos']))}. Pega la tabla de Zeti de ese "
-                "periodo en Ajustes › Memoria › Periodos anteriores y te digo cuánto necesita.")
+                "periodo en Ajustes › Aula y colegio › Periodos anteriores y te digo cuánto necesita.")
     if s["aprobo"]:
         return f"{est} ya aprobó el año: lleva {_yf(s['vf'])} acumulado. 🎉"
     t = f"{est} lleva {_yf(s['vf'])} acumulado y necesita {_yf(s['vra'])} en promedio en lo que queda del año para llegar a 3,0"
@@ -90,7 +90,7 @@ def year_voice(text, t):
         w = m.group(1) or m.group(2)
         p = _ORD.get(w) or int(w)
         if p > len(pweights()):
-            J.reply(f"Tu año tiene {len(pweights())} periodos (Ajustes › Memoria).", "ACUMULADO")
+            J.reply(f"Tu año tiene {len(pweights())} periodos (Ajustes › Aula y colegio).", "ACUMULADO")
             return True
         J.settings["period_current"] = p
         J.on_new_period(p)                             # 10.8: la malla del periodo pasa al diario de clase
@@ -99,7 +99,7 @@ def year_voice(text, t):
         except OSError:
             pass
         J.reply(f"Anotado: estamos en el periodo {p}. Para el acumulado necesito la valoración de los periodos anteriores: si no los "
-                "cerraste con Jarvis, pega la tabla de Zeti de cada uno en Ajustes › Memoria › Periodos anteriores.", "ACUMULADO")
+                "cerraste con Jarvis, pega la tabla de Zeti de cada uno en Ajustes › Aula y colegio › Periodos anteriores.", "ACUMULADO")
         return True
     m = _LOSE_RE.search(t)
     if m:
@@ -112,7 +112,7 @@ def year_voice(text, t):
                     parts.append(f"{c}: {len(lose)} ({', '.join(lose[:3])}{'…' if len(lose) > 3 else ''})")
             if not periodos.data:
                 J.reply("Aún no tengo las valoraciones de los periodos anteriores. Pega la tabla de Zeti de cada curso y periodo en "
-                        "Ajustes › Memoria › Periodos anteriores.", "ACUMULADO")
+                        "Ajustes › Aula y colegio › Periodos anteriores.", "ACUMULADO")
             else:
                 J.reply(("Pueden perder el año: " + "; ".join(parts) + ". Pregúntame por un curso para ver cuánto necesita cada uno.")
                         if parts else "En ninguno de tus cursos hay estudiantes en peligro de perder el año. 👌", "ACUMULADO")
@@ -138,7 +138,7 @@ def _year_report(course, t=""):
     st = J.course_year(course)
     if all(s["vf"] is None for s in st.values()):
         return (f"Aún no tengo las valoraciones de los periodos anteriores de {course}. Pega la tabla de Zeti de cada periodo en "
-                "Ajustes › Memoria › Periodos anteriores.")
+                "Ajustes › Aula y colegio › Periodos anteriores.")
     if "gan" in t or "aprob" in t:
         ok = [n for n, s in st.items() if s["aprobo"]]
         return (f"En {course} ya aprobaron el año {len(ok)}: " + ", ".join(ok[:12]) + ".") if ok else f"En {course} nadie ha asegurado el año todavía."
@@ -212,7 +212,7 @@ def paste_periods(curso, periodo, text, apply=True):
     msg = (f"{'Guardé' if apply else 'Encontré'} la valoración del periodo {periodo} de {len(hits)} estudiante{'s' if len(hits) != 1 else ''} de {curso}"
            + (" (creé la lista del curso con la de Zeti)" if creado else "") + (f". Sin emparejar: {', '.join(sin[:6])}" if sin else "") + ".")
     if not hits and names:
-        msg += f" Ningún nombre coincide con tu lista de {curso}: revisa que sea el curso correcto, o reemplaza la lista por la de Zeti en Ajustes › Memoria."
+        msg += f" Ningún nombre coincide con tu lista de {curso}: revisa que sea el curso correcto, o reemplaza la lista por la de Zeti en Ajustes › Aula y colegio."
     return {"ok": bool(hits) or not apply, "n": len(hits), "sin": sin, "creado": creado, "msg": msg, "curso": curso}
 
 

@@ -113,7 +113,7 @@ def drive_voice(text, t):
     if not (_DRIVE_RE.search(t) or (share and "drive" in t)):
         return False
     if not J.gdrive_ready():
-        J.reply("Para usar tu Drive pulsa «Conectar con Google» en Ajustes › Memoria › Cuenta de Google (activa la "
+        J.reply("Para usar tu Drive pulsa «Conectar con Google» en Ajustes › Cuentas y mensajes › Cuenta de Google (activa la "
                 "Google Drive API en tu proyecto de Google Cloud).", "DRIVE")
         return True
     want = (".pptx",) if re.search(r"\b(?:slides|presentacion)\b", t) else \
@@ -245,7 +245,7 @@ _ZETI_OPEN = re.compile(r"^(?:jarvis\s+)?(?:abre|abreme|entra a|ve a|llevame a)\
 
 
 def zeti_apply():
-    """10.1: los pesos y la escala de tu institución (Ajustes › Memoria › Zeti)."""
+    """10.1: los pesos y la escala de tu institución (Ajustes › Aula y colegio › Zeti)."""
     zeti.WEIGHTS.update(zeti.parse_weights(J.settings["zeti_weights"]))
     zeti.SCALE.update(superior=J.settings["scale_superior"], alto=J.settings["scale_alto"], basico=J.settings["scale_basico"])
 

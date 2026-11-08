@@ -169,7 +169,7 @@
       ? `<span class="err">No pude abrir el audio de tu equipo: no podré hablar. Revisa los altavoces y vuelve a abrir Jarvis.</span>`
       : S.tts_backend === "edge"
         ? `Estas voces necesitan internet. ${S.piper ? "Sin conexión uso Piper, que ya está instalado." : "Para hablar sin internet instala Piper (python descargar_voz.py)."}`
-        : `Ahora hablo con <b>${S.tts_backend === "piper" ? "Piper (sin internet)" : "la voz de Gemini"}</b>; la lista de arriba es para la voz de Microsoft. Lo cambias en Ajustes › Voz.`;
+        : `Ahora hablo con <b>${S.tts_backend === "piper" ? "Piper (sin internet)" : "la voz de Gemini"}</b>; la lista de arriba es para la voz de Microsoft. Lo cambias en Ajustes › Voz de Jarvis.`;
 
     $("#try").innerHTML = S.try.map((t) => `<button class="chip" type="button">${esc(t)}</button>`).join("");
     $("#try").onclick = (e) => { if (e.target.classList.contains("chip")) socket.emit("manual_command", { command: e.target.textContent }); };
@@ -239,7 +239,7 @@
     $("#aistate").innerHTML = `<span class="st warn">${esc(msg)}</span>`;
     clearTimeout(aiTimer);
     aiTimer = setTimeout(() => {
-      if (!S.ai_ok) $("#aistate").innerHTML = `<span class="st err">No conecta todavía${S.ai_label ? ": " + esc(S.ai_label) : ""}.</span><div class="hint">Revisa la clave (o que Ollama esté abierto). Puedes seguir y arreglarlo luego en Ajustes › IA.</div>`;
+      if (!S.ai_ok) $("#aistate").innerHTML = `<span class="st err">No conecta todavía${S.ai_label ? ": " + esc(S.ai_label) : ""}.</span><div class="hint">Revisa la clave (o que Ollama esté abierto). Puedes seguir y arreglarlo luego en Ajustes › Inteligencia artificial.</div>`;
     }, 25000);
   }
 

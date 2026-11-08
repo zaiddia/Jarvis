@@ -279,7 +279,12 @@ def open_settings_window():
             return
         except Exception:
             J.hud["settings_win"] = None
-    sw = J.webview.create_window("Ajustes · Jarvis", f"{J.URL}/ajustes", width=640, height=760,
+    try:                                               # 12.17: más ancha, con la barra lateral (cabe en pantallas pequeñas)
+        _ax, _ay, aw, ah = J._work_area()
+        ww, wh = int(max(720, min(1160, aw - 60))), int(max(560, min(820, ah - 60)))
+    except Exception:
+        ww, wh = 1100, 780
+    sw = J.webview.create_window("Ajustes · Jarvis", f"{J.URL}/ajustes", width=ww, height=wh,
                                min_size=(420, 520), background_color="#03060c")
 
     def _closed():

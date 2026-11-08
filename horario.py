@@ -1,6 +1,6 @@
 """Horario de clases (8.1): Jarvis sabe qué curso tienes a cada hora.
 
-Se escribe una clase por línea en Ajustes › Memoria › Horario («lunes 7:00-7:55 7A Matemáticas») o por voz
+Se escribe una clase por línea en Ajustes › Aula y colegio › Horario («lunes 7:00-7:55 7A Matemáticas») o por voz
 («los lunes de 7 a 8 tengo 7A matemáticas»). Con el horario: «¿qué clase tengo ahora?», «¿cuál es mi próxima
 clase?», «mi horario de hoy», «prepárame la próxima clase» y el curso activo del aula cambia solo.
 """

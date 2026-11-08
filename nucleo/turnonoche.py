@@ -352,7 +352,7 @@ def night_voice(text, t):
             J.reply("Ya estoy en el turno; te aviso al terminar.", "TURNO DE NOCHE")
             return True
         if not horario.items and J.state.get("ai") == "ok":
-            J.reply("No tengo tu horario, así que no sé qué clases preparar. Escríbelo en Ajustes › Memoria › Horario.", "TURNO DE NOCHE")
+            J.reply("No tengo tu horario, así que no sé qué clases preparar. Escríbelo en Ajustes › Aula y colegio › Horario.", "TURNO DE NOCHE")
         J.reply("Empiezo el turno ahora: preparo las clases del próximo día de clases, califico lo pendiente y redacto los mensajes. Te aviso.",
                 "TURNO DE NOCHE")
         J.start_job("Turno de noche", lambda: run_night(say=True), "turno-noche")

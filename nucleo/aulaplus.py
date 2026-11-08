@@ -50,7 +50,7 @@ def classroom_connect():
     """Abre Google para autorizar y espera la respuesta en 127.0.0.1 (con PKCE). Devuelve un mensaje."""
     cid, secret = J.settings["classroom_client_id"].strip(), J.settings["classroom_client_secret"].strip()
     if not (cid and secret):
-        return "Primero pega el ID de cliente y el secreto (Ajustes › Memoria › Cuenta de Google)."
+        return "Primero pega el ID de cliente y el secreto (Ajustes › Cuentas y mensajes › Cuenta de Google)."
     verifier, challenge = classroom.pkce()
     state = secrets.token_urlsafe(16)
     box = {}
@@ -151,7 +151,7 @@ def classroom_voice(text, t):
     if not _CR_RE.search(t):
         return False
     if not J.classroom_client():
-        J.reply("Google Classroom no está conectado. Se conecta en Ajustes › Aula › Google Classroom.", "CLASSROOM")
+        J.reply("Google Classroom no está conectado. Se conecta en Ajustes › Cuentas y mensajes › Cuenta de Google.", "CLASSROOM")
         return True
     try:
         courses = J.classroom_courses()

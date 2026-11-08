@@ -437,7 +437,7 @@ def live_test():
     J.live["why"] = ""
     provs = J._live_order()
     if not provs:
-        return {"ok": False, "msg": "No hay clave para ningún proveedor de voz en vivo (Gemini en Ajustes › IA)."}
+        return {"ok": False, "msg": "No hay clave para ningún proveedor de voz en vivo (Gemini en Ajustes › Inteligencia artificial)."}
     lines, ok_any = [], False
     for p in provs:
         t0 = time.time()

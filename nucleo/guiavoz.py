@@ -155,7 +155,7 @@ def features_check():
             "Para traer los cumpleaños de tus contactos, vuelve a pulsar «Conectar con Google» (pide el permiso nuevo) y activa la People API.")
     contacts = skills._parse_contacts() if hasattr(skills, "_parse_contacts") else {}
     add(G, "ok" if contacts else "info", f"Contactos para compartir por WhatsApp: {len(contacts)}." if contacts else
-        "Para compartir listas o menús por WhatsApp, agrega tus contactos en Ajustes › Integraciones.")
+        "Para compartir listas o menús por WhatsApp, agrega tus contactos en Ajustes › Cuentas y mensajes.")
     try:
         path = os.path.join(J.CONFIG_DIR, "mi_dia.json")
         hogar.save()

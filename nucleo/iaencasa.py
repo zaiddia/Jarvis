@@ -2,7 +2,7 @@
 
 «¿Qué IA puedo usar sin internet?» analiza tu equipo (memoria, disco, Ollama) y te dice si es posible y qué cabe.
 «Prepara la IA sin internet» descarga los modelos candidatos, los prueba con tareas reales de docente midiendo la
-velocidad y deja el mejor que pase como IA sin internet (Ajustes › IA › Sin internet). «Instala Ollama» lo instala con
+velocidad y deja el mejor que pase como IA sin internet (Ajustes › Inteligencia artificial › Sin internet). «Instala Ollama» lo instala con
 winget. La lógica está en cerebrolocal.py. Los nombres globales de Jarvis se usan como J.<nombre>.
 """
 import re

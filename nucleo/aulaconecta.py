@@ -61,7 +61,7 @@ def quiz_to_form(quiz, curso=""):
     """Crea el formulario autocalificable. Devuelve el registro guardado (con url)."""
     client = J.classroom_client()
     if not client:
-        raise classroom.ClassroomError("conecta Google (Ajustes › Memoria › Google Classroom) para usar Forms")
+        raise classroom.ClassroomError("conecta Google (Ajustes › Cuentas y mensajes › Cuenta de Google) para usar Forms")
     form = client.form_create(formularios.create_body(quiz))
     client.form_update(form["formId"], formularios.batch_requests(quiz))
     rec = {"id": form["formId"], "url": form.get("responderUri") or f"https://docs.google.com/forms/d/{form['formId']}/viewform",
@@ -126,7 +126,7 @@ def forms_voice(text, t):
     if not (send or new or grades):
         return False
     if not J.classroom_client():
-        J.reply("Para Google Forms conecta primero tu cuenta de Google en Ajustes › Memoria › Google Classroom.", "FORMS")
+        J.reply("Para Google Forms conecta primero tu cuenta de Google en Ajustes › Cuentas y mensajes › Cuenta de Google.", "FORMS")
         return True
     if grades:
         rec = _find_form(t)
@@ -246,7 +246,7 @@ def feedback_voice(text, t):
     if not _FB_RE.search(t):
         return False
     if not J.classroom_client():
-        J.reply("Google Classroom no está conectado. Se conecta en Ajustes › Memoria › Google Classroom.", "CLASSROOM")
+        J.reply("Google Classroom no está conectado. Se conecta en Ajustes › Cuentas y mensajes › Cuenta de Google.", "CLASSROOM")
         return True
     J.reply("Leo las respuestas en Classroom y te propongo notas y comentarios…", "CLASSROOM")
     capture = getattr(J._tl, "capture", None)
@@ -339,13 +339,13 @@ def schedule_voice(text, t):
             nx, day = horario.next_class()
             J.reply("Ahora no tienes clase." + (f" La próxima: {horario.label(nx)} a las {nx['inicio']}"
                                                 + ("" if day == datetime.date.today() else f" del {horario.DAYS[day.weekday()]}") + "."
-                                                if nx else " Aún no tengo tu horario: escríbelo en Ajustes › Memoria › Horario."),
+                                                if nx else " Aún no tengo tu horario: escríbelo en Ajustes › Aula y colegio › Horario."),
                     "HORARIO")
         return True
     if _H_NEXT.search(t):
         nx, day = horario.next_class()
         if not nx:
-            J.reply("Aún no tengo tu horario: escríbelo en Ajustes › Memoria › Horario.", "HORARIO")
+            J.reply("Aún no tengo tu horario: escríbelo en Ajustes › Aula y colegio › Horario.", "HORARIO")
         else:
             when = "hoy" if day == datetime.date.today() else ("mañana" if day == datetime.date.today() + datetime.timedelta(days=1)
                                                                else f"el {horario.DAYS[day.weekday()]}")
@@ -368,7 +368,7 @@ def schedule_voice(text, t):
     if m:
         nx, _ = horario.next_class()
         if not nx:
-            J.reply("Aún no tengo tu horario: escríbelo en Ajustes › Memoria › Horario, o dime el curso.", "HORARIO")
+            J.reply("Aún no tengo tu horario: escríbelo en Ajustes › Aula y colegio › Horario, o dime el curso.", "HORARIO")
             return True
         tema = (m.group(1) or "").strip() or nx["materia"] or "la clase"
         J.generate_material(f"plan de clase de {tema} para {nx['curso'] or nx['materia']}", kind="plan", grade=nx["curso"],

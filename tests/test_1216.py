@@ -222,3 +222,17 @@ def test_copia_en_drive_sin_google_explica_que_falta(jv, monkeypatch):
         gservicios.ensure_folder(None, "")
     with pytest.raises(classroom.ClassroomError):
         jv.backup_to_drive("x.zip")
+
+
+def test_ajustes_reorganizados_sin_perder_nada(jv):
+    import re
+    html = open("templates/settings.html", encoding="utf-8").read()
+    tabs = re.findall(r'class="tab[^"]*" type="button" data-tab="([a-z]+)"', html)
+    panes = re.findall(r'data-pane="([a-z]+)"', html)
+    assert tabs == panes and tabs[0] == "inicio" and {"aula", "cuentas", "datos"} <= set(tabs)
+    keys = re.findall(r'data-key="([a-z_0-9]+)"', html)
+    for k in ("ai_provider", "mic_enabled", "cloud_pass", "telegram_token", "hud_auto_hide", "dnd_auto", "classroom_client_id", "custom_commands"):
+        assert k in keys, k
+    for a in ("btn-save", "btn-check", "btn-cr-connect", "f-cloud-pass", "s-search", "savebar", "ov-grid"):
+        assert f'id="{a}"' in html, a
+    assert jv.app.test_client().get("/ajustes").status_code == 200
