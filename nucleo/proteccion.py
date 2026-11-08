@@ -288,6 +288,11 @@ def cloud_fetch(file_id, password=""):
 def handle_cloud_backup(data=None):
     d = data or {}
     act = str(d.get("action") or "")
+    if act in ("listar", "ahora", "traer") and not J.gdrive_ready():          # 12.16.2: el motivo claro
+        why = ("tu cuenta de Google no está conectada: ve a Ajustes › Memoria › Cuenta de Google y pulsa «Conectar con Google»"
+               if not J.classroom_client() else "a tu conexión de Google le falta el permiso de Drive: pulsa otra vez «Conectar con Google» "
+               "y acepta todo lo que pide")
+        return {**cloud_info(), "ok": False, "error": f"No puedo usar tu Drive: {why}."}
     try:
         if act == "listar":
             return {**cloud_info(), "items": cloud_list()}

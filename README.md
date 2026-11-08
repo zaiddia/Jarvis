@@ -157,6 +157,10 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## La copia en Drive dice qué falta (v12.16.2)
+
+- Sin la cuenta de Google conectada, la copia cifrada de cada noche (y todo lo que usa Drive, Calendar o Gmail) mostraba «'NoneType' object has no attribute 'call'». Ahora dice qué falta: conectar la cuenta en Ajustes › Memoria › Cuenta de Google, o volver a conectar para dar el permiso de Drive.
+
 ## Contraseña de aplicación de Gmail más tolerante (v12.16.1)
 
 - Al pegar la contraseña de aplicación se colaban caracteres que no se ven (o un punto, guion o comillas) y Jarvis decía que tenía 17 caracteres. Ahora los quita solo: si quedan exactamente 16 letras, esa es.

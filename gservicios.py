@@ -158,3 +158,25 @@ def share_link(client, file_id):
     client.call("POST", f"files/{file_id}/permissions", body={"role": "reader", "type": "anyone"}, base=DRIVE_API)
     f = client.call("GET", f"files/{file_id}", {"fields": "webViewLink"}, base=DRIVE_API)
     return f.get("webViewLink", "")
+
+
+# 12.16.2: sin la cuenta de Google conectada, un mensaje claro en vez de «'NoneType' object has no attribute 'call'»
+NO_GOOGLE = ("tu cuenta de Google no está conectada. Ve a Ajustes › Memoria › Cuenta de Google y pulsa «Conectar con Google» "
+             "(con el permiso de Drive)")
+
+
+def needs_client(fn):
+    import functools
+
+    import classroom
+
+    @functools.wraps(fn)
+    def wrap(client, *a, **k):
+        if client is None:
+            raise classroom.ClassroomError(NO_GOOGLE)
+        return fn(client, *a, **k)
+    return wrap
+
+
+for _n in ("create_event", "list_events", "ensure_folder", "upload", "ensure_subfolder", "list_folder", "download", "delete", "share_link"):
+    globals()[_n] = needs_client(globals()[_n])

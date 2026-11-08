@@ -48,3 +48,11 @@ def fetch_recent(client, days=3, limit=25):
         if raw:
             out.append((m["id"], base64.urlsafe_b64decode(raw + "=" * (-len(raw) % 4))))
     return out
+
+
+# 12.16.2: sin la cuenta de Google conectada, un mensaje claro
+from gservicios import needs_client as _needs_client  # noqa: E402
+
+send = _needs_client(send)
+profile = _needs_client(profile)
+fetch_recent = _needs_client(fetch_recent)

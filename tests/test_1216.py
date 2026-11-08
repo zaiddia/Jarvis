@@ -209,3 +209,16 @@ def test_contrasena_de_aplicacion_limpia(jv):
     assert clean("MiClaveNormal2024!") == "MiClaveNormal2024!"                    # una clave normal no se «arregla»
     r = jv.email_test("ana@gmail.com", "MiClaveNormal2024!")
     assert not r["ok"] and "sin números" in r["msg"]
+
+
+def test_copia_en_drive_sin_google_explica_que_falta(jv, monkeypatch):
+    import classroom
+    import gservicios
+    monkeypatch.setattr(jv, "classroom_client", lambda: None)
+    r = jv.handle_cloud_backup({"action": "listar"})
+    assert r["ok"] is False and "Conectar con Google" in r["error"] and "NoneType" not in r["error"]
+    assert jv.handle_cloud_backup({"action": "ahora"})["ok"] is False
+    with pytest.raises(classroom.ClassroomError, match="Conectar con Google"):
+        gservicios.ensure_folder(None, "")
+    with pytest.raises(classroom.ClassroomError):
+        jv.backup_to_drive("x.zip")
