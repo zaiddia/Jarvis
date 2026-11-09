@@ -109,11 +109,34 @@ def _whisper_installed():
         return False
 
 
+SPEECH_MAX_CHARS = 420
+
+
 def _clean_for_speech(text):
+    """Lo que se dice en voz alta. 12.18.1: antes solo la primera línea (la voz decía menos que lo escrito); ahora
+    las primeras líneas hasta unas 3 o 4 frases, sin tablas, código ni rutas. Si sigue, lo dice."""
     text = mathtext.speech(text)                                 # 11.8: las fórmulas $…$ dichas en palabras
-    text = text.split("\n")[0]                                   # solo la primera línea
-    text = re.sub(r"[A-Za-z]:\\\S+|/\S+/\S+", "", text)          # no leer rutas en voz alta
-    return re.sub(r"[*#`_>|«»]", "", text).strip()
+    parts, total = [], 0
+    for line in str(text).split("\n"):
+        line = line.strip()
+        if line.startswith("```") or line.count("|") >= 2:       # código o tabla: eso se lee en pantalla
+            break
+        line = re.sub(r"^(?:[-*•]|\d+[.)])\s+", "", line)        # viñetas y numeración
+        line = re.sub(r"[A-Za-z]:\\\S+|/\S+/\S+", "", line)      # no leer rutas en voz alta
+        line = re.sub(r"[*#`_>|«»]", "", line).strip()
+        if not line:
+            continue
+        if parts and total + len(line) > J.SPEECH_MAX_CHARS:
+            parts.append("El resto está en la pantalla.")
+            break
+        if not parts and len(line) > J.SPEECH_MAX_CHARS + 120:   # un párrafo muy largo: hasta el punto más cercano
+            cut = max(line.rfind(". ", 0, J.SPEECH_MAX_CHARS), line.rfind("? ", 0, J.SPEECH_MAX_CHARS))
+            if cut > 80:
+                parts += [line[:cut + 1], "El resto está en la pantalla."]
+                break
+        parts.append(line if re.search(r"[.!?:;…]$", line) else line + ".")
+        total += len(line)
+    return " ".join(parts).strip()
 
 
 def speak(text, voice=None, rate=None, volume=None, pitch=None, force=False, backend=None, gemini=None,
@@ -377,7 +400,10 @@ def _tts_worker():
                             r = rapidez.mark("sonando")
                             if r:
                                 J.log_terminal(rapidez.line(r), "TIEMPOS")
+                        J._mixer_fresh()
+                        J.socketio.emit("tts_now", {"text": item["text"][:300]})   # 12.18.1: el HUD marca lo que dice
                         J._play_file(path)
+                        J._mix["last"] = time.time()
         except Exception as e:
             if item.get("sound"):
                 J.log_terminal(f"No se pudo reproducir el sonido {item['sound']}: {e}", "ERROR")
@@ -385,6 +411,8 @@ def _tts_worker():
                 J.set_state(tts="error")
                 J.log_terminal(f"Fallo en síntesis de voz (revisa la conexión o la voz elegida en Ajustes): {e}", "ERROR")
         finally:
+            if J.tts_now["text"]:
+                J.socketio.emit("tts_now", {"text": ""})
             J.tts_now["text"] = ""
             try:
                 J.pygame.mixer.music.unload()
@@ -403,6 +431,21 @@ def _tts_worker():
                 J.refresh_mode()
                 if not was_prompt:
                     J.open_followup()
+
+
+_mix = {"last": 0.0}
+
+
+def _mixer_fresh():
+    """12.18.1: si lleva un rato callado, vuelve a abrir la salida de audio. Pygame se queda con el parlante que había
+    al arrancar: si después conectas audífonos o cambias la salida en Windows, la voz no se oía."""
+    if time.time() - J._mix["last"] < 90 or J.pygame is None:
+        return
+    try:
+        J.pygame.mixer.quit()
+        J.pygame.mixer.init()
+    except Exception as e:
+        J.log_terminal(f"No pude volver a abrir la salida de audio: {e}", "AVISO")
 
 
 def stop_speech(log=True):
@@ -449,6 +492,9 @@ def list_edge_voices():
 __all__ = [
     'GEMINI_TTS_MODELS',
     'GEMINI_TTS_VOICES',
+    'SPEECH_MAX_CHARS',
+    '_mix',
+    '_mixer_fresh',
     'PREWARM_PHRASES',
     'ThreadPoolExecutor',
     'VOICE_CACHE',

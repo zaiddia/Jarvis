@@ -569,6 +569,7 @@ def audio_loop():
         J.log_terminal(f"Micrófono activo ({engine.label}).", "AUDIO")
         was_speaking = False
         last_level = 0.0
+        live_fed = False
         try:
             while not J.mic_restart.is_set():
                 data = stream.read(4000, exception_on_overflow=False)
@@ -580,6 +581,16 @@ def audio_loop():
                     J.orb_feed["level"] = round(min(1.0, peak * 1.6), 3)
                     last_level = now
                 if J.live["active"] or J.live["connecting"]:
+                    # 12.18.1: mientras habla en vivo, su voz no va a Gemini; el reconocimiento local solo
+                    # busca «Jarvis, …» o «basta» para interrumpirlo.
+                    if J.live["active"] and J.settings["barge_in"] and J.live_speaking():
+                        heard = engine.feed(data, peak)
+                        if heard:
+                            J.live_barge(heard)
+                        live_fed = True
+                    elif live_fed:
+                        engine.reset()
+                        live_fed = False
                     J.live_feed(data, peak)               # conversación en vivo: el audio va a Gemini
                     was_speaking = True
                     continue

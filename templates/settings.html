@@ -395,7 +395,11 @@
         <div class="range"><input type="range" id="f-live-idle" min="5" max="120" step="5" data-key="live_idle" data-unit=" s"><output></output></div>
       </div>
       <div class="field">
-        <div class="ft"><label for="f-live-barge">Fuerza de voz para interrumpirlo</label><p>Mientras Jarvis habla en vivo, no se le manda su propia voz (la que sale por los parlantes). Para interrumpirlo, háblale con al menos este volumen. Con audífonos puedes bajarlo; si se interrumpe solo, súbelo.</p></div>
+        <div class="ft"><label for="f-live-headset">Uso audífonos</label><p>Con parlantes, mientras Jarvis habla en vivo el micrófono no le manda su propia voz (antes se interrumpía solo y no se oía): para cortarlo di «Jarvis, …» o «basta». Con audífonos actívalo y también podrás interrumpirlo hablándole fuerte.</p></div>
+        <label class="switch"><input type="checkbox" id="f-live-headset" data-key="live_headset"><span></span></label>
+      </div>
+      <div class="field">
+        <div class="ft"><label for="f-live-barge">Fuerza de voz para interrumpirlo (con audífonos)</label><p>Con «Uso audífonos» activo, hablarle con al menos este volumen durante medio segundo lo interrumpe. Si se interrumpe solo, súbelo.</p></div>
         <div class="range"><input type="range" id="f-live-barge" min="5" max="80" step="5" data-key="live_barge_level" data-unit="%"><output></output></div>
       </div>
       <div class="field">

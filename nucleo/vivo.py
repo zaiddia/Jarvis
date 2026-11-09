@@ -226,11 +226,17 @@ def live_start(initial_audio=None):
         return False
     if errors:
         J.log_terminal(f"{'; '.join(errors)}. Uso {J.LIVE_PROVIDERS[used]} como respaldo.", "AVISO")
-    if J.live["player"] is None:
-        J.live["player"] = envivo.Player()
+    old = J.live.get("player")                       # 12.18.1: reproductor nuevo en cada conversación: si
+    if old is not None:                              # cambiaste de parlante o audífonos, suena por el actual
+        try:
+            old.close()
+        except Exception:
+            pass
+    J.live["player"] = envivo.Player()
     with J._live_lock:
         J.live.update(session=sess, active=True, connecting=False, started=time.time(), last=time.time(),
-                    in_buf="", out_buf="", ending=False, model=model, why="", turn_audio=False, provider=used)
+                    in_buf="", out_buf="", ending=False, model=model, why="", turn_audio=False, provider=used,
+                    mute_turn=False, shown="", loud=0)
         pre, J.live["prebuf"] = bytes(J.live["prebuf"]), bytearray()
     for i in range(0, len(pre), 8000):                 # lo que dijiste mientras conectaba
         sess.send_audio(pre[i:i + 8000])
@@ -257,11 +263,50 @@ def live_feed(data, peak):
     s = J.live["session"]
     if not J.live["active"] or s is None:
         return
-    p = J.live["player"]
-    echo = (p is not None and p.playing()) or J.tts_playing.is_set()
-    if echo and not (J.settings["barge_in"] and peak >= J.settings["live_barge_level"] / 100):
+    if J.live_echo_gate(peak):
         data = b"\x00" * len(data)                     # su propia voz por los parlantes: no se la manda
     s.send_audio(data)
+
+
+def live_speaking():
+    p = J.live.get("player")
+    return (p is not None and p.playing()) or J.tts_playing.is_set()
+
+
+def live_echo_gate(peak):
+    """12.18.1: ¿se manda silencio en vez del micrófono? Mientras Jarvis habla por los parlantes, el micrófono oye
+    su propia voz; si se la mandara a Gemini, este creería que lo interrumpiste y cortaría la respuesta (se veía el
+    texto pero no se oía la voz). Con parlantes solo lo interrumpe «Jarvis, …» (lo busca el reconocimiento local).
+    Con audífonos (Ajustes) también hablarle fuerte un momento."""
+    if not J.live_speaking():
+        J.live["loud"] = 0
+        return False
+    if not (J.settings["barge_in"] and J.settings.get("live_headset", False)):
+        return True
+    J.live["loud"] = J.live.get("loud", 0) + 1 if peak >= J.settings["live_barge_level"] / 100 else 0
+    return J.live["loud"] < 2                          # medio segundo seguido con voz fuerte: es el usuario
+
+
+def live_barge(text):
+    """Lo llama la escucha cuando el reconocimiento local oye algo mientras Jarvis habla en vivo.
+    → True si lo interrumpió."""
+    t = J.normalize(text)
+    if not t:
+        return False
+    said = J.normalize(J.live.get("out_buf", "") + " " + J.live.get("shown", ""))
+    if t in said or J._is_echo(t):
+        return False                                   # es su propia voz
+    rest = J._match_wake(text) if J.settings["wake_word_enabled"] else None
+    if rest is None and t not in J._STOP_ALONE:
+        return False
+    p = J.live.get("player")
+    if p is not None:
+        p.clear()
+    J.live["mute_turn"] = True                         # lo que quede de esta respuesta ya no suena
+    J.live["last"] = time.time()
+    J.log_terminal(f"Interrumpido: «{text}»", "EN VIVO")
+    J.refresh_mode()
+    return True
 
 
 def _live_on_audio(pcm):
@@ -269,6 +314,8 @@ def _live_on_audio(pcm):
     if not J.live["turn_audio"]:
         J.live["turn_audio"] = True
         J._live_flush_user()
+    if J.live.get("mute_turn"):
+        return
     try:
         J.live["player"].write(pcm)
     except Exception as e:
@@ -286,6 +333,24 @@ def _live_on_input(text):
 
 def _live_on_output(text):
     J.live["out_buf"] += text
+    if J.live.get("mute_turn"):
+        return
+    # 12.18.1: el texto va saliendo a medida que se oye. El audio llega antes de sonar (se acumula en el
+    # reproductor), así que cada trozo se muestra cuando le toca sonar.
+    p = J.live.get("player")
+    wait = max(0.0, (p.until - 0.25 - time.time()) if p is not None else 0.0)
+    shown = J.live["out_buf"]
+
+    def show():
+        if J.live.get("out_buf", "").startswith(shown) and len(shown) > len(J.live.get("shown", "")):
+            J.live["shown"] = shown
+            J.socketio.emit("chat_partial", {"text": re.sub(r"\s+", " ", shown).strip(), "source": "EN VIVO"})
+    if wait < 0.05:
+        show()
+    else:
+        tm = threading.Timer(min(wait, 30.0), show)
+        tm.daemon = True
+        tm.start()
 
 
 def _live_flush_user():
@@ -301,6 +366,7 @@ def _live_flush_user():
 def _live_flush_jarvis(cut=False):
     ans = re.sub(r"\s+", " ", J.live["out_buf"]).strip()
     J.live["out_buf"] = ""
+    J.live["shown"] = ""
     if ans:
         if cut:
             ans += " (interrumpido)"
@@ -316,15 +382,38 @@ def _live_on_interrupted():
         J.live["player"].clear()
     J._live_flush_jarvis(cut=True)
     J.live["turn_audio"] = False
+    J.live["mute_turn"] = False
     J.refresh_mode()
 
 
 def _live_on_turn_complete():
     J.live["last"] = time.time()
     J._live_flush_user()
-    J._live_flush_jarvis()
-    J.live["turn_audio"] = False
+    had_audio, muted = J.live["turn_audio"], J.live.get("mute_turn")
+    p = J.live.get("player")
+    wait = max(0.0, p.until - 0.25 - time.time()) if p is not None and not muted else 0.0
+    ans = J.live["out_buf"]
+    J.live.update(turn_audio=False, mute_turn=False)
+    if wait > 0.05 and ans.strip():                     # 12.18.1: la respuesta escrita queda cuando termina de sonar
+        J.live["out_buf"] = ""
+        J.live["shown"] = ""
+        tm = threading.Timer(min(wait, 60.0), J._live_post_answer, args=(ans,))
+        tm.daemon = True
+        tm.start()
+    else:
+        ans = J._live_flush_jarvis()
+        if ans and not had_audio and not muted:
+            # respondió solo con texto (pasa con algunos modelos): se dice con la voz normal para que se oiga
+            J.log_terminal("La voz en vivo llegó sin audio: la digo con la voz normal.", "EN VIVO")
+            J.speak(ans, force=True)
     J.save_memory()
+
+
+def _live_post_answer(ans):
+    keep = J.live["out_buf"]
+    J.live["out_buf"] = ans
+    J._live_flush_jarvis()
+    J.live["out_buf"] = keep
 
 
 def _live_on_closed(reason):
@@ -334,6 +423,9 @@ def _live_on_closed(reason):
         J.live.update(active=False, connecting=False, session=None)
     J._live_flush_user()
     J._live_flush_jarvis()
+    p = J.live.get("player")
+    if p is not None:
+        threading.Timer(max(0.0, p.until - time.time()) + 0.3, p.close).start()   # deja terminar la última frase
     J.set_state(live=False)
     J.refresh_mode()
     if was:
@@ -723,6 +815,7 @@ __all__ = [
     '_live_attempts',
     '_live_camera_frame',
     '_live_flush_jarvis',
+    '_live_post_answer',
     '_live_flush_user',
     '_live_frame',
     '_live_key',
@@ -747,7 +840,10 @@ __all__ = [
     '_open_doc',
     '_periodo_in',
     '_ws_installed',
+    'live_barge',
+    'live_echo_gate',
     'live_feed',
+    'live_speaking',
     'live_mode',
     'live_run_order',
     'live_start',

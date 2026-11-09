@@ -157,6 +157,16 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Voz que se oye y va con el texto (v12.18.1)
+
+- **Órdenes habladas sin voz**: con la clave de Gemini, lo que dices por voz va a la conversación en vivo. Mientras Jarvis hablaba, el micrófono le devolvía su propia voz desde los parlantes y Gemini creía que lo habías interrumpido: cortaba el audio y solo quedaba el texto. Ahora su voz no vuelve a Gemini.
+  - Para cortarlo di «Jarvis, …» o «basta».
+  - Si usas audífonos, actívalo en **Ajustes › Escucha › Uso audífonos** y también podrás interrumpirlo hablándole fuerte.
+- **Texto al ritmo de la voz**: en vivo, la respuesta se va escribiendo a medida que suena, con un cursor, y queda completa al terminar. En la voz normal, la respuesta que está sonando se ilumina en el chat («🔊 hablando»).
+- **La voz dice lo mismo que está escrito**: antes leía solo la primera línea. Ahora lee las primeras líneas (unas 3 o 4 frases, sin tablas, código ni rutas) y, si hay más, dice «El resto está en la pantalla».
+- **Cambio de parlantes o audífonos**: la salida de audio se vuelve a abrir tras un rato en silencio y en cada conversación en vivo. Así suena por el dispositivo que tengas puesto ahora.
+- Si la conversación en vivo responde sin audio, Jarvis dice la respuesta con la voz normal.
+
 ## HUD rediseñado (v12.18)
 
 - **Cabecera limpia**: el estado (En espera, Escuchando, Pensando, Hablando) sale en una pastilla con luz de color. Arriba quedan solo 5 botones: **Menú**, avisos, tamaño, orbe y ocultar.

@@ -1552,7 +1552,32 @@
     el.viewChat.scrollTop = el.viewChat.scrollHeight;
   });
   socket.on("terminal_log", ({ data }) => addLog(data));
-  socket.on("chat", (item) => { if (item.role !== "user") { lastJarvis = item.text; if (face) face.say(item.text, current.tts_rate); } addChat(item); poke(); });
+  socket.on("chat", (item) => {
+    if (item.role !== "user") { $(".msg.partial", el.chat)?.remove(); lastJarvis = item.text; if (face) face.say(item.text, current.tts_rate); }
+    addChat(item); poke();
+  });
+  /* 12.18.1: la respuesta que está sonando se ilumina en el chat */
+  socket.on("tts_now", (d) => {
+    $$(".msg.speaking", el.chat).forEach((x) => x.classList.remove("speaking"));
+    if (d && d.text) $(".msg.lastj", el.chat)?.classList.add("speaking");
+  });
+  /* 12.18.1: en la conversación en vivo, la respuesta se va escribiendo al ritmo en que suena */
+  socket.on("chat_partial", (d) => {
+    if (!d || !d.text) return;
+    $(".empty", el.chat)?.remove(); $(".msg.typing", el.chat)?.remove();
+    let m = $(".msg.partial", el.chat);
+    if (!m) {
+      m = mk("div", "msg jarvis partial");
+      const meta = mk("div", "msg-meta", "JARVIS · EN VIVO");
+      m.append(meta, mk("div", "msg-body"));
+      el.chat.appendChild(m);
+    }
+    const stick = nearBottom(el.viewChat);
+    $(".msg-body", m).textContent = d.text;
+    if (stick) el.viewChat.scrollTop = el.viewChat.scrollHeight;
+    setPreview(d.text, "");
+    poke();
+  });
   socket.on("state", (s) => { const was = st.mode; applyState(s); showTyping(st.mode === "thinking"); if (st.mode === "speaking" && was !== "speaking") startSubs(); else if (st.mode !== "speaking" && was === "speaking") stopSubs(); });
   socket.on("mic_level", ({ v }) => { if (st.mode !== "speaking") setLevel(v); });
   socket.on("heard", ({ text }) => { if (st.mode === "idle" || st.mode === "awaiting") setPreview(`«${text}»`, "dim"); });

@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.18"
+VERSION = "12.18.1"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -703,6 +703,7 @@ DEFAULT_SETTINGS = {
     "live_barge_level": 30,
     "live_provider": "gemini",     # "gemini" (gratis), "openai" (ChatGPT, de pago) o "deepgram" (con crédito)
     "live_fallback": True,         # si el elegido falla, probar los otros que tengan clave
+    "live_headset": False,         # 12.18.1: con audífonos, hablarle fuerte también lo interrumpe en vivo (con parlantes solo «Jarvis, …»)
     "openai_live_model": "gpt-realtime",
     "openai_live_voice": "marin",
     "deepgram_api_key": "",

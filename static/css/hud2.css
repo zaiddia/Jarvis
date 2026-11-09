@@ -174,3 +174,6 @@ html[data-look="aurora"] .xtab.active { color: #fff; }
 .drow > span:first-child { min-width: 0; }
 .dmeta { flex-shrink: 0; }
 #btn-clear .tlbl { display: none; }
+.msg.partial .msg-body::after { content: "▍"; margin-left: 2px; color: var(--a); animation: ledp .8s steps(2) infinite; }
+.msg.jarvis.speaking .msg-body { border-color: rgba(var(--a-rgb), .7); box-shadow: 0 0 0 1px rgba(var(--a-rgb), .35), 0 0 18px rgba(var(--a-rgb), .25); }
+.msg.jarvis.speaking .msg-meta::after { content: " · 🔊 hablando"; color: var(--a); letter-spacing: .1em; }
