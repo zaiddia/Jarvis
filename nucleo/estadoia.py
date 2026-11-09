@@ -40,13 +40,15 @@ def ai_now():
         prov = cfg.get("label") or cfg["spec"].get("short", "")
     if J.state.get("ai") == "error":
         donde = "ninguna" if not local else donde
+    if donde == "local":
+        model = J.local_label(model)                   # 12.19: «llama3.2», no «llama3.2:latest»
     texto = {"nube": f"IA en la nube · {prov}", "local": f"IA de tu equipo · {model}", "ninguna": "Sin IA"}[donde]
     if donde == "ninguna" and off:
         texto = "Sin internet y sin IA local"
     elif donde == "ninguna" and J.state.get("ai") == "error":
         texto = f"{prov}: no responde"
     return {"donde": donde, "texto": texto, "proveedor": prov, "modelo": model, "sin_internet": off,
-            "respaldo": J.net.get("local_model") or "", "estado": J.state.get("ai", ""), "ok": ok and donde != "ninguna"}
+            "respaldo": J.local_label(J.net.get("local_model") or ""), "estado": J.state.get("ai", ""), "ok": ok and donde != "ninguna"}
 
 
 @J.socketio.on("ai_now")
@@ -104,7 +106,7 @@ def offline_detail():
     elif running:
         ia, ia_paso = "Ollama está abierto pero no tiene ningún modelo descargado.", "modelo"
     elif exe:
-        ia, ia_paso = "Ollama está instalado pero cerrado.", "abrir"
+        ia, ia_paso = "Ollama está instalado pero no arrancó (Jarvis intenta encenderlo solo).", "abrir"
     else:
         ia, ia_paso = "Ollama no está instalado en este equipo.", "instalar"
     if piper_lib and piper_voice:

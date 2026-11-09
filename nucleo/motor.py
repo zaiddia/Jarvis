@@ -517,6 +517,6 @@ def motor_start_services():
 _motor_get_json = _mt_get_json
 _motor_fetch = _mt_fetch
 
-__all__ = ['IDLE_STOP', 'verify_download', '_MOTOR_EYES', '_MOTOR_INST', 'install_vision', 'motor_mmproj', 'motor_sees', 'motor_vision_job', 'vision_plan', '_motor_fetch', '_motor_get_json', 'engine', 'handle_motor', 'install_engine', 'install_model', 'motor_ask',
+__all__ = ['IDLE_STOP', '_exe_for', '_mt_alive', 'verify_download', '_MOTOR_EYES', '_MOTOR_INST', 'install_vision', 'motor_mmproj', 'motor_sees', 'motor_vision_job', 'vision_plan', '_motor_fetch', '_motor_get_json', 'engine', 'handle_motor', 'install_engine', 'install_model', 'motor_ask',
            'motor_bench', 'motor_ensure', 'motor_install_job', 'motor_pick_backend', 'motor_warmup', 'motor_name', 'motor_paths', 'motor_ready', 'motor_recommend', 'motor_start', 'motor_start_services',
            'motor_status', 'motor_stop', 'motor_voice', 'motorlocal']

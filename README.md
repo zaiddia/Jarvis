@@ -157,6 +157,17 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Escoger la IA y Ollama sin abrirlo (v12.19)
+
+- **Botón de IA en la cabecera del HUD**: muestra qué IA está respondiendo ahora (☁ en la nube, morado si es de tu equipo, rojo si no hay ninguna). Al tocarlo se abre la lista de todas tus IA:
+  - **En la nube**: las que tienen clave puesta (Gemini, Claude, ChatGPT…).
+  - **En tu equipo**: cada modelo de la IA integrada (.gguf) y cada modelo de Ollama que ya descargaste. Jarvis los lee del disco, así que salen aunque Ollama esté cerrado.
+  - Toca una para **usarla ya**. El botón «☆ Sin internet» la deja **solo para cuando se caiga el internet**, sin cambiar la que responde ahora.
+  - También está en el **Menú** (fila «IA») y en Ajustes › Inteligencia artificial › Si se cae el internet. Ese campo ahora es una lista con lo que tienes descargado, no un texto.
+- **Sin internet se usa la IA que escogiste**. Antes, si estaba la IA integrada, siempre ganaba ella y no se podían usar los modelos de Ollama.
+- **No hace falta abrir Ollama**: si está instalado y hace falta, Jarvis lo enciende solo, escondido y sin ventana. Lo hace al abrir Jarvis (si tu IA o la de respaldo es de Ollama), al caerse el internet y antes de cada pregunta.
+- **Por voz**: «cambia a la IA qwen», «usa la IA local», «cambia a la IA Gemini» y «¿qué IA tengo descargadas?».
+
 ## Voz que se oye y va con el texto (v12.18.1)
 
 - **Órdenes habladas sin voz**: con la clave de Gemini, lo que dices por voz va a la conversación en vivo. Mientras Jarvis hablaba, el micrófono le devolvía su propia voz desde los parlantes y Gemini creía que lo habías interrumpido: cortaba el audio y solo quedaba el texto. Ahora su voz no vuelve a Gemini.

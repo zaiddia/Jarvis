@@ -950,11 +950,72 @@
     aiChip.title = (a.donde === "nube" ? `Responde la IA en la nube: ${a.proveedor}${a.modelo ? " · " + a.modelo : ""}.`
       : a.donde === "local" ? `Responde la IA de tu equipo: ${a.modelo}${a.sin_internet ? " (no hay internet)" : ""}.` : a.texto + ".")
       + (a.donde !== "local" ? (a.respaldo ? ` Si se cae el internet: ${a.respaldo}.` : " Si se cae el internet: no hay IA de respaldo (Ajustes › Inteligencia artificial).") : "")
-      + " Clic: Ajustes de IA.";
+      + " Clic: escoger otra IA.";
+    /* 12.19: botón de la cabecera y fila del menú */
+    const short = a.donde === "nube" ? a.proveedor : a.donde === "local" ? a.modelo : "Sin IA";
+    const btn = $("#btn-ai");
+    if (btn) { btn.dataset.donde = a.donde; $("#btn-ai-t").textContent = short || "IA"; btn.title = aiChip.title; }
+    const dt = $("#dock-ai-t");
+    if (dt) {
+      dt.textContent = a.donde === "nube" ? `IA en la nube: ${a.proveedor}` : a.donde === "local" ? `IA de tu equipo: ${a.modelo}` : a.texto;
+      $("#dock-ai-s").textContent = a.donde === "local" && a.sin_internet ? "Sin internet · toca para escoger otra" : (a.respaldo ? `Sin internet: ${a.respaldo} · toca para cambiar` : "Toca para escoger otra");
+      $("#dock-ai").dataset.donde = a.donde;
+    }
   }
   socket.on("ai_now", drawAiNow);
   socket.on("connect", () => socket.emit("ai_now", {}, drawAiNow));
-  aiChip.addEventListener("click", () => socket.emit("open_settings"));
+  /* 12.19: escoger la IA (nube, integrada o Ollama) */
+  const aiPick = $("#aipick"), btnAi = $("#btn-ai");
+  function drawAiPick(c) {
+    const list = $("#aipick-list");
+    if (!c || !list) return;
+    list.innerHTML = "";
+    if (c.ahora) $("#aipick-now").textContent = c.ahora.donde === "ninguna" ? c.ahora.texto : `Respondiendo ahora: ${c.ahora.donde === "nube" ? c.ahora.proveedor + (c.ahora.modelo ? " · " + c.ahora.modelo : "") : c.ahora.modelo + " (tu equipo)"}`;
+    $("#aipick-sub").textContent = c.ahora && c.ahora.sin_internet ? "Sin internet" : "Con internet";
+    const groups = [["nube", "En la nube", "Necesitan internet"], ["local", "En tu equipo", "Funcionan sin internet · Ollama se enciende solo"]];
+    groups.forEach(([g, title, hint]) => {
+      const items = c.items.filter((i) => (g === "nube") === (i.tipo === "nube"));
+      const h = mk("div", "ap-h"); h.append(mk("b", "", title), mk("small", "", hint)); list.append(h);
+      if (!items.length) {
+        list.append(mk("p", "ap-empty", g === "nube" ? "Ninguna con clave. Ponla en Ajustes › Inteligencia artificial." : "Ninguna descargada. Di «instala la IA integrada» o pulsa Ajustes de IA."));
+        return;
+      }
+      items.forEach((i) => {
+        const row = mk("div", "ap-row" + (i.id === c.actual ? " on" : ""));
+        const pick = mk("button", "ap-pick"); pick.type = "button"; pick.setAttribute("role", "menuitemradio"); pick.setAttribute("aria-checked", String(i.id === c.actual));
+        const tag = i.tipo === "nube" ? "☁" : i.tipo === "integrada" ? "◆" : "⌂";
+        pick.append(mk("span", "ap-i", tag));
+        const txt = mk("span", "ap-t"); txt.append(mk("b", "", i.nombre), mk("small", "", i.detalle + (i.gb ? ` · ${i.gb} GB` : "")));
+        pick.append(txt);
+        if (i.id === c.actual) pick.append(mk("em", "ap-cur", "En uso"));
+        pick.addEventListener("click", () => { pick.classList.add("busy"); socket.emit("ai_pick", { id: i.id }, (r) => { if (r && r.msg) setPreview(r.msg, "dim"); drawAiPick({ ...r, ahora: null }); socket.emit("ai_now", {}, (a) => { drawAiNow(a); if (!aiPick.hidden) socket.emit("ai_choices", {}, drawAiPick); }); }); });
+        row.append(pick);
+        if (i.tipo !== "nube") {
+          const bk = mk("button", "ap-bk" + (i.id === c.respaldo ? " on" : ""), i.id === c.respaldo ? "★ Sin internet" : "☆ Sin internet");
+          bk.type = "button"; bk.title = "Usarla cuando se caiga el internet (sin cambiar la que responde ahora)";
+          bk.addEventListener("click", () => socket.emit("ai_pick", { id: i.id, respaldo: true }, (r) => { if (r && r.msg) setPreview(r.msg, "dim"); socket.emit("ai_choices", {}, drawAiPick); }));
+          row.append(bk);
+        }
+        list.append(row);
+      });
+    });
+  }
+  function openAiPick() {
+    if (body.dataset.size !== "expandido") setSize("expandido");
+    closeDock();
+    if (!ntc.box.hidden) closeNotices();
+    aiPick.hidden = false; btnAi.setAttribute("aria-expanded", "true");
+    $("#aipick-list").innerHTML = '<p class="ap-empty">Buscando las IA de tu equipo…</p>';
+    socket.emit("ai_choices", {}, drawAiPick);
+  }
+  function closeAiPick() { if (aiPick.hidden) return; aiPick.hidden = true; btnAi.setAttribute("aria-expanded", "false"); }
+  const toggleAiPick = (e) => { if (e) e.stopPropagation(); aiPick.hidden ? openAiPick() : closeAiPick(); };
+  aiChip.addEventListener("click", toggleAiPick);
+  btnAi.addEventListener("click", toggleAiPick);
+  $("#dock-ai").addEventListener("click", toggleAiPick);
+  $("#aipick-settings").addEventListener("click", () => { closeAiPick(); socket.emit("open_settings"); });
+  document.addEventListener("click", (e) => { if (!aiPick.hidden && !aiPick.contains(e.target) && !btnAi.contains(e.target) && !aiChip.contains(e.target)) closeAiPick(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !aiPick.hidden) { closeAiPick(); btnAi.focus(); } });
   /* ---------- 12.9: modo Docente / Asistente general ---------- */
   const modeChip = $("#mode-chip");
   function drawMode(m) {

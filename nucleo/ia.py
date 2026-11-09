@@ -460,6 +460,7 @@ def ai_list_models(cfg):
     if kind == "ollama":
         if J.ollama is None:
             raise J.AIError("Falta la librería 'ollama' (pip install ollama).", kind="config")
+        J.ollama_ensure(cfg["ollama_host"])            # 12.19: si está cerrado, lo enciende escondido
         try:
             resp = J.ollama.Client(host=cfg["ollama_host"], timeout=8).list()
         except Exception as e:
@@ -600,6 +601,7 @@ def ai_chat(messages, json_mode=False, max_tokens=None):
             # num_predict limita la longitud -> responde/habla antes.
             opts = {"temperature": J.settings["ai_temperature"],
                     "num_predict": max_tokens or (120 if json_mode else 220)}
+            J.ollama_ensure(cfg["ollama_host"])
             try:
                 r = J.ollama.Client(host=cfg["ollama_host"], timeout=180).chat(
                     model=cfg["model"], messages=messages, options=opts, keep_alive="30m", **kwargs)
@@ -722,18 +724,8 @@ def local_ai_model(refresh=False):
     """Modelo de Ollama instalado en este equipo para usar sin internet ('' si no hay)."""
     if not refresh and time.time() - J.net["local_at"] < 120:
         return J.net["local_model"]
-    model = ""
     try:
-        if J.motor_ready():                            # 12.6: la IA integrada, si está descargada (no hace falta Ollama)
-            model = "motor:" + J.motor_name()
-        elif J.ollama is not None:
-            names = J.ai_list_models(J._ai_cfg({"ai_provider": "ollama"}))
-            names = [n for n in names if "embed" not in n.lower()]
-
-            def present(m):
-                return next((n for n in names if m and (n == m or n.startswith(m + ":"))), "")
-            model = (present(J.settings["offline_model"].strip()) or present(J.settings["ollama_model"].strip())
-                     or (names[0] if names else ""))
+        model = J.local_pick()                         # 12.19: la que escogiste (integrada u Ollama); Ollama se enciende solo
     except Exception:
         model = ""
     J.net.update(local_model=model, local_at=time.time())
@@ -773,7 +765,7 @@ def _net_set(online):
     if J.settings["ai_provider"] == "ollama":
         msg = "Se cayó el internet. Sigo funcionando normal con la IA de tu equipo."
     elif m:
-        msg = f"Se cayó el internet. Sigo funcionando sin conexión, con la IA de tu equipo ({m.split(':')[0]})."
+        msg = f"Se cayó el internet. Sigo funcionando sin conexión, con la IA de tu equipo ({J.local_label(m)})."
     else:
         msg = ("Se cayó el internet. Las órdenes del computador siguen funcionando, pero para "
                "responder preguntas necesito internet o una IA local con Ollama.")
@@ -1072,6 +1064,7 @@ def _stream_chunks(cfg, msgs):
         return J._with_fallback(cfg, lambda c: J._cloud_stream(c, msgs))
 
     def oll():
+        J.ollama_ensure(cfg["ollama_host"])
         stream = J.ollama.Client(host=cfg["ollama_host"], timeout=180).chat(
             model=cfg["model"], messages=msgs, stream=True, keep_alive="30m",
             options={"temperature": J.settings["ai_temperature"], "num_predict": 240})

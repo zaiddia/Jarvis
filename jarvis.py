@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.18.1"
+VERSION = "12.19"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1682,6 +1682,8 @@ def process_command(text):
         return
     if ai_who_voice(text, t):                          # 12.5: «¿qué IA estás usando?», «instala la voz sin internet»
         return
+    if ai_pick_voice(text, t):                         # 12.19: «cambia a la IA qwen», «usa Gemini», «qué IA tengo»
+        return
     if journal_voice(text, t):                         # 11.8: «deshaz lo último», «¿qué hiciste hoy?»
         return
     if face_voice(text, t):                            # 12.0: «muestra tu rostro», «proyecta tu rostro en el proyector»
@@ -2354,6 +2356,7 @@ from nucleo.estadoia import *  # noqa: F401,F403,E402
 
 # ── 12.6: la IA local integrada (motor llama.cpp dentro de Jarvis, sin Ollama) → nucleo/motor.py (lógica en motorlocal.py)
 from nucleo.motor import *  # noqa: F401,F403,E402
+from nucleo.ialocal import *  # noqa: F401,F403,E402
 
 # ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)
 from nucleo.boletines import *  # noqa: F401,F403,E402
@@ -2607,6 +2610,7 @@ def main():
         hudpro_start()                    # 11.8: «Lo que hice hoy» con deshacer
         ai_state_start()                  # 12.5: qué IA responde, a la vista
         motor_start_services()            # 12.6: apaga la IA integrada cuando no se usa
+        ialocal_start()                   # 12.19: Ollama encendido solo, sin abrirlo
         procedure_start()                 # 12.0: mapa de errores de los procedimientos
         night_start()                     # 12.0: turno de noche
         adventure_start()                 # 12.0: reloj de la aventura matemática

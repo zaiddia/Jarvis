@@ -15,7 +15,7 @@ def test_que_ia_responde(jv, monkeypatch):
     monkeypatch.setitem(jv.net, "local_model", "llama3.2:latest")
     monkeypatch.setitem(jv.settings, "offline_auto", True)
     a = jv.ai_now()
-    assert a["donde"] == "local" and a["modelo"] == "llama3.2:latest" and a["sin_internet"]
+    assert a["donde"] == "local" and a["modelo"] == "llama3.2" and a["sin_internet"]      # 12.19: sin «:latest»
     # sin internet y sin respaldo
     monkeypatch.setitem(jv.net, "local_model", "")
     assert jv.ai_now()["donde"] == "ninguna"

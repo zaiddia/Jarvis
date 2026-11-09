@@ -974,6 +974,21 @@
   });
   $("#btn-err-clear").addEventListener("click", () => { if (confirm("¿Borrar el registro de errores?")) socket.emit("errors_info", { clear: true }, renderErrors); });
   socket.on("connect", () => socket.emit("errors_info", {}, renderErrors));
+  /* 12.19: la IA de tu equipo para cuando no hay internet, escogida de las que ya descargaste */
+  function fillLocalAIs(c) {
+    const sel = $("#f-offline-model");
+    if (!sel || !c || !c.items) return;
+    const keep = sel.value;
+    sel.innerHTML = "";
+    sel.add(new Option("Automático (la integrada; si no, Ollama)", ""));
+    const loc = c.items.filter((i) => i.tipo !== "nube");
+    loc.forEach((i) => sel.add(new Option(`${i.nombre} — ${i.tipo === "integrada" ? "IA integrada" : "Ollama"}${i.gb ? ` · ${i.gb} GB` : ""}`, i.id)));
+    if (!loc.length) sel.add(new Option("(aún no hay ninguna descargada)", "__none", false, false));
+    if (sel.options[sel.options.length - 1].value === "__none") sel.options[sel.options.length - 1].disabled = true;
+    ensureOption(sel, keep, keep);
+    sel.value = keep;
+  }
+  socket.on("connect", () => socket.emit("ai_choices", {}, fillLocalAIs));
   socket.on("rutinas_updated", (list) => renderRoutines(list));
 
   /* Rutinas */

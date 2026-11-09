@@ -618,8 +618,8 @@
         <label class="switch"><input type="checkbox" id="f-offline" data-key="offline_auto"><span></span></label>
       </div>
       <div class="field stack">
-        <div class="ft"><label for="f-offline-model">Modelo de Ollama para ese caso</label><p>Vacío = el que tengas instalado. Con 16 GB de RAM va bien <code>llama3.2</code> o <code>qwen3:4b</code>; se instala una sola vez con internet: <code>ollama pull llama3.2</code>.</p></div>
-        <input class="inp" type="text" id="f-offline-model" data-key="offline_model" placeholder="Automático" style="max-width:340px">
+        <div class="ft"><label for="f-offline-model">IA de tu equipo para ese caso</label><p>Escoge entre las que ya descargaste: la IA integrada de Jarvis o los modelos de Ollama. <b>No hace falta abrir Ollama</b>: si hace falta, Jarvis lo enciende solo y escondido. También puedes cambiarla en el botón de IA del HUD o por voz: «cambia a la IA qwen», «¿qué IA tengo?».</p></div>
+        <select class="inp" id="f-offline-model" data-key="offline_model" style="max-width:420px"><option value="">Automático (la integrada; si no, Ollama)</option></select>
       </div>
 
     </div>
