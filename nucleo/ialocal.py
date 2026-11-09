@@ -294,6 +294,115 @@ def handle_ai_pick(data=None):
     return J.ai_pick(d.get("id"), bool(d.get("respaldo")))
 
 
+# ============================================================================ COMPROBAR LA IA LOCAL
+_il_check = {"busy": False, "last": None}
+
+
+def local_check(cid=None):
+    """12.19.1: comprueba de verdad la IA de tu equipo: que esté todo y que responda a una pregunta corta.
+    cid: la que se quiere probar (vacío = la que responde ahora si es local; si no, la de «sin internet»).
+    → {"ok", "id", "nombre", "pasos": [{"ok", "texto"}], "msg", "segundos"}."""
+    items = {i["id"]: i for i in J.ai_choices()["items"]}
+    cur = J.ai_current_id()
+    cid = str(cid or "").strip() or (cur if cur in items and not cur.startswith("nube:") else J.ai_backup_id())
+    pasos = []
+
+    def paso(ok, texto):
+        pasos.append({"ok": bool(ok), "texto": texto})
+        return ok
+
+    def done(ok, msg, secs=0.0):
+        r = {"ok": ok, "id": cid, "nombre": items.get(cid, {}).get("nombre", J.local_label(cid.split(":", 1)[-1]) if cid else ""),
+             "pasos": pasos, "msg": msg, "segundos": round(secs, 1), "hora": time.strftime("%H:%M")}
+        _il_check["last"] = r
+        return r
+
+    if not cid or cid not in items:
+        paso(False, "No hay ninguna IA descargada en tu equipo.")
+        return done(False, "No tengo IA local para comprobar: di «instala la IA integrada» o descarga un modelo de Ollama.")
+    it = items[cid]
+    ask = [{"role": "system", "content": "Responde en español con una sola palabra."},
+           {"role": "user", "content": "Di «listo»."}]
+    if it["tipo"] == "integrada":
+        f = cid[6:]
+        if not paso(J._exe_for("gpu") or J._exe_for("cpu"), "Motor de la IA integrada instalado." if (J._exe_for("gpu") or J._exe_for("cpu"))
+                    else "Falta el motor de la IA integrada (Ajustes › Inteligencia artificial › Instalar)."):
+            return done(False, "A la IA integrada le falta el motor.")
+        paso(True, f"Modelo descargado: {it['nombre']}" + (f" ({it['gb']} GB)." if it["gb"] else "."))
+        if J.settings.get("motor_model") != f:
+            J.settings["motor_model"] = f
+            if J._mt_alive():
+                J.motor_stop()
+        t0 = time.time()
+        if not paso(J.motor_start(), "La IA integrada encendió."):
+            pasos[-1]["texto"] = "La IA integrada no encendió (puede faltar memoria: cierra programas pesados)."
+            return done(False, f"{it['nombre']} no pudo encender.")
+        try:
+            ans = J.motor_ask(ask, max_tokens=8)
+        except Exception as e:
+            paso(False, f"No respondió: {e}")
+            return done(False, f"{it['nombre']} encendió pero no respondió.")
+    else:
+        name = cid[7:]
+        if not paso(J.ollama is not None, "Componente de Ollama en Jarvis." if J.ollama is not None else
+                    "Falta el componente de Ollama en Jarvis (Ajustes › Inteligencia artificial › Si se cae el internet)."):
+            return done(False, "Falta el componente de Ollama en Jarvis.")
+        host = J._ai_cfg({"ai_provider": "ollama"})["ollama_host"]
+        local = bool(re.match(r"^https?://(?:127\.0\.0\.1|localhost|\[::1\])", host))
+        exe = J._ollama_exe()
+        if local and not exe and not J._ollama_ping(host):
+            paso(False, "Ollama no está instalado en este equipo.")
+            return done(False, "Ollama no está instalado: di «instala Ollama».")
+        was_on = J._ollama_ping(host)
+        if not paso(was_on or J.ollama_ensure(host), "Ollama está encendido." if was_on else "Encendí Ollama en segundo plano (no hizo falta abrirlo)."):
+            pasos[-1]["texto"] = f"Ollama no responde en {host}" + (" y no pude encenderlo." if local else " (es otro equipo: enciéndelo allá).")
+            return done(False, "Ollama no responde.")
+        names = J._il_ollama_names()
+        hit = next((n for n in names if J._same_ollama(name, n)), "")
+        if not paso(hit, f"Modelo descargado en Ollama: {it['nombre']}." if hit else f"Ollama no tiene el modelo {it['nombre']}."):
+            return done(False, f"Ollama no encuentra {it['nombre']}: vuelve a descargarlo con internet.")
+        t0 = time.time()
+        try:
+            r = J.ollama.Client(host=host, timeout=240).chat(model=hit, messages=ask, options={"num_predict": 8, "temperature": 0}, keep_alive="30m")
+            ans = (r["message"]["content"] or "").strip()
+        except Exception as e:
+            paso(False, f"No respondió: {e}")
+            return done(False, f"{it['nombre']} no respondió (¿poca memoria?).")
+    secs = time.time() - t0
+    ans = re.sub(r"<think>.*?</think>", "", str(ans), flags=re.S).strip()
+    if not paso(ans, f"Respondió en {secs:.1f} s: «{ans[:40]}»." if ans else "Respondió vacío."):
+        return done(False, f"{it['nombre']} respondió vacío.", secs)
+    lento = " Va lenta: la primera respuesta carga el modelo; las siguientes son más rápidas." if secs > 20 else ""
+    return done(True, f"La IA local funciona: {it['nombre']} respondió en {secs:.1f} segundos.{lento}", secs)
+
+
+def _il_check_run(cid, say):
+    try:
+        r = J.local_check(cid)
+    except Exception as e:
+        r = {"ok": False, "id": cid or "", "nombre": "", "pasos": [{"ok": False, "texto": str(e)}], "msg": f"No pude comprobarla: {e}", "segundos": 0}
+    finally:
+        _il_check["busy"] = False
+    J.log_terminal(r["msg"], "IA LOCAL")
+    J.socketio.emit("ai_check", r)
+    if say:
+        J.reply(r["msg"] if r["ok"] else r["msg"] + " " + " ".join(p["texto"] for p in r["pasos"] if not p["ok"])[:200], "IA LOCAL")
+
+
+@J.socketio.on("ai_check")
+def handle_ai_check(data=None):
+    d = data or {}
+    if _il_check["busy"]:
+        return {"ok": True, "busy": True, "msg": "Ya la estoy comprobando…"}
+    _il_check["busy"] = True
+    threading.Thread(target=J._il_check_run, args=(str(d.get("id") or ""), False), daemon=True, name="ia-comprobar").start()
+    return {"ok": True, "busy": True, "msg": "Comprobando la IA local… (la primera vez puede tardar mientras carga el modelo)"}
+
+
+_IL_CHECK = re.compile(r"\b(?:comprueba|prueba|revisa|verifica|chequea)\s+(?:si\s+)?(?:la\s+)?(?:ia|inteligencia artificial|cerebro)\s+(?:local|sin internet|de mi (?:equipo|pc|computador))\b|"
+                       r"\b(?:la\s+)?(?:ia|inteligencia artificial)\s+(?:local|sin internet)\s+(?:esta\s+)?(?:conectada|funciona|funcionando|responde)\b")
+
+
 # ============================================================================ POR VOZ
 _IL_PICK = re.compile(r"\b(?:cambia(?:te)?|pasa(?:te)?|usa|utiliza|pon|activa)\s+(?:a\s+|la\s+)?(?:ia|inteligencia artificial|modelo|cerebro)?\s*"
                       r"(?:a\s+|de\s+)?(?:la\s+)?(.+?)\s*$")
@@ -302,6 +411,14 @@ _IL_LIST = re.compile(r"\b(?:que|cuales)\s+(?:ia|ias|inteligencias artificiales|
 
 
 def ai_pick_voice(text, t):
+    if _IL_CHECK.search(t):
+        if _il_check["busy"]:
+            J.reply("Ya la estoy comprobando.", "IA LOCAL")
+            return True
+        _il_check["busy"] = True
+        J.reply("Voy a comprobar la IA de tu equipo; te digo en un momento.", "IA LOCAL")
+        threading.Thread(target=J._il_check_run, args=("", True), daemon=True, name="ia-comprobar").start()
+        return True
     if _IL_LIST.search(t):
         c = J.ai_choices()
         if not c["items"]:
@@ -354,6 +471,6 @@ def ialocal_start():
     threading.Thread(target=go, daemon=True, name="ollama-encender").start()
 
 
-__all__ = ['_IL_LIST', '_IL_PICK', '_il', '_il_ollama_names', '_motor_files', '_ollama_dir', '_ollama_ping', '_same_ollama', '_warm', 'ai_backup_id', 'ai_choices',
+__all__ = ['_IL_CHECK', '_IL_LIST', '_IL_PICK', '_il', '_il_check', '_il_check_run', 'handle_ai_check', 'local_check', '_il_ollama_names', '_motor_files', '_ollama_dir', '_ollama_ping', '_same_ollama', '_warm', 'ai_backup_id', 'ai_choices',
            'ai_current_id', 'ai_pick', 'ai_pick_voice', 'handle_ai_choices', 'handle_ai_pick', 'ialocal_start', 'local_label', 'local_pick',
            'ollama_ensure', 'ollama_on_disk']

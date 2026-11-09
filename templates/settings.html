@@ -619,7 +619,12 @@
       </div>
       <div class="field stack">
         <div class="ft"><label for="f-offline-model">IA de tu equipo para ese caso</label><p>Escoge entre las que ya descargaste: la IA integrada de Jarvis o los modelos de Ollama. <b>No hace falta abrir Ollama</b>: si hace falta, Jarvis lo enciende solo y escondido. También puedes cambiarla en el botón de IA del HUD o por voz: «cambia a la IA qwen», «¿qué IA tengo?».</p></div>
-        <select class="inp" id="f-offline-model" data-key="offline_model" style="max-width:420px"><option value="">Automático (la integrada; si no, Ollama)</option></select>
+        <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+          <select class="inp" id="f-offline-model" data-key="offline_model" style="max-width:420px"><option value="">Automático (la integrada; si no, Ollama)</option></select>
+          <button type="button" class="btn btn-ghost" id="btn-ai-check">Comprobar IA local</button>
+        </div>
+        <ul class="offline-list" id="ai-check-list"></ul>
+        <p class="status" id="ai-check-status"></p>
       </div>
 
     </div>

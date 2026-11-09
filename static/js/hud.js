@@ -1014,6 +1014,30 @@
   btnAi.addEventListener("click", toggleAiPick);
   $("#dock-ai").addEventListener("click", toggleAiPick);
   $("#aipick-settings").addEventListener("click", () => { closeAiPick(); socket.emit("open_settings"); });
+  /* 12.19.1: comprobar de verdad que la IA local responde */
+  const apCheck = $("#aipick-check"), apTest = $("#aipick-test");
+  function drawCheck(r, busy) {
+    apCheck.hidden = false;
+    apCheck.className = "ap-check" + (busy ? " busy" : r && r.ok ? " ok" : " bad");
+    apCheck.innerHTML = "";
+    if (busy) { apCheck.append(mk("p", "ap-ck-h", (r && r.msg) || "Comprobando la IA local…")); return; }
+    apCheck.append(mk("p", "ap-ck-h", (r.ok ? "✓ " : "✕ ") + r.msg));
+    const ul = mk("ul", "ap-ck-l");
+    (r.pasos || []).forEach((p) => ul.append(mk("li", p.ok ? "ok" : "bad", (p.ok ? "✓ " : "✕ ") + p.texto)));
+    apCheck.append(ul);
+  }
+  apTest.addEventListener("click", (e) => {
+    e.stopPropagation();
+    apTest.disabled = true; apTest.dataset.wait = "1";
+    drawCheck(null, true);
+    socket.emit("ai_check", {}, (r) => { if (r && r.msg && apTest.dataset.wait) drawCheck(r, true); });   // si el resultado ya llegó, no lo tapa
+  });
+  socket.on("ai_check", (r) => {
+    apTest.disabled = false; delete apTest.dataset.wait;
+    if (!aiPick.hidden) drawCheck(r, false);
+    setPreview((r.ok ? "✓ " : "✕ ") + r.msg, r.ok ? "" : "dim");
+    socket.emit("ai_choices", {}, (c) => { if (!aiPick.hidden) drawAiPick(c); });
+  });
   document.addEventListener("click", (e) => { if (!aiPick.hidden && !aiPick.contains(e.target) && !btnAi.contains(e.target) && !aiChip.contains(e.target)) closeAiPick(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !aiPick.hidden) { closeAiPick(); btnAi.focus(); } });
   /* ---------- 12.9: modo Docente / Asistente general ---------- */

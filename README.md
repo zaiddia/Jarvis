@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Comprobar la IA local (v12.19.1)
+
+- Botón **«Comprobar IA local»** en la lista del botón de IA del HUD y en Ajustes › Inteligencia artificial › Si se cae el internet. Le hace una pregunta corta a la IA de tu equipo y te muestra, paso a paso, qué funciona y qué no:
+  - Ollama: componente en Jarvis, Ollama instalado, encendido (si estaba cerrado lo enciende solo), modelo descargado y respuesta con su tiempo.
+  - IA integrada: motor instalado, modelo descargado, encendido y respuesta.
+- Comprueba la que responde ahora si es de tu equipo. Si no, la de «sin internet». En Ajustes comprueba la que tengas escogida en la lista, aunque no la hayas guardado.
+- Por voz: «comprueba la IA local» o «¿la IA local está conectada?».
+
 ## Escoger la IA y Ollama sin abrirlo (v12.19)
 
 - **Botón de IA en la cabecera del HUD**: muestra qué IA está respondiendo ahora (☁ en la nube, morado si es de tu equipo, rojo si no hay ninguna). Al tocarlo se abre la lista de todas tus IA:

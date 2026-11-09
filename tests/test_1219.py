@@ -121,3 +121,58 @@ def test_hud_boton_y_ajustes():
     assert 'socket.emit("ai_pick"' in js and 'socket.emit("ai_choices"' in js
     st = open(os.path.join(root, "templates", "settings.html"), encoding="utf-8").read()
     assert '<select class="inp" id="f-offline-model" data-key="offline_model"' in st
+
+
+def test_comprobar_ia_local(jv, tmp_path, monkeypatch):
+    root = _ollama_disk(tmp_path, [("qwen3", "4b", 2_600_000_000)])
+    monkeypatch.setenv("OLLAMA_MODELS", root)
+    _motor_disk(jv, [])
+    monkeypatch.setitem(jv.settings, "ai_provider", "gemini")
+    monkeypatch.setitem(jv.settings, "offline_model", "ollama:qwen3:4b")
+
+    class Cli:
+        def __init__(self, host=None, timeout=None):
+            pass
+
+        def chat(self, **k):
+            return {"message": {"content": "Listo."}}
+
+    class Lib:
+        Client = Cli
+    monkeypatch.setattr(jv, "ollama", Lib())
+    monkeypatch.setattr(jv, "_ollama_exe", lambda: "/opt/ollama")
+    monkeypatch.setattr(jv, "_ollama_ping", lambda host, timeout=0.8: False)
+    monkeypatch.setattr(jv, "ollama_ensure", lambda *a, **k: True)
+    monkeypatch.setattr(jv, "ai_list_models", lambda cfg: ["qwen3:4b"])
+    r = jv.local_check()
+    assert r["ok"] and r["id"] == "ollama:qwen3:4b" and "respondió" in r["msg"]
+    assert any("Encendí Ollama" in p["texto"] for p in r["pasos"]) and all(p["ok"] for p in r["pasos"])
+    monkeypatch.setattr(jv, "ai_list_models", lambda cfg: [])                       # Ollama sin ese modelo
+    r = jv.local_check()
+    assert not r["ok"] and "no tiene el modelo" in r["pasos"][-1]["texto"]
+    monkeypatch.setattr(jv, "ollama_ensure", lambda *a, **k: False)                 # no arranca
+    r = jv.local_check()
+    assert not r["ok"] and r["msg"] == "Ollama no responde."
+    monkeypatch.setenv("OLLAMA_MODELS", str(tmp_path / "vacio"))
+    monkeypatch.setitem(jv.settings, "offline_model", "")
+    r = jv.local_check()
+    assert not r["ok"] and "No hay ninguna IA" in r["pasos"][0]["texto"]
+
+
+def test_comprobar_por_voz(jv, monkeypatch):
+    ran = []
+    monkeypatch.setattr(jv, "_il_check_run", lambda cid, say: ran.append(say))
+    import threading
+
+    class T:
+        def __init__(self, target=None, args=(), **k):
+            self.f, self.a = target, args
+
+        def start(self):
+            self.f(*self.a)
+    monkeypatch.setattr(threading, "Thread", T)
+    for frase in ["comprueba la IA local", "¿la IA local está conectada?", "revisa la inteligencia artificial sin internet"]:
+        jv._il_check["busy"] = False
+        jv.process_command(frase)
+    assert ran == [True, True, True]
+    jv._il_check["busy"] = False

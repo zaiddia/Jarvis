@@ -989,6 +989,22 @@
     sel.value = keep;
   }
   socket.on("connect", () => socket.emit("ai_choices", {}, fillLocalAIs));
+  /* 12.19.1: comprobar que la IA local responde (prueba la escogida en la lista, aunque no la hayas guardado) */
+  $("#btn-ai-check").addEventListener("click", () => {
+    const b = $("#btn-ai-check"), st = $("#ai-check-status");
+    b.disabled = true; $("#ai-check-list").innerHTML = "";
+    const v = $("#f-offline-model").value;
+    b.dataset.wait = "1"; st.style.color = ""; st.textContent = "Comprobando…";
+    socket.emit("ai_check", { id: v && v !== "__none" ? v : "" }, (r) => { if (b.dataset.wait && r && r.msg) st.textContent = r.msg; });
+  });
+  socket.on("ai_check", (r) => {
+    $("#btn-ai-check").disabled = false; delete $("#btn-ai-check").dataset.wait;
+    const st = $("#ai-check-status"), ul = $("#ai-check-list");
+    st.textContent = (r.ok ? "✓ " : "✕ ") + r.msg;
+    st.style.color = r.ok ? "var(--ok)" : "var(--err)";
+    ul.innerHTML = "";
+    (r.pasos || []).forEach((p) => { const li = document.createElement("li"); li.textContent = (p.ok ? "✓ " : "✕ ") + p.texto; li.style.color = p.ok ? "" : "var(--err)"; ul.append(li); });
+  });
   socket.on("rutinas_updated", (list) => renderRoutines(list));
 
   /* Rutinas */
