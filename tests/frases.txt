@@ -125,7 +125,7 @@ avísame en 10 minutos => recordatorio|temporizador
 
 # ================================================================ 7.0: habilidades instaladas (las de ejemplo)
 busca la fotosíntesis en wikipedia => abrir :: wikipedia
-¿cómo se dice buenos días en inglés? => IA
+¿cómo se dice buenos días en inglés? => TRADUCTOR
 modo concentración => rutina:Modo concentración
 dame un dato curioso de los volcanes => IA
 qué habilidades tengo => HABILIDAD :: wikipedia
@@ -188,3 +188,30 @@ activa el modo tutor de matemáticas => TUTOR
 ¿qué lecciones tienes? => LECCIONES
 ¿cómo escribo? => ESTILO
 semáforo de comprensión => TICKET
+
+# 12.20: respuestas al instante (sin IA) y habilidades nuevas
+¿qué hora es en Tokio? => HORA :: Tokio
+qué hora es en nueva york => HORA
+¿cuántos días faltan para navidad? => FECHAS :: Navidad
+qué día cae el 20 de diciembre => FECHAS
+qué edad tengo si nací el 3 de mayo de 1985 => FECHAS
+convierte 5 millas a kilómetros => CONVERSOR :: 8,05
+cuánto son 80 grados fahrenheit en celsius => CONVERSOR
+cuántos gramos hay en 2 libras => CONVERSOR
+tira un dado => AZAR
+dime un número al azar entre 1 y 50 => AZAR
+escoge entre pizza, sushi o tacos => AZAR
+deletrea murciélago => DELETREO
+cuéntame un chiste => CHISTE
+dime un dato curioso => DATO CURIOSO
+dame una frase motivadora => FRASE
+genera una contraseña segura => CONTRASEÑA
+mide la velocidad de internet => INTERNET
+¿cuál es mi ip? => RED
+traduce al inglés: tengo hambre => TRADUCTOR
+cuéntame un chiste de programadores => IA
+qué hora es => !HORA
+convierte este PDF en audio => !CONVERSOR
+pasa las notas de 7A a excel => !CONVERSOR
+escoge un estudiante al azar de 7A => !AZAR
+cuánto es 20 dólares en pesos => !CONVERSOR

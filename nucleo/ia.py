@@ -412,6 +412,7 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
     body = {"model": cfg["model"], "messages": msgs, tp: max_tokens}
     if cfg.get("ai_provider") == "motor":
         body["cache_prompt"] = True                    # 12.7: la IA integrada reusa lo ya leído
+        body["chat_template_kwargs"] = {"enable_thinking": False}   # 12.20: sin «pensar en voz alta»: responde antes
     if not sp.get("no_temp"):
         body["temperature"] = J.settings["ai_temperature"]
     if json_mode:
@@ -419,7 +420,7 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
     if stream:
         body["stream"] = True
     return body, (("temperature", ("temperature",)), ("response_format", ("response_format", "json")),
-                  (tp, (tp,)))
+                  (tp, (tp,)), ("chat_template_kwargs", ("chat_template_kwargs", "enable_thinking")))
 
 
 def openai_chat(cfg, messages, json_mode=False, max_tokens=1024, image_path=None):
@@ -587,6 +588,8 @@ def _current_model(cfg):
 
 def ai_chat(messages, json_mode=False, max_tokens=None):
     cfg = J._ai_cfg()
+    if not J._is_local_ai(cfg) and J.net_preflight():  # 12.20: se cayó el internet: cambia ya, sin esperar a la nube
+        cfg = J._ai_cfg()
     if cfg["kind"] == "ollama" and not cfg["model"]:
         raise J.AIError("No hay modelo seleccionado. Elige uno en Ajustes › Inteligencia artificial.", kind="config",
                       why="no hay modelo elegido. Elige uno en Ajustes, sección IA")
@@ -603,11 +606,10 @@ def ai_chat(messages, json_mode=False, max_tokens=None):
                     "num_predict": max_tokens or (120 if json_mode else 220)}
             J.ollama_ensure(cfg["ollama_host"])
             try:
-                r = J.ollama.Client(host=cfg["ollama_host"], timeout=180).chat(
-                    model=cfg["model"], messages=messages, options=opts, keep_alive="30m", **kwargs)
+                r = J._ollama_chat(cfg, model=cfg["model"], messages=messages, options=opts, keep_alive=J._keep_alive(), **kwargs)
             except Exception as e:
                 raise J.AIError(str(e), kind="net", why="Ollama no responde")
-            return r["message"]["content"].strip()
+            return J.motorlocal.clean_reply(r["message"]["content"] or "")
         J._need_key(cfg)
         try:
             return J._with_fallback(cfg, lambda c: J._cloud_chat(c, messages, json_mode, max_tokens=max_tokens))
@@ -698,31 +700,149 @@ def _ai_monitor():
 # SIN INTERNET: Jarvis sigue funcionando solo. Si se cae la conexión, la IA pasa a
 # Ollama (en tu equipo), la voz a Piper y la escucha a lo local. Cuando vuelve, regresa.
 # =============================================================================
-net = {"offline": False, "since": 0.0, "fails": 0, "local_model": "", "local_at": 0.0}
+net = {"offline": False, "since": 0.0, "fails": 0, "local_model": "", "local_at": 0.0,
+       "ok_at": 0.0, "watch": False, "proxy_only": False, "warm_at": 0.0}
 _net_lock = threading.Lock()
 NET_PROBES = (("1.1.1.1", 443), ("8.8.8.8", 53), ("208.67.222.222", 443))
 NET_HTTP_PROBE = "http://www.msftconnecttest.com/connecttest.txt"   # la misma que usa Windows
 
 
-def _internet_ok():
-    """¿Hay internet? Primero conexiones directas (rápidas); si fallan, una petición web
-    normal, que sí pasa por el proxy del colegio si lo hay."""
-    for host, port in J.NET_PROBES:
+def _tcp_any(timeout=1.5):
+    """12.20: prueba las conexiones directas TODAS A LA VEZ. → True en cuanto una responde (decenas de milisegundos
+    con internet); False cuando todas fallan (como mucho «timeout» segundos, no la suma de todas)."""
+    ok, fin = threading.Event(), threading.Event()
+    left = [len(J.NET_PROBES)]
+    lock = threading.Lock()
+
+    def go(host, port):
         try:
-            with socket.create_connection((host, port), timeout=2):
-                return True
+            with socket.create_connection((host, port), timeout=timeout):
+                ok.set()
         except OSError:
             pass
+        finally:
+            with lock:
+                left[0] -= 1
+                if left[0] <= 0:
+                    fin.set()
+            if ok.is_set():
+                fin.set()
+    for host, port in J.NET_PROBES:
+        threading.Thread(target=go, args=(host, port), daemon=True, name="sonda-red").start()
+    fin.wait(timeout + 0.5)
+    return ok.is_set()
+
+
+def _internet_ok():
+    """¿Hay internet? Primero conexiones directas (rápidas, en paralelo); si fallan, una petición web
+    normal, que sí pasa por el proxy del colegio si lo hay."""
+    if J._tcp_any(1.5):
+        J.net.update(ok_at=time.time(), proxy_only=False)
+        return True
     try:
-        with urllib.request.urlopen(J.NET_HTTP_PROBE, timeout=4) as r:
-            return r.status < 500
+        with urllib.request.urlopen(J.NET_HTTP_PROBE, timeout=3) as r:
+            if r.status < 500:
+                J.net.update(ok_at=time.time(), proxy_only=True)     # red con proxy: las directas nunca pasan
+                return True
     except Exception:
+        pass
+    return False
+
+
+def net_preflight():
+    """12.20: justo antes de preguntarle a una IA de la nube. Si el internet se acaba de caer, lo nota en menos de un
+    segundo y cambia YA a la IA de tu equipo, en vez de esperar a que la nube deje de responder (eso tardaba hasta
+    minutos). → True si quedamos sin internet. Con internet cuesta unas decenas de milisegundos, y nada si se
+    comprobó hace menos de 5 segundos."""
+    if not J.net["watch"] or not J.settings["offline_auto"]:
         return False
+    if J.net["offline"]:
+        return True
+    if J.net["proxy_only"] or time.time() - J.net["ok_at"] < 5:
+        return False
+    if J._tcp_any(0.8):
+        J.net["ok_at"] = time.time()
+        return False
+    if J._internet_ok():                               # duda: comprobación completa (también por el proxy)
+        return False
+    J.net["fails"] = max(J.net["fails"], 1)            # dos comprobaciones seguidas fallaron: es real
+    J._net_set(False)
+    return J.net["offline"]
+
+
+def local_warm(reason=""):
+    """12.20: deja la IA de tu equipo cargada en memoria ANTES de que la necesites (al primer fallo de internet), para
+    que la primera respuesta sin conexión no espere a que cargue el modelo. No bloquea."""
+    if not J.settings["offline_auto"] or time.time() - J.net["warm_at"] < 120:
+        return
+    J.net["warm_at"] = time.time()
+
+    def go():
+        try:
+            m = J.local_ai_model(refresh=True)
+            if not m:
+                return
+            t0 = time.time()
+            if m.startswith("motor:"):
+                J.motor_ensure()
+                J.motor_warmup()
+            elif J.ollama is not None:
+                cfg = J._ai_cfg({"ai_provider": "ollama"})
+                J.ollama_ensure(cfg["ollama_host"])
+                J._ollama_chat(cfg, model=m, messages=[{"role": "system", "content": J.system_static()}, {"role": "user", "content": "hola"}],
+                               options={"num_predict": 1}, keep_alive="4h")
+            J.log_terminal(f"IA de tu equipo lista en {time.time() - t0:.0f} s{(' (' + reason + ')') if reason else ''}.", "IA LOCAL")
+        except Exception as e:
+            J.log_terminal(f"No pude dejar lista la IA de tu equipo: {e}", "IA LOCAL")
+    threading.Thread(target=go, daemon=True, name="ia-local-lista").start()
+
+
+def _keep_alive():
+    """Sin internet la IA local no se descarga de la memoria (es la única que hay)."""
+    return "4h" if J.net["offline"] else "30m"
+
+
+_think = {"ok": True, "no": set()}
+
+
+def _no_think(model=""):
+    """12.20: los modelos que «piensan en voz alta» (qwen3, deepseek-r1…) gastan casi todo el tiempo en eso antes de
+    responder. Para un asistente de voz se apaga. No se manda si el Ollama instalado es viejo y no lo entiende, ni a
+    los modelos que ya dijeron que no piensan."""
+    return {"think": False} if J._think["ok"] and model not in J._think["no"] else {}
+
+
+def _think_failed(e, model):
+    """¿El fallo fue por pedir «sin pensar»? Lo anota para no volver a pedírselo a ese modelo."""
+    if isinstance(e, TypeError):
+        J._think["ok"] = False                         # librería vieja: no conoce «think»
+        return True
+    if "think" in str(e).lower():
+        J._think["no"].add(model)
+        return True
+    return False
+
+
+def _ollama_chat(cfg, timeout=180, **kw):
+    """Una llamada a Ollama con el pensamiento apagado; si no se puede, la repite normal."""
+    cli = J.ollama.Client(host=cfg["ollama_host"], timeout=timeout)
+    extra = J._no_think(kw.get("model", ""))
+    if extra:
+        try:
+            return cli.chat(**kw, **extra)
+        except Exception as e:
+            if not J._think_failed(e, kw.get("model", "")):
+                raise
+    return cli.chat(**kw)
 
 
 def local_ai_model(refresh=False):
     """Modelo de Ollama instalado en este equipo para usar sin internet ('' si no hay)."""
     if not refresh and time.time() - J.net["local_at"] < 120:
+        return J.net["local_model"]
+    if not refresh and J.net["local_model"] and J.net["local_at"]:
+        J.net["local_at"] = time.time()                # 12.20: responde ya con la conocida y la revisa aparte
+        threading.Thread(target=J.local_ai_model, args=(True,), daemon=True, name="ia-local-revisar").start()
         return J.net["local_model"]
     try:
         model = J.local_pick()                         # 12.19: la que escogiste (integrada u Ollama); Ollama se enciende solo
@@ -746,6 +866,8 @@ def _net_set(online):
             J.net.update(offline=False)
         else:
             J.net["fails"] += 1
+            if not J.net["offline"] and J.net["fails"] == 1:
+                J.local_warm("por si se cae el internet")     # 12.20: se adelanta
             if J.net["offline"] or J.net["fails"] < 2:    # 2 fallos seguidos: evita falsas alarmas
                 return False
             J.net.update(offline=True, since=time.time())
@@ -760,7 +882,9 @@ def _net_set(online):
     J.log_terminal("Sin internet.", "RED")
     if not J.settings["offline_auto"]:
         return True
-    m = J.local_ai_model(refresh=True)
+    m = J.net["local_model"] if time.time() - J.net["local_at"] < 30 else J.local_ai_model(refresh=True)
+    J.net["warm_at"] = 0.0
+    J.local_warm("sin internet")
     threading.Thread(target=J.check_ai, daemon=True).start()
     if J.settings["ai_provider"] == "ollama":
         msg = "Se cayó el internet. Sigo funcionando normal con la IA de tu equipo."
@@ -786,8 +910,11 @@ def net_recheck():
 
 
 def _net_worker():
+    """12.20: revisa cada 6 s (antes 20) y, al primer fallo, vuelve a comprobar a los 1,5 s: sin internet lo nota en
+    unos 8 s como mucho (antes, hasta un minuto). Con internet cada revisión es una conexión de milisegundos."""
+    J.net["watch"] = True
     while True:
-        time.sleep(10 if J.net["offline"] else 20)
+        time.sleep(1.5 if (J.net["fails"] == 1 and not J.net["offline"]) else 6)
         try:
             J._net_set(J._internet_ok())
         except Exception as e:
@@ -801,9 +928,9 @@ def warm_ai():
     if cfg["kind"] != "ollama" or J.ollama is None or not cfg["model"]:
         return
     try:
-        J.ollama.Client(host=cfg["ollama_host"], timeout=120).chat(
-            model=cfg["model"], messages=[{"role": "user", "content": "hola"}],
-            options={"num_predict": 1}, keep_alive="30m")
+        J._ollama_chat(cfg, timeout=120, model=cfg["model"],
+                       messages=[{"role": "system", "content": J.system_static()}, {"role": "user", "content": "hola"}],
+                       options={"num_predict": 1}, keep_alive="30m")
         J.log_terminal("Modelo de IA precargado y listo.", "SISTEMA")
     except Exception:
         pass
@@ -1054,6 +1181,7 @@ QUESTION_RE = re.compile(
     r"explica|explicame|define|definicion|dime|cuentame|hablame|resume|resumen|traduce|significa|"
     r"sabes|conoces|describe|diferencia)\b")
 _SENT_END = re.compile(r"[.!?…:](\s|$)")
+_FIRST_CUT = re.compile(r"[,;](\s)")
 
 
 def _stream_chunks(cfg, msgs):
@@ -1065,27 +1193,75 @@ def _stream_chunks(cfg, msgs):
 
     def oll():
         J.ollama_ensure(cfg["ollama_host"])
-        stream = J.ollama.Client(host=cfg["ollama_host"], timeout=180).chat(
-            model=cfg["model"], messages=msgs, stream=True, keep_alive="30m",
-            options={"temperature": J.settings["ai_temperature"], "num_predict": 240})
-        for part in stream:
-            chunk = (part.get("message") or {}).get("content", "")
-            if chunk:
-                yield chunk
-    return oll()
+        cli = J.ollama.Client(host=cfg["ollama_host"], timeout=180)
+        kw = dict(model=cfg["model"], messages=msgs, stream=True, keep_alive=J._keep_alive(),
+                  options={"temperature": J.settings["ai_temperature"], "num_predict": 240})
+        extra = J._no_think(cfg["model"])              # 12.20: sin «pensar en voz alta»
+        for attempt in ([extra, {}] if extra else [{}]):
+            got = False
+            try:
+                for part in cli.chat(**kw, **attempt):
+                    got = True
+                    chunk = (part.get("message") or {}).get("content", "")
+                    if chunk:
+                        yield chunk
+                return
+            except Exception as e:
+                if attempt and not got and J._think_failed(e, cfg["model"]):
+                    continue                           # este modelo no admite apagarlo: se pide normal
+                raise
+    return J._skip_think(oll())
+
+
+def _skip_think(chunks):
+    """Si aun así el modelo escribe <think>…</think>, eso no se dice ni se muestra."""
+    buf, inside, started = "", False, False
+    for ch in chunks:
+        if started and not inside:
+            yield ch
+            continue
+        buf += ch
+        if not started:
+            head = buf.lstrip()
+            if "<think>".startswith(head[:7]) and len(head) < 7:
+                continue                               # aún no se sabe si empieza a pensar
+            if head.startswith("<think>"):
+                inside = True
+                started = True
+            else:
+                started = True
+                yield buf
+                buf = ""
+                continue
+        if inside and "</think>" in buf:
+            rest = buf.split("</think>", 1)[1].lstrip()
+            inside = False
+            buf = ""
+            if rest:
+                yield rest
 
 
 def answer_question_streaming(prompt):
     """Responde una pregunta hablando por frases a medida que el modelo las genera."""
     cfg = J._ai_cfg()
+    if not J._is_local_ai(cfg) and J.net_preflight():  # 12.20: se cayó el internet: cambia ya a la IA de tu equipo
+        cfg = J._ai_cfg()
     if cfg["kind"] == "ollama" and (J.ollama is None or not cfg["model"]):
         J.reply(J.ask_ai(prompt, route=False)[1])
         return
-    system = (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + f" Hoy es {J.fecha_hablada(datetime.date.today())}." + J._notes_ctx()
-              + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.persona_ctx())   # 9.4: tus lecciones y el modo tutor
+    local = J._is_local_ai(cfg)
+    dynamic = J._notes_ctx() + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.persona_ctx()   # 9.4: tus lecciones y el modo tutor
+    if local:
+        # 12.20: en tu equipo, el mismo comienzo fijo que las demás órdenes (ya está leído: no se relee) y menos
+        # contexto y menos turnos: cada palabra de más son décimas de segundo antes de la primera frase.
+        system = J.system_static() + J.motorlocal.trim_context(dynamic, 1200)
+    else:
+        system = (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + f" Hoy es {J.fecha_hablada(datetime.date.today())}." + dynamic)
     user_msg = {"role": "user", "content": prompt}
     keep = J.settings["history_turns"] * 2
     history = J.chat_history[-keep:] if keep else []
+    if local:
+        history = history[-6:]
     if cfg.get("fast"):
         msgs_sys = system + J.cerebro.FAST_RULE        # 12.1: el rápido puede pasar la pregunta al potente
         msgs = [{"role": "system", "content": msgs_sys}, *history, user_msg]
@@ -1097,6 +1273,7 @@ def answer_question_streaming(prompt):
     ack = J.ack_start(prompt)                          # 12.1: cero silencio mientras llega la primera frase
     full, buf = "", ""
     escalate = False
+    spoke = False
     try:
         for chunk in J._stream_chunks(cfg, msgs):
             full += chunk
@@ -1109,11 +1286,14 @@ def answer_question_streaming(prompt):
                     escalate = True
                     break
             m = J._SENT_END.search(buf)
+            if not m and local and not spoke and len(buf) > 60:
+                m = J._FIRST_CUT.search(buf, 40)      # 12.20: la IA local va despacio: empieza a hablar en la primera coma
             while m:                                  # habla cada frase completa al instante
                 sent = buf[:m.end()].strip()
                 buf = buf[m.end():]
                 if len(sent) > 1:
                     ack.done()
+                    spoke = True
                     J.speak(J._clean_for_speech(sent))
                 m = J._SENT_END.search(buf)
         if cfg.get("fast") and J.cerebro.escalated(full):
@@ -1162,6 +1342,7 @@ __all__ = [
     'ROUTER_PROMPT',
     '_GEMINI_OPTIONAL',
     '_SENT_END',
+    '_FIRST_CUT', '_keep_alive', '_no_think', '_ollama_chat', '_skip_think', '_tcp_any', '_think', '_think_failed', 'local_warm', 'net_preflight',
     '_SHORT_REASON',
     '_ai_cfg',
     '_ai_monitor',

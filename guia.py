@@ -14,11 +14,17 @@ _RULES = [
     ("material", r"documento|material|boletin|presentacion|excel|generador|audio|word"),
     ("colegio", r"aula|clase|salon|recuperac|escolar|revisar trabajo|tablero|matemat|dictado|codigo"),
     ("pc", r"pc|ventana|pesta|program|mantenim|energia|navegador|pantalla|aplicacion|leer en voz|vision|medico"),
-    ("info", r"web|busca|clima|noticia|sismo|internet"),
+    ("info", r"web|busca|clima|noticia|sismo|internet|instante"),
     ("comunica", r"mensaj|telegram|celular|correo|whatsapp|famil"),
     ("casa", r"casa|musica|spotify|audio y musica"),
 ]
 EXTRA = [
+    ("Al instante, sin IA (12.20)", ["¿qué hora es en Tokio?", "¿cuántos días faltan para Navidad?", "¿qué día cae el 20 de diciembre?",
+                                     "convierte 5 millas a kilómetros", "¿cuánto son 80 grados Fahrenheit en Celsius?", "tira un dado",
+                                     "dime un número al azar entre 1 y 50", "escoge entre pizza, sushi o tacos", "deletrea murciélago",
+                                     "cuéntame un chiste", "dime un dato curioso", "dame una frase motivadora", "genera una contraseña segura"]),
+    ("Internet y videos (12.20)", ["mide la velocidad de internet", "¿cuál es mi IP?", "resume este video https://youtu.be/…",
+                                   "¿cómo se dice buenos días en inglés?", "traduce al francés: ¿dónde queda la estación?"]),
     ("Generador de documentos (12.14)", ["abre el generador de documentos", "hazme un acta en PDF de la reunión de padres",
                                          "redacta una circular en Word sobre la salida pedagógica"]),
     ("Mis aplicaciones (12.14)", ["abre mis aplicaciones", "(di la frase de cualquier tarjeta, por ejemplo «abre el campus»)",

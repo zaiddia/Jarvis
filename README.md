@@ -157,6 +157,32 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Más rápido sin internet y habilidades al instante (v12.20)
+
+**Cambio a la IA local cuando se cae el internet**
+- Jarvis nota la caída en unos 8 segundos (antes, hasta un minuto): revisa cada 6 s, prueba varias conexiones a la vez y confirma el primer fallo al segundo y medio.
+- Antes de cada pregunta a la nube hace una comprobación de milisegundos. Si el internet se acaba de caer, cambia ya a la IA de tu equipo, sin esperar a que la nube deje de responder.
+- Al primer fallo de red deja la IA local cargada en memoria, para que la primera respuesta sin conexión no espere a que cargue el modelo. Mientras no haya internet, no se descarga.
+
+**IA local más ágil**
+- Se apaga el «pensar en voz alta» de modelos como qwen3 o deepseek-r1 (en Ollama y en la IA integrada). Era donde se iba casi todo el tiempo. Si un modelo no lo admite, Jarvis lo recuerda y le pregunta normal.
+- En las preguntas se le manda menos contexto y solo los últimos 3 turnos, con el mismo comienzo fijo que el resto de órdenes (ya leído, no se relee).
+- Empieza a hablar en la primera coma, sin esperar a que termine la frase.
+
+**Respuestas al instante, sin IA (funcionan sin internet)**
+- Hora en otra ciudad: «¿qué hora es en Tokio?» (antes respondía la hora local).
+- Fechas: «¿cuántos días faltan para Navidad?», «¿qué día cae el 20 de diciembre?», «¿qué edad tengo si nací el 3 de mayo de 1985?», «¿cuánto falta para las 5 de la tarde?».
+- Conversor: «convierte 5 millas a kilómetros», «¿cuánto son 80 grados Fahrenheit en Celsius?» (longitud, peso, volumen, temperatura, velocidad, tiempo, datos y área).
+- Azar: «tira un dado», «dime un número al azar entre 1 y 50», «escoge entre pizza, sushi o tacos».
+- «deletrea murciélago», «cuéntame un chiste», «dime un dato curioso», «dame una frase motivadora».
+- «genera una contraseña segura»: sale solo en el chat. No se dice en voz alta ni queda en el registro o el historial.
+
+**Habilidades nuevas con internet**
+- «mide la velocidad de internet»: bajada, subida, latencia y para qué alcanza.
+- «¿cuál es mi IP?»: la del equipo en tu red y la pública.
+- «resume este video https://youtu.be/…»: Gemini ve el video y te da el resumen y las ideas clave (necesita la clave de Gemini).
+- Traductor hablado: «¿cómo se dice buenos días en inglés?», «traduce al francés: …». Usa un pedido corto a la IA y lo dice con voz de ese idioma (14 idiomas).
+
 ## Comprobar la IA local (v12.19.1)
 
 - Botón **«Comprobar IA local»** en la lista del botón de IA del HUD y en Ajustes › Inteligencia artificial › Si se cae el internet. Le hace una pregunta corta a la IA de tu equipo y te muestra, paso a paso, qué funciona y qué no:

@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.19.1"
+VERSION = "12.20"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -704,6 +704,7 @@ DEFAULT_SETTINGS = {
     "live_provider": "gemini",     # "gemini" (gratis), "openai" (ChatGPT, de pago) o "deepgram" (con crédito)
     "live_fallback": True,         # si el elegido falla, probar los otros que tengan clave
     "live_headset": False,         # 12.18.1: con audífonos, hablarle fuerte también lo interrumpe en vivo (con parlantes solo «Jarvis, …»)
+    "instant_answers": True,       # 12.20: lo que no necesita IA se responde al instante (hora mundial, unidades, fechas, azar…)
     "openai_live_model": "gpt-realtime",
     "openai_live_voice": "marin",
     "deepgram_api_key": "",
@@ -1644,6 +1645,8 @@ def process_command(text):
         return
     if apps_voice(text, t):                            # 12.14: tus frases de «Mis aplicaciones» (y «abre mis aplicaciones»)
         return
+    if instant_voice(text, t):                         # 12.20: al instante, sin IA: hora mundial, unidades, fechas, azar… y velocidad, video, traductor
+        return
     if live_quiz_voice(text, t):                       # 8.8: «quiz en vivo», y durante el quiz «respuesta», «siguiente»
         return
     if live_class_voice(text, t):                      # 9.6: «empieza la clase de fracciones», «siguiente momento»
@@ -2357,6 +2360,7 @@ from nucleo.estadoia import *  # noqa: F401,F403,E402
 # ── 12.6: la IA local integrada (motor llama.cpp dentro de Jarvis, sin Ollama) → nucleo/motor.py (lógica en motorlocal.py)
 from nucleo.motor import *  # noqa: F401,F403,E402
 from nucleo.ialocal import *  # noqa: F401,F403,E402
+from nucleo.instantes import *  # noqa: F401,F403,E402
 
 # ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)
 from nucleo.boletines import *  # noqa: F401,F403,E402
