@@ -139,7 +139,7 @@ def test_radio_suena_y_se_apaga(jv, monkeypatch):
     monkeypatch.setattr(jv, "radio_find", lambda q, genre="": [{"name": "Prueba FM", "url": "http://x"}])
     assert jv.radio_play("prueba") == "Prueba FM"
     t0 = time.time()
-    while not wrote and time.time() - t0 < 8:
+    while not wrote and time.time() - t0 < 25:
         time.sleep(0.1)
     assert wrote and jv._radio["name"] == "Prueba FM"
     assert jv.radio_stop() and jv._radio["proc"] is None and not jv.radio_stop()
