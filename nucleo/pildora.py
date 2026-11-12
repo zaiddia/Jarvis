@@ -90,6 +90,18 @@ def _shape():
     threading.Timer(0.15, go).start()
 
 
+def _unshape():
+    """Quita YA el recorte con forma de píldora (sin esperar)."""
+    rect = _win_rect()
+    if not rect:
+        return
+    try:
+        import ctypes
+        ctypes.windll.user32.SetWindowRgn(rect[0], 0, True)
+    except Exception:
+        pass
+
+
 def _dock_now(on, force=False):
     """Hace el cambio de ventana (en el hilo de la píldora). → True si cambió."""
     win = J.hud.get("window")
@@ -116,7 +128,8 @@ def _dock_now(on, force=False):
                 pill["docked"] = False
                 J.hud.update(x=x, y=y, w=w, h=h, ignore_moves_until=time.time() + 2.0)
                 J.socketio.emit("hud_pill", {"on": False})
-                win.resize(w, h)
+                _unshape()                             # 12.21: primero se quita el recorte de píldora; si no, el HUD ya
+                win.resize(w, h)                       # grande seguía recortado un momento y no se veía nada
                 win.move(x, y)
             _shape()
         except Exception as e:

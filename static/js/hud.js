@@ -143,7 +143,17 @@
     el.preview.classList.add("flash");
   }
 
-  function setLevel(v) { el.reactor.style.setProperty("--lvl", v); el.shell.style.setProperty("--lvl", v); }
+  /* 12.21: el nivel del micrófono llega ~8 veces por segundo. Antes se ponía en el HUD entero (todo se recalculaba cada
+     vez, también escondido como píldora). Ahora solo en el reactor y el medidor, solo si cambió de verdad y solo si se ve. */
+  const vuEl = $(".vu");
+  let lvlLast = -1;
+  function setLevel(v) {
+    v = Math.round((Number(v) || 0) * 12) / 12;
+    if (v === lvlLast || body.classList.contains("pill-mode") || window.innerWidth < 80) return;
+    lvlLast = v;
+    el.reactor.style.setProperty("--lvl", v);
+    if (vuEl) vuEl.style.setProperty("--lvl", v);
+  }
 
   function updateSizeButton() {
     const expanded = body.dataset.size === "expandido";
@@ -156,12 +166,28 @@
   let lastActivity = Date.now();
   let pendingN = 0, momentInfo = null, momentAt = 0;
   function poke() { lastActivity = Date.now(); body.classList.remove("dim"); }
-  ["mousemove", "mousedown", "keydown", "wheel"].forEach((e) => document.addEventListener(e, poke, { passive: true }));
+  ["mousemove", "mousedown", "keydown", "wheel", "pointermove", "pointerenter"].forEach((e) => document.addEventListener(e, poke, { passive: true }));
+  document.documentElement.addEventListener("mouseenter", poke);
+  /* 12.21: al cambiar de tamaño (al salir de la píldora, al expandir) se enciende y se obliga a redibujar: a veces la
+     ventana crecía y el contenido tardaba en pintarse (se veía vacío o a medias). */
+  let repaintT = 0;
+  window.addEventListener("resize", () => {
+    poke();
+    clearTimeout(repaintT);
+    repaintT = setTimeout(() => {
+      el.shell.style.transform = "translateZ(0)";
+      requestAnimationFrame(() => requestAnimationFrame(() => { el.shell.style.transform = ""; }));
+    }, 30);
+  });
   setInterval(() => {
     const idle = st.mode === "idle" && document.activeElement !== el.input;
     const busy = body.classList.contains("inclass") || body.classList.contains("working") || body.classList.contains("projecting") ||
       timers.length > 0 || pendingN > 0 || dictating;                            // 11.8: en clase, con pendientes o trabajando no se apaga
-    body.classList.toggle("dim", !!current.hud_dim_idle && idle && !busy && Date.now() - lastActivity > 9000);
+    // 12.21: si el HUD ya se esconde solo como píldora, no se atenúa además (se veía transparente al abrirse);
+    // tampoco con un menú abierto ni en el minuto siguiente a un mensaje (lo estás leyendo).
+    const pillOn = native && current.hud_auto_hide !== false;
+    const open = !!$("#dock:not([hidden]), #aipick:not([hidden]), #pal:not([hidden]), #ntc:not([hidden])");
+    body.classList.toggle("dim", !!current.hud_dim_idle && !pillOn && !open && idle && !busy && Date.now() - lastActivity > 60000);
   }, 1000);
 
   /* ---------------- 12.0: rostro holográfico ---------------- */

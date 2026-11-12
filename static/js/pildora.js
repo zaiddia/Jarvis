@@ -30,7 +30,7 @@
     body.classList.toggle("pill-mode", on);
     pillEl.hidden = !on;
     hover = false; touch();
-    if (!on) { unread = 0; }
+    if (!on) { unread = 0; H.poke(); }                 // 12.21: recién abierto se ve a plena luz
     drawBadge();
   }
 

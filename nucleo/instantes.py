@@ -16,6 +16,7 @@ import socket
 import time
 import urllib.request
 
+import festivos
 import instante
 from nucleo import J
 
@@ -26,6 +27,8 @@ _inst = {"speed": False, "speed_last": None}
 def instant_voice(text, t):
     if not J.settings.get("instant_answers", True):
         return False
+    if J.daily_state_active() and J.english_voice(text, t):   # 12.21: en un quiz o práctica de inglés, lo que digas es la respuesta
+        return True
     t2 = instante.norm(text)
     pw = instante.password(t2)
     if pw:
@@ -38,7 +41,15 @@ def instant_voice(text, t):
     if r:
         J.reply(r[1], r[0])
         return True
-    return net_skills_voice(text, t, t2)
+    r = instante.money(t2)                              # 12.21: IVA, descuentos, cuotas, intereses, regla de tres
+    if r:
+        J.reply(r, "CUENTAS")
+        return True
+    r = instante.workdays(t2, holidays=festivos.holidays)
+    if r:
+        J.reply(r, "CALENDARIO")
+        return True
+    return net_skills_voice(text, t, t2) or J.daily_voice(text, t)
 
 
 # ============================================================================ VELOCIDAD DE INTERNET

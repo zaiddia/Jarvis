@@ -584,3 +584,198 @@ def answer(t, raw=None, today=None, now_utc=None, rng=None):
     if f:
         return {"chiste": "CHISTE", "dato": "DATO CURIOSO", "frase": "FRASE"}[f[0]], f[1]
     return None
+
+
+# ============================================================================ 12.21: CALCULADORA DE PLATA
+_AMT = r"(\d[\d.,]*)\s*(mil(?:lon(?:es)?)?|millon(?:es)?|k|m)?(?:\s+de)?(?:\s+pesos)?"
+_PCT = r"(\d+(?:[.,]\d+)?)\s*(?:%|por ciento)"
+
+
+def _amount(num, mult=None):
+    """«250.000», «10 millones», «250 mil», «1,5 millones» → número."""
+    s = num.strip(".,")
+    if mult and re.fullmatch(r"\d+[.,]\d{1,2}", s):
+        v = float(s.replace(",", "."))                 # 1,5 millones
+    elif re.fullmatch(r"\d{1,3}(?:[.,]\d{3})+", s):
+        v = float(re.sub(r"[.,]", "", s))              # 250.000
+    else:
+        v = float(s.replace(",", "."))
+    k = {"mil": 1e3, "k": 1e3, "millon": 1e6, "millones": 1e6, "m": 1e6}.get(mult or "", 1)
+    return v * k
+
+
+def pesos(v):
+    return "$" + f"{round(v):,}".replace(",", ".")
+
+
+def _pct(x):
+    return float(x.replace(",", "."))
+
+
+_IVA = re.compile(rf"\b(?:cuanto es |calcula |saca(?:le)? |cual es )?(?:el |la )?iva (?:de|a|para|del?)\s+{_AMT}|\b{_AMT}\s+(mas|con|sin|menos) (?:el )?iva\b")
+_DESC = re.compile(rf"\b{_AMT}\s+(?:con|menos)\s+(?:un |el )?(?:descuento del? )?{_PCT}(?: de descuento)?|\b(?:descuento del? {_PCT}|(?:el |un )?{_PCT} de descuento) (?:a|de|sobre|en)\s+{_AMT}")
+_PROP = re.compile(rf"\b(?:divide|reparte|dividir|repartir|parte)\s+(?:una |la )?(?:cuenta|factura)?\s*(?:de\s+)?{_AMT}\s+entre\s+(\d{{1,2}}|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)(?: personas?)?(.*)$")
+_PREST = re.compile(rf"\b(?:cuota|cuanto pago|cuanto quedaria pagando|credito|prestamo)\b.*?\b{_AMT}.*?\b(?:a|en|por)\s+(\d{{1,3}})\s+(meses|anos|cuotas).*?\b{_PCT}(?:\s+(mensual|anual|efectivo anual|ea|mes vencido|mv|nominal anual))?"
+                    rf"|\b(?:cuota|cuanto pago|credito|prestamo)\b.*?\b{_AMT}.*?\b{_PCT}(?:\s+(mensual|anual|efectivo anual|ea|mes vencido|mv))?.*?\b(?:a|en|por)\s+(\d{{1,3}})\s+(meses|anos|cuotas)")
+_INT = re.compile(rf"\binteres (simple|compuesto)\b.*?\b{_AMT}.*?\b{_PCT}(?:\s+(mensual|anual))?.*?\b(?:por|en|durante|a)\s+(\d{{1,3}})\s+(meses|anos)")
+_R3 = re.compile(r"\b(?:regla de tres|si)\b.*?\b(\d+(?:[.,]\d+)?)\s+(.{1,40}?)\s+(?:cuestan?|valen?|pesan?|rinden?|son|equivalen? a|necesitan?|gastan?|tardan?|hacen?)\s+(\d[\d.,]*)\b.*?\bcuanto\w*\s+(?:.{0,30}?)(\d+(?:[.,]\d+)?)\s*$")
+_NP = {"dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6, "siete": 7, "ocho": 8, "nueve": 9, "diez": 10}
+
+
+def _g(v):
+    return f"{v:g}".replace(".", ",")
+
+
+def money(t, iva_pct=19.0):
+    m = _IVA.search(t)
+    if m:
+        if m.group(1):
+            base = _amount(m.group(1), m.group(2))
+            iva = base * iva_pct / 100
+            return f"El IVA del {_g(iva_pct)} % de {pesos(base)} es {pesos(iva)}. Con IVA queda en {pesos(base + iva)}."
+        total, how = _amount(m.group(3), m.group(4)), m.group(5)
+        if how in ("mas", "con"):
+            return f"{pesos(total)} más IVA del {_g(iva_pct)} % son {pesos(total * (1 + iva_pct / 100))} (el IVA es {pesos(total * iva_pct / 100)})."
+        base = total / (1 + iva_pct / 100)
+        return f"{pesos(total)} sin el IVA del {_g(iva_pct)} % son {pesos(base)} (el IVA era {pesos(total - base)})."
+    m = _DESC.search(t)
+    if m:
+        base = _amount(m.group(1), m.group(2)) if m.group(1) else _amount(m.group(6), m.group(7))
+        p = _pct(m.group(3) or m.group(4) or m.group(5))
+        if p >= 100:
+            return None
+        return f"Con el {_g(p)} % de descuento, {pesos(base)} queda en {pesos(base * (1 - p / 100))}. Te ahorras {pesos(base * p / 100)}."
+    m = _PROP.search(t)
+    if m:
+        total, n, rest = _amount(m.group(1), m.group(2)), _NP.get(m.group(3)) or int(m.group(3)), m.group(4) or ""
+        if n < 2:
+            return None
+        tip = 0.0
+        mp = re.search(_PCT, rest)
+        if mp:
+            tip = _pct(mp.group(1))
+        elif re.search(r"\bpropina\b", rest):
+            tip = 10.0
+        full = total * (1 + tip / 100)
+        extra = f" con el {_g(tip)} % de propina ({pesos(full)} en total)" if tip else ""
+        return f"{pesos(total)}{extra} entre {n}: cada uno pone {pesos(full / n)}."
+    m = _PREST.search(t)
+    if m:
+        if m.group(1):
+            amt, n, unit, p, kind = _amount(m.group(1), m.group(2)), int(m.group(3)), m.group(4), _pct(m.group(5)), m.group(6)
+        else:
+            amt, p, kind, n, unit = _amount(m.group(7), m.group(8)), _pct(m.group(9)), m.group(10), int(m.group(11)), m.group(12)
+        months = n * 12 if unit == "anos" else n
+        kind = kind or ("mensual" if p <= 4 else "anual")
+        i = p / 100 if kind in ("mensual", "mes vencido", "mv") else (1 + p / 100) ** (1 / 12) - 1
+        if months < 1 or months > 480:
+            return None
+        cuota = amt / months if i == 0 else amt * i / (1 - (1 + i) ** -months)
+        total = cuota * months
+        rate = f"{_g(p)} % mensual" if kind in ("mensual", "mes vencido", "mv") else f"{_g(p)} % efectivo anual ({i * 100:.2f} % mensual)".replace(".", ",")
+        return (f"Préstamo de {pesos(amt)} a {months} meses al {rate}: cuota fija de {pesos(cuota)} al mes. "
+                f"En total pagas {pesos(total)}, de los cuales {pesos(total - amt)} son intereses. Es un cálculo aproximado: no incluye seguros ni cuotas de manejo.")
+    m = _INT.search(t)
+    if m:
+        kind, amt, p, per, n, unit = m.group(1), _amount(m.group(2), m.group(3)), _pct(m.group(4)), m.group(5), int(m.group(6)), m.group(7)
+        per = per or "anual"
+        periods = n if (unit == "meses") == (per == "mensual") else (n * 12 if per == "mensual" else n / 12)
+        final = amt * (1 + p / 100 * periods) if kind == "simple" else amt * (1 + p / 100) ** periods
+        return (f"Con interés {kind} del {_g(p)} % {per}, {pesos(amt)} en {n} {'años' if unit == 'anos' else 'meses'} se convierten en {pesos(final)}: "
+                f"{pesos(final - amt)} de intereses.")
+    m = _R3.search(t)
+    if m:
+        a, what, b, c = _pct(m.group(1)), m.group(2).strip(), _amount(m.group(3)), _pct(m.group(4))
+        if a == 0:
+            return None
+        x = b * c / a
+        return f"Regla de tres: si {_say_num(a)} {what} son {_say_num(b)}, entonces {_say_num(c)} son {_say_num(x)}."
+    return None
+
+
+# ============================================================================ 12.21: DÍAS HÁBILES Y FESTIVOS DEL MES
+_HABILES = re.compile(r"\bcuantos dias habiles (?:faltan|quedan|hay)\b|\bdias habiles (?:para|hasta|entre|de aqui a)\b")
+_FEST_MES = re.compile(r"\b(?:que |cuales (?:son )?(?:los )?)?festivos (?:hay |tiene |trae )?(?:en |de |del )(?:mes de )?(" + "|".join(MESES) + r"|este mes|el proximo mes|este ano|el ano|ano)\b|"
+                       r"\b(?:cuantos|que) festivos (?:quedan|faltan|hay)(?: (?:este|en el|en este) ano)?\b")
+
+
+def workdays(t, today=None, holidays=None):
+    """holidays(año) → {fecha: nombre} (lo pasa Jarvis: los festivos de Colombia)."""
+    today = today or datetime.date.today()
+    if holidays is None:
+        return None
+    if _HABILES.search(t):
+        if "entre" in t:
+            ds = [x for x in (_parse_date(p, today, future=False) for p in re.split(r"\s+y\s+(?:el\s+)?", t.split("entre", 1)[-1], maxsplit=1)) if x]
+            if len(ds) != 2:
+                return None
+            a, b = sorted(ds)
+        else:
+            a, b = today, _parse_date(t, today)
+            if b is None:
+                return None
+        n, fest, d = 0, [], a + datetime.timedelta(days=1)
+        while d <= b and (b - a).days < 800:
+            name = holidays(d.year).get(d)
+            if d.weekday() < 5 and not name:
+                n += 1
+            elif d.weekday() < 5 and name:
+                fest.append(name)
+            d += datetime.timedelta(days=1)
+        tail = f" Ya descontando {_plural(len(fest), 'festivo', 'festivos')} ({', '.join(fest[:3])})." if fest else ""
+        start = "De hoy" if a == today else f"Del {a.day} de {MES_NOMBRE[a.month]}"
+        return f"{start} al {_fecha_txt(b)} hay {_plural(n, 'día hábil', 'días hábiles')}, de lunes a viernes.{tail}"
+    m = _FEST_MES.search(t)
+    if m:
+        which = m.group(1)
+        if which in MESES or which in ("este mes", "el proximo mes"):
+            mo = MESES.get(which) or (today.month if which == "este mes" else today.month % 12 + 1)
+            y = today.year + (1 if (which == "el proximo mes" and today.month == 12) or (which in MESES and mo < today.month) else 0)
+            hs = [(d, n) for d, n in holidays(y).items() if d.month == mo]
+            if not hs:
+                return f"En {MES_NOMBRE[mo]} de {y} no hay festivos."
+            return f"Festivos de {MES_NOMBRE[mo]} de {y}: " + "; ".join(f"{DIAS[d.weekday()]} {d.day}, {n}" for d, n in hs) + "."
+        hs = [(d, n) for d, n in holidays(today.year).items() if d >= today]
+        if not hs:
+            return "Este año ya no quedan festivos."
+        return (f"Este año quedan {_plural(len(hs), 'festivo', 'festivos')}: "
+                + "; ".join(f"{DIAS[d.weekday()]} {d.day} de {MES_NOMBRE[d.month]}, {n}" for d, n in hs[:8]) + ".")
+    return None
+
+
+# ============================================================================ 12.21: INGLÉS SIN INTERNET
+WORDS = [("achieve", "lograr", "She worked hard to achieve her goals."), ("borrow", "pedir prestado", "Can I borrow your pen?"),
+         ("challenge", "reto", "Learning a language is a challenge."), ("deadline", "fecha límite", "The deadline is next Friday."),
+         ("improve", "mejorar", "I want to improve my English."), ("schedule", "horario", "What is your schedule today?"),
+         ("although", "aunque", "Although it rained, we went out."), ("however", "sin embargo", "It is cheap; however, it is good."),
+         ("reliable", "confiable", "He is a reliable friend."), ("attempt", "intento", "This is my second attempt."),
+         ("advice", "consejo", "Let me give you some advice."), ("available", "disponible", "Are you available tomorrow?"),
+         ("behavior", "comportamiento", "His behavior was excellent."), ("purpose", "propósito", "What is the purpose of this meeting?"),
+         ("knowledge", "conocimiento", "Knowledge is power."), ("to realize", "darse cuenta", "I realized I was wrong."),
+         ("actually", "en realidad", "Actually, I prefer tea."), ("eventually", "con el tiempo", "Eventually, he found a job."),
+         ("to attend", "asistir", "I will attend the class."), ("library", "biblioteca", "The library opens at eight."),
+         ("to remind", "recordarle a alguien", "Remind me to call my mother."), ("to afford", "poder pagar", "I can't afford a new car."),
+         ("to avoid", "evitar", "Avoid sugary drinks."), ("enough", "suficiente", "We have enough time."),
+         ("to share", "compartir", "Please share your screen."), ("skill", "habilidad", "Reading is an important skill."),
+         ("to manage", "arreglárselas, administrar", "She manages a small team."), ("issue", "problema, asunto", "We need to solve this issue."),
+         ("to require", "requerir", "This job requires patience."), ("to suggest", "sugerir", "I suggest we start now."),
+         ("grateful", "agradecido", "I am grateful for your help."), ("to struggle", "luchar, costar trabajo", "I struggle with pronunciation."),
+         ("goal", "meta", "My goal is to speak fluently."), ("homework", "tarea", "Did you finish your homework?"),
+         ("to hand in", "entregar", "Hand in your essay on Monday."), ("to figure out", "resolver, entender", "I can't figure out this problem."),
+         ("to look forward to", "esperar con ilusión", "I look forward to seeing you."), ("to run out of", "quedarse sin", "We ran out of milk."),
+         ("to get along", "llevarse bien", "I get along with my neighbors."), ("to give up", "rendirse", "Never give up."),
+         ("worth", "que vale la pena", "The book is worth reading."), ("busy", "ocupado", "I am busy this afternoon."),
+         ("weather", "clima", "The weather is nice today."), ("to hope", "esperar (desear)", "I hope you feel better."),
+         ("to wait", "esperar (aguardar)", "Wait for me at the door."), ("embarrassed", "avergonzado", "I was embarrassed by my mistake."),
+         ("sensible", "sensato", "That is a sensible decision."), ("fabric", "tela", "This fabric is very soft."),
+         ("to assist", "ayudar", "Can I assist you?"), ("currently", "actualmente", "I am currently studying.")]
+_WORD_DAY = re.compile(r"\bpalabra del dia(?: en ingles)?\b|\b(?:ensename|dime|dame) (?:una|otra) palabra (?:nueva )?en ingles\b|\bvocabulario (?:de|en) ingles\b")
+
+
+def word_of_day(t, today=None, rng=None):
+    if not _WORD_DAY.search(t):
+        return None
+    today = today or datetime.date.today()
+    i = rng.randrange(len(WORDS)) if rng is not None and "otra" in t else today.toordinal() % len(WORDS)
+    en, es, ex = WORDS[i]
+    return en, es, ex

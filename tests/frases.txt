@@ -215,3 +215,23 @@ convierte este PDF en audio => !CONVERSOR
 pasa las notas de 7A a excel => !CONVERSOR
 escoge un estudiante al azar de 7A => !AZAR
 cuánto es 20 dólares en pesos => !CONVERSOR
+
+# 12.21: día a día
+cuánto es el IVA de 250000 => CUENTAS :: 47.500
+cuánto es 80000 con el 20% de descuento => CUENTAS :: 64.000
+cuota de un préstamo de 10 millones a 24 meses al 1.8% mensual => CUENTAS :: 516.808
+divide una cuenta de 180000 entre 4 con propina => CUENTAS
+regla de tres: si 5 cuadernos cuestan 20000 cuánto cuestan 8 => CUENTAS
+cuántos días hábiles faltan para el 15 de diciembre => CALENDARIO
+festivos de diciembre => CALENDARIO
+hazme una pausa activa => PAUSA
+respiración de 2 minutos => PAUSA
+crea un QR de https://colegio.edu.co => QR
+pon la emisora Caracol => RADIO
+pon una emisora de salsa => RADIO
+apaga la radio => RADIO
+palabra del día en inglés => INGLÉS
+cuánto es el 15% de 80000 => MATE
+pon una alarma a las 6 am => !RADIO
+ayúdame a preparar la clase de fracciones => !COCINA
+empieza la clase de inglés => !INGLÉS

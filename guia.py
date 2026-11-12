@@ -9,16 +9,24 @@ CATEGORIES = [
 ]
 # Palabras del nombre del grupo → categoría (el primero que coincide)
 _RULES = [
-    ("dinero", r"gasto|pago|dolar|cripto|presupuesto|suscrip|recibo"),
+    ("dinero", r"gasto|pago|dolar|cripto|presupuesto|suscrip|recibo|cuentas"),
     ("dia", r"vencim|medicam|cita|cumple|menu|viaje|mi dia|recordatorio|temporizador|rutina|lista|personal|calendario|diario|concentraci"),
     ("material", r"documento|material|boletin|presentacion|excel|generador|audio|word"),
     ("colegio", r"aula|clase|salon|recuperac|escolar|revisar trabajo|tablero|matemat|dictado|codigo"),
     ("pc", r"pc|ventana|pesta|program|mantenim|energia|navegador|pantalla|aplicacion|leer en voz|vision|medico"),
     ("info", r"web|busca|clima|noticia|sismo|internet|instante"),
     ("comunica", r"mensaj|telegram|celular|correo|whatsapp|famil"),
-    ("casa", r"casa|musica|spotify|audio y musica"),
+    ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Cuentas y calendario al instante (12.21)", ["¿cuánto es el IVA de 250.000?", "80.000 con el 20% de descuento", "divide una cuenta de 180.000 entre 4 con propina",
+                                                  "cuota de un préstamo de 10 millones a 24 meses al 1,8% mensual", "interés compuesto de 2 millones al 10% anual por 3 años",
+                                                  "regla de tres: si 5 cuadernos cuestan 20.000, ¿cuánto cuestan 8?", "¿cuántos días hábiles faltan para el 15 de diciembre?",
+                                                  "festivos de diciembre"]),
+    ("Bienestar y casa (12.21)", ["hazme una pausa activa", "respiración de 2 minutos", "termina la pausa", "modo cocina arroz con pollo", "siguiente paso",
+                                  "los ingredientes", "cuéntame un cuento de dragones para un niño de 6 años"]),
+    ("Radio, QR e inglés (12.21)", ["pon la emisora Caracol", "pon una emisora de salsa", "apaga la radio", "crea un QR de https://mi-pagina.com",
+                                    "crea un QR del wifi Casa con clave 12345678", "palabra del día en inglés", "quiz de inglés", "practiquemos inglés"]),
     ("Al instante, sin IA (12.20)", ["¿qué hora es en Tokio?", "¿cuántos días faltan para Navidad?", "¿qué día cae el 20 de diciembre?",
                                      "convierte 5 millas a kilómetros", "¿cuánto son 80 grados Fahrenheit en Celsius?", "tira un dado",
                                      "dime un número al azar entre 1 y 50", "escoge entre pizza, sushi o tacos", "deletrea murciélago",

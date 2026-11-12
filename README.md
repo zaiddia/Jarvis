@@ -157,6 +157,27 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## HUD que se ve bien al abrirse y habilidades del día a día (v12.21)
+
+**HUD y píldora**
+- **Ya no sale transparente.** La «atenuación en reposo» bajaba el HUD al 42 % de opacidad a los 9 segundos, y al abrirse desde la píldora seguía así hasta mover el ratón dentro. Ahora no se atenúa si el HUD ya se esconde solo como píldora; sin píldora, baja solo al 80 % tras un minuto, y nunca con un menú abierto.
+- **Se ve completo al abrirse.** El recorte con forma de píldora se quita antes de que la ventana crezca (antes quedaba recortada un instante y no se veía nada), y al cambiar de tamaño se obliga a redibujar.
+- **Más liviano.** El medidor del micrófono recalculaba todo el HUD unas 8 veces por segundo, incluso escondido. Ahora solo toca el reactor y las barras, y nada mientras es píldora.
+- La píldora es opaca y con borde más visible.
+
+**Al instante, sin IA ni internet**
+- Plata: IVA, descuentos, repartir una cuenta con propina, cuota de un préstamo, interés simple y compuesto, regla de tres. (Antes «¿cuánto es el IVA de 250000?» daba una respuesta sin sentido.)
+- Calendario: «¿cuántos días hábiles faltan para el 15 de diciembre?», «festivos de diciembre», «¿cuántos festivos quedan este año?».
+- Pausas activas y respiración guiadas por voz: «hazme una pausa activa», «respiración de 2 minutos», «termina la pausa».
+- Códigos QR: «crea un QR de https://…», «crea un QR del wifi Casa con clave …» (quedan en Documentos Jarvis › QR).
+- Inglés: «palabra del día en inglés» y «quiz de inglés» (50 palabras con ejemplo).
+
+**Con internet o IA**
+- Radio en vivo dentro de Jarvis: «pon la emisora Caracol», «pon una emisora de salsa», «sube la radio», «apaga la radio». Baja sola el volumen mientras Jarvis habla o te escucha. Usa el directorio abierto Radio Browser.
+- Modo cocina: «modo cocina arroz con pollo», luego «siguiente paso», «repite», «paso anterior», «los ingredientes». Pone el temporizador solo cuando un paso tiene espera.
+- Práctica de inglés: «practiquemos inglés». Responde en inglés con voz en inglés y te corrige en español.
+- Cuentos narrados: «cuéntame un cuento de dragones para un niño de 6 años».
+
 ## Más rápido sin internet y habilidades al instante (v12.20)
 
 **Cambio a la IA local cuando se cae el internet**

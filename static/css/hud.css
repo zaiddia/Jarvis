@@ -57,7 +57,7 @@ body.solid .shell::before, body.solid .shell::after { display: none; }
 body.dragging, body.dragging * { cursor: grabbing !important; }
 
 /* Atenuación en reposo */
-body.dim .shell { opacity: .42; }
+body.dim .shell { opacity: .8; transition: opacity .6s; }          /* 12.21: antes .42 (se veía transparente) */
 body.dim .shell:hover, body.dim .shell:focus-within { opacity: 1; }
 
 /* ---------- Reactor ---------- */
@@ -341,12 +341,12 @@ body.wide.dash-hidden[data-size="expandido"] .shell { grid-template-columns: 44p
 [data-size="expandido"] .holo { top: 52px; left: 12px; right: 12px; }
 .vu { display: none; align-items: flex-end; gap: 2px; height: 14px; }
 [data-size="expandido"] .vu { display: inline-flex; }
-.vu i { width: 3px; border-radius: 1px; background: var(--a); opacity: .85; height: 2px;
-  height: calc(2px + var(--lvl, 0) * 12px * var(--k, 1)); transition: height .08s linear; }
+.vu i { width: 3px; border-radius: 1px; background: var(--a); opacity: .85; height: 12px; transform-origin: bottom;
+  transform: scaleY(calc(.17 + var(--lvl, 0) * var(--k, 1))); transition: transform .12s linear; }   /* 12.21: sin recalcular la distribución */
 .vu i:nth-child(1) { --k: .5; } .vu i:nth-child(2) { --k: .85; } .vu i:nth-child(3) { --k: 1; } .vu i:nth-child(4) { --k: .75; } .vu i:nth-child(5) { --k: .45; }
 [data-state="speaking"] .vu i { animation: vu .5s ease-in-out infinite alternate; }
 .vu i:nth-child(2n) { animation-delay: .15s; }
-@keyframes vu { from { height: 3px; } to { height: 12px; } }
+@keyframes vu { from { transform: scaleY(.25); } to { transform: scaleY(1); } }
 #btn-bell { position: relative; }
 .badge { position: absolute; top: -3px; right: -4px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; font-size: calc(10.5px * var(--fs, 1)); line-height: 14px;
   font-family: var(--mono); background: var(--err); color: #fff; text-shadow: none; }
@@ -675,8 +675,8 @@ html:not([data-look="aurora"]) .msg.jarvis.err .msg-meta { color: var(--err); }
 /* ---------------- 12.13: el HUD como píldora en el borde derecho ---------------- */
 .pill { position: fixed; inset: 0; z-index: 9999; border-radius: 999px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(180deg, rgba(var(--a-rgb), .16), rgba(4, 10, 18, .96) 30%, rgba(4, 10, 18, .96) 70%, rgba(var(--a-rgb), .16));
-  border: 1px solid rgba(var(--a-rgb), .45); box-shadow: inset 0 0 10px rgba(var(--a-rgb), .18); }
+  background: linear-gradient(180deg, #0d2a3a, #050c16 30%, #050c16 70%, #0d2a3a);                 /* 12.21: opaca: se ve sobre cualquier fondo */
+  border: 1px solid rgba(var(--a-rgb), .75); box-shadow: inset 0 0 10px rgba(var(--a-rgb), .3); }
 .pill[hidden] { display: none; }
 .pill::before { content: ""; position: absolute; left: 50%; top: 14px; bottom: 14px; width: 2px; transform: translateX(-50%);
   background: linear-gradient(180deg, transparent, rgba(var(--a-rgb), .55), transparent); border-radius: 2px; }
@@ -690,7 +690,7 @@ html:not([data-look="aurora"]) .msg.jarvis.err .msg-meta { color: var(--err); }
   background: var(--ok); box-shadow: 0 0 6px var(--ok); }
 .pill-badge[hidden] { display: none; }
 .pill:hover { border-color: rgba(var(--a-rgb), .85); }
-@keyframes pillBreath { 0%, 100% { transform: scale(.8); opacity: .65; } 50% { transform: scale(1.1); opacity: 1; } }
+@keyframes pillBreath { 0%, 100% { transform: scale(.85); opacity: .85; } 50% { transform: scale(1.1); opacity: 1; } }
 body.pill-mode { background: transparent; }
 body.solid.pill-mode { background: #04090f; }
 body.pill-mode > :not(#pill):not(script) { visibility: hidden !important; pointer-events: none !important; }
