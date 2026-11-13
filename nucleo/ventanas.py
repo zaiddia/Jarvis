@@ -204,9 +204,25 @@ def hud_show(expand=True):
         return
     win.show()
     J.hud["visible"] = True
+    J._hud_front()
     J.socketio.emit("hud_visible", {"visible": True})
     if expand and J.pill_docked():                 # 12.13: lo pediste (bandeja, voz, aviso): se abre la píldora
         J.hud_dock(False)
+
+
+def _hud_front():
+    """12.24: trae el HUD al frente sin quitarle el foco a lo que estás haciendo (a veces volvía detrás de otra ventana
+    y parecía que el clic en la bandeja no había hecho nada)."""
+    if not J.IS_WIN:
+        return
+    try:
+        import ctypes
+        hwnd = J._hud_hwnd()
+        if hwnd:
+            after = -1 if J.settings["hud_on_top"] else 0           # HWND_TOPMOST / HWND_TOP
+            ctypes.windll.user32.SetWindowPos(hwnd, after, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0040)   # sin mover, sin foco, mostrar
+    except Exception:
+        pass
 
 
 def hud_hide():
@@ -217,7 +233,9 @@ def hud_hide():
 
 
 def hud_toggle():
-    if J.hud["window"] is None or not J.hud["visible"]:
+    """Clic en el reactor de la bandeja (o Ctrl+Alt+J). 12.24: si el HUD está como píldora, lo ABRE. Antes lo escondía
+    del todo (la píldora cuenta como «visible») y había que hacer clic otra vez para verlo."""
+    if J.hud["window"] is None or not J.hud["visible"] or J.pill_docked():
         J.hud_show()
     else:
         J.hud_hide()
@@ -529,6 +547,7 @@ __all__ = [
     'hud_set_size',
     'hud_show',
     'hud_toggle',
+    '_hud_front',
     'hud_transparency_supported',
     'open_settings_window',
     'open_welcome_window',

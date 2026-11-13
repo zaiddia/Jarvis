@@ -691,9 +691,11 @@ html:not([data-look="aurora"]) .msg.jarvis.err .msg-meta { color: var(--err); }
 .pill-badge[hidden] { display: none; }
 .pill:hover { border-color: rgba(var(--a-rgb), .85); }
 @keyframes pillBreath { 0%, 100% { transform: scale(.85); opacity: .85; } 50% { transform: scale(1.1); opacity: 1; } }
-body.pill-mode { background: transparent; }
-body.solid.pill-mode { background: #04090f; }
-body.pill-mode > :not(#pill):not(script) { visibility: hidden !important; pointer-events: none !important; }
+body.pill-mode:not(.pill-strip) { background: transparent; }
+body.solid.pill-mode:not(.pill-strip) { background: #04090f; }
+body.pill-mode:not(.pill-strip) > :not(#pill):not(script) { visibility: hidden !important; pointer-events: none !important; }
+/* 12.24: píldora sin encoger la ventana (Windows). El HUD sigue dibujado debajo; la ventana está recortada a esta franja. */
+body.pill-strip #pill { inset: auto; left: 0; top: 50%; width: 22px; height: min(104px, 100vh); transform: translateY(-50%); }
 body.pill-mode #pill { visibility: visible !important; pointer-events: auto !important; }
 @media (prefers-reduced-motion: reduce) { .pill-dot { animation: none; } }
 .pill[data-mic="off"] .pill-dot { background: var(--muted); box-shadow: none; animation: none; opacity: .8; }

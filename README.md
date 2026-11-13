@@ -157,6 +157,13 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## HUD que aparece completo al instante (v12.24)
+
+- **La píldora ya no encoge la ventana** (Windows). Antes el HUD se reducía a 22 píxeles y, al abrirlo, la página tenía que redibujarse entera: en equipos lentos se veía vacío o «transparente» unos segundos. Ahora el HUD se desliza fuera de la pantalla por la derecha y la ventana se recorta a la franja de la píldora; al abrirlo solo se quita el recorte y vuelve a su sitio, con todo ya dibujado.
+- **El reactor de la bandeja abre a la primera.** Con el HUD como píldora, un clic lo escondía del todo y había que hacer clic otra vez. Ahora, si está como píldora, lo abre. Además se trae al frente (sin quitarte el foco) y se pide un cuadro nuevo al volver de la bandeja.
+- **La píldora insiste sola.** Si el ratón está encima y no se abrió (llegaste justo cuando se escondía, o se perdió el aviso), lo vuelve a pedir cada tercio de segundo; ya no hay que salir y volver a entrar ni hacer clic varias veces. Si la página y Jarvis no coinciden en si está escondido, se ponen al día.
+- Al abrirse queda pegado al borde derecho, así el ratón queda sobre el HUD y no se vuelve a esconder a los 5 segundos.
+
 ## Audios y videos a texto, y tamaño de imágenes (v12.23)
 
 - **Transcribir lo que subes con el clip**: una grabación de reunión, una nota de voz o un video (mp3, m4a, wav, ogg, opus, mp4, mov, mkv, webm… hasta 300 MB; se sube por partes).

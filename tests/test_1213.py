@@ -108,7 +108,7 @@ def test_desde_la_pagina_solo_si_esta_activada(hud, monkeypatch):
     assert not jv.pill_docked()
     monkeypatch.setitem(jv.settings, "hud_auto_hide", True)
     jv.handle_hud_dock({"on": True})
-    assert jv.handle_hud_pill_state() == {"on": True, "enabled": True}
+    assert jv.handle_hud_pill_state() == {"on": True, "enabled": True, "strip": False}
     jv.handle_hud_dock({"on": False})
     assert not jv.pill_docked()
 

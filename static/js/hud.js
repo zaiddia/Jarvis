@@ -1040,6 +1040,14 @@
   btnAi.addEventListener("click", toggleAiPick);
   $("#dock-ai").addEventListener("click", toggleAiPick);
   $("#aipick-settings").addEventListener("click", () => { closeAiPick(); socket.emit("open_settings"); });
+  /* 12.24: al volver de la bandeja la ventana estuvo oculta y el navegador interno había dejado de dibujar: se le pide
+     un cuadro nuevo ya, en vez de esperar a que algo cambie en la página. */
+  socket.on("hud_visible", () => {
+    poke();
+    el.shell.style.transform = "translateZ(0)";
+    requestAnimationFrame(() => requestAnimationFrame(() => { el.shell.style.transform = ""; }));
+  });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) poke(); });
   /* 12.22: video dentro del HUD. Mientras está abierto se avisa al servidor cada 15 s (así sabe que sigue sonando y
      mantiene el micrófono en pausa); al cerrarlo, el micrófono vuelve. */
   const vid = $("#vid");

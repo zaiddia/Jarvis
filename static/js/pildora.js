@@ -25,9 +25,10 @@
     return false;
   }
 
-  function setDocked(on) {
+  function setDocked(on, strip) {
     docked = on; waiting = false; if (on) dockedAt = Date.now();
     body.classList.toggle("pill-mode", on);
+    body.classList.toggle("pill-strip", !!(on && strip));   // 12.24: la ventana no se encoge; solo se ve esta franja
     pillEl.hidden = !on;
     hover = false; touch();
     if (!on) { unread = 0; H.poke(); }                 // 12.21: recién abierto se ve a plena luz
@@ -47,7 +48,7 @@
   }
 
   function open() { if ((docked || window.innerWidth < 80) && !waiting && Date.now() - dockedAt > 700) {   // recién escondida: el ratón ya no está ahí
-    waiting = true; socket.emit("hud_dock", { on: false }); setTimeout(() => { waiting = false; }, 3000); } }
+    waiting = true; socket.emit("hud_dock", { on: false }); setTimeout(() => { waiting = false; }, 1200); } }
 
   // Ratón: sobre la página = sobre la ventana del HUD (o de la píldora).
   document.addEventListener("pointermove", () => { hover = true; touch(); }, { passive: true });
@@ -63,9 +64,10 @@
 
   socket.on("hud_pill", (d) => {
     if (d && d.refused) { waiting = false; touch(); return; }   // el ratón sigue encima: espera otro rato
-    setDocked(!!(d && d.on));
+    if (!!(d && d.on) === docked && !!(d && d.strip) === body.classList.contains("pill-strip")) { waiting = false; return; }   // ya estaba así
+    setDocked(!!(d && d.on), !!(d && d.strip));
   });
-  socket.on("connect", () => socket.emit("hud_pill_state", {}, (d) => { if (d) setDocked(!!d.on); }));
+  socket.on("connect", () => socket.emit("hud_pill_state", {}, (d) => { if (d) setDocked(!!d.on, !!d.strip); }));
   socket.on("state", (s) => {
     if (s && s.mode && s.mode !== "idle") touch();          // 12.13.1: al decir «Jarvis» la abre Jarvis mismo (no depende de esta página)
     drawBadge();
@@ -73,6 +75,10 @@
   socket.on("chat", (item) => { touch(); if (docked && item && item.role !== "user") { unread++; drawBadge(); } });
   socket.on("focus_input", open);
   socket.on("settings_updated", () => { touch(); drawBadge(); });
+
+  /* 12.24: si el ratón sigue sobre la píldora y no se abrió (llegó justo al esconderse, o se perdió el aviso), se
+     vuelve a pedir sola: antes había que salir y volver a entrar, o hacer clic varias veces. */
+  setInterval(() => { if (docked && !waiting && pillEl.matches(":hover")) open(); }, 350);
 
   setInterval(() => {
     drawBadge();

@@ -16,7 +16,7 @@ from nucleo import J
 
 PILL_W, PILL_H = 22, 104          # píxeles lógicos
 _EDGE_GAP = 8                     # separación del HUD abierto con el borde derecho
-pill = {"docked": False, "lock": threading.Lock(), "cy": None, "queue": queue.Queue(), "thread": None, "sync": False}
+pill = {"docked": False, "lock": threading.Lock(), "cy": None, "queue": queue.Queue(), "thread": None, "sync": False, "strip": False, "wh": None}
 
 
 def pill_enabled():
@@ -102,6 +102,55 @@ def _unshape():
         pass
 
 
+def _set_region(hwnd, box):
+    """Recorta la ventana a un rectángulo redondeado (l, t, r, b, radio) en sus propios píxeles; None = sin recorte."""
+    import ctypes
+    if box is None:
+        ctypes.windll.user32.SetWindowRgn(hwnd, 0, True)
+        return
+    l, t, r, b, rad = (int(round(v)) for v in box)
+    rgn = ctypes.windll.gdi32.CreateRoundRectRgn(l, t, r + 1, b + 1, rad, rad)
+    ctypes.windll.user32.SetWindowRgn(hwnd, rgn, True)                 # Windows se queda con la región
+
+
+def _strip_dock(win, on):
+    """12.24 (Windows): la píldora SIN cambiar el tamaño de la ventana. El HUD se desliza casi entero fuera de la
+    pantalla por la derecha y la ventana se recorta a la franja que queda a la vista (la píldora). Al abrirlo solo se
+    quita el recorte y se devuelve a su sitio: la página ya está dibujada, así que aparece completa al instante.
+    (Antes la ventana se encogía a 22 píxeles y al volver a crecer la página tenía que redibujarse entera: en
+    equipos lentos se veía vacía unos segundos.) → True si se hizo así; False = usar el método de cambiar el tamaño."""
+    rect = _win_rect()
+    if not rect:
+        return False
+    hwnd, l, t, r, b = rect
+    ax, ay, aw, ah = J._work_area()
+    if on:
+        w, h = J.hud["w"] or J.hud_dims(J.hud["size"])[0], J.hud["h"] or J.hud_dims(J.hud["size"])[1]
+        if (r - l) < 80 or w < 80:
+            return False
+        scale = (r - l) / w
+        pw, ph = PILL_W * scale, min(PILL_H * scale, b - t)
+        top = ((b - t) - ph) / 2
+        x, y = int(ax + aw - PILL_W), int(max(ay, min(J.hud["y"], ay + ah - h)))
+        pill.update(docked=True, strip=True, cy=y + h / 2, wh=(w, h))
+        J.hud.update(x=x, y=y, ignore_moves_until=time.time() + 2.0)
+        J.socketio.emit("hud_pill", {"on": True, "strip": True})
+        _set_region(hwnd, (0, top, pw, top + ph, pw))          # primero el recorte: no se ve el HUD deslizándose
+        win.move(x, y)
+    else:
+        w, h = J.hud_dims(J.hud["size"])
+        cy = pill["cy"] if pill["cy"] is not None else J.hud["y"] + h / 2
+        x, y = J._clamp(int(ax + aw - w), int(cy - h / 2), w, h)      # pegado al borde: el ratón queda encima y no se vuelve a esconder
+        pill.update(docked=False, strip=False)
+        J.hud.update(x=x, y=y, w=w, h=h, ignore_moves_until=time.time() + 2.0)
+        if pill.get("wh") != (w, h):                           # cambió de tamaño mientras estaba escondido
+            win.resize(w, h)
+        win.move(x, y)
+        _set_region(hwnd, None)
+        J.socketio.emit("hud_pill", {"on": False})
+    return True
+
+
 def _dock_now(on, force=False):
     """Hace el cambio de ventana (en el hilo de la píldora). → True si cambió."""
     win = J.hud.get("window")
@@ -109,15 +158,18 @@ def _dock_now(on, force=False):
         return False
     with pill["lock"]:
         if bool(on) == pill["docked"]:
+            J.socketio.emit("hud_pill", {"on": pill["docked"], "strip": bool(pill["docked"] and pill["strip"])})   # 12.24: la página se pone al día
             return False
         if on and not force and cursor_over_hud():
             J.socketio.emit("hud_pill", {"on": False, "refused": True})
             return False
         try:
+            if (on or pill["strip"]) and _strip_dock(win, on):         # al abrir: solo si se escondió así
+                return True
             if on:
                 cy = J.hud["y"] + (J.hud["h"] or J.hud_dims(J.hud["size"])[1]) / 2
                 x, y = _pill_xy(cy)
-                pill.update(docked=True, cy=y + PILL_H / 2)
+                pill.update(docked=True, strip=False, cy=y + PILL_H / 2)
                 J.hud.update(x=x, y=y, ignore_moves_until=time.time() + 2.0)
                 J.socketio.emit("hud_pill", {"on": True})
                 win.resize(PILL_W, PILL_H)
@@ -185,7 +237,7 @@ def handle_hud_dock(data):
 
 @J.socketio.on("hud_pill_state")
 def handle_hud_pill_state(_data=None):
-    return {"on": pill["docked"], "enabled": pill_enabled()}
+    return {"on": pill["docked"], "enabled": pill_enabled(), "strip": bool(pill["docked"] and pill["strip"])}
 
 
 # ------------------------------------------------------------------ por voz
@@ -241,7 +293,10 @@ __all__ = [
     '_open_xy',
     '_pill_setting',
     '_pill_xy',
+    '_set_region',
     '_shape',
+    '_strip_dock',
+    '_unshape',
     '_win_rect',
     'cursor_over_hud',
     'handle_hud_dock',
