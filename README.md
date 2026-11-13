@@ -157,6 +157,18 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Audios y videos a texto, y tamaño de imágenes (v12.23)
+
+- **Transcribir lo que subes con el clip**: una grabación de reunión, una nota de voz o un video (mp3, m4a, wav, ogg, opus, mp4, mov, mkv, webm… hasta 300 MB; se sube por partes).
+  - Botón **«Acta: resumen y acuerdos»**: transcribe y arma un Word con Resumen, Acuerdos, Tareas (qué, quién, para cuándo), Pendientes y la transcripción completa.
+  - Botón **«Solo transcribir»**: el texto completo, separando «Persona 1», «Persona 2» cuando hablan varios.
+  - Por voz o escribiendo, con el archivo recién subido: «transcríbelo», «saca el acta de la reunión», «¿qué acordaron?».
+  - Queda en Documentos Jarvis › Transcripciones.
+  - La transcripción la hace Gemini con tu clave: el sonido viaja a Google en trozos de 5 minutos. Sin clave o sin internet se usa Whisper en tu equipo, si está instalado.
+  - Solo trabaja con archivos que tú subes; Jarvis no graba nada.
+- **Cambiar el tamaño de una imagen subida**: «déjala de 800 de ancho», «ponla de 600 de alto», «redimensiona a 1024 por 768», «déjala tamaño carné» (3×4 cm), «hazla cuadrada», «redúcela a la mitad». También hay botones en la tarjeta de la imagen.
+  - Nunca la deforma: conserva la proporción, y los tamaños fijos recortan por el centro. Endereza las fotos del celular que vienen giradas. Avisa si al agrandarla puede verse borrosa.
+
 ## Video en el HUD, búsqueda por modos y pulsar para hablar (v12.22)
 
 Tomado de lo que muestran los creadores recientes de asistentes tipo Jarvis, solo lo que al tuyo le faltaba.

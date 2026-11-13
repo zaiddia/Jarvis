@@ -144,6 +144,81 @@ def image_to(it, out_dir, fmt, compress=False):
     return dst
 
 
+# ----------------------------------------------------------------------------- 12.23: cambiar el tamaño de una imagen
+PRESETS = {"carne": (354, 472, "tamaño carné (3×4 cm)"), "cuadrada": (600, 600, "cuadrada (600×600)")}
+_RS_VERB = re.compile(r"\b(?:redimension\w*|cambia(?:le)? el tamano|tamano|deja(?:la|lo)|pon(?:la|lo)|haz(?:la|lo)|reduce(?:la|lo)?|achica(?:la|lo)?|"
+                      r"agranda(?:la|lo)?|escala(?:la|lo)?|recorta(?:la|lo)?|ajusta(?:la|lo)?)\b")
+
+
+def resize_spec(t):
+    """Texto normalizado → {"preset"} | {"w", "h"} | {"w"} | {"h"} | {"pct"} o None si no pide cambiar el tamaño."""
+    if not _RS_VERB.search(t):
+        return None
+    if re.search(r"\bcarne\b|\b3\s?x\s?4\b|\b3 por 4\b", t):
+        return {"preset": "carne"}
+    if re.search(r"\bcuadrad[ao]\b|\bfoto de perfil\b", t):
+        return {"preset": "cuadrada"}
+    m = re.search(r"\b(\d{2,5})\s*(?:px|pixeles)?\s*(?:x|por)\s*(\d{2,5})\b", t)
+    if m:
+        return {"w": int(m.group(1)), "h": int(m.group(2))}
+    m = re.search(r"\b(\d{2,5})\s*(?:px |pixeles )?de ancho\b|\bancho (?:de |a )?(\d{2,5})\b", t)
+    if m:
+        return {"w": int(m.group(1) or m.group(2))}
+    m = re.search(r"\b(\d{2,5})\s*(?:px |pixeles )?de alto\b|\balto (?:de |a )?(\d{2,5})\b", t)
+    if m:
+        return {"h": int(m.group(1) or m.group(2))}
+    if re.search(r"\ba la mitad\b", t):
+        return {"pct": 50}
+    if re.search(r"\bal doble\b", t):
+        return {"pct": 200}
+    m = re.search(r"\bal (\d{1,3})\s*(?:%|por ciento)", t)
+    if m:
+        return {"pct": int(m.group(1))}
+    return None
+
+
+def image_resize(it, out_dir, spec):
+    """→ (ruta, (ancho, alto) antes, (ancho, alto) después, nota). No deforma: conserva la proporción; los tamaños fijos
+    (carné, cuadrada) recortan por el centro."""
+    from PIL import Image, ImageOps
+    im = Image.open(it["ruta"])
+    im.seek(0)
+    im = ImageOps.exif_transpose(im)                   # las fotos del celular vienen «acostadas» con una marca de giro
+    w0, h0 = im.size
+    note = ""
+    if spec.get("preset"):
+        w, h, note = PRESETS[spec["preset"]]
+        out = ImageOps.fit(im, (w, h), Image.LANCZOS, centering=(0.5, 0.4 if spec["preset"] == "carne" else 0.5))
+        note = f"{note}, recortada por el centro"
+    else:
+        if spec.get("pct"):
+            f = max(1, min(int(spec["pct"]), 400)) / 100
+            w, h = round(w0 * f), round(h0 * f)
+        elif spec.get("w") and spec.get("h"):
+            f = min(spec["w"] / w0, spec["h"] / h0)   # cabe dentro de esa caja, sin deformarse
+            w, h = round(w0 * f), round(h0 * f)
+            if (w, h) != (spec["w"], spec["h"]):
+                note = f"para no deformarla quedó de {w}×{h}, dentro de {spec['w']}×{spec['h']}"
+        elif spec.get("w"):
+            w, h = spec["w"], round(h0 * spec["w"] / w0)
+        elif spec.get("h"):
+            w, h = round(w0 * spec["h"] / h0), spec["h"]
+        else:
+            raise ConvertError("no entendí a qué tamaño")
+        if not (8 <= w <= 10000 and 8 <= h <= 10000):
+            raise ConvertError("ese tamaño no es posible (entre 8 y 10.000 píxeles por lado)")
+        out = im.resize((w, h), Image.LANCZOS)
+        if w > w0 * 1.05:
+            note = (note + "; " if note else "") + "al agrandarla no gana detalle: puede verse borrosa"
+    ext = {".png": "png", ".webp": "webp"}.get(it.get("ext", ""), "jpg")
+    dst = _out(out_dir, f"{os.path.splitext(it['nombre'])[0]} ({out.size[0]}x{out.size[1]})", ext)
+    if ext == "jpg":
+        out.convert("RGB").save(dst, quality=92, optimize=True)
+    else:
+        out.save(dst)
+    return dst, (w0, h0), out.size, note
+
+
 def pdf_to_word(it, out_dir, Document, ocr_text=""):
     """Con Word: conserva el formato. Sin Word: el texto de cada página (o el leído por la IA si es escaneado)."""
     dst = _out(out_dir, it["nombre"], "docx")

@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.22"
+VERSION = "12.23"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -2371,6 +2371,7 @@ from nucleo.ialocal import *  # noqa: F401,F403,E402
 from nucleo.instantes import *  # noqa: F401,F403,E402
 from nucleo.vidadiaria import *  # noqa: F401,F403,E402
 from nucleo.novedades import *  # noqa: F401,F403,E402
+from nucleo.transcribir import *  # noqa: F401,F403,E402
 
 # ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)
 from nucleo.boletines import *  # noqa: F401,F403,E402

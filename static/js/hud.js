@@ -1265,11 +1265,37 @@
 
   /* 11.6: subir archivos al chat (clip, arrastrar o pegar): leerlos, preguntarles y convertirlos */
   const OK_EXT = /\.(png|jpe?g|webp|gif|bmp|tiff?|pdf|docx|xlsx|xlsm|csv|tsv|pptx|txt|md|json|html?|xml)$/i;
+  /* 12.23: audios y videos (para transcribir). Van por partes de 3 MB, así que pueden pesar hasta 300 MB. */
+  const MEDIA_EXT = /\.(mp3|wav|m4a|ogg|oga|opus|aac|flac|wma|amr|weba|mp4|mov|mkv|webm|avi|3gp|m4v|wmv)$/i;
+  const MEDIA_MAX = 300 * 1024 * 1024, PART = 3 * 1024 * 1024;
+  async function sendMedia(f) {
+    const n = Math.max(1, Math.ceil(f.size / PART)), uid = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    for (let i = 0; i < n; i++) {
+      setPreview(`Subiendo ${f.name}… ${Math.round((i / n) * 100)} %`, "dim");
+      let data;
+      try { data = await readUrl(f.slice(i * PART, (i + 1) * PART)); } catch (_) { return { ok: false, error: "no pude leer el archivo" }; }
+      const r = await new Promise((ok) => socket.emit("attach_part", { uid, name: f.name, i, n, data }, ok));
+      if (!r || !r.ok) return r || { ok: false, error: "se cortó la subida" };
+      if (!r.sigue) return r;
+    }
+    return { ok: false, error: "se cortó la subida" };
+  }
   const readUrl = (f) => new Promise((ok, no) => { const rd = new FileReader(); rd.onload = () => ok(rd.result); rd.onerror = no; rd.readAsDataURL(f); });
   async function sendFiles(list) {
+    const media = list.filter((f) => MEDIA_EXT.test(f.name || ""));
+    if (media.length) {                                                          // un audio o video: se sube solo, por partes
+      const f = media[0];
+      if (f.size > MEDIA_MAX) { setPreview(`${f.name}: muy grande (máximo 300 MB).`, "dim"); return; }
+      const r = await sendMedia(f);
+      if (r && r.ok) { setPreview("Listo. Elige «Acta» o «Solo transcribir», o di «transcríbelo».", "dim"); addAttachCard(r, {}); }
+      else setPreview(`${f.name}: ${(r && r.error) || "no se pudo subir"}`, "dim");
+      if (media.length > 1) setPreview("Sube los audios o videos de uno en uno.", "dim");
+      list = list.filter((x) => !MEDIA_EXT.test(x.name || ""));
+      if (!list.length) return;
+    }
     const files = list.filter((f) => OK_EXT.test(f.name || "") || /^image\//.test(f.type)).slice(0, 10);
     const bad = list.length - files.length;
-    if (!files.length) { setPreview("Ese tipo de archivo no lo puedo leer (imágenes, PDF, Word, Excel, CSV, PowerPoint o texto).", "dim"); return; }
+    if (!files.length) { setPreview("Ese tipo de archivo no lo puedo leer (imágenes, PDF, Word, Excel, CSV, PowerPoint, texto, audio o video).", "dim"); return; }
     const big = files.filter((f) => f.size > 18 * 1024 * 1024);
     if (big.length) setPreview(`${big.map((f) => f.name).join(", ")}: muy grande (máximo 18 MB).`, "dim");
     const ids = [], urls = {}, errs = [];

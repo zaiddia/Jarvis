@@ -14,7 +14,8 @@ import adjuntos
 import conversiones
 from nucleo import J
 
-ACTIONS = {"recibo": "Registrar recibo", "audio": "Convertir en audio", "describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo", "procedimiento": "Revisar procedimiento",
+ACTIONS = {"acta": "Acta: resumen y acuerdos", "transcribir": "Solo transcribir", "redim:w800": "800 px de ancho", "redim:carne": "Tamaño carné",
+           "redim:mitad": "A la mitad", "recibo": "Registrar recibo", "audio": "Convertir en audio", "describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo", "procedimiento": "Revisar procedimiento",
            "preguntas": "Hacer un quiz", "editar": "Editar con IA", "codigo": "Revisar código", "codigo_ej": "Ejercicios con este código",
            "copia": "Detectar copia"}
 
@@ -61,6 +62,9 @@ def card_of(its):
     if len(its) == 1:
         k = its[0]["tipo"]
         acts = ["describir"] if k == "imagen" else ["resumir"]
+        if k in adjuntos.MEDIA:                                                            # 12.23: audio o video → texto y acta
+            return {"ids": [its[0]["id"]], "nombres": [its[0]["nombre"]], "desc": adjuntos.describe(its[0]), "tipos": [k], "preview": "",
+                    "acciones": [{"a": a, "t": ACTIONS[a]} for a in ("acta", "transcribir")]}
         acts += ["texto"] if k in ("imagen", "pdf") else []
         acts += ["tabla"] if k in ("imagen", "pdf", "word") else []
         acts += ["revisar", "procedimiento", "editar"] if k == "imagen" else []           # 12.0: paso a paso
@@ -77,6 +81,7 @@ def card_of(its):
     return {"ids": [i["id"] for i in its], "nombres": [i["nombre"] for i in its], "desc": "; ".join(adjuntos.describe(i) for i in its),
             "tipos": sorted(kinds), "preview": _preview(its[0]) if len(its) == 1 else "",
             "acciones": [{"a": a, "t": ACTIONS[a]} for a in acts] + [{"a": "conv:" + c, "t": "→ " + conversiones.TARGETS[c]} for c in convs]
+            + ([{"a": a, "t": "↔ " + ACTIONS[a]} for a in ("redim:w800", "redim:carne", "redim:mitad")] if len(its) == 1 and kinds == {"imagen"} else [])
             + ([{"a": "copia", "t": ACTIONS["copia"]}] if len(its) >= 2 and kinds <= {"texto", "word", "pdf"} else [])}      # 12.12: ¿se copiaron?
 
 
@@ -224,6 +229,9 @@ def table_from(it):
 def attach_run(its, action, pregunta=""):
     names = ", ".join(i["nombre"] for i in its)
     try:
+        mine, res = J.media_action(its, action, pregunta)      # 12.23: audio/video a texto y tamaño de imágenes
+        if mine:
+            return res
         if action.startswith("conv:"):
             files, msg = J.convert_files(its, action[5:], pregunta)
             for f in files:
@@ -361,6 +369,8 @@ def attachment_voice(text, t):
     rec = adjuntos.recent(1800)
     if not rec:
         return False
+    if J.media_voice(text, t):                         # 12.23: «transcríbelo», «saca el acta», «déjala de 800 de ancho»
+        return True
     last = _batch_items()[-1]
     fresh = time.time() - last["t"] < 300
     ref = bool(_REF.search(t))

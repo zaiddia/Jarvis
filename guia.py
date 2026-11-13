@@ -19,6 +19,8 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Audios, videos e imágenes que subes (12.23)", ["(sube un audio o video con el clip) transcríbelo", "saca el acta de la reunión", "¿qué acordaron?",
+                                                     "(sube una imagen) déjala de 800 de ancho", "déjala tamaño carné", "redúcela a la mitad"]),
     ("Videos y búsquedas por modos (12.22)", ["pon el video de fracciones equivalentes", "pon el video https://youtu.be/…", "quita el video",
                                               "busca el precio de un portátil Lenovo IdeaPad", "compara el iPhone 16 con el Galaxy S25",
                                               "dame el resumen de la mañana"]),

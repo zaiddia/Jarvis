@@ -24,12 +24,16 @@ except ImportError:                                    # pragma: no cover
 _dir = None
 items = []                     # los últimos adjuntos: [{"id", "nombre", "tipo", "ruta", "ext", "t", "paginas", "bytes"}]
 MAX_BYTES = 18_000_000
+MAX_MEDIA = 300_000_000        # 12.23: audios y videos (se suben por partes)
+MEDIA = ("audio", "video")
 KINDS = {"imagen": (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".tiff"), "pdf": (".pdf",), "word": (".docx",),
          "excel": (".xlsx", ".xlsm"), "csv": (".csv", ".tsv"), "powerpoint": (".pptx",), "texto": (".txt", ".md", ".json", ".html", ".htm", ".py",
                                                                                                    ".js", ".css", ".xml", ".java", ".c", ".h", ".cpp", ".cc", ".hpp",
                                                                                                    ".cs", ".php", ".sql", ".sh", ".bat", ".ps1", ".ino", ".kt",
                                                                                                    ".go", ".rb", ".rs", ".ts", ".mjs", ".pyw", ".pde")}
-KIND_NAMES = {"imagen": "imagen", "pdf": "PDF", "word": "documento de Word", "excel": "hoja de Excel", "csv": "tabla CSV",
+KINDS["audio"] = (".mp3", ".wav", ".m4a", ".ogg", ".oga", ".opus", ".aac", ".flac", ".wma", ".amr", ".weba")
+KINDS["video"] = (".mp4", ".mov", ".mkv", ".webm", ".avi", ".3gp", ".m4v", ".wmv")
+KIND_NAMES = {"audio": "audio", "video": "video", "imagen": "imagen", "pdf": "PDF", "word": "documento de Word", "excel": "hoja de Excel", "csv": "tabla CSV",
               "powerpoint": "presentación", "texto": "archivo de texto"}
 
 
@@ -73,12 +77,33 @@ def add(name, data):
     name = safe_name(name)
     k = kind_of(name)
     if not k:
-        raise ValueError("ese tipo de archivo no lo puedo leer (imágenes, PDF, Word, Excel, CSV, PowerPoint o texto)")
+        raise ValueError("ese tipo de archivo no lo puedo leer (imágenes, PDF, Word, Excel, CSV, PowerPoint, texto, audio o video)")
     aid = uuid.uuid4().hex[:8]
     path = os.path.join(_dir, f"{aid}_{name}")
     with open(path, "wb") as f:
         f.write(data)
-    it = {"id": aid, "nombre": name, "tipo": k, "ruta": path, "ext": os.path.splitext(name)[1].lower(), "t": time.time(), "bytes": len(data),
+    return _register(aid, name, k, path, len(data))
+
+
+def add_path(name, src):
+    """12.23: registra un archivo que ya está en el disco de Jarvis (un audio o video subido por partes). Lo mueve."""
+    name = safe_name(name)
+    k = kind_of(name)
+    if k not in MEDIA:
+        raise ValueError("por partes solo se suben audios y videos")
+    size = os.path.getsize(src)
+    if not size:
+        raise ValueError("vino vacío")
+    if size > MAX_MEDIA:
+        raise ValueError("el archivo es muy grande (máximo 300 MB)")
+    aid = uuid.uuid4().hex[:8]
+    path = os.path.join(_dir, f"{aid}_{name}")
+    os.replace(src, path)
+    return _register(aid, name, k, path, size)
+
+
+def _register(aid, name, k, path, size):
+    it = {"id": aid, "nombre": name, "tipo": k, "ruta": path, "ext": os.path.splitext(name)[1].lower(), "t": time.time(), "bytes": size,
           "paginas": pages_of(path, k)}
     items.append(it)
     del items[:-12]
