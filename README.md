@@ -157,6 +157,19 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Video en el HUD, búsqueda por modos y pulsar para hablar (v12.22)
+
+Tomado de lo que muestran los creadores recientes de asistentes tipo Jarvis, solo lo que al tuyo le faltaba.
+
+- **Video dentro del HUD**: «pon el video de fracciones equivalentes» busca el primer resultado de YouTube y lo reproduce en el HUD; «pon el video https://youtu.be/…» pone ese; «quita el video», la ✕ o Esc lo cierran.
+  - Mientras suena, el micrófono no escucha, para que el video no le dé órdenes (se puede apagar en Ajustes › Escucha). Si el HUD se cierra, el micrófono vuelve solo a los 40 segundos.
+  - Si el dueño del video no permite verlo fuera de YouTube, usa «Abrir en el navegador». «pon X en YouTube» sigue abriendo el navegador, como antes.
+- **Búsqueda por modos**: «busca el precio de un portátil Lenovo IdeaPad» responde con el rango de precios y la tienda de cada extremo, usando solo cifras que aparezcan en los resultados. «compara el iPhone 16 con el Galaxy S25» da la diferencia principal, lo fuerte de cada uno y cuál conviene.
+- **Pulsar para hablar**: botón nuevo junto al micrófono. Mientras lo mantienes, lo que digas es una orden, sin decir «Jarvis»; al soltar deja de contar. Útil con ruido en el salón. Si Jarvis estaba hablando, se calla para oírte.
+- **Reporte de la mañana aunque abras tarde**: ya existía a una hora fija (07:30); si a esa hora Jarvis estaba cerrado, se perdía. Ahora te lo da al abrir (una vez al día, hasta el mediodía). «dame el resumen de la mañana» lo repite cuando quieras.
+- **Modelo saturado**: si el modelo de la nube que elegiste responde «saturado» o «sin cuota», Jarvis prueba hasta 2 modelos más de tu misma cuenta y recuerda 5 minutos cuál respondió. Tu elección en Ajustes no cambia. (Antes solo cambiaba de modelo cuando el elegido no existía.)
+- Las habilidades propias en un solo archivo ya existían (Ajustes › Rutinas › Habilidades), así que no se duplicaron.
+
 ## HUD que se ve bien al abrirse y habilidades del día a día (v12.21)
 
 **HUD y píldora**

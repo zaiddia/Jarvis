@@ -1040,6 +1040,57 @@
   btnAi.addEventListener("click", toggleAiPick);
   $("#dock-ai").addEventListener("click", toggleAiPick);
   $("#aipick-settings").addEventListener("click", () => { closeAiPick(); socket.emit("open_settings"); });
+  /* 12.22: video dentro del HUD. Mientras está abierto se avisa al servidor cada 15 s (así sabe que sigue sonando y
+     mantiene el micrófono en pausa); al cerrarlo, el micrófono vuelve. */
+  const vid = $("#vid");
+  let vidPing = 0;
+  function closeVideo(tell) {
+    if (vid.hidden) return;
+    vid.hidden = true; $("#vid-box").innerHTML = ""; clearInterval(vidPing); body.classList.remove("has-video");
+    if (tell !== false) socket.emit("video_closed", {});
+  }
+  socket.on("hud_video", (d) => {
+    if (!d || !d.id) { closeVideo(false); return; }
+    if (!/^[\w-]{11}$/.test(d.id)) return;
+    if (body.dataset.size !== "expandido") setSize("expandido");
+    closeDock(); closeAiPick();
+    const f = document.createElement("iframe");
+    f.src = `https://www.youtube-nocookie.com/embed/${d.id}?autoplay=1&rel=0&modestbranding=1`;
+    f.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture"; f.allowFullscreen = true; f.title = d.title || "Video";
+    f.referrerPolicy = "strict-origin-when-cross-origin";
+    $("#vid-box").innerHTML = ""; $("#vid-box").append(f);
+    $("#vid-t").textContent = d.title || "Video";
+    $("#vid-out").href = `https://www.youtube.com/watch?v=${d.id}`;
+    $("#vid-f").textContent = (d.mute ? "Micrófono en pausa mientras suena · " : "") + "Esc o ✕ para cerrar. Si el video no deja verse aquí, usa «Abrir en el navegador».";
+    vid.hidden = false; body.classList.add("has-video"); poke();
+    clearInterval(vidPing); vidPing = setInterval(() => socket.emit("video_ping", {}), 15000);
+  });
+  $("#vid-x").addEventListener("click", () => closeVideo());
+  $("#vid-out").addEventListener("click", (e) => { e.preventDefault(); const u = $("#vid-out").href; closeVideo(); if (native) run("abre " + u); else window.open(u, "_blank"); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !vid.hidden) closeVideo(); });
+
+  /* 12.22: pulsar para hablar. Mientras mantienes el botón, lo que digas es una orden (sin decir «Jarvis»). */
+  const btnPtt = $("#btn-ptt");
+  let pttT = 0, pttOn = false;
+  function pttDown(e) {
+    if (pttOn || window.innerWidth < 80 || body.classList.contains("pill-mode")) return;
+    if (e) e.preventDefault();
+    pttOn = true; btnPtt.classList.add("on");
+    socket.emit("ptt", { down: true }, (r) => { if (r && !r.ok) { setPreview(r.msg, "dim"); pttUp(); } });
+    pttT = setInterval(() => socket.emit("ptt", { down: true }), 5000);
+    setPreview("Te escucho mientras mantengas el botón…", "");
+  }
+  function pttUp() {
+    if (!pttOn) return;
+    pttOn = false; btnPtt.classList.remove("on"); clearInterval(pttT);
+    socket.emit("ptt", { down: false });
+  }
+  btnPtt.addEventListener("pointerdown", (e) => { try { btnPtt.setPointerCapture(e.pointerId); } catch (_) {} pttDown(e); });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((ev) => btnPtt.addEventListener(ev, pttUp));
+  btnPtt.addEventListener("keydown", (e) => { if ((e.key === " " || e.key === "Enter") && !e.repeat) pttDown(e); });
+  btnPtt.addEventListener("keyup", (e) => { if (e.key === " " || e.key === "Enter") pttUp(); });
+  window.addEventListener("blur", pttUp);
+
   /* 12.19.1: comprobar de verdad que la IA local responde */
   const apCheck = $("#aipick-check"), apTest = $("#aipick-test");
   function drawCheck(r, busy) {

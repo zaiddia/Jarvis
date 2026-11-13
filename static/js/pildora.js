@@ -21,7 +21,7 @@
     if (H.mode() !== "idle") return true;                                  // escuchando, pensando o hablando
     const a = document.activeElement;
     if (a && a.matches && a.matches("input, textarea, select") && String(a.value || "").trim()) return true;   // a medio escribir
-    if (document.querySelector("#pal:not([hidden]), #ntc:not([hidden]), #dock:not([hidden]), #aipick:not([hidden])")) return true;                  // paleta de órdenes
+    if (document.querySelector("#pal:not([hidden]), #ntc:not([hidden]), #dock:not([hidden]), #aipick:not([hidden]), #vid:not([hidden])")) return true;                  // paleta de órdenes
     return false;
   }
 

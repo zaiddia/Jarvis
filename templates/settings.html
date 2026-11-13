@@ -477,6 +477,10 @@
         <div class="ft"><label for="f-hotkey">Solo escuchar al pulsar un atajo</label><p>El micrófono queda en silencio hasta que pulsas <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Espacio</kbd>. Garantiza que Jarvis no procese ninguna conversación del ambiente. Ignora la palabra «Jarvis» mientras está activo.</p></div>
         <label class="switch"><input type="checkbox" id="f-hotkey" data-key="require_hotkey"><span></span></label>
       </div>
+      <div class="field">
+        <div class="ft"><label for="f-video-mute">Pausar el micrófono durante los videos</label><p>Mientras suena un video en el HUD («pon el video de…»), Jarvis no escucha, para que el video no le dé órdenes. Se cierra con la ✕ o Esc. El botón «mantén para hablar» del HUD escucha solo mientras lo pulsas, sin decir «Jarvis».</p></div>
+        <label class="switch"><input type="checkbox" id="f-video-mute" data-key="video_mute_mic"><span></span></label>
+      </div>
     </div>
   </section>
 
@@ -1182,6 +1186,10 @@
       <div class="field">
         <div class="ft"><label for="f-morning">Reporte diario</label><p>Jarvis te saluda con la fecha, la hora y el estado de la IA.</p></div>
         <label class="switch"><input type="checkbox" id="f-morning" data-key="morning_enabled"><span></span></label>
+      </div>
+      <div class="field">
+        <div class="ft"><label for="f-morning-catchup">Darlo al abrir si llego tarde</label><p>Si abres Jarvis después de la hora del reporte, te lo da al abrir (una vez al día, hasta el mediodía). También puedes pedirlo: «dame el resumen de la mañana».</p></div>
+        <label class="switch"><input type="checkbox" id="f-morning-catchup" data-key="morning_catchup"><span></span></label>
       </div>
       <div class="field">
         <div class="ft"><label for="f-morning-time">Hora</label></div>

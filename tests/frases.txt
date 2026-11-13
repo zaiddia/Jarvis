@@ -235,3 +235,15 @@ cuánto es el 15% de 80000 => MATE
 pon una alarma a las 6 am => !RADIO
 ayúdame a preparar la clase de fracciones => !COCINA
 empieza la clase de inglés => !INGLÉS
+
+# 12.22: video en el HUD, búsqueda por modos y resumen de la mañana
+pon el video de fracciones equivalentes => VIDEO
+quita el video => VIDEO
+busca el precio de un portátil Lenovo IdeaPad => PRECIOS
+compara el iPhone 16 con el Galaxy S25 => COMPARAR
+dame el resumen de la mañana => RESUMEN
+pon el videobeam en solo pc => !VIDEO
+pon despacito en youtube => !VIDEO
+resume este video https://youtu.be/dQw4w9WgXcQ => VIDEO :: Voy a ver
+compara las notas de 7A con 7B => !COMPARAR
+cuánto cuesta el dólar => !PRECIOS

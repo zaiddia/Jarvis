@@ -570,9 +570,19 @@ def audio_loop():
         was_speaking = False
         last_level = 0.0
         live_fed = False
+        vid_muted = False
         try:
             while not J.mic_restart.is_set():
                 data = stream.read(4000, exception_on_overflow=False)
+                if J.video_mic_muted():                # 12.22: suena un video en el HUD: no se escucha (el video no da órdenes)
+                    if not vid_muted:
+                        vid_muted = True
+                        engine.reset()
+                        J.socketio.emit("mic_level", {"v": 0})
+                    continue
+                if vid_muted:
+                    vid_muted = False
+                    engine.reset()
                 samples = array.array("h", data)
                 peak = max(max(samples), -min(samples)) / 32768 if samples else 0
                 now = time.time()

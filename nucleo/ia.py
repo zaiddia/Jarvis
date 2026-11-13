@@ -541,9 +541,16 @@ def _with_fallback(cfg, fn):
     """Ejecuta fn(cfg). Si el modelo no existe o la cuenta no tiene acceso (p. ej. Gemini 2.5
     con claves nuevas), cambia solo al mejor modelo disponible y reintenta."""
     cfg = J._ensure_model(cfg)
+    if J._alt["for"] == cfg["model"] and time.time() < J._alt["until"]:
+        try:
+            return fn(dict(cfg, model=J._alt["model"]))        # hace poco el elegido estaba saturado: directo al que sí respondió
+        except J.AIError:
+            J._alt["until"] = 0.0
     try:
         return fn(cfg)
     except J.AIError as e:
+        if e.kind in ("server", "quota") and not J._is_local_ai(cfg):
+            return J._try_other_models(cfg, fn, e)     # 12.22: saturado o sin cuota: prueba con otro modelo, solo esta vez
         if e.kind != "model" or cfg["kind"] == "ollama":
             raise
         try:
@@ -554,6 +561,35 @@ def _with_fallback(cfg, fn):
         if not best:
             raise
         return fn(J._switch_model(cfg, best, "el anterior no está disponible para tu cuenta"))
+
+
+_alt = {"until": 0.0, "model": "", "for": ""}
+
+
+def _try_other_models(cfg, fn, err, tries=2):
+    """El modelo elegido está saturado (o se le acabó la cuota del minuto): prueba hasta 2 modelos más de la misma
+    cuenta. No cambia tu elección en Ajustes; solo recuerda 5 minutos cuál respondió, para ir directo a ese."""
+    try:
+        models = J.ai_list_models(cfg)
+    except Exception:
+        raise err
+    tried = [cfg["model"]]
+    for _ in range(tries):
+        alt = J._recommend_model(cfg["ai_provider"], models, exclude=tuple(tried))
+        if not alt:
+            break
+        tried.append(alt)
+        try:
+            out = fn(dict(cfg, model=alt))
+        except J.AIError as e2:
+            if e2.kind in ("server", "quota", "model"):
+                continue
+            raise
+        J._alt.update(until=time.time() + 300, model=alt)
+        J._alt["for"] = cfg["model"]
+        J.log_terminal(f"{cfg['label']}: «{cfg['model']}» está {'saturado' if err.kind == 'server' else 'sin cuota'}; respondí con «{alt}».", "IA")
+        return out
+    raise err
 
 
 def _cloud_chat(cfg, messages, json_mode=False, image_path=None, max_tokens=None):
@@ -1378,6 +1414,7 @@ __all__ = [
     '_switch_model',
     '_version_key',
     '_with_fallback',
+    '_alt', '_try_other_models',
     'ai_chat',
     'ai_error_reply',
     'ai_list_models',

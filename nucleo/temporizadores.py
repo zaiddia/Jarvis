@@ -200,6 +200,10 @@ def calculate_life_path_number(day, month, year):
 
 
 def morning_report():
+    try:
+        J._upd_save(reporte=datetime.date.today().isoformat())      # 12.22: para no repetirlo al abrir más tarde
+    except Exception:
+        pass
     hoy = J.fecha_hablada(datetime.date.today())
     hora = datetime.datetime.now().strftime("%H:%M")
     ia = "operativo" if J.check_ai() else "sin conexión o sin modelo; revisa los ajustes"

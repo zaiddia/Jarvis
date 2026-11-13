@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.21"
+VERSION = "12.22"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -704,6 +704,8 @@ DEFAULT_SETTINGS = {
     "live_provider": "gemini",     # "gemini" (gratis), "openai" (ChatGPT, de pago) o "deepgram" (con crédito)
     "live_fallback": True,         # si el elegido falla, probar los otros que tengan clave
     "live_headset": False,         # 12.18.1: con audífonos, hablarle fuerte también lo interrumpe en vivo (con parlantes solo «Jarvis, …»)
+    "video_mute_mic": True,        # 12.22: el micrófono no escucha mientras suena un video en el HUD
+    "morning_catchup": True,       # 12.22: si abres después de la hora del reporte, te lo da al abrir (hasta el mediodía)
     "instant_answers": True,       # 12.20: lo que no necesita IA se responde al instante (hora mundial, unidades, fechas, azar…)
     "openai_live_model": "gpt-realtime",
     "openai_live_voice": "marin",
@@ -1645,6 +1647,8 @@ def process_command(text):
         return
     if apps_voice(text, t):                            # 12.14: tus frases de «Mis aplicaciones» (y «abre mis aplicaciones»)
         return
+    if hudvideo_voice(text, t):                        # 12.22: «pon el video de…» dentro del HUD, «quita el video»
+        return
     if instant_voice(text, t):                         # 12.20: al instante, sin IA: hora mundial, unidades, fechas, azar… y velocidad, video, traductor
         return
     if live_quiz_voice(text, t):                       # 8.8: «quiz en vivo», y durante el quiz «respuesta», «siguiente»
@@ -1786,6 +1790,8 @@ def process_command(text):
     if text_feedback_voice(text, t):                   # 9.5: «retroalimenta este texto de Juan de 7A: …»
         return
     if style_voice(text, t):                           # 9.5: «aprende mi estilo con este texto: …», «¿cómo escribo?»
+        return
+    if brief_voice(text, t):                           # 12.22: «dame el resumen de la mañana»
         return
     if morning_voice(text, t):                         # 9.5: «mándame el resumen de la mañana en audio»
         return
@@ -1952,6 +1958,8 @@ def process_command(text):
     if info_voice(text, t):
         return
     if research_voice(text, t):                        # «investiga a fondo…» → informe con fuentes
+        return
+    if search_modes_voice(text, t):                    # 12.22: «busca el precio de…», «compara X con Y»
         return
     if search_voice(text, t):                          # «busca en internet… / averigua…»
         return
@@ -2362,6 +2370,7 @@ from nucleo.motor import *  # noqa: F401,F403,E402
 from nucleo.ialocal import *  # noqa: F401,F403,E402
 from nucleo.instantes import *  # noqa: F401,F403,E402
 from nucleo.vidadiaria import *  # noqa: F401,F403,E402
+from nucleo.novedades import *  # noqa: F401,F403,E402
 
 # ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)
 from nucleo.boletines import *  # noqa: F401,F403,E402
@@ -2616,6 +2625,7 @@ def main():
         ai_state_start()                  # 12.5: qué IA responde, a la vista
         motor_start_services()            # 12.6: apaga la IA integrada cuando no se usa
         ialocal_start()                   # 12.19: Ollama encendido solo, sin abrirlo
+        novedades_start()                 # 12.22: el reporte de la mañana aunque abras tarde
         procedure_start()                 # 12.0: mapa de errores de los procedimientos
         night_start()                     # 12.0: turno de noche
         adventure_start()                 # 12.0: reloj de la aventura matemática

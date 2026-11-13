@@ -14,11 +14,14 @@ _RULES = [
     ("material", r"documento|material|boletin|presentacion|excel|generador|audio|word"),
     ("colegio", r"aula|clase|salon|recuperac|escolar|revisar trabajo|tablero|matemat|dictado|codigo"),
     ("pc", r"pc|ventana|pesta|program|mantenim|energia|navegador|pantalla|aplicacion|leer en voz|vision|medico"),
-    ("info", r"web|busca|clima|noticia|sismo|internet|instante"),
+    ("info", r"web|busca|clima|noticia|sismo|internet|instante|videos y busquedas"),
     ("comunica", r"mensaj|telegram|celular|correo|whatsapp|famil"),
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Videos y búsquedas por modos (12.22)", ["pon el video de fracciones equivalentes", "pon el video https://youtu.be/…", "quita el video",
+                                              "busca el precio de un portátil Lenovo IdeaPad", "compara el iPhone 16 con el Galaxy S25",
+                                              "dame el resumen de la mañana"]),
     ("Cuentas y calendario al instante (12.21)", ["¿cuánto es el IVA de 250.000?", "80.000 con el 20% de descuento", "divide una cuenta de 180.000 entre 4 con propina",
                                                   "cuota de un préstamo de 10 millones a 24 meses al 1,8% mensual", "interés compuesto de 2 millones al 10% anual por 3 años",
                                                   "regla de tres: si 5 cuadernos cuestan 20.000, ¿cuánto cuestan 8?", "¿cuántos días hábiles faltan para el 15 de diciembre?",

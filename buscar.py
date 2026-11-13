@@ -84,3 +84,35 @@ def spoken_fallback(query, results, n=3):
 
 def sources(results, n=3):
     return [{"titulo": r["titulo"], "url": r["url"], "fuente": r["fuente"]} for r in results[:n]]
+
+
+# ----------------------------------------------------------------------------- 12.22: búsqueda por modos
+def _blocks(results):
+    return "\n".join(f"- {r['titulo']} ({r['fuente']})" + (f": {r['resumen']}" if r["resumen"] else "") for r in results)
+
+
+def price_query(item):
+    return f"precio {item} Colombia"
+
+
+def price_prompt(item, results):
+    return ("Eres Jarvis, el asistente de un docente en Colombia. El usuario quiere saber cuánto cuesta: "
+            f"«{item}».\nResultados de una búsqueda en internet de hoy:\n" + _blocks(results) +
+            "\n\nResponde en voz alta, en español, en 2 a 4 frases: el rango de precios que aparece (del más bajo al más alto, "
+            "en pesos colombianos si los hay; si están en otra moneda, dilo) y en qué tienda o página sale cada extremo. "
+            "Usa SOLO cifras que estén en los resultados; no inventes ni calcules precios. Si no aparece ningún precio, "
+            "dilo con sinceridad y nombra las páginas donde se puede consultar. Aclara que los precios cambian. "
+            "Sin listas ni markdown. Termina sin preguntas.")
+
+
+def compare_query(a, b):
+    return f"{a} vs {b} comparación diferencias"
+
+
+def compare_prompt(a, b, results):
+    return (f"Eres Jarvis, el asistente de un docente en Colombia. El usuario pidió comparar «{a}» con «{b}».\n"
+            "Resultados de una búsqueda en internet de hoy:\n" + _blocks(results) +
+            "\n\nResponde en español con este orden y sin markdown: primero una frase con la diferencia principal; luego "
+            f"«{a}:» con sus 2 o 3 puntos fuertes en una frase; luego «{b}:» igual; y al final «Conviene…» diciendo cuál "
+            "sirve más según para qué. Usa lo que digan los resultados y, donde no alcance, dilo en vez de inventar cifras. "
+            "Máximo 6 frases. Termina sin preguntas.")
