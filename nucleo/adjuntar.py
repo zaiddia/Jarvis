@@ -14,7 +14,7 @@ import adjuntos
 import conversiones
 from nucleo import J
 
-ACTIONS = {"acta": "Acta: resumen y acuerdos", "transcribir": "Solo transcribir", "redim:w800": "800 px de ancho", "redim:carne": "Tamaño carné",
+ACTIONS = {"acta": "Acta: resumen y acuerdos", "transcribir": "Solo transcribir", "subtitulos": "Subtítulos (.srt)", "redim:w800": "800 px de ancho", "redim:carne": "Tamaño carné",
            "redim:mitad": "A la mitad", "recibo": "Registrar recibo", "audio": "Convertir en audio", "describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo", "procedimiento": "Revisar procedimiento",
            "preguntas": "Hacer un quiz", "editar": "Editar con IA", "codigo": "Revisar código", "codigo_ej": "Ejercicios con este código",
            "copia": "Detectar copia"}
@@ -64,7 +64,7 @@ def card_of(its):
         acts = ["describir"] if k == "imagen" else ["resumir"]
         if k in adjuntos.MEDIA:                                                            # 12.23: audio o video → texto y acta
             return {"ids": [its[0]["id"]], "nombres": [its[0]["nombre"]], "desc": adjuntos.describe(its[0]), "tipos": [k], "preview": "",
-                    "acciones": [{"a": a, "t": ACTIONS[a]} for a in ("acta", "transcribir")]}
+                    "acciones": [{"a": a, "t": ACTIONS[a]} for a in ("acta", "transcribir", "subtitulos")]}
         acts += ["texto"] if k in ("imagen", "pdf") else []
         acts += ["tabla"] if k in ("imagen", "pdf", "word") else []
         acts += ["revisar", "procedimiento", "editar"] if k == "imagen" else []           # 12.0: paso a paso

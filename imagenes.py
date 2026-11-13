@@ -26,6 +26,18 @@ def pick_model(names, wanted=""):
     return cands[0] if cands else ""
 
 
+def model_candidates(names):
+    """Todos los modelos de imágenes de la cuenta, del preferido al último (para probar otro si uno está saturado)."""
+    out, left = [], list(names)
+    while True:
+        m = pick_model(left)
+        if not m or m in out:
+            break
+        out.append(m)
+        left = [n for n in left if n.split("/")[-1] != m]
+    return out
+
+
 def prompt(text):
     return ("Crea una imagen clara y atractiva para usar en una clase de colegio en Colombia. " + text.strip() +
             ". Estilo de ilustración educativa, colores agradables, sin marcas de agua. Si lleva textos o etiquetas, "

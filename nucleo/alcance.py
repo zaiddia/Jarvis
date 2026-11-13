@@ -212,6 +212,18 @@ def image_model():
     return _img_state["model"]
 
 
+def image_models_all():
+    """Los modelos de imágenes de tu cuenta de Gemini (para cambiar si el elegido está saturado)."""
+    cfg = J._gemini_for_stt()
+    if not cfg:
+        return []
+    try:
+        d = J._http("GET", f"{J.GEMINI_BASE}/models?pageSize=200", J._gemini_headers(cfg), timeout=10)
+        return imagenes.model_candidates([m.get("name", "") for m in d.get("models", [])])
+    except Exception:
+        return []
+
+
 def make_image(text, folder=None, estilo=None, formato=None):
     """Genera la imagen y devuelve su ruta. Lanza RuntimeError con un mensaje claro. (11.7: Gemini o ChatGPT, estilo y formato.)"""
     est = estilo if estilo is not None else imagenes.detect_style(text)
@@ -318,7 +330,7 @@ def reach_start():
     threading.Thread(target=J._sync_worker, daemon=True).start()
 
 
-__all__ = [
+__all__ = ['image_models_all', 
     '_RELOAD', '_icon_cache', '_img_state', '_sync_worker', '_tg_file', 'handle_sync_info', 'handle_whatsapp_test',
     'image_model', 'image_voice', 'make_image', 'mobile_icon', 'mobile_manifest', 'phone_send', 'reach_start',
     'sync_now', 'sync_state', 'tg_send_voice', 'tg_voice', 'transcribe_voice_note', 'whatsapp_alert', 'whatsapp_ready',

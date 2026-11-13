@@ -283,6 +283,8 @@ def _tg_handle(msg):
             J.tg["unknown_warned"].add(chat)
             J.log_terminal(f"Telegram: ignoré un mensaje de un chat desconocido ({who}, {chat}).", "AVISO")
         return
+    if not text and J.tg_media_in(msg):                # 12.25: audios reenviados, largos o con «acta»/«transcribe», y videos → a texto
+        return
     if not text and (msg.get("voice") or msg.get("audio")):
         J.tg_voice(msg)                                # 7.9: notas de voz
         return

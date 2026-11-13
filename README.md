@@ -157,6 +157,12 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Audios del celular, subtítulos y respaldo de modelos (v12.25)
+
+- **Audios y videos por Telegram.** Reenvía al bot de Jarvis una nota de voz, un audio o un video y te devuelve el texto en el mismo chat. Si dura más de 3 minutos, te manda el acta en Word. Puedes escribir junto al archivo «transcribe», «acta» o «subtítulos», o pedirlo después. Tus notas de voz cortas (menos de 90 segundos, grabadas por ti y sin texto) siguen siendo órdenes, como siempre. Telegram solo deja a los bots descargar archivos de hasta 20 MB; los más grandes se suben con el clip del HUD.
+- **Subtítulos (.srt).** Sube un audio o video con el clip y di «hazle subtítulos», o usa el botón nuevo de la tarjeta. Queda un archivo .srt en la carpeta Transcripciones, listo para YouTube, VLC o CapCut: máximo 2 líneas de 42 letras y 7 segundos por subtítulo. Con Gemini los tiempos son aproximados (pueden correrse uno o dos segundos); sin internet, si tienes Whisper instalado, son exactos.
+- **Modelo saturado, también en videos e imágenes.** El resumen de videos de YouTube y la creación de imágenes ahora prueban otros modelos de tu cuenta cuando el elegido responde «saturado» o «sin cuota», sin cambiar tu elección en Ajustes.
+
 ## HUD que aparece completo al instante (v12.24)
 
 - **La píldora ya no encoge la ventana** (Windows). Antes el HUD se reducía a 22 píxeles y, al abrirlo, la página tenía que redibujarse entera: en equipos lentos se veía vacío o «transparente» unos segundos. Ahora el HUD se desliza fuera de la pantalla por la derecha y la ventana se recorta a la franja de la píldora; al abrirlo solo se quita el recorte y vuelve a su sitio, con todo ya dibujado.

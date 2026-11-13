@@ -176,8 +176,9 @@ def youtube_summary(url, ask=""):
         "y al final para quién sirve. Sin asteriscos ni títulos.")
     body = {"contents": [{"role": "user", "parts": [{"file_data": {"file_uri": url}}, {"text": prompt}]}],
             "generationConfig": {"maxOutputTokens": 900, "temperature": 0.3}}
-    data = J._post(f"{J.GEMINI_BASE}/models/{g['model']}:generateContent", J._gemini_headers(g), body, (), timeout=240)
-    out = J._gemini_text(data)
+    def call(c):
+        return J._gemini_text(J._post(f"{J.GEMINI_BASE}/models/{c['model']}:generateContent", J._gemini_headers(c), body, (), timeout=240))
+    out = J._with_fallback(g, call)                    # 12.25: si ese modelo está saturado, prueba con otro de tu cuenta
     if not out:
         raise J.AIError("Gemini no devolvió el resumen.", why="Gemini no pudo ver ese video (puede ser privado, muy largo o con restricción de edad)")
     return out

@@ -86,15 +86,33 @@ def _png_bytes(path, max_side=2048):
 def _one_image(prov, cfg, prompt, aspect="", src=None):
     """(bytes, extensión) de una imagen nueva o editada."""
     if prov == "gemini":
-        model = J.image_model()
-        url = f"{J.GEMINI_BASE}/models/{model}:generateContent"
         b64 = base64.b64encode(_png_bytes(src)).decode() if src else ""
+
+        def gen(model):
+            url = f"{J.GEMINI_BASE}/models/{model}:generateContent"
+            try:
+                return J._http("POST", url, J._gemini_headers(cfg), imagenes.gemini_body(prompt, aspect, b64), timeout=180)
+            except J.AIError as e:
+                if not (aspect and e.code == 400):
+                    raise
+                return J._http("POST", url, J._gemini_headers(cfg), imagenes.gemini_body(prompt, "", b64), timeout=180)   # modelo sin formato
+        model = J.image_model()
         try:
-            data = J._http("POST", url, J._gemini_headers(cfg), imagenes.gemini_body(prompt, aspect, b64), timeout=180)
+            data = gen(model)
         except J.AIError as e:
-            if not (aspect and e.code == 400):
+            if e.kind not in ("server", "quota"):
                 raise
-            data = J._http("POST", url, J._gemini_headers(cfg), imagenes.gemini_body(prompt, "", b64), timeout=180)   # modelo sin formato
+            data = None
+            for alt in [m for m in J.image_models_all() if m != model][:2]:      # 12.25: saturado o sin cuota: otro modelo de imágenes de tu cuenta
+                try:
+                    data = gen(alt)
+                    J.log_terminal(f"Imágenes: «{model}» está {'saturado' if e.kind == 'server' else 'sin cuota'}; usé «{alt}».", "IA")
+                    break
+                except J.AIError as e2:
+                    if e2.kind not in ("server", "quota", "model", "bad"):
+                        raise
+            if data is None:
+                raise e
         return imagenes.extract(data)
     model = J.openai_image_model(cfg)
     if src:

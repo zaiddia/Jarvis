@@ -20,6 +20,7 @@ import time
 
 import adjuntos
 import conversiones
+import subtitulos
 from nucleo import J
 
 CHUNK_SECS = 300
@@ -114,10 +115,16 @@ _TR_PROMPT = ("Transcribe este audio palabra por palabra, en el idioma en que se
               "[inaudible]. Devuelve SOLO la transcripción. Si no hay ninguna voz, devuelve exactamente: (nada)")
 
 
-def _tr_gemini(cfg, path, hint=""):
+_SRT_PROMPT = ("Transcribe este audio con marcas de tiempo, para hacer subtítulos, en el idioma en que se habla. Una línea por frase corta "
+               "(máximo 12 palabras), con este formato exacto: [mm:ss] texto — donde mm:ss es el momento en que EMPIEZA esa frase, contando "
+               "desde 00:00 al inicio de este audio. No resumas ni agregues comentarios, y no pongas quién habla. "
+               "Si no hay ninguna voz, devuelve exactamente: (nada)")
+
+
+def _tr_gemini(cfg, path, hint="", stamped=False):
     with open(path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode()
-    prompt = _TR_PROMPT + (f" Es la continuación de una grabación; lo último que se dijo fue: «{hint}»." if hint else "")
+    prompt = (_SRT_PROMPT if stamped else _TR_PROMPT) + (f" Es la continuación de una grabación; lo último que se dijo fue: «{hint}»." if hint else "")
     body = {"contents": [{"role": "user", "parts": [{"inline_data": {"mime_type": "audio/mp3", "data": b64}}, {"text": prompt}]}],
             "generationConfig": {"maxOutputTokens": 8192, "temperature": 0}}
 
@@ -134,6 +141,90 @@ def _tr_whisper(path):
     if r.returncode != 0 or not r.stdout:
         return ""
     return J._whisper_transcribe(r.stdout)
+
+
+def _whisper_segments(path):
+    """Whisper en tu equipo, con el tiempo exacto de cada frase. → [(inicio, fin, texto)] o None si no está."""
+    if J._whisper_refiner["failed"]:
+        return None
+    r = subprocess.run([J._ffmpeg(), "-hide_banner", "-loglevel", "error", "-i", path, "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
+                       capture_output=True, stdin=subprocess.DEVNULL, timeout=600, creationflags=_TR_NOWIN if J.IS_WIN else 0)
+    if r.returncode != 0 or not r.stdout:
+        return []
+    try:
+        size = J.settings["whisper_model"]
+        if J._whisper_refiner["model"] is None or J._whisper_refiner["size"] != size:
+            from faster_whisper import WhisperModel
+            J._whisper_refiner.update(model=WhisperModel(size, device="cpu", compute_type="int8"), size=size)
+        import numpy as np
+        audio = np.frombuffer(r.stdout, dtype=np.int16).astype("float32") / 32768.0
+        segs, _ = J._whisper_refiner["model"].transcribe(audio, language="es", beam_size=1, vad_filter=True)
+        return [(float(s.start), float(s.end), s.text.strip()) for s in segs if s.text.strip()]
+    except ImportError:
+        J._whisper_refiner["failed"] = True
+        return None
+
+
+def subtitle_media(it, progress=None):
+    """→ (texto .srt, cuántos subtítulos, cómo, exactos). Lanza ValueError si no se pudo."""
+    tmp = tempfile.mkdtemp(prefix="jarvis_srt_")
+    try:
+        parts = J.media_chunks(it["ruta"], tmp)
+        cfg = None if J.is_offline() else J._gemini_for_stt()
+        stamped, ends, how, exact, rough = [], [], "", True, 0
+        for n, p in enumerate(parts, 1):
+            if progress:
+                progress(n, len(parts))
+            off = (n - 1) * CHUNK_SECS
+            got = None
+            if cfg:
+                try:
+                    raw = J._tr_gemini(cfg, p, stamped=True)
+                    got = subtitulos.parse_stamped(raw, off, CHUNK_SECS)
+                    if raw and not got:                    # respondió sin marcas: se reparte el texto en ese trozo
+                        got = subtitulos.spread(raw, off, CHUNK_SECS)
+                        rough += 1
+                    how, exact = how or "Gemini", False
+                    ends = None
+                except J.AIError as e:
+                    J.log_terminal(f"Gemini no pudo con el trozo {n} ({e.why or e}); pruebo en tu equipo.", "SUBTÍTULOS")
+            if got is None:
+                segs = J._whisper_segments(p)
+                if segs is None:
+                    raise ValueError("para los subtítulos necesito la clave de Gemini (Ajustes › Inteligencia artificial) con internet, "
+                                     "o Whisper instalado en tu equipo")
+                got = [(off + a, t) for a, _b, t in segs]
+                if ends is not None:
+                    ends += [off + b for _a, b, _t in segs]
+                how = how or "Whisper en tu equipo"
+            stamped += got
+        if not stamped:
+            raise ValueError("no se oye ninguna voz en ese archivo")
+        cs = subtitulos.cues(stamped, total=len(parts) * CHUNK_SECS, ends=ends if ends and len(ends) == len(stamped) else None)
+        return subtitulos.to_srt(cs), len(cs), how, exact and bool(ends), rough
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def subtitles_run(it):
+    """Subtítulos de un audio o video subido. Avisa al terminar. → ruta del .srt"""
+    def progress(n, total):
+        if total > 1:
+            J.log_terminal(f"Subtítulos de «{it['nombre']}»: parte {n} de {total}", "SUBTÍTULOS")
+    srt, n, how, exact, rough = J.subtitle_media(it, progress)
+    dst = conversiones._out(os.path.join(J.settings["output_dir"], "Transcripciones"), os.path.splitext(it["nombre"])[0], "srt")
+    with open(dst, "w", encoding="utf-8-sig") as f:        # con marca UTF-8: así los reproductores de Windows leen bien las tildes
+        f.write(srt)
+    J.generated_files.add(dst)
+    tr_last.update(text=srt, notes="", path=dst, kind="subtitulos")
+    J.notify(f"Listos los subtítulos de «{it['nombre']}»: {n} líneas, hechos con {how}. "
+             + ("Los tiempos son exactos." if exact else "Los tiempos los calcula la IA y pueden correrse uno o dos segundos: revísalos antes de publicarlos.")
+             + (" En una parte no dio tiempos y los repartí a ojo." if rough else "")
+             + f" Quedó en Transcripciones: {os.path.basename(dst)}. Ponlo junto al video con el mismo nombre o súbelo a YouTube.", "SUBTÍTULOS")
+    return dst
+
+
+tr_last = {"text": "", "notes": "", "path": "", "kind": ""}      # lo último que se transcribió (para mandarlo por Telegram)
 
 
 def transcribe_media(it, progress=None):
@@ -238,6 +329,7 @@ def media_run(it, with_minutes=True):
     else:
         dst = J._save_text(base, "transcripción", f"Transcripción: {base}", [("", stamp), ("", text)])
     J.generated_files.add(dst)
+    tr_last.update(text=text, notes=notes, path=dst, kind="acta" if notes else "transcribir")
     took = time.time() - t0
     head = ""
     if notes:
@@ -273,6 +365,8 @@ def media_action(its, action, pregunta=""):
             raise ValueError("dime el tamaño: «déjala de 800 de ancho», «tamaño carné» o «redúcela a la mitad»")
         return True, J.resize_run(it, spec)
     if it["tipo"] in adjuntos.MEDIA:
+        if action == "subtitulos":
+            return True, J.subtitles_run(it)
         if action in ("transcribir", "texto", "conv:texto"):
             return True, J.media_run(it, with_minutes=False)
         return True, J.media_run(it, with_minutes=True)       # acta, resumir, describir, una pregunta…
@@ -283,6 +377,7 @@ def media_action(its, action, pregunta=""):
 _M_ACTA = re.compile(r"\b(?:acta|minuta|resumen|resume(?:lo|la|me|melo|mela)?|acuerdos|compromisos|puntos clave|de que (?:hablan|hablaron|trata)|"
                      r"que (?:acordaron|se acordo|quedo|dijeron|dicen|dice))\b")
 _M_TEXT = re.compile(r"\btranscrib\w*|\b(?:pasa|pasalo|pasala|convierte|conviertelo)\s+(?:.{0,20})?a texto\b|\bsaca(?:le)? el texto\b|\ben texto\b")
+_M_SRT = re.compile(r"\bsubtitul\w*|\bsrt\b")
 _M_REF = re.compile(r"\b(?:este|esta|ese|esa|el|la)\s+(?:audio|video|grabacion|nota de voz|reunion|clase grabada|archivo)\b")
 
 
@@ -296,6 +391,10 @@ def media_voice(text, t):
     if last["tipo"] in adjuntos.MEDIA:
         if not (fresh or _M_REF.search(t)):
             return False
+        if _M_SRT.search(t):
+            J.reply(f"Hago los subtítulos de «{last['nombre']}»; puede tardar unos minutos. Te aviso al terminar.", "SUBTÍTULOS")
+            J._attach_go([last], "subtitulos", text)
+            return True
         if _M_TEXT.search(t) and not re.search(r"\b(?:acta|minuta|resumen|acuerdos)\b", t):
             J.reply(f"Transcribo «{last['nombre']}»; puede tardar unos minutos. Te aviso al terminar.", "TRANSCRIPCIÓN")
             J._attach_go([last], "transcribir", text)
@@ -314,5 +413,5 @@ def media_voice(text, t):
     return False
 
 
-__all__ = ['CHUNK_SECS', '_M_ACTA', '_M_REF', '_M_TEXT', '_drop_part', '_parts', '_save_text', '_tr_gemini', '_tr_whisper', 'handle_attach_part',
+__all__ = ['CHUNK_SECS', '_M_ACTA', '_M_REF', '_M_SRT', '_M_TEXT', '_whisper_segments', 'subtitle_media', 'subtitles_run', 'tr_last', '_drop_part', '_parts', '_save_text', '_tr_gemini', '_tr_whisper', 'handle_attach_part',
            'media_action', 'media_chunks', 'media_minutes', 'media_run', 'media_voice', 'minutes_prompt', 'resize_run', 'transcribe_media']

@@ -51,7 +51,7 @@ def test_audio_grande_sube_por_partes(jv, store):
         assert r["ok"] and bool(r.get("sigue")) == (i < 2)
     it = adjuntos.get(r["ids"][0])
     assert it["tipo"] == "audio" and it["bytes"] == 70_000 and open(it["ruta"], "rb").read() == raw
-    assert [a["a"] for a in r["acciones"]] == ["acta", "transcribir"]
+    assert [a["a"] for a in r["acciones"]] == ["acta", "transcribir", "subtitulos"]
     assert not jv.handle_attach_part({"uid": "u2", "name": "virus.exe", "i": 0, "n": 1, "data": "data:;base64,AAAA"})["ok"]
     assert not jv.handle_attach_part({"uid": "u3", "name": "a.mp3", "i": 1, "n": 2, "data": "data:;base64,AAAA"})["ok"]      # sin el comienzo
     assert adjuntos.kind_of("clase.MP4") == "video" and adjuntos.kind_of("nota.opus") == "audio"
