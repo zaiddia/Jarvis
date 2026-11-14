@@ -65,12 +65,12 @@ def test_una_sola_pasada_por_frase(nl, ask):
     assert len(calls) == 1                                                # la de antes no se repite al final
 
 
-def test_segundo_intento(nl, ask):
+def test_segundo_intento(nl, jv, ask):
     calls, answers, _ = nl
     answers.extend([{"tipo": "orden", "orden": "registra un gasto mercado 85000", "seguro": True},
                     {"tipo": "orden", "orden": "gasté 85 mil en mercado", "seguro": True}])
-    who, said = ask("oye lo del súper ayer fueron como 85 lucas")
-    assert who == "GASTOS" and len(calls) == 2
+    ask("oye lo del súper ayer fueron como 85 lucas")
+    assert any(o == "GASTOS" for _, o in jv._rec.replies) and len(calls) == 2     # (un aviso tardío de otro hilo no cuenta)
     assert "no la reconoce Jarvis" in calls[1][-1]["content"] and "registra un gasto mercado 85000" in calls[1][-2]["content"]
 
 

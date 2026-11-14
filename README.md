@@ -157,6 +157,13 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Conectar en 3 pasos: WhatsApp y correo (v12.30)
+
+- **Una página para conectar sin buscar en Ajustes.** Di «ayúdame a conectar el WhatsApp», «conecta el correo» o «abre el asistente de conexiones», o pulsa **Conectar paso a paso** en la revisión de salud (antes decía «Ir al ajuste»).
+- **WhatsApp (CallMeBot):** muestra el número del bot y un botón que abre WhatsApp con el mensaje de activación ya escrito; si WhatsApp está solo en el celular, trae un QR para escanear. Luego escribes tu número (con o sin +57: Jarvis lo arregla) y la clave que te manda el bot, y «Guardar y probar» te manda un WhatsApp de prueba. Si falla, te dice qué revisar.
+- **Correo (contraseña de aplicación):** botones directos a la verificación en dos pasos y a las contraseñas de aplicación de Google; pegas las 16 letras (con o sin espacios) y «Guardar y probar» entra a tu correo antes de guardar: si no entra, no guarda y te dice por qué. Ya no hace falta «Conectar con Google» (que pide crear un proyecto en Google Cloud).
+- Desde la página solo se abren esas páginas oficiales (WhatsApp, CallMeBot y tu cuenta de Google).
+
 ## Comprensión más fina y prueba de comprensión real (v12.29)
 
 - **Lo conversacional, primero la IA.** Si tu frase suena a conversación («oye…», «es que…», «mira…», «resulta que…», «se me…», o es larga y no empieza como una orden), la IA la entiende ANTES de que las reglas la toquen; así una regla vieja ya no se la «roba». Si la IA dice que no es una orden, siguen las reglas como siempre. Las órdenes cortas y claras («sube el volumen», «abre Excel») siguen siendo instantáneas, sin IA. Cada frase pasa por la comprensión una sola vez.

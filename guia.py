@@ -19,6 +19,7 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Conectar en 3 pasos (12.30)", ["ayúdame a conectar el WhatsApp", "conecta el correo", "abre el asistente de conexiones"]),
     ("Prueba de comprensión (12.29)", ["haz la prueba de comprensión", "haz la prueba de comprensión completa", "¿qué tan bien me entiendes?"]),
     ("Historias y textos en Word (12.28)", ["redacta una historia de un dragón en Word", "escríbeme un cuento de piratas",
                                             "me puedes escribir un poema para mi mamá", "hazme un documento sobre el reciclaje",

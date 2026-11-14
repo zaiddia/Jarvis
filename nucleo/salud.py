@@ -177,7 +177,7 @@ def extra_checks():
     if s["whatsapp_phone"] or s["whatsapp_apikey"]:
         ok = J.whatsapp_ready()
         add(G, "ok" if ok else "fallo", "WhatsApp configurado (prueba el envío en Ajustes › Cuentas y mensajes)." if ok else
-            "WhatsApp a medias: falta el número con +57 o la clave de CallMeBot.", "" if ok else "ajustes:integraciones")
+            "WhatsApp a medias: falta el número con +57 o la clave de CallMeBot.", "" if ok else "conectar:whatsapp")
     if s["classroom_client_id"]:
         if not s["classroom_refresh"]:
             add(G, "aviso", "Classroom: pusiste el ID pero falta pulsar «Conectar».", "ajustes:cuentas")
@@ -194,7 +194,7 @@ def extra_checks():
     if s["email_read"] and s["email_address"]:
         r = J.handle_mail_test()
         add(G, "ok" if r.get("ok") else "fallo", f"Correo: leo tu bandeja ({r.get('n', 0)} recientes)." if r.get("ok") else
-            f"Correo: {r.get('error')}", "" if r.get("ok") else "ajustes:integraciones")
+            f"Correo: {r.get('error')}", "" if r.get("ok") else "conectar:correo")
     if s["sync_folder"].strip():
         okf = os.path.isdir(s["sync_folder"].strip())
         add(G, "ok" if okf and not J.sync_state["error"] else "fallo",

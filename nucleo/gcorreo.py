@@ -109,4 +109,4 @@ def email_test(address="", password=""):
     return {"ok": True, "msg": msg + " Ya puedes dictar correos."}
 
 
-__all__ = ['email_password', 'email_test', 'gmail_ready', 'mail_fetch_recent', 'mail_method', 'mail_send']
+__all__ = ['clean_app_password', 'email_password', 'email_test', 'gmail_ready', 'mail_fetch_recent', 'mail_method', 'mail_send']

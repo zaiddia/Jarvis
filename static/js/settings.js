@@ -921,6 +921,11 @@
         const tab = { integraciones: "cuentas", google: "cuentas" }[key] || key;                // 12.17: secciones nuevas
         b.addEventListener("click", () => goTab(tab));
         li.appendChild(b);
+      } else if (it.arreglo && it.arreglo.startsWith("conectar:")) {         // 12.30: el asistente paso a paso
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "text-btn"; b.textContent = "Conectar paso a paso";
+        b.addEventListener("click", () => socket.emit("open_connect", { k: it.arreglo.split(":")[1] }));
+        li.appendChild(b);
       } else if (it.arreglo === "actualizar") {
         const b = document.createElement("button");
         b.type = "button"; b.className = "text-btn"; b.textContent = "Buscar actualización";

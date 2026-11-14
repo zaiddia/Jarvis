@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="cyan" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conectar en 3 pasos · Jarvis</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css', v=asset_v) }}">
+<style>
+  html, body { min-height: 100%; }
+  body { background: radial-gradient(ellipse at 50% -10%, rgba(var(--a-rgb), .12), transparent 60%), var(--bg); color: var(--text);
+         font-family: var(--mono); font-size: 13.5px; padding: 22px clamp(16px, 3vw, 40px) 50px; user-select: text; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 18px; }
+  header h1 { font-family: var(--hud); font-size: clamp(20px, 3vw, 28px); color: var(--a); letter-spacing: .12em; text-shadow: 0 0 16px rgba(var(--a-rgb), .5); }
+  header p { color: var(--muted); margin-top: 6px; }
+  .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+  .tab { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: pointer; }
+  .tab.on { background: var(--a); color: #03060c; border-color: var(--a); font-weight: 700; }
+  .tab .st { margin-left: 6px; }
+  section { display: none; } section.on { display: block; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  .step { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: rgba(var(--a-rgb), .03); position: relative; }
+  .step h3 { font-size: 14px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; }
+  .step h3 b { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--a); color: #03060c; font-size: 12px; }
+  .step p { color: #bfefff; line-height: 1.5; margin: 6px 0; }
+  .step small { color: var(--muted); display: block; line-height: 1.45; margin-top: 6px; }
+  .big { white-space: nowrap; font-size: 18px; color: var(--a); letter-spacing: .06em; font-weight: 700; }
+  .quote { background: rgba(var(--a-rgb), .08); border: 1px dashed rgba(var(--a-rgb), .4); padding: 8px 10px; border-radius: 8px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .btn { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--a); color: var(--a); background: rgba(var(--a-rgb), .08); cursor: pointer;
+         font: inherit; font-size: 12.5px; letter-spacing: .02em; text-transform: none; white-space: normal; max-width: 100%; text-align: left; height: auto; }
+  .btn.main { background: var(--a); color: #03060c; font-weight: 700; }
+  .btn:hover { filter: brightness(1.15); }
+  label { display: block; color: var(--muted); font-size: 12px; margin-top: 8px; }
+  .inp { width: 100%; height: 38px; padding: 0 10px; margin-top: 4px; }
+  .qr { width: 132px; height: 132px; border-radius: 8px; background: #fff; padding: 4px; }
+  .msg { margin-top: 10px; padding: 9px 11px; border-radius: 8px; display: none; line-height: 1.45; }
+  .msg.ok { display: block; background: rgba(40, 200, 120, .12); border: 1px solid rgba(40, 200, 120, .5); color: #9ff0c4; }
+  .msg.err { display: block; background: rgba(255, 80, 80, .1); border: 1px solid rgba(255, 80, 80, .45); color: #ffb3b3; }
+  .done { position: absolute; top: 12px; right: 14px; color: #6fe3a5; font-size: 12px; display: none; }
+  .step.isdone .done { display: block; }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>CONECTAR EN 3 PASOS</h1>
+    <p>Sin buscar en Ajustes: sigue los pasos en orden y al final pulsa «Guardar y probar».</p>
+  </header>
+  <div class="tabs">
+    <div class="tab" data-t="whatsapp">WhatsApp<span class="st" id="st-whatsapp"></span></div>
+    <div class="tab" data-t="correo">Correo<span class="st" id="st-correo"></span></div>
+  </div>
+
+  <section id="whatsapp">
+    <div class="steps">
+      <div class="step"><h3><b>1</b> Abre el chat con el bot</h3>
+        <p>CallMeBot es un servicio gratis que le deja a Jarvis mandarte avisos <i>a ti</i> por WhatsApp.</p>
+        <p>Número del bot: <span class="big" id="bot">{{ bot }}</span></p>
+        <div class="row">
+          <button class="btn main" data-open="wa_activar">Abrir WhatsApp con el mensaje listo</button>
+          <button class="btn" id="copy-bot">Copiar número</button>
+        </div>
+        <small>¿WhatsApp está en el celular y no en este PC? Escanea este código con la cámara del celular:</small>
+        <div class="row"><img class="qr" src="/conectar/qr-whatsapp.png" alt="QR para abrir el chat con el bot"></div>
+      </div>
+      <div class="step"><h3><b>2</b> Envía el mensaje de activación</h3>
+        <p>En ese chat envía exactamente:</p>
+        <p class="quote" id="act">{{ activar }}</p>
+        <div class="row"><button class="btn" id="copy-act">Copiar mensaje</button></div>
+        <small>El bot te responde con tu clave («APIKEY»): un número. Si en 2 minutos no responde, inténtalo de nuevo al otro día.
+          Si nunca responde, el número del bot pudo cambiar: <a href="#" data-open="wa_ayuda">míralo en callmebot.com</a>.</small>
+      </div>
+      <div class="step" id="wa3"><h3><b>3</b> Escribe tu número y la clave</h3><span class="done">✓ conectado</span>
+        <label>Tu número de WhatsApp (con o sin +57)</label>
+        <input class="inp" id="wa-phone" placeholder="+57 300 123 4567" autocomplete="off">
+        <label>La clave que te mandó el bot</label>
+        <input class="inp" id="wa-key" placeholder="1234567" autocomplete="off">
+        <div class="row"><button class="btn main" id="wa-save">Guardar y probar</button></div>
+        <div class="msg" id="wa-msg"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="correo">
+    <div class="steps">
+      <div class="step"><h3><b>1</b> Activa la verificación en dos pasos</h3>
+        <p>Google solo deja crear la contraseña para Jarvis si tu cuenta tiene la verificación en dos pasos.</p>
+        <div class="row"><button class="btn main" data-open="g_2pasos">Abrir la verificación en dos pasos</button></div>
+        <small>Si ya la tienes activa, pasa al paso 2.</small>
+      </div>
+      <div class="step"><h3><b>2</b> Crea la contraseña de aplicación</h3>
+        <p>Escribe el nombre «Jarvis», pulsa <b>Crear</b> y copia las 16 letras que salen.</p>
+        <div class="row"><button class="btn main" data-open="g_apppass">Abrir contraseñas de aplicación</button></div>
+        <small>Google la muestra una sola vez. No es tu contraseña de Gmail: es una aparte, solo para Jarvis, y la puedes borrar cuando quieras.</small>
+      </div>
+      <div class="step" id="em3"><h3><b>3</b> Pégala aquí</h3><span class="done">✓ conectado</span>
+        <label>Tu Gmail</label>
+        <input class="inp" id="em-addr" placeholder="tunombre@gmail.com" autocomplete="off">
+        <label>Contraseña de aplicación (16 letras; con o sin espacios)</label>
+        <input class="inp" id="em-pw" placeholder="abcd efgh ijkl mnop" autocomplete="off">
+        <label>Con qué nombre firmas (opcional)</label>
+        <input class="inp" id="em-name" placeholder="Tu nombre" autocomplete="off">
+        <div class="row"><button class="btn main" id="em-save">Guardar y probar</button></div>
+        <div class="msg" id="em-msg"></div>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
+<script>
+  const $ = (s) => document.querySelector(s), $$ = (s) => [...document.querySelectorAll(s)];
+  const socket = io();
+  function show(t) {
+    $$(".tab").forEach((x) => x.classList.toggle("on", x.dataset.t === t));
+    $$("section").forEach((x) => x.classList.toggle("on", x.id === t));
+    if (location.hash !== "#" + t) history.replaceState(null, "", "#" + t);
+  }
+  $$(".tab").forEach((x) => x.addEventListener("click", () => show(x.dataset.t)));
+  show(location.hash === "#correo" ? "correo" : "whatsapp");
+  $$("[data-open]").forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); socket.emit("connect_open", { k: b.dataset.open }); }));
+  const copy = (txt, b) => navigator.clipboard.writeText(txt).then(() => { const o = b.textContent; b.textContent = "✓ Copiado"; setTimeout(() => (b.textContent = o), 1400); }, () => {});
+  $("#copy-bot").addEventListener("click", (e) => copy($("#bot").textContent.trim(), e.target));
+  $("#copy-act").addEventListener("click", (e) => copy($("#act").textContent.trim(), e.target));
+  function say(id, r) { const m = $(id); m.className = "msg " + (r && r.ok ? "ok" : "err"); m.textContent = (r && r.msg) || "No pude hacerlo."; }
+  function paint(s) {
+    if (!s) return;
+    $("#st-whatsapp").textContent = s.whatsapp.ready ? "✓" : "";
+    $("#st-correo").textContent = s.correo.method ? "✓" : "";
+    $("#wa3").classList.toggle("isdone", s.whatsapp.ready);
+    $("#em3").classList.toggle("isdone", !!s.correo.method);
+    if (s.whatsapp.phone && !$("#wa-phone").value) $("#wa-phone").value = s.whatsapp.phone;
+    if (s.whatsapp.has_key) $("#wa-key").placeholder = "(ya guardada; escribe otra solo si cambió)";
+    if (s.correo.address && !$("#em-addr").value) $("#em-addr").value = s.correo.address;
+    if (s.correo.has_pw) $("#em-pw").placeholder = "(ya guardada; pega otra solo si cambió)";
+    if (s.correo.name && !$("#em-name").value) $("#em-name").value = s.correo.name;
+    if (s.bot) $("#bot").textContent = s.bot;
+  }
+  const refresh = () => socket.emit("connect_state", {}, paint);
+  socket.on("connect", refresh);
+  $("#wa-save").addEventListener("click", (e) => {
+    e.target.disabled = true; e.target.textContent = "Probando…";
+    socket.emit("connect_save", { kind: "whatsapp", phone: $("#wa-phone").value, apikey: $("#wa-key").value }, (r) => {
+      e.target.disabled = false; e.target.textContent = "Guardar y probar"; say("#wa-msg", r); if (r && r.phone) $("#wa-phone").value = r.phone; refresh();
+    });
+  });
+  $("#em-save").addEventListener("click", (e) => {
+    e.target.disabled = true; e.target.textContent = "Probando…";
+    socket.emit("connect_save", { kind: "correo", address: $("#em-addr").value, password: $("#em-pw").value, name: $("#em-name").value }, (r) => {
+      e.target.disabled = false; e.target.textContent = "Guardar y probar"; say("#em-msg", r); if (r && r.ok) $("#em-pw").value = ""; refresh();
+    });
+  });
+  socket.emit("get_settings", (r) => { if (r && r.settings && r.settings.theme) document.documentElement.dataset.theme = r.settings.theme; });
+</script>
+</body>
+</html>

@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.29"
+VERSION = "12.30"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1795,6 +1795,8 @@ def process_command(text):
         return
     if fallos_voice(text, t):                          # 12.26: «abre el registro de fallos»
         return
+    if connect_voice(text, t):                         # 12.30: «ayúdame a conectar el WhatsApp», «conecta el correo»
+        return
     if nl_test_voice(text, t):                         # 12.29: «haz la prueba de comprensión» (con tu IA, sin ejecutar nada)
         return
     if week_voice(text, t):                            # 9.8: «prepárame la semana», «¿cómo viene la semana?»
@@ -2440,6 +2442,7 @@ from nucleo.vidadiaria import *  # noqa: F401,F403,E402
 from nucleo.novedades import *  # noqa: F401,F403,E402
 from nucleo.ayudante import *  # noqa: F401,F403,E402
 from nucleo.comprension import *  # noqa: F401,F403,E402
+from nucleo.conectar import *  # noqa: F401,F403,E402
 from nucleo.transcribir import *  # noqa: F401,F403,E402
 
 # ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)
