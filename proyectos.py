@@ -29,7 +29,16 @@ TYPES = {
     "malla": "la malla curricular o planeación de todo un periodo, semana a semana",
     "piar": "ajustes razonables (PIAR) de un material para un estudiante con una necesidad específica",
     "lectura": "una lectura en tres niveles (básico, intermedio y avanzado) con vocabulario y preguntas",
+    # 12.26: pasos de la vida diaria (no solo del colegio)
+    "tabla": "una hoja de Excel: presupuesto, comparativo, lista de compras con precios, menú de la semana, horario, inventario…",
+    "correo": "redactar un correo para alguien; Jarvis lo deja listo y PIDE PERMISO antes de enviarlo (en «pedido», a quién y qué decir)",
+    "orden": "una orden corta que Jarvis ya sabe hacer: «recuérdame el viernes a las 9 pagar el arriendo», «anota que…», "
+             "«agrega leche a la lista de mercado». En «pedido» va la orden tal cual se diría",
+    "adjunto": "trabajar con el último audio, video o documento que el usuario subió con el clip: transcribirlo, sacar el acta, "
+               "subtítulos o resumirlo (en «pedido»: transcribir, acta, subtitulos o resumen)",
 }
+GENERAL = ("investigar", "texto", "tabla", "correo", "orden", "adjunto", "presentacion", "imagen")
+SAFE_ORDER = re.compile(r"^(?:recuerdame|recordarme|anota|apunta|toma nota|agrega|anade|añade|pon|guarda|crea una lista|haz una lista|avisame)\b")
 MAX_STEPS = 8
 
 
@@ -38,16 +47,33 @@ def configure(config_dir):
     _dir = os.path.join(config_dir, "proyectos")
 
 
-def plan_prompt(goal, context=""):
-    tipos = "\n".join(f"- {k}: {v}" for k, v in TYPES.items())
-    return ("Eres el planificador de Jarvis, el asistente de un docente en Colombia. Convierte este pedido en un plan "
+def persona():
+    """Quién es Jarvis para el planificador; modos.py lo cambia según el modo."""
+    return "el asistente personal de una persona en Colombia"
+
+
+def plan_types(general=False):
+    return {k: v for k, v in TYPES.items() if not general or k in GENERAL}
+
+
+def plan_prompt(goal, context="", general=False):
+    tipos = "\n".join(f"- {k}: {v}" for k, v in plan_types(general).items())
+    return (f"Eres el planificador de Jarvis, {persona()}. Convierte este pedido en un plan "
             f"de pasos concretos que Jarvis hará solo.\nPedido: «{goal}»\n" + (f"Contexto: {context}\n" if context else "") +
             f"Tipos de paso disponibles (usa SOLO estos):\n{tipos}\n\n"
             f"Reglas: entre 2 y {MAX_STEPS} pasos; cada paso con un «pedido» completo y concreto (tema, grado, cantidad), "
             "como se lo dirías a un asistente; si un paso necesita lo que produce otro, ponlo en «depende» (por ejemplo, "
             "planear las clases depende de investigar); no repitas pasos; si es «la semana», reparte en varias clases.\n"
+            + ("No supongas que es del colegio: es la vida diaria (casa, trabajo, plata, viajes, trámites, salud, ocio). "
+               "Para enviar algo usa «correo» (nunca se envía sin permiso); para recordar o anotar, «orden».\n" if general else "") +
             'Responde SOLO con JSON: {"nombre": "nombre corto del proyecto", "pasos": [{"id": "p1", "tipo": "investigar", '
             '"titulo": "…", "pedido": "…", "depende": []}, …]}')
+
+
+def _plain(text):
+    import unicodedata
+    t = unicodedata.normalize("NFD", str(text or "").lower())
+    return "".join(c for c in t if unicodedata.category(c) != "Mn").strip(" «»\"'")
 
 
 def validate_plan(d, goal=""):
@@ -63,6 +89,8 @@ def validate_plan(d, goal=""):
                 "evaluacion": "quiz", "plan de clase": "plan"}.get(tipo, tipo)
         if tipo not in TYPES:
             continue
+        if tipo == "orden" and not SAFE_ORDER.match(_plain(p.get("pedido"))):
+            continue                                       # solo recordar, anotar y listas: nada que borre, apague o envíe
         pid = re.sub(r"[^\w-]", "", str(p.get("id") or f"p{i + 1}"))[:12] or f"p{i + 1}"
         while pid in ids:
             pid += "b"
@@ -97,7 +125,8 @@ def spoken_plan(plan):
     names = {"investigar": "investigar", "plan": "plan de clase", "taller": "taller", "quiz": "evaluación",
              "rubrica": "rúbrica", "presentacion": "presentación", "texto": "texto", "imagen": "imagen",
              "saber": "preguntas tipo Saber", "malla": "malla curricular", "piar": "ajustes razonables",
-             "lectura": "lectura nivelada"}
+             "lectura": "lectura nivelada", "tabla": "hoja de Excel", "correo": "correo (te pido permiso antes de enviarlo)",
+             "orden": "orden", "adjunto": "tu archivo subido"}
     items = [f"{i + 1}) {names.get(p['tipo'], p['tipo'])}: {p['titulo']}" for i, p in enumerate(plan["pasos"])]
     return f"Proyecto «{plan['nombre']}», {len(items)} pasos: " + "; ".join(items) + "."
 
@@ -213,5 +242,24 @@ _TRIGGER = re.compile(
     r"|^(?:jarvis\s+)?proyecto\b|\bprepar\w*\s+todo\s+(?:lo|para)\b|\bhaz(?:me)? un proyecto\b")
 
 
-def is_project(t):
-    return bool(_TRIGGER.search(t))
+_GENERAL_TRIGGER = re.compile(
+    r"\b(?:encargate|ocupate|hazte cargo)\s+de\b|\b(?:organiza|planea|planifica|prepara|arma)(?:me)?\s+(?:mi|el|la|un|una)\s+"
+    r"(?:fin de semana|viaje|paseo|vacaciones|mudanza|fiesta|cumpleanos|evento|reunion familiar|semana|mes|presupuesto del mes)\b")
+_VERB = (r"busca|investiga|compara|escribe|escribele|redacta|manda|mandale|envia|enviale|crea|haz|hazme|prepara|preparame|transcribe|"
+         r"transcribelo|saca|sacale|mandasela|mandaselo|mandala|mandalo|enviasela|enviaselo|enviala|resume|resumelo|recuerdame|anota|agrega|calcula|traduce|genera|organiza|planea|arma")
+_STEP_SPLIT = re.compile(r"\s*(?:,\s*(?:y\s+)?(?:luego\s+|despues\s+|tambien\s+)?|\s+y\s+(?:luego|despues|tambien|ademas)\s+|\s+y\s+(?=(?:" + _VERB + r")\b)|"
+                         r"\s+(?:luego|despues|ademas)\s+)")
+
+
+def chain_steps(t):
+    """12.26: «transcribe el audio, saca el acta y mándasela a coordinación» → las partes, si son 2 o más órdenes de verdad."""
+    parts = [p.strip() for p in _STEP_SPLIT.split(t) if p and p.strip()]
+    good = [p for p in parts if re.match(r"(?:" + _VERB + r")\b", p) and len(p.split()) >= 2]
+    verbs = {re.match(r"\w+", p).group(0)[:5] for p in good}
+    if all(SAFE_ORDER.match(x) for x in good):
+        return []                                         # «haz una lista y agrega leche»: eso se hace sin proyecto
+    return good if len(good) >= 2 and len(good) == len(parts) and len(verbs) >= 2 else []
+
+
+def is_project(t, general=False):
+    return bool(_TRIGGER.search(t) or _GENERAL_TRIGGER.search(t) or chain_steps(t))

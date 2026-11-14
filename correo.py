@@ -16,6 +16,11 @@ SMTP = {"gmail.com": ("smtp.gmail.com", 587), "googlemail.com": ("smtp.gmail.com
 _EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 
 
+def persona():
+    """Quién es Jarvis en este texto. modos.py lo cambia según el modo (12.26: no todo es del colegio)."""
+    return "el asistente personal de una persona en Colombia"
+
+
 def normalize(text):
     t = unicodedata.normalize("NFD", str(text).lower())
     t = "".join(c for c in t if unicodedata.category(c) != "Mn")
@@ -59,7 +64,7 @@ def valid_sender(addr):
 
 
 def prompt(instruccion, remitente_nombre=""):
-    return ("Eres el asistente de un docente en Colombia y le ayudas a escribir un correo. "
+    return (f"Eres {persona()} y le ayudas a escribir un correo. "
             f"Lo que te pidió: «{instruccion}».\n"
             "Devuelve SOLO un JSON: {\"asunto\": \"…\", \"cuerpo\": \"…\"}.\n"
             "El cuerpo es un correo breve, cordial y claro, en español, bien redactado (no es para "

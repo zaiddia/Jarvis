@@ -19,6 +19,11 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Varios pasos de una vez (12.26)", ["busca vuelos a Cartagena y luego hazme un presupuesto del viaje", "organiza mi fin de semana",
+                                         "encárgate de la fiesta de cumpleaños de mi hija", "prepárame la semana",
+                                         "transcribe el audio, saca el acta y mándasela a la coordinadora"]),
+    ("Textos y alarmas (12.26)", ["corrige este texto: …", "pon una alarma a las 6", "despiértame a las 5 y media",
+                                  "abre el registro de fallos", "¿cuántos fallos tienes?"]),
     ("Audios del celular y subtítulos (12.25)", ["(reenvía al bot de Telegram una nota de voz) → llega el texto", "(envía un audio largo al bot) → llega el acta en Word",
                                                  "(envía un audio con el texto «acta», «transcribe» o «subtítulos»)", "(sube un video con el clip) hazle subtítulos"]),
     ("Audios, videos e imágenes que subes (12.23)", ["(sube un audio o video con el clip) transcríbelo", "saca el acta de la reunión", "¿qué acordaron?",
@@ -117,6 +122,48 @@ def spoken(hits):
         name = re.sub(r"\s*\(\d+\.\d+(?:\.\d+)?\)", "", g["nombre"])
         parts.append(f"{name}: " + ", ".join(f"«{e}»" for e in exs))
     return "Con eso puedo ayudarte así. " + ". ".join(parts) + ". Todo está en la guía: di «abre la guía»."
+
+
+_STOP = {"que", "con", "los", "las", "del", "para", "como", "por", "una", "uno", "mis", "tus", "este", "esta", "esto", "eso",
+         "jarvis", "favor", "porfa", "quiero", "puedes", "podrias", "me", "mi", "el", "la", "de", "en", "y", "a"}
+_SCHOOL = re.compile(r"aula|clase|salon|curso|estudiante|escolar|colegio|recuperac|boletin|icfes|saber|piar|tablero|dictado|rubrica|"
+                     r"calific|periodo|docente|alumno|malla|tareas de classroom|classroom")
+
+
+def _words(t):
+    return {w for w in norm(t).split() if len(w) > 2 and w not in _STOP}
+
+
+def best_example(guide, query, min_score=0.5):
+    """12.26: el ejemplo de la guía más parecido a lo que dijiste (para enseñarte la frase directa). → (grupo, ejemplo) o None."""
+    q = _words(query)
+    if len(q) < 2:
+        return None
+    best = (0.0, None)
+    for cat in guide:
+        for g in cat["grupos"]:
+            for e in g["ejemplos"]:
+                if not e["probar"]:
+                    continue
+                w = _words(e["t"])
+                inter = len(q & w)
+                if inter < 2:
+                    continue
+                s = inter / len(q | w)
+                if s > best[0]:
+                    best = (s, (re.sub(r"\s*\(\d+\.\d+(?:\.\d+)?\)", "", g["nombre"]), e["t"]))
+    return best[1] if best[0] >= min_score and norm(best[1][1]) != norm(query) else None
+
+
+def daily_pick(guide, seen=(), general=False, day=0):
+    """12.26: la habilidad del día: un grupo que aún no te ha mostrado (en modo general, nada del colegio). → (grupo, ejemplos) o None."""
+    groups = [g for c in guide for g in c["grupos"]
+              if any(e["probar"] for e in g["ejemplos"]) and not (general and (c["id"] == "colegio" or _SCHOOL.search(norm(g["nombre"] + " " + " ".join(e["t"] for e in g["ejemplos"])))))]
+    fresh = [g for g in groups if g["nombre"] not in set(seen)] or groups
+    if not fresh:
+        return None
+    g = fresh[day % len(fresh)]
+    return g["nombre"], [e["t"] for e in g["ejemplos"] if e["probar"]][:2]
 
 
 def count(guide):

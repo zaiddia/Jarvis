@@ -386,6 +386,11 @@ def cumple_voice(text, t):
             return True
         return False
     m = _B_MSG.search(t)
+    if m and not re.search(r"cumple|felicita|saludo", t):     # «un mensaje para el arrendador» no es de cumpleaños
+        c = H.find("cumples", m.group(1))
+        nd = H.next_birthday(c) if c and c.get("mes") else None
+        if not nd or (nd - D.today()).days > 3:
+            m = None
     if m:
         c = H.find("cumples", m.group(1)) or {"nombre": m.group(1).strip().capitalize(), "relacion": "", "anio": None}
         d = H.next_birthday(c) if c.get("mes") else D.today()

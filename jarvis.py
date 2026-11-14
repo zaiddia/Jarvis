@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.25"
+VERSION = "12.26"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -703,6 +703,10 @@ DEFAULT_SETTINGS = {
     "live_barge_level": 30,
     "live_provider": "gemini",     # "gemini" (gratis), "openai" (ChatGPT, de pago) o "deepgram" (con crédito)
     "live_fallback": True,         # si el elegido falla, probar los otros que tengan clave
+    "phrase_tips": True,           # 12.26: si la IA tuvo que adivinar, una vez al día te enseña la frase directa
+    "tip_last": "",
+    "skill_of_day": True,          # 12.26: en el resumen de la mañana, una habilidad que quizá no conoces
+    "skill_day_seen": [],
     "live_headset": False,         # 12.18.1: con audífonos, hablarle fuerte también lo interrumpe en vivo (con parlantes solo «Jarvis, …»)
     "video_mute_mic": True,        # 12.22: el micrófono no escucha mientras suena un video en el HUD
     "morning_catchup": True,       # 12.22: si abres después de la hora del reporte, te lo da al abrir (hasta el mediodía)
@@ -1305,7 +1309,7 @@ def fecha_hablada(d):
     return f"{DIAS[d.weekday()]} {d.day} de {MESES[d.month - 1]} de {d.year}"
 
 
-def parse_reminder(t):
+def parse_reminder(t, clock=True):
     """'recuerdame en cinco minutos tomar agua' -> (300, 'tomar agua')."""
     m = re.search(r"\ben\s+media\s+hora\b", t)
     if m:
@@ -1313,13 +1317,52 @@ def parse_reminder(t):
     else:
         m = _DUR_RE.search(t)
         if not m:
-            return None
+            return parse_clock_reminder(t) if clock else None
         raw = m.group(1)
         qty = int(raw) if raw.isdigit() else NUM_WORDS[raw]
         seconds = qty * _UNIT_SECONDS[m.group(2)[:3]]
     label = t[m.end():].strip()
     label = re.sub(r"^(?:que|de|para|a)\s+", "", label) or "Recordatorio"
     return seconds, label
+
+
+_CLOCK_RE = re.compile(r"\b(?:a|para|desde)\s+las?\s+(\d{1,2}|[a-z]+)(?:[:.h](\d{2})|\s+y\s+(media|cuarto|\d{1,2}))?"
+                       r"(?:\s*(am|pm|a\.?\s?m\.?|p\.?\s?m\.?)|\s+de\s+la\s+(manana|tarde|noche|madrugada)|\s+del\s+(mediodia))?")
+
+
+def parse_clock_reminder(t, now=None):
+    """12.26: «pon una alarma a las 6», «despiértame a las 5 y media», «recuérdame a las 3 de la tarde llamar a mamá».
+    Sin «de la mañana/tarde», la más cercana que venga (a las 10 a. m., «a las 6» es a las 6 p. m.)."""
+    m = _CLOCK_RE.search(t)
+    if not m:
+        return None
+    raw = m.group(1)
+    h = int(raw) if raw.isdigit() else NUM_WORDS.get(raw, {"una": 1}.get(raw))
+    if not isinstance(h, int) or not 0 <= h <= 23:
+        return None
+    mi = {"media": 30, "cuarto": 15}.get(m.group(3)) if m.group(3) and not m.group(3).isdigit() else int(m.group(2) or m.group(3) or 0)
+    if mi > 59:
+        return None
+    ap = (m.group(4) or "").replace(".", "").replace(" ", "")
+    part = m.group(5) or ("tarde" if m.group(6) else "")
+    now = now or datetime.datetime.now()
+    if ap.startswith("p") or part in ("tarde", "noche"):
+        hours = [h + 12 if h < 12 else h]
+    elif ap.startswith("a") or part in ("manana", "madrugada") or ("despiertame" in t and h < 12):
+        hours = [h % 12]
+    else:
+        hours = [h] if h > 12 or h == 0 else [h, (h + 12) % 24]
+    best = None
+    for hh in hours:
+        d = now.replace(hour=hh, minute=mi, second=0, microsecond=0)
+        if d <= now:
+            d += datetime.timedelta(days=1)
+        best = d if best is None or d < best else best
+    label = (t[:m.start()] + " " + t[m.end():])
+    label = re.sub(r"\b(?:pon(?:me)?|programa|crea|una|un|alarma|recordatorio|recuerdame|avisame|despiertame|por favor|hoy|manana)\b", " ", label)
+    label = re.sub(r"^\s*(?:que|de|para|a)\s+", "", re.sub(r"\s+", " ", label).strip()) or \
+        ("Despertar" if "despiertame" in t else "Recordatorio")
+    return int((best - now).total_seconds() + 0.999), label        # redondeo hacia arriba: «a las 6» no sale 5:59
 
 
 def is_stop_command(t):
@@ -1739,6 +1782,8 @@ def process_command(text):
         return
     if card_voice(text, t):                            # 9.7: «muéstrame a Juan de 7A», «ficha de Juan»
         return
+    if fallos_voice(text, t):                          # 12.26: «abre el registro de fallos»
+        return
     if week_voice(text, t):                            # 9.8: «prepárame la semana», «¿cómo viene la semana?»
         return
     if period_voice(text, t):                          # 9.8: «el periodo termina el 28 de noviembre», «cierra el periodo»
@@ -2019,7 +2064,7 @@ def process_command(text):
         reply(f"Son las {datetime.datetime.now():%H:%M}.")
     elif has(r"que dia es|que fecha es|fecha de hoy", t):
         reply(f"Hoy es {fecha_hablada(datetime.date.today())}.")
-    elif has(r"recuerdame|recordatorio|alarma|avisame", t):
+    elif has(r"recuerdame|recordatorio|alarma|avisame|despiertame", t):
         parsed = parse_reminder(t)
         if parsed:
             seconds, label = parsed
@@ -2062,6 +2107,10 @@ def process_command(text):
             return
         if panel.wants(t) and panel_answer(text):       # 12.1: «¿qué pasa si…?» → panel con deslizadores
             return
+        try:
+            phrase_tip(text)                            # 12.26: si hay una frase directa para esto, te la enseña (1 vez al día)
+        except Exception:
+            pass
         # Preguntas claras -> respuesta en streaming (más rápida, sin pasar por el enrutador).
         is_question = text.strip().endswith("?") or bool(QUESTION_RE.search(t))
         # Con conectores MCP, también las preguntas pasan por el enrutador («¿qué tengo en Notion?»).
@@ -2371,6 +2420,7 @@ from nucleo.ialocal import *  # noqa: F401,F403,E402
 from nucleo.instantes import *  # noqa: F401,F403,E402
 from nucleo.vidadiaria import *  # noqa: F401,F403,E402
 from nucleo.novedades import *  # noqa: F401,F403,E402
+from nucleo.ayudante import *  # noqa: F401,F403,E402
 from nucleo.transcribir import *  # noqa: F401,F403,E402
 
 # ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)

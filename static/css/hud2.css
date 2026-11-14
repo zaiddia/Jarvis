@@ -257,3 +257,8 @@ html[data-look="aurora"] .xtab.active { color: #fff; }
 #btn-ptt { touch-action: none; user-select: none; }
 #btn-ptt.on { color: #03060c; background: var(--ok); border-color: var(--ok); box-shadow: 0 0 0 3px rgba(61, 255, 154, .25), 0 0 16px rgba(61, 255, 154, .6); }
 [data-size="compacto"] #btn-ptt { display: none; }
+
+/* 12.26: «No era eso» */
+.msg-meta .noera { opacity: 0; transition: opacity .15s; }
+.msg.jarvis:hover .msg-meta .noera, .msg.lastj .msg-meta .noera { opacity: .75; }
+.msg-meta .noera:disabled { opacity: .9; color: var(--a); }

@@ -157,9 +157,14 @@ def merge(lists, limit=8):
     return out[:limit]
 
 
+def persona():
+    """Quién es Jarvis en este texto. modos.py lo cambia según el modo (12.26: no todo es del colegio)."""
+    return "el asistente personal de una persona en Colombia"
+
+
 def news_prompt(items, topic=""):
     lines = "\n".join(f"- {n['titulo']}" + (f" ({n['fuente']})" if n["fuente"] else "") for n in items)
-    return ("Eres Jarvis, el asistente de un docente en Colombia. Con estos titulares de hoy"
+    return (f"Eres Jarvis, {persona()}. Con estos titulares de hoy"
             + (f" sobre «{topic}»" if topic else "") + ", cuéntale en voz alta las noticias más importantes: "
             "entre 4 y 6, una o dos frases cada una, claras y neutrales, empezando por las de Colombia. No "
             "inventes nada que no esté en los titulares y nombra el medio cuando ayude. Sin listas ni markdown: "

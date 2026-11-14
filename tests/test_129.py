@@ -78,7 +78,8 @@ def test_modos():
     assert vd.resolve_mode("general") == "general" and vd.resolve_mode("docente") == "docente"
     assert vd.resolve_mode("auto", ssid="Colegio", school_wifi="Casa, colegio") == "docente"
     assert vd.resolve_mode("auto", in_class=True) == "docente" and vd.resolve_mode("auto", has_schedule=True) == "general"
-    assert vd.resolve_mode("auto", has_schedule=False) == "docente"                # sin horario ni Wi-Fi: como siempre
+    assert vd.resolve_mode("auto", has_schedule=False) == "general"                # 12.26: sin horario ni Wi-Fi, fuera de horas de colegio
+    assert vd.resolve_mode("auto", has_schedule=False, school_hours=True) == "docente"
     items = [{"dia": 0, "inicio": "07:00", "fin": "08:00"}, {"dia": 0, "inicio": "11:00", "fin": "12:30"}]
     mon = dt.datetime(2026, 11, 9, 6, 40)
     assert vd.school_hours(items, mon) and vd.school_hours(items, mon.replace(hour=12, minute=55))

@@ -108,6 +108,13 @@ _WK_BRIEF = re.compile(r"\bcomo viene la (?:proxima )?semana\b|\bque (?:me )?vie
 
 def week_voice(text, t):
     if _WK_RE.match(t):
+        if J.current_mode() == "general":      # 12.26: la semana personal (agenda, pendientes, plata)
+            if J.state.get("ai") != "ok":
+                J.reply("Para organizarte la semana necesito la IA conectada (Ajustes › Inteligencia artificial).", "SEMANA")
+                return True
+            J.reply("Te la organizo con tu agenda y tus pendientes; te digo los pasos antes de empezar.", "SEMANA")
+            J.plan_project("organiza mi semana: lo que tengo en la agenda, mis pendientes y recordatorios, y un plan día a día en Word")
+            return True
         J.propose_week()
         return True
     if _WK_BRIEF.search(t):

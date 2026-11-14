@@ -67,8 +67,8 @@ def resolve_mode(setting, in_class=False, ssid="", school_wifi="", has_schedule=
         return "docente"
     if in_class or school_hours:
         return "docente"
-    if not has_schedule and not nets:
-        return "docente"                               # sin horario ni Wi-Fi del colegio: como siempre fue
+    if not has_schedule and not nets:                  # 12.26: sin horario ni Wi-Fi del colegio, docente solo en horas de colegio
+        return "docente" if school_hours else "general"
     return "general"
 
 

@@ -59,6 +59,11 @@ def parse_results(html_text, limit=6):
     return out
 
 
+def persona():
+    """Quién es Jarvis en este texto. modos.py lo cambia según el modo (12.26: no todo es del colegio)."""
+    return "el asistente personal de una persona en Colombia"
+
+
 def prompt(query, results):
     bloques = []
     for r in results:
@@ -66,7 +71,7 @@ def prompt(query, results):
         if r["resumen"]:
             linea += f": {r['resumen']}"
         bloques.append(linea)
-    return ("Eres Jarvis, el asistente de un docente en Colombia. El usuario preguntó: "
+    return (f"Eres Jarvis, {persona()}. El usuario preguntó: "
             f"«{query}».\nEstos son resultados de una búsqueda en internet de hoy:\n"
             + "\n".join(bloques) +
             "\n\nResponde a su pregunta en voz alta, en español, de forma clara y breve (2 a 5 frases), "
@@ -96,7 +101,7 @@ def price_query(item):
 
 
 def price_prompt(item, results):
-    return ("Eres Jarvis, el asistente de un docente en Colombia. El usuario quiere saber cuánto cuesta: "
+    return (f"Eres Jarvis, {persona()}. El usuario quiere saber cuánto cuesta: "
             f"«{item}».\nResultados de una búsqueda en internet de hoy:\n" + _blocks(results) +
             "\n\nResponde en voz alta, en español, en 2 a 4 frases: el rango de precios que aparece (del más bajo al más alto, "
             "en pesos colombianos si los hay; si están en otra moneda, dilo) y en qué tienda o página sale cada extremo. "
@@ -110,7 +115,7 @@ def compare_query(a, b):
 
 
 def compare_prompt(a, b, results):
-    return (f"Eres Jarvis, el asistente de un docente en Colombia. El usuario pidió comparar «{a}» con «{b}».\n"
+    return (f"Eres Jarvis, {persona()}. El usuario pidió comparar «{a}» con «{b}».\n"
             "Resultados de una búsqueda en internet de hoy:\n" + _blocks(results) +
             "\n\nResponde en español con este orden y sin markdown: primero una frase con la diferencia principal; luego "
             f"«{a}:» con sus 2 o 3 puntos fuertes en una frase; luego «{b}:» igual; y al final «Conviene…» diciendo cuál "

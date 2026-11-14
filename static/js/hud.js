@@ -289,6 +289,19 @@
       cp.type = "button"; cp.className = "copy"; cp.title = "Copiar"; cp.textContent = "Copiar";
       cp.addEventListener("click", () => navigator.clipboard.writeText(item.text).then(() => { cp.textContent = "✓ Copiado"; setTimeout(() => (cp.textContent = "Copiar"), 1400); }, () => {}));
       meta.append(cp);
+      if (live && item.text && item.text.length > 2) {          // 12.26: «No era eso» → queda anotado en tu equipo para corregirlo
+        const nb = document.createElement("button");
+        nb.type = "button"; nb.className = "copy noera"; nb.title = "Esta respuesta no era lo que pedí (se anota solo en tu equipo)"; nb.textContent = "No era eso";
+        nb.addEventListener("click", () => {
+          let p = m.previousElementSibling;
+          while (p && !(p.classList.contains("msg") && p.classList.contains("user"))) p = p.previousElementSibling;
+          const said = p ? ($(".msg-body", p)?.textContent || "") : "";
+          if (!said) { nb.textContent = "Sin orden"; return; }
+          socket.emit("misheard", { said, reply: item.text, origin: item.source || "" }, () => {});
+          nb.textContent = "✓ Anotado"; nb.disabled = true;
+        });
+        meta.append(nb);
+      }
     }
     $(".msg.typing", el.chat)?.remove();
     const stick = nearBottom(el.viewChat);

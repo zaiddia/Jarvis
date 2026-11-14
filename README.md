@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Jarvis para todo, no solo para el colegio (v12.26)
+
+- **Modo general de verdad.** Sin horario guardado, Jarvis era «docente» las 24 horas. Ahora es docente solo entre semana de 6:30 a 1:30 (o según tu horario y el Wi-Fi del colegio, si los tienes); el resto del tiempo es tu asistente personal. Las búsquedas, los correos, las noticias y los planes ya no le dicen a la IA que eres «el asistente de un docente» cuando estás en modo general.
+- **Frases que se iban por el lado equivocado:** «redacta un mensaje para el arrendador» ya no sale como felicitación de cumpleaños; «evalúa mi idea de negocio» ya no se toma como una operación matemática; «corrige este texto: …» en modo general corrige ortografía y redacción (y lo deja en el portapapeles) en vez de hacer una retroalimentación de estudiante; «pon una alarma a las 6» y «despiértame a las 5 y media» ya funcionan.
+- **Una orden, varios pasos.** «Busca vuelos a Cartagena y luego hazme un presupuesto», «organiza mi fin de semana», «encárgate de la fiesta de mi hija», «prepárame la semana» (en modo general, con tu agenda y pendientes). Jarvis arma el plan, te lo dice y lo hace cuando apruebas. Pasos nuevos: hoja de Excel, correo (te pide permiso otra vez antes de enviarlo, con el nombre y la dirección), recordatorios y notas, y el último audio o video que subiste. Dentro de un proyecto solo se aceptan órdenes de recordar, anotar y listas: nada que borre, apague o envíe sin preguntarte.
+- **«No era eso».** Debajo de cada respuesta del HUD hay un botón nuevo. Si Jarvis entendió mal, púlsalo: guarda la frase, quién la atendió y lo que respondió en un archivo de tu equipo (fallos.jsonl). Nada sale de tu PC. Di «abre el registro de fallos» para verlo y compártelo si quieres que lo corrija.
+- **Te enseña lo que sabe hacer.** Si la IA tuvo que adivinar una orden y hay una habilidad con una frase casi igual, una vez al día te deja una tarjeta con la frase directa. Y el resumen de la mañana trae una «habilidad del día» que aún no te ha mostrado (en modo general, nada del colegio). Se apagan en Ajustes (phrase_tips, skill_of_day).
+
 ## Audios del celular, subtítulos y respaldo de modelos (v12.25)
 
 - **Audios y videos por Telegram.** Reenvía al bot de Jarvis una nota de voz, un audio o un video y te devuelve el texto en el mismo chat. Si dura más de 3 minutos, te manda el acta en Word. Puedes escribir junto al archivo «transcribe», «acta» o «subtítulos», o pedirlo después. Tus notas de voz cortas (menos de 90 segundos, grabadas por ti y sin texto) siguen siendo órdenes, como siempre. Telegram solo deja a los bots descargar archivos de hasta 20 MB; los más grandes se suben con el clip del HUD.

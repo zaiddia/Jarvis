@@ -50,6 +50,12 @@ def morning_brief_text(now=None):
         parts += J.brief_extras(now)                   # 12.9: pagos que vencen, listas, batería y disco
     except Exception:
         pass
+    try:
+        tip = J.skill_of_day(now)                      # 12.26: una habilidad que aún no te ha mostrado
+        if tip:
+            parts.append(tip)
+    except Exception:
+        pass
     parts.append("¡Que tengas un excelente día!")
     return " ".join(parts)
 
@@ -206,12 +212,50 @@ def _text_fb_docx(fb, texto, estudiante, curso):
     return path
 
 
+def fix_prompt(texto):
+    return ("Corrige la ortografía, la puntuación y la gramática de este texto en español, sin cambiar su sentido, su tono ni "
+            "su estilo. Responde SOLO con el texto corregido; si hubo cambios importantes, al final agrega una línea que empiece "
+            "por «Cambios:» con los más relevantes, muy breve.\n\nTexto:\n" + texto[:12000])
+
+
+def text_fix(texto):
+    """12.26: corrige un texto cualquiera (modo general). Lo deja en el chat y en el portapapeles."""
+    if J.state.get("ai") != "ok" and not J.is_offline():
+        J.reply("Para corregir textos necesito la IA conectada (Ajustes › Inteligencia artificial).", "CORRECCIÓN")
+        return
+    J.reply("Lo corrijo…", "CORRECCIÓN")
+
+    def work():
+        try:
+            out = J.ai_chat([{"role": "user", "content": fix_prompt(texto)}], max_tokens=3000).strip()
+        except J.AIError as e:
+            J.reply(f"No pude corregirlo: {e}", "CORRECCIÓN")
+            return
+        body = out.split("\nCambios:", 1)[0].strip()
+        try:
+            import pyperclip
+            pyperclip.copy(body)
+            copied = True
+        except Exception:
+            copied = False
+        J.show("Texto corregido" + (" (ya está en el portapapeles, pégalo con Ctrl+V)" if copied else "") + ":\n\n" + out, "CORRECCIÓN")
+        J.speak("Listo, te dejé el texto corregido en el chat" + (" y en el portapapeles." if copied else "."))
+    threading.Thread(target=work, daemon=True).start()
+
+
 def text_feedback_voice(text, t):
     m = _TFB_RE.match(t)
     if not m:
         return False
     parts = re.split(r":\s*", text, maxsplit=1)
     texto = parts[1].strip() if len(parts) == 2 else ""
+    student = re.search(r"\b(?:de|del)\s+(?!(?:mi|un|una)\b)\w+", J.normalize(parts[0]).split("texto", 1)[-1])
+    if (re.match(r"(?:corrige|revisa)\b", t) and not student and J.current_mode() == "general"):   # 12.26: no todo es de un estudiante
+        if len(texto) < 10:
+            J.reply("Pégame el texto después de los dos puntos, por ejemplo: «corrige este texto: …».", "CORRECCIÓN")
+        else:
+            J.text_fix(texto)
+        return True
     if len(texto) < 80:
         J.reply("Pégame el texto después de los dos puntos, por ejemplo: «retroalimenta este texto de Juan de 7A: …».", "RETROALIMENTACIÓN")
         return True
@@ -267,5 +311,5 @@ def polish_start():
 
 __all__ = [
     '_TFB_RE', '_MV_RE', '_ST_FORGET', '_ST_LEARN', '_ST_SHOW', '_text_fb_docx', 'text_fb_prompt', 'text_fb_validate', 'learn_style',
-    'handle_style_info', 'morning_brief_text', 'morning_voice', 'polish_start', 'send_morning_voice', 'style_ctx', 'style_voice', 'text_feedback_voice',
+    'handle_style_info', 'morning_brief_text', 'morning_voice', 'polish_start', 'send_morning_voice', 'style_ctx', 'style_voice', 'text_feedback_voice', 'fix_prompt', 'text_fix',
 ]

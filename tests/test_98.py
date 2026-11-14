@@ -87,6 +87,7 @@ def test_semana_lista_el_domingo(jv, prof, monkeypatch):
 
 def test_semana_sin_horario_ni_temas(jv, prof, monkeypatch):
     monkeypatch.setattr(horario, "items", [])
+    monkeypatch.setitem(jv.settings, "assistant_mode", "docente")
     jv._rec.clear()
     jv.process_command("prepárame la semana")
     assert "horario" in jv._rec.said()

@@ -69,10 +69,21 @@ def _strip_accents(t):
     return "".join(c for c in t if unicodedata.category(c) != "Mn")
 
 
+_MATH_BODY = re.compile(r"\d|[+\-*/^=()<>√π%]|\b[a-z]\b(?!\s+[a-z]{3,}\s+[a-z]{3,})|\b(?:" + "|".join(sorted(set(
+    k for k in NUM_WORDS if len(k) > 3))) + r"|raiz|seno|coseno|tangente|logaritmo|log|ln|sen|cos|tan|pi|cuadrado|cubo|mas|menos|"
+    r"dividido|multiplicado|elevado|fraccion|porcentaje|derivada|integral|ecuacion|limite|sqrt|exp)\b")
+
+
+def has_math_body(rest):
+    """¿Lo que queda tras «calcula / resuelve / evalúa…» parece una cuenta? (números, signos, x, palabras de mate)."""
+    rest = re.sub(r"\b(?:mi|tu|su|una?|el|la|los|las|de|del|que|lo|esto|eso|esta|este)\b", " ", rest)
+    return bool(_MATH_BODY.search(rest))
+
+
 def looks_math(text):
     t = _strip_accents(text)
     if TRIGGER_RE.search(t):
-        return True
+        return has_math_body(TRIGGER_RE.sub(" ", t))      # «evalúa mi idea de negocio» no es una cuenta
     # «15% de 240», «2x+3=7», «3 por 4»
     if re.search(r"\d\s*(?:%|por ciento)\s+de\b", t):
         return True

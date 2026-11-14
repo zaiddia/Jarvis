@@ -648,7 +648,7 @@ def notes_voice(text, t):
     """Órdenes de voz de la memoria personal. Devuelve True si la frase era para ella."""
     m = J._NOTE_ADD.match(t)
     if m:
-        if J.parse_reminder(t):                      # «recuérdame en 10 minutos…» = alarma de siempre
+        if J.parse_reminder(t, clock=False):         # «recuérdame en 10 minutos…» = alarma de siempre
             return False
         resto_n = m.group(1).strip()
         if not resto_n:

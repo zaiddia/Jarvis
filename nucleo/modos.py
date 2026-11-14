@@ -14,8 +14,12 @@ import subprocess
 import threading
 import time
 
+import buscar
+import correo
 import equipo
 import horario
+import infodia
+import proyectos
 import skills
 import vidadiaria
 from nucleo import J
@@ -56,7 +60,19 @@ def current_mode(now=None):
     if setting in vidadiaria.MODES:
         return setting
     return vidadiaria.resolve_mode("auto", bool(horario.now_class(now)), wifi_now(), J.settings.get("school_wifi", ""),
-                                   bool(horario.items), vidadiaria.school_hours(horario.items, now))
+                                   bool(horario.items), vidadiaria.school_hours(horario.items, now) if horario.items
+                                   else (now.weekday() < 5 and 390 <= now.hour * 60 + now.minute <= 810))   # sin horario: 6:30 a 1:30 entre semana
+
+
+def ai_persona():
+    """12.26: quién es Jarvis en los textos para la IA, según el modo. Antes siempre era «el asistente de un docente»."""
+    if current_mode() == "docente":
+        return "el asistente de un docente en Colombia"
+    return "el asistente personal de una persona en Colombia (que además es docente, pero ahora no está en el colegio)"
+
+
+for _m in (buscar, correo, infodia, proyectos):
+    _m.persona = lambda: J.ai_persona()
 
 
 def mode_rule():
@@ -65,7 +81,9 @@ def mode_rule():
         return (" MODO ASISTENTE GENERAL: ahora no estás en el colegio. Ayuda como asistente personal y del computador "
                 "(tareas, correo, compras, gastos, programas, el PC, la casa, ocio); no supongas que hablan de cursos, "
                 "estudiantes o notas salvo que lo digan.")
-    return (" MODO DOCENTE: ahora es la jornada escolar. Da prioridad a la clase, los cursos, los estudiantes y el material; "
+    return (" MODO DOCENTE: ahora es la jornada escolar o estás en el colegio. Si la orden es claramente personal (casa, plata, salud, "
+            "compras, viajes, ocio), ayuda como asistente personal sin llevarla al colegio."
+            " Si no, da prioridad a la clase, los cursos, los estudiantes y el material; "
             "«notas» suele significar calificaciones.")
 
 
@@ -303,5 +321,5 @@ def handle_assistant_rules(data=None):
 
 
 __all__ = ['MODE_LABEL', '_MODE_ASK', '_MODE_SET', '_TRIG_DEL', '_TRIG_LIST', '_mode_changed', '_mode_worker', '_proc_names', '_run_trigger',
-           '_tick', 'ASSISTANT_ORDERS', 'assistant_direct', 'assistant_order', 'current_mode', 'handle_assistant_mode', 'handle_assistant_rules', 'mode_info', 'mode_rule', 'mode_state', 'mode_voice',
+           '_tick', 'ASSISTANT_ORDERS', 'assistant_direct', 'assistant_order', 'current_mode', 'handle_assistant_mode', 'handle_assistant_rules', 'mode_info', 'mode_rule', 'mode_state', 'mode_voice', 'ai_persona',
            'modes_start', 'set_mode', 'trigger_voice', 'wifi_now']

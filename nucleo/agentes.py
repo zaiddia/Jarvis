@@ -13,8 +13,10 @@ import threading
 import time
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 
+import adjuntos
 import aprobaciones
 import aula
+import correo
 import diario
 import oficina
 import proyectos
@@ -170,6 +172,8 @@ def run_step(st, step):
             except (ValueError, TypeError) as e:
                 last = e
         raise RuntimeError(f"la IA no devolvió un material válido ({last})")
+    if tipo in ("tabla", "correo", "orden", "adjunto"):        # 12.26: pasos de la vida diaria
+        return J.run_daily_step(st, step, pedido, folder)
     if tipo == "imagen":
         path = J.make_image(step["pedido"], folder)
         return {"archivo": path, "resumen": f"Imagen: {step['pedido']}"}
@@ -187,6 +191,65 @@ def run_step(st, step):
                     max_tokens=3000)
     path = os.path.join(folder, proyectos.safe_name(step["titulo"]) + ".docx")
     return {"archivo": _docx_text(path, step["titulo"], txt), "resumen": txt[:2500]}
+
+
+_ADJ_ACTION = {"transcribir": "transcribir", "transcripcion": "transcribir", "acta": "acta", "subtitulos": "subtitulos",
+               "resumen": "resumir", "resumir": "resumir", "texto": "texto"}
+
+
+def run_daily_step(st, step, pedido, folder):
+    """12.26: los pasos de proyecto que no son documentos del colegio: Excel, correo (con permiso), órdenes y lo subido."""
+    tipo = step["tipo"]
+    if tipo == "tabla":
+        m = oficina.table_validate(J._extract_json(J.ai_chat([{"role": "user", "content": oficina.table_prompt(pedido)}],
+                                                             json_mode=True, max_tokens=6000)), step["pedido"])
+        return {"archivo": oficina.build_table_xlsx(m, folder), "resumen": json.dumps(m, ensure_ascii=False)[:2500]}
+    if tipo == "orden":
+        orden = step["pedido"].strip(" «»\"")
+        if not proyectos.SAFE_ORDER.match(J.normalize(orden)):
+            raise RuntimeError("esa orden no la hago dentro de un proyecto")
+        J._tl.capture, J._tl.remote = [], True            # como desde el celular: nada peligroso se cuela
+        try:
+            J.process_command(orden)
+            said = " ".join(J._tl.capture) or "Hecho."
+        finally:
+            J._tl.capture, J._tl.remote = None, False
+        return {"archivo": "", "resumen": f"{orden} → {said}"[:600]}
+    if tipo == "adjunto":
+        word = next((v for k, v in _ADJ_ACTION.items() if k in J.normalize(step["pedido"])), "resumir")
+        its = [i for i in adjuntos.recent(6 * 3600) if word in ("resumir", "texto") or i.get("tipo") in ("audio", "video")]
+        if not its:
+            raise RuntimeError("no encontré lo que subiste: súbelo con el clip del HUD y vuelve a pedirlo")
+        res = J.attach_run(its[-1:], word)
+        path = res if isinstance(res, str) and os.path.exists(res) else ""
+        text = J.tr_last.get("text", "") if word in ("transcribir", "acta") else ""
+        return {"archivo": path, "resumen": (text or (res if isinstance(res, str) else ""))[:2500]}
+    # correo: se redacta aquí y se ENVÍA solo si apruebas
+    m = re.search(r"\b(?:a|para)\s+(?:mi\s+|la\s+|el\s+)?([\w@.\- ]+?)(?:\s+(?:que|diciendo|sobre|con|y|:)\b|[,.]|$)", step["pedido"], re.I)
+    dest = correo.resolve_recipient(m.group(1), J._mail_book()) if m else None
+    raw = J.ai_chat([{"role": "user", "content": correo.prompt(pedido, J.settings["email_sender_name"]) + J.style_ctx()}],
+                    json_mode=True, max_tokens=900)
+    mail = correo.validate(J._extract_json(raw))
+    path = _docx_text(os.path.join(folder, proyectos.safe_name("Correo - " + mail["asunto"]) + ".docx"), mail["asunto"],
+                      mail["cuerpo"])
+    note = "lo dejé en Word para que lo copies"
+    if dest and J.mail_method():
+        to_name, to_addr = dest
+
+        def send():
+            try:
+                J.mail_send(to_addr, mail["asunto"], mail["cuerpo"])
+                J.reply(f"Listo, envié el correo a {to_name or to_addr}.", "CORREO")
+            except Exception as e:
+                J.reply(f"No pude enviar el correo: {e}", "CORREO")
+        who = f"{to_name} ({to_addr})" if to_name else to_addr
+        J.request_approval("correo", f"Enviar el correo «{mail['asunto']}» a {who}", mail["cuerpo"][:600],
+                           on_ok=send, on_no=lambda: J.reply("Vale, no lo envío. Quedó en la carpeta del proyecto.", "CORREO"),
+                           say=f"El correo para {to_name or to_addr} está listo. ¿Lo envío? Di «sí» o «no».")
+        note = f"te pedí permiso para enviarlo a {to_name or to_addr}"
+    elif m:
+        note = f"no tengo el correo de «{m.group(1).strip()}» en tu agenda; " + note
+    return {"archivo": path, "resumen": f"Correo «{mail['asunto']}»: {note}.\n{mail['cuerpo'][:1500]}"}
 
 
 def _card(st):
@@ -232,7 +295,8 @@ def run_project(st):
                         res = fut.result()
                         step.update(estado="hecho", archivo=res.get("archivo", ""), resumen=res.get("resumen", ""),
                                     fin=time.time())
-                        J.generated_files.add(step["archivo"])
+                        if step["archivo"]:
+                            J.generated_files.add(step["archivo"])
                     except Exception as e:
                         step.update(estado="error", error=str(e)[:300], fin=time.time())
                         J.log_terminal(f"Paso «{step['titulo']}»: {e}", "AVISO")
@@ -275,7 +339,8 @@ def _write_index(st):
 def plan_project(goal):
     """Planea con la IA y pide aprobación para hacerlo. Devuelve el plan (o None)."""
     try:
-        raw = J.ai_chat([{"role": "user", "content": proyectos.plan_prompt(goal, J._user_ctx(goal)[:1200])}],
+        general = J.current_mode() == "general"
+        raw = J.ai_chat([{"role": "user", "content": proyectos.plan_prompt(goal, J._user_ctx(goal)[:1200], general)}],
                         json_mode=True, max_tokens=1500)
         plan = proyectos.validate_plan(J._extract_json(raw), goal)
     except Exception as e:
@@ -406,7 +471,7 @@ def agents_start():
 __all__ = [
     'BARE_WINDOW', '_APPROVALS_LIST', '_HISTORY', '_NO_ID', '_PRJ_CANCEL', '_PRJ_RESUME', '_PRJ_STATUS', '_YES_ID',
     '_approvals_worker', '_callbacks', '_card', '_docx_text', '_projects_at_start', '_write_index', 'agent_info',
-    'agents_start', 'approvals_answer', 'approvals_voice', 'handle_agent_info', 'handle_approval_resolve',
+    'run_daily_step', 'agents_start', 'approvals_answer', 'approvals_voice', 'handle_agent_info', 'handle_approval_resolve',
     'handle_project_action', 'mobile_approve', 'plan_project', 'project_run', 'project_voice', 'request_approval',
     'resolve_approval', 'run_project', 'run_step',
 ]
