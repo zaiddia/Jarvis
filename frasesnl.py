@@ -1,7 +1,14 @@
-# 12.27: frases dichas «como habla la gente» => la orden de Jarvis que la IA debería sacar.
-# Las pruebas comprueban que la orden la atiende una regla, que la frase natural llega a la comprensión (o a la regla correcta)
-# y que entre los ejemplos que ve la IA hay uno de esa misma habilidad. Agrega aquí lo que anotes con «No era eso».
-# «|| ORIGEN»: otra habilidad que también vale si una regla la atiende antes (p. ej. COMPROMISOS para una cita).
+"""12.29: frases dichas «como habla la gente» → la orden de Jarvis que corresponde (lógica pura, sin dependencias).
+
+Las usan las pruebas (cada frase debe terminar en la habilidad de su orden) y la «prueba de comprensión» que corres
+en tu PC con tu IA real («haz la prueba de comprensión»), que no ejecuta nada: solo mira qué entendería.
+Formato: «frase natural => orden || OTRO_ORIGEN» (lo de «||» es otra habilidad que también vale si una regla la toma).
+Agrega aquí lo que anotes con «No era eso».
+"""
+import re
+import unicodedata
+
+BANK = """
 oye no me dejes olvidar que mañana tengo que llevar el carro al taller temprano => recuérdame mañana a las 7 llevar el carro al taller
 porfa acuérdame en un ratico de sacar la ropa de la lavadora => recuérdame en 20 minutos sacar la ropa de la lavadora
 mañana a las seis tengo que estar despierto sí o sí => despiértame a las 6 de la mañana
@@ -154,3 +161,42 @@ cuánto valen 50 dólares en pesos => cuánto son 50 dólares en pesos
 ponme un temporizador de 5 minutos pa los huevos => temporizador de 5 minutos
 hazme una presentación del sistema solar para mañana => crea una presentación sobre el sistema solar
 dame el resumen de lo que gasté este mes => resumen del mes
+"""
+
+
+def rows():
+    """[(frase, orden, {orígenes alternativos})]."""
+    out = []
+    for ln in BANK.strip().splitlines():
+        if "=>" not in ln or ln.lstrip().startswith("#"):
+            continue
+        nat, rest = [x.strip() for x in ln.split("=>", 1)]
+        can, _, alt = rest.partition("||")
+        out.append((nat, can.strip(), {a.strip() for a in alt.split(",") if a.strip()}))
+    return out
+
+
+_STOP = {"que", "con", "los", "las", "del", "para", "por", "una", "uno", "unos", "unas", "mis", "tus", "este", "esta", "esto", "eso",
+         "jarvis", "favor", "porfa", "como", "cual", "cuales", "muy", "mas", "pero", "todo", "toda", "todos", "todas", "hay", "tengo",
+         "tiene", "esta", "estan", "algo", "ese", "esa", "sus", "nos", "les", "fue", "ser", "son", "hoy"}
+
+
+def _stems(text):
+    t = unicodedata.normalize("NFD", str(text or "").lower())
+    t = "".join(c for c in t if unicodedata.category(c) != "Mn")
+    return {w[:5] for w in re.findall(r"[a-z0-9]+", t) if (len(w) > 2 or w.isdigit()) and w not in _STOP}
+
+
+def similar(got, want, need=0.6):
+    """¿La orden que salió dice lo mismo que la esperada? (raíces de las palabras con contenido)."""
+    a, b = _stems(got), _stems(want)
+    return bool(b) and len(a & b) / len(b) >= need
+
+
+def grade(d, want):
+    """Nota de una respuesta de la comprensión: «bien», «aclaró» (dio la buena entre opciones) o «mal»."""
+    if d.get("tipo") == "orden" and similar(d.get("orden"), want):
+        return "bien"
+    if d.get("tipo") == "aclarar" and any(similar(o, want) for o in d.get("opciones") or []):
+        return "aclaró"
+    return "mal"

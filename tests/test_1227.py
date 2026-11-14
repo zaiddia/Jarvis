@@ -9,18 +9,11 @@ import hogar
 import skills
 import sys
 
-BANK = os.path.join(os.path.dirname(__file__), "frases_naturales.txt")
+import frasesnl
 
 
 def bank():
-    out = []
-    for ln in open(BANK, encoding="utf-8"):
-        if "=>" not in ln or ln.lstrip().startswith("#"):
-            continue
-        nat, rest = [x.strip() for x in ln.split("=>", 1)]
-        can, _, alt = rest.partition("||")
-        out.append((nat, can.strip(), {a.strip() for a in alt.split(",") if a.strip()}))
-    return out
+    return frasesnl.rows()
 
 
 @pytest.fixture
@@ -149,7 +142,7 @@ def test_si_la_orden_traducida_no_existe_responde_la_ia_con_tu_frase(nl):
     nl._rec.clear()
     nl.process_command("quiero que mi carro vuele hasta la luna")
     assert nl._rec.ai and nl._rec.ai[-1][0] == "quiero que mi carro vuele hasta la luna"   # sin vueltas: una sola vez a la IA
-    assert len(nl._nl[0]) == 1
+    assert len(nl._nl[0]) == 2                                             # 12.29: un segundo intento, y no más
 
 
 def test_aclarar_y_delicado(nl, ask):

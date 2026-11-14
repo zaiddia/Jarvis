@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Comprensión más fina y prueba de comprensión real (v12.29)
+
+- **Lo conversacional, primero la IA.** Si tu frase suena a conversación («oye…», «es que…», «mira…», «resulta que…», «se me…», o es larga y no empieza como una orden), la IA la entiende ANTES de que las reglas la toquen; así una regla vieja ya no se la «roba». Si la IA dice que no es una orden, siguen las reglas como siempre. Las órdenes cortas y claras («sube el volumen», «abre Excel») siguen siendo instantáneas, sin IA. Cada frase pasa por la comprensión una sola vez.
+- **Segundo intento.** Si la orden que sacó la IA no la reconoce ninguna regla, se lo dice y le pide otra con la forma de una frase de Jarvis (una vez, no más).
+- **Botones para aclarar.** Cuando duda entre dos cosas, las opciones salen como botones en el chat del HUD; tócalas, o di «la primera», «la segunda» (vale 2 minutos; si dices otra cosa, la pregunta se olvida).
+- **Prueba de comprensión con tu IA real:** di «haz la prueba de comprensión» (40 frases, unos 2 minutos) o «… completa» (las 150). Le pasa a tu IA frases dichas como habla la gente, **sin ejecutar nada**, y te deja en Documentos un archivo con lo que entendió en cada una, lo que se esperaba y el porcentaje de acierto (los fallos primero). Si se acaba la cuota de la IA, se corta y te dice hasta dónde llegó.
+- Todas las habilidades de la guía tienen al menos un ejemplo que la IA puede usar. El banco de frases ahora vive en frasesnl.py (lo usan las pruebas y la prueba de comprensión).
+
 ## Historias, cuentos y textos en Word (v12.28)
 
 - **«Redacta una historia en Word» ya funciona.** Antes Jarvis decía que no podía por tres razones: el generador de documentos solo aceptaba informes, circulares, actas, cartas y «documento» dicho con «en Word»; la regla que le impide a la IA decir que hizo cosas que no hizo la llevaba a responder «no puedo» cuando le pedías un archivo; y el texto para la IA siempre decía «eres un docente».
@@ -170,7 +178,7 @@ Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). 
 - **La IA ve todo lo que Jarvis sabe hacer:** las frases más parecidas a la tuya y una de cada habilidad (en modo general, nada del colegio). Con el modelo rápido de tu cuenta tarda un segundo más o menos.
 - **Pregunta antes de equivocarse:** si duda entre dos cosas te dice las dos órdenes completas para que elijas; si la orden traducida borra, apaga, envía o paga algo que no dijiste con esas palabras, o si la IA no está segura, te pide permiso primero. Las preguntas de saber («¿qué es…?», «¿por qué…?») y los saludos van directo a la IA, sin este paso.
 - **Sin IA conectada** funciona como antes (solo frases fijas). Se apaga en Ajustes (nl_understand).
-- **150 frases dichas como habla la gente** quedaron en las pruebas (tests/frases_naturales.txt): cada una debe terminar en la habilidad correcta. Ahí se suma lo que anotes con «No era eso».
+- **150 frases dichas como habla la gente** quedaron en las pruebas (frasesnl.py): cada una debe terminar en la habilidad correcta. Ahí se suma lo que anotes con «No era eso».
 - **Arreglos que salieron al armar esa lista:** «apaga el ventilador» o «apaga la radio» ya no piden apagar el computador; «termina la concentración» ya no intenta cerrar un programa; «qué tan rápido está el internet» ya no responde sobre la velocidad de Jarvis; las citas, pagos y vencimientos entienden «el martes», «este viernes», «el próximo lunes».
 
 ## Jarvis para todo, no solo para el colegio (v12.26)

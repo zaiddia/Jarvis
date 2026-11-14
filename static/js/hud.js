@@ -1070,6 +1070,25 @@
     vid.hidden = true; $("#vid-box").innerHTML = ""; clearInterval(vidPing); body.classList.remove("has-video");
     if (tell !== false) socket.emit("video_closed", {});
   }
+  socket.on("nl_options", (d) => {                         // 12.29: «¿cuál de estas?» → botones para escoger sin repetir
+    const ops = (d && d.opciones) || [];
+    if (!ops.length) return;
+    setTimeout(() => {
+      const last = $$(".msg.jarvis", el.chat).pop();
+      if (!last) return;
+      $$(".nlopts", el.chat).forEach((x) => x.remove());
+      const box = document.createElement("div");
+      box.className = "nlopts";
+      ops.forEach((o, i) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.textContent = `${i + 1}. ${o}`;
+        b.addEventListener("click", () => { box.remove(); run(o); });
+        box.append(b);
+      });
+      last.append(box);
+      if (nearBottom(el.viewChat)) el.viewChat.scrollTop = el.viewChat.scrollHeight;
+    }, 60);
+  });
   socket.on("hud_video", (d) => {
     if (!d || !d.id) { closeVideo(false); return; }
     if (!/^[\w-]{11}$/.test(d.id)) return;

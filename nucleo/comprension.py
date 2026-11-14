@@ -13,8 +13,10 @@ apaga, envía o paga algo que tú no dijiste con esas palabras, te pide permiso 
 («¿qué es…?», «¿por qué…?») siguen yendo directo a la IA, sin este paso.
 """
 import json
+import os
 import re
 
+import frasesnl
 import guia
 import selector
 from nucleo import J
@@ -129,43 +131,246 @@ def nl_run(orden):
         J._tl.nl_pass, J._tl.nl_missed = False, False
 
 
-def nl_understand(text, t):
-    """La capa de comprensión. → True si ya quedó atendido; False para seguir con la IA de siempre."""
-    if not nl_should_try(text, t):
+_FILLER = re.compile(r"^(?:oye|mira|ey|hey|bueno|pues|uy|ush|vea|ve|ay|resulta que|es que|fijate que|sabes que|necesito que|quiero que|"
+                     r"me gustaria|tengo que|no me dejes|ayudame (?:a|con)|porfa|por favor|quisiera|seria bueno|me haces el favor|"
+                     r"acuerdate|no se me puede|se me|me toca|me llego|me llegaron|ando|estoy)\b")
+_starters = {"set": None}
+
+
+def nl_starters():
+    """Las primeras palabras de las órdenes de Jarvis («pon», «abre», «recuérdame»…): si la frase empieza así, primero las reglas."""
+    if _starters["set"] is None:
+        words = set()
+        for cat in J.guide():
+            for g in cat["grupos"]:
+                for e in g["ejemplos"]:
+                    if not e["t"].startswith("("):
+                        w = J.normalize(e["t"]).split()
+                        if w and w[0] not in ("que", "cual", "cuales", "como", "cuanto", "cuantos", "cuando", "donde", "quien", "el", "la",
+                                              "los", "las", "mi", "mis", "un", "una", "tengo", "me", "ya", "no", "si", "hoy", "manana"):
+                            words.add(w[0][:5])
+        for o in J.ASSISTANT_ORDERS:
+            w = J.normalize(o).split()
+            if w:
+                words.add(w[0][:5])
+        for v in ("recibe", "abre", "activa", "desactiva", "lanza", "habilita", "empieza", "inicia", "termina", "cierra", "pon", "quita",
+                  "sube", "baja", "crea", "haz", "genera", "prepara", "arma", "busca", "muestra", "lee", "dime", "dame", "cuenta", "calcula",
+                  "convierte", "traduce", "manda", "envia", "escribe", "redacta", "anota", "apunta", "agrega", "anade", "borra", "elimina",
+                  "guarda", "recuerda", "avisa", "programa", "cambia", "conecta", "desconecta", "instala", "desinstala", "actualiza",
+                  "revisa", "compara", "organiza", "planea", "califica", "toma", "pasa", "llama", "marca", "silencia", "reproduce",
+                  "pausa", "sigue", "deten", "descarga", "comparte", "exporta", "importa", "imprime", "proyecta", "copia", "pega",
+                  "selecciona", "minimiza", "maximiza", "apaga", "reinicia", "enciende", "prende", "limpia", "mueve", "renombra",
+                  "registra", "elige", "escoge", "sortea", "lanza", "usa", "modo", "temporizador", "alarma", "recordatorio"):
+            words.add(v[:5])
+        _starters["set"] = words
+    return _starters["set"]
+
+
+def nl_conversational(t):
+    """12.29: ¿suena a conversación más que a orden? Entonces la IA entiende ANTES que las reglas (no después)."""
+    w = re.sub(r"^(?:jarvis|oye jarvis|hola jarvis)[ ,]+", "", t).split()
+    if len(w) < 4 or _KNOW.match(" ".join(w)) or _CHAT.match(" ".join(w)):
         return False
-    ack = J.ack_start(text)
+    if _FILLER.match(" ".join(w)):
+        return True
+    return len(w) >= 7 and w[0][:5] not in nl_starters()     # por la raíz: «escríbeme» y «escribe» son la misma orden
+
+
+_RETRY = ("La orden «{o}» no la reconoce Jarvis. Escoge la frase de la lista que más se parezca a lo que pidió la persona, "
+          "con la misma forma, y cámbiale solo los datos (horas, montos, nombres). Si ninguna sirve, responde tipo «pregunta».")
+
+
+def _nl_ask(text, retry_of=""):
     old = getattr(J._tl, "fast_model", "")
     J._tl.fast_model = J.fast_model()                     # el modelo rápido: esto es solo entender, no responder
     try:
-        raw = J.ai_chat([{"role": "user", "content": nl_prompt(text, *nl_catalog(text))}], json_mode=True, max_tokens=220)
+        msgs = [{"role": "user", "content": nl_prompt(text, *nl_catalog(text))}]
+        if retry_of:
+            msgs += [{"role": "assistant", "content": json.dumps({"tipo": "orden", "orden": retry_of}, ensure_ascii=False)},
+                     {"role": "user", "content": _RETRY.format(o=retry_of)}]
+        return nl_parse(J.ai_chat(msgs, json_mode=True, max_tokens=220))
+    finally:
+        J._tl.fast_model = old
+
+
+nl_pending = {"ops": [], "until": 0.0}                    # opciones que Jarvis acaba de ofrecer al aclarar (2 minutos)
+_PICK = re.compile(r"^(?:la |el |por la |por el )?(primera|primero|segunda|segundo|tercera|tercero|1|2|3|uno|dos|tres|opcion (?:1|2|3|uno|dos|tres))"
+                   r"(?: opcion| esa| porfa| por favor)?$")
+
+
+def nl_offer(ops):
+    """Pregunta cuál de las órdenes quiere: en voz, en el chat y como botones en el HUD."""
+    import time
+    nl_pending.update(ops=list(ops), until=time.time() + 120)
+    J.reply("¿Cuál de estas? " + " o ".join(f"«{o}»" for o in ops) + ". Toca una o dime «la primera» o «la segunda».", "COMPRENSIÓN")
+    J.socketio.emit("nl_options", {"opciones": list(ops)})
+
+
+def nl_pick(t):
+    """«la primera», «la 2»… justo después de una aclaración. → True si la atendió."""
+    import time
+    if not nl_pending["ops"] or time.time() > nl_pending["until"]:
+        return False
+    m = _PICK.match(t)
+    if not m:
+        nl_pending.update(ops=[], until=0.0)              # dijo otra cosa: la aclaración ya pasó
+        return False
+    k = {"primera": 0, "primero": 0, "1": 0, "uno": 0, "segunda": 1, "segundo": 1, "2": 1, "dos": 1, "tercera": 2, "tercero": 2,
+         "3": 2, "tres": 2}[m.group(1).split()[-1]]
+    ops = nl_pending["ops"]
+    nl_pending.update(ops=[], until=0.0)
+    if k >= len(ops):
+        J.reply(f"Solo te di {len(ops)} opciones.", "COMPRENSIÓN")
+        return True
+    if not nl_run(ops[k]):
+        J.reply(f"No supe hacer «{ops[k]}».", "COMPRENSIÓN")
+    return True
+
+
+def _nl_do(orden, text, t):
+    """Hace la orden traducida (o pide permiso si es delicada). → True si quedó atendida."""
+    J.log_terminal(f"Entendí «{text.strip()}» como «{orden}».", "COMPRENSIÓN")
+    if not getattr(J._tl, "remote", False):
+        J.card("tip", "Entendí", orden, "🧠", secs=6)
+    return nl_run(orden)
+
+
+def nl_understand(text, t, early=False):
+    """La capa de comprensión. → True si ya quedó atendido; False para seguir (con las reglas si early, si no con la IA de siempre).
+    early (12.29): se llama ANTES de las reglas para frases que suenan a conversación."""
+    if not nl_should_try(text, t) or getattr(J._tl, "nl_tried", "") == t:
+        return False
+    if early and not nl_conversational(t):
+        return False
+    J._tl.nl_tried = t                                    # una sola vez por frase (si la primera pasada no la hizo, no repite)
+    ack = J.ack_start(text)
+    try:
+        d = _nl_ask(text)
     except Exception as e:
         J.log_terminal(f"Comprensión: no pude preguntarle a la IA ({getattr(e, 'why', e)}); sigo como siempre.", "COMPRENSIÓN")
         return False
     finally:
-        J._tl.fast_model = old
         ack.done()
-    d = nl_parse(raw)
-    nl_state["last"] = dict(d, frase=text)
+    nl_state["last"] = dict(d, frase=text, antes=early)
     if d["tipo"] == "aclarar":
-        J.reply("¿Cuál de estas? " + " o ".join(f"«{o}»" for o in d["opciones"]) + ". Dímela así y la hago.", "COMPRENSIÓN")
+        nl_offer(d["opciones"])
         return True
     if d["tipo"] != "orden" or J.normalize(d["orden"]) == t:
         return False
     orden = d["orden"]
-    J.log_terminal(f"Entendí «{text.strip()}» como «{orden}».", "COMPRENSIÓN")
     if not d["seguro"] or nl_risky(orden, t):
         J.request_approval("orden", f"¿Hago «{orden}»?", f"Lo entendí de: «{text.strip()}»",
                            on_ok=lambda: nl_run(orden) or J.reply(f"No supe hacer «{orden}».", "COMPRENSIÓN"),
                            on_no=lambda: J.reply("Vale, no lo hago. Dímelo con otras palabras.", "COMPRENSIÓN"),
                            say=f"Entendí: {orden}. ¿Lo hago? Di «sí» o «no».")
         return True
-    if not getattr(J._tl, "remote", False):
-        J.card("tip", "Entendí", orden, "🧠", secs=6)
-    if nl_run(orden):
+    if _nl_do(orden, text, t):
         return True
-    J.log_terminal(f"«{orden}» tampoco la reconocí; lo respondo con la IA.", "COMPRENSIÓN")
+    try:                                                  # 12.29: segundo intento, diciéndole qué no sirvió
+        d2 = _nl_ask(text, retry_of=orden)
+    except Exception:
+        d2 = {"tipo": "pregunta", "orden": ""}
+    nl_state["last"] = dict(d2, frase=text, antes=early, reintento=orden)
+    if d2["tipo"] == "orden" and d2["orden"] and J.normalize(d2["orden"]) not in (t, J.normalize(orden)):
+        if nl_risky(d2["orden"], t) or not d2["seguro"]:
+            return False
+        if _nl_do(d2["orden"], text, t):
+            return True
+    J.log_terminal(f"«{orden}» tampoco la reconocí; " + ("sigo con las reglas." if early else "lo respondo con la IA."), "COMPRENSIÓN")
     return False
 
 
-__all__ = ['NL_K', '_CHAT', '_KNOW', '_RISKY', 'nl_catalog', 'nl_examples', 'nl_parse', 'nl_prompt', 'nl_risky', 'nl_run', 'nl_should_try',
+# ============================================================================ PRUEBA DE COMPRENSIÓN (12.29)
+NL_TEST_N = 40                                            # frases por prueba (la completa: todas)
+NL_TEST_PAUSE = 1.5                                       # segundos entre preguntas (para no gastar la cuota por minuto)
+_NLT = re.compile(r"\b(?:haz|hazme|corre|ejecuta|inicia|empieza|lanza)\s+(?:la\s+|una\s+)?prueba de comprension(?:\s+(completa|rapida|corta))?\b|"
+                  r"\bque tan bien me entiendes\b")
+nl_test_state = {"busy": False, "last": None}
+
+
+def nl_test_run(n=NL_TEST_N, pause=NL_TEST_PAUSE, seed=None):
+    """Pasa frases del banco por la comprensión con TU IA, sin ejecutar nada. → {"n", "bien", "aclaro", "mal", "filas", "corte"}."""
+    import random
+    import time
+    rows = frasesnl.rows()
+    if n and n < len(rows):
+        rows = random.Random(seed).sample(rows, n)
+    res = {"n": 0, "bien": 0, "aclaro": 0, "mal": 0, "filas": [], "corte": ""}
+    for i, (nat, can, _alt) in enumerate(rows):
+        try:
+            d = _nl_ask(nat)
+        except Exception as e:
+            kind = getattr(e, "kind", "")
+            if kind in ("quota", "key", "config", "net", "offline") or res["n"] == 0:
+                res["corte"] = str(getattr(e, "why", e))[:160]
+                break
+            d = {"tipo": "error", "orden": str(e)[:80], "opciones": []}
+        nota = frasesnl.grade(d, can)
+        res["n"] += 1
+        res[{"bien": "bien", "aclaró": "aclaro", "mal": "mal"}[nota]] += 1
+        got = d.get("orden") or " / ".join(d.get("opciones") or []) or f"({d.get('tipo')})"
+        res["filas"].append((nota, nat, got, can))
+        if pause and i < len(rows) - 1 and J.net.get("watch", True):      # (en las pruebas no se espera)
+            time.sleep(pause)
+    return res
+
+
+def nl_test_report(res):
+    import datetime
+    import os
+    pct = round(100 * (res["bien"] + res["aclaro"]) / res["n"]) if res["n"] else 0
+    head = (f"Prueba de comprensión — {datetime.datetime.now():%Y-%m-%d %H:%M} — {J._ai_cfg().get('label', 'IA')}\n"
+            f"Entendió bien {res['bien']} de {res['n']}" + (f", y en {res['aclaro']} preguntó entre opciones (una era la buena)" if res["aclaro"] else "")
+            + f". Acierto: {pct} %.\n" + (f"Se cortó: {res['corte']}\n" if res["corte"] else "") + "\n")
+    mark = {"bien": "✓", "aclaró": "≈", "mal": "✗"}
+    lines = [f"{mark[n]} «{nat}»\n    entendió: {got}\n    esperaba: {can}" for n, nat, got, can in
+             sorted(res["filas"], key=lambda r: {"mal": 0, "aclaró": 1, "bien": 2}[r[0]])]
+    folder = J.settings["output_dir"]
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, f"Prueba de comprensión {datetime.date.today():%Y-%m-%d}.txt")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(head + "\n".join(lines) + "\n\nNada de esto se ejecutó: solo se le preguntó a la IA qué entendería.\n")
+    return path, pct
+
+
+def nl_test_voice(text, t):
+    m = _NLT.search(t)
+    if not m:
+        return False
+    if nl_test_state["busy"]:
+        J.reply("Ya estoy haciendo la prueba de comprensión. Te aviso cuando termine.", "COMPRENSIÓN")
+        return True
+    if J.state.get("ai") != "ok":
+        J.reply("Para la prueba de comprensión necesito la IA conectada (Ajustes › Inteligencia artificial).", "COMPRENSIÓN")
+        return True
+    full = m.group(1) == "completa"
+    n = 0 if full else NL_TEST_N
+    total = len(frasesnl.rows()) if full else NL_TEST_N
+    J.reply(f"Le paso {total} frases dichas como habla la gente a {J._ai_cfg().get('label', 'tu IA')}, sin ejecutar nada; "
+            f"tarda unos {max(1, round(total * (NL_TEST_PAUSE + 1.5) / 60))} minutos. Te aviso al terminar.", "COMPRENSIÓN")
+
+    def work():
+        nl_test_state["busy"] = True
+        try:
+            res = nl_test_run(n)
+            if not res["n"]:
+                J.notify(f"No pude hacer la prueba de comprensión: {res['corte'] or 'la IA no respondió'}.", "COMPRENSIÓN")
+                return
+            path, pct = nl_test_report(res)
+            nl_test_state["last"] = dict(res, pct=pct, ruta=path)
+            J.generated_files.add(path)
+            if J.IS_WIN:
+                try:
+                    os.startfile(path)
+                except OSError:
+                    pass
+            J.notify(f"Prueba de comprensión: entendí bien {res['bien'] + res['aclaro']} de {res['n']} frases ({pct} %)"
+                     + (f"; se cortó antes: {res['corte']}" if res["corte"] else "") + ". Te dejé el detalle en Documentos.", "COMPRENSIÓN")
+        finally:
+            nl_test_state["busy"] = False
+    J.start_job("Prueba de comprensión", work, "comprension")
+    return True
+
+
+__all__ = ['NL_K', 'NL_TEST_N', 'NL_TEST_PAUSE', '_NLT', 'nl_test_report', 'nl_test_run', 'nl_test_state', 'nl_test_voice', '_CHAT', '_FILLER', '_KNOW', '_PICK', '_RETRY', '_RISKY', '_nl_ask', '_nl_do', '_starters', 'nl_catalog', 'nl_conversational', 'nl_offer', 'nl_pending', 'nl_pick', 'nl_starters', 'nl_examples', 'nl_parse', 'nl_prompt', 'nl_risky', 'nl_run', 'nl_should_try',
            'nl_state', 'nl_understand']

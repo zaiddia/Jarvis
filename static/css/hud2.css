@@ -262,3 +262,9 @@ html[data-look="aurora"] .xtab.active { color: #fff; }
 .msg-meta .noera { opacity: 0; transition: opacity .15s; }
 .msg.jarvis:hover .msg-meta .noera, .msg.lastj .msg-meta .noera { opacity: .75; }
 .msg-meta .noera:disabled { opacity: .9; color: var(--a); }
+
+/* 12.29: opciones para aclarar */
+.nlopts { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+.nlopts button { font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  color: var(--a); background: rgba(var(--a-rgb), .08); border: 1px solid rgba(var(--a-rgb), .35); }
+.nlopts button:hover { background: rgba(var(--a-rgb), .18); }

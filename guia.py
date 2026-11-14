@@ -19,6 +19,7 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Prueba de comprensión (12.29)", ["haz la prueba de comprensión", "haz la prueba de comprensión completa", "¿qué tan bien me entiendes?"]),
     ("Historias y textos en Word (12.28)", ["redacta una historia de un dragón en Word", "escríbeme un cuento de piratas",
                                             "me puedes escribir un poema para mi mamá", "hazme un documento sobre el reciclaje",
                                             "redacta un discurso para la graduación en PDF"]),
@@ -31,7 +32,7 @@ EXTRA = [
     ("Textos y alarmas (12.26)", ["corrige este texto: …", "pon una alarma a las 6", "despiértame a las 5 y media",
                                   "abre el registro de fallos", "¿cuántos fallos tienes?"]),
     ("Audios del celular y subtítulos (12.25)", ["(reenvía al bot de Telegram una nota de voz) → llega el texto", "(envía un audio largo al bot) → llega el acta en Word",
-                                                 "(envía un audio con el texto «acta», «transcribe» o «subtítulos»)", "(sube un video con el clip) hazle subtítulos"]),
+                                                 "(envía un audio con el texto «acta», «transcribe» o «subtítulos»)", "(sube un video con el clip) hazle subtítulos", "hazle subtítulos"]),
     ("Audios, videos e imágenes que subes (12.23)", ["(sube un audio o video con el clip) transcríbelo", "saca el acta de la reunión", "¿qué acordaron?",
                                                      "(sube una imagen) déjala de 800 de ancho", "déjala tamaño carné", "redúcela a la mitad"]),
     ("Videos y búsquedas por modos (12.22)", ["pon el video de fracciones equivalentes", "pon el video https://youtu.be/…", "quita el video",

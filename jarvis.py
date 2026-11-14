@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.28"
+VERSION = "12.29"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1649,6 +1649,8 @@ def process_command(text):
         return
     rapidez.mark("orden")
     _tl.cmd_text = text                               # 7.4: para aprender tus costumbres
+    if not getattr(_tl, "nl_pass", False):
+        _tl.nl_tried = ""                             # 12.29: la comprensión, una vez por frase
     if not getattr(_tl, "polite", False):
         order = polite_to_order(t)
         if order and order != t:
@@ -1687,7 +1689,11 @@ def process_command(text):
         return
     if approvals_answer(t):                            # «sí», «sí 3», «no 2» a una aprobación pendiente
         return
+    if nl_pick(t):                                     # 12.29: «la primera» tras «¿cuál de estas?»
+        return
     if rehearsal_capture(text, t):                     # 12.0: durante el ensayo, lo que dices es para los estudiantes simulados
+        return
+    if not getattr(_tl, "live", False) and nl_understand(text, t, early=True):   # 12.29: lo conversacional, primero la IA
         return
     _parts = chain_split(text)                         # 12.1: «pon un temporizador, abre la pizarra y muéstrales el QR»
     if len(_parts) > 1:
@@ -1788,6 +1794,8 @@ def process_command(text):
     if card_voice(text, t):                            # 9.7: «muéstrame a Juan de 7A», «ficha de Juan»
         return
     if fallos_voice(text, t):                          # 12.26: «abre el registro de fallos»
+        return
+    if nl_test_voice(text, t):                         # 12.29: «haz la prueba de comprensión» (con tu IA, sin ejecutar nada)
         return
     if week_voice(text, t):                            # 9.8: «prepárame la semana», «¿cómo viene la semana?»
         return
