@@ -114,9 +114,14 @@ def test_prueba_de_comprension(nl, jv, ask, monkeypatch):
     body = open(path, encoding="utf-8").read()
     assert pct == 50 and "Acierto: 50 %" in body and body.index("✗") < body.index("✓") and "Nada de esto se ejecutó" in body
     answers.clear()
-    answers.extend([{"tipo": "orden", "orden": can} for _n, can, _a in rows[:3]] + [jv.AIError("cuota", kind="quota")])
+    answers.extend([{"tipo": "orden", "orden": can} for _n, can, _a in rows[:3]] + [jv.AIError("cuota", kind="quota"),
+                                                                                   {"tipo": "orden", "orden": rows[3][1]}])
+    answers.clear()
+    answers.extend([{"tipo": "orden", "orden": can} for _n, can, _a in rows[:3]] + [jv.AIError("cuota", kind="quota"),
+                                                                                   {"tipo": "orden", "orden": rows[3][1]}] +
+                   [jv.AIError("cuota", kind="quota")] * 2)
     res = jv.nl_test_run(0, pause=0)
-    assert res["n"] == 3 and res["corte"] == "cuota"
+    assert res["n"] == 4 and res["bien"] == 4 and res["corte"] == "cuota"                # la 4ª se repitió tras esperar y salió bien
     said = []
     monkeypatch.setattr(jv, "notify", lambda text, origin="": said.append(text))
     answers.clear()

@@ -60,6 +60,10 @@ def _classify(code, body):
           or "invalid x-api-key" in low or "incorrect api key" in low or "api_key_invalid" in low
           or "invalid_api_key" in low or "authentication" in low or "unauthorized" in low):
         kind, why = "key", "la clave de API no es válida. Revísala o crea una nueva"
+    elif code == 429 and not ("insufficient balance" in low or "credit balance" in low):
+        # 12.33: Gemini responde 429 «You exceeded your current quota, please check your plan and billing»: es el límite de
+        # peticiones (por minuto o del día), no falta de saldo. Antes salía «sin saldo» y no se probaba otro modelo.
+        kind, why = "quota", "se agotó la cuota o hay demasiadas peticiones. Espera un minuto o revisa tu plan"
     elif (code == 402 or "insufficient balance" in low or "credit balance" in low
           or "insufficient_quota" in low or "billing" in low or "payment" in low):
         kind, why = "balance", "tu cuenta no tiene saldo o crédito disponible"

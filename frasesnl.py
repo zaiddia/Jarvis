@@ -2,7 +2,8 @@
 
 Las usan las pruebas (cada frase debe terminar en la habilidad de su orden) y la «prueba de comprensión» que corres
 en tu PC con tu IA real («haz la prueba de comprensión»), que no ejecuta nada: solo mira qué entendería.
-Formato: «frase natural => orden || OTRO_ORIGEN» (lo de «||» es otra habilidad que también vale si una regla la toma).
+Formato: «frase natural => orden | otra orden válida || OTRO_ORIGEN» (con «|», otras formas que Jarvis también hace bien;
+lo de «||» es otra habilidad que también vale si una regla la toma).
 Agrega aquí lo que anotes con «No era eso».
 """
 import re
@@ -82,7 +83,7 @@ ponme el video de cómo hacer arepas => pon el video de cómo hacer arepas
 quita ese video => quita el video
 hazme un qr del wifi Casa, la clave es 12345678 => crea un QR del wifi Casa con clave 12345678
 necesito estirarme un rato => pausa activa
-estoy estresado, ayúdame a respirar => respiración guiada
+estoy estresado, ayúdame a respirar => respiración guiada | respiración de 2 minutos
 no me molestes por una hora => no me molestes por una hora
 qué me perdí mientras no estaba => qué me perdí
 escríbele a la coordinadora que mañana llego tarde => escríbele un correo a la coordinadora diciendo que mañana llego tarde
@@ -98,7 +99,7 @@ lánzame una moneda => lanza una moneda
 quiero practicar inglés => practiquemos inglés
 cuéntale un cuento a mi hija => cuéntame un cuento
 modo cocina por favor => modo cocina
-quiero que estés en modo casa => modo asistente general
+quiero que estés en modo casa => modo asistente general | modo casa
 ya estoy en el colegio, ponte en modo profe => modo docente
 tengo una reunión de padres el jueves a las 3 => anota que el jueves a las 3 tengo reunión de padres
 qué medicinas tomo => qué medicamentos tengo
@@ -127,7 +128,7 @@ cuáles son los festivos de diciembre => festivos de diciembre
 dime un número al azar del 1 al 100 => dame un número al azar entre 1 y 100
 cómo se escribe excepción => deletrea excepción
 pon el volumen al 30 => volumen al 30
-pausa la música => pausa la música
+pausa la música => pausa la música | pausa Spotify
 pasa a la siguiente canción => siguiente canción
 para la radio => apaga la radio
 ábreme youtube => abre YouTube
@@ -172,8 +173,16 @@ def rows():
             continue
         nat, rest = [x.strip() for x in ln.split("=>", 1)]
         can, _, alt = rest.partition("||")
-        out.append((nat, can.strip(), {a.strip() for a in alt.split(",") if a.strip()}))
+        out.append((nat, can.split(" | ")[0].strip(), {a.strip() for a in alt.split(",") if a.strip()}))
     return out
+
+
+def orders_of(nat):
+    """Todas las órdenes que valen para esa frase (la principal y las alternativas con «|»)."""
+    for ln in BANK.strip().splitlines():
+        if "=>" in ln and ln.split("=>", 1)[0].strip() == nat:
+            return [x.strip() for x in ln.split("=>", 1)[1].partition("||")[0].split(" | ") if x.strip()]
+    return []
 
 
 _STOP = {"que", "con", "los", "las", "del", "para", "por", "una", "uno", "unos", "unas", "mis", "tus", "este", "esta", "esto", "eso",
@@ -193,10 +202,16 @@ def similar(got, want, need=0.6):
     return bool(b) and len(a & b) / len(b) >= need
 
 
-def grade(d, want):
-    """Nota de una respuesta de la comprensión: «bien», «aclaró» (dio la buena entre opciones) o «mal»."""
-    if d.get("tipo") == "orden" and similar(d.get("orden"), want):
+def grade(d, want, nat=""):
+    """Nota de una respuesta de la comprensión: «bien», «aclaró» (dio la buena entre opciones) o «mal».
+    Si devolvió la misma frase de la persona (sin traducirla), es «mal» aunque se parezca: Jarvis no la reconocería."""
+    wants = orders_of(nat) if nat else []
+    wants = wants or [want]
+    got = d.get("orden") or ""
+    if nat and _stems(got) == _stems(nat) and not any(_stems(w) == _stems(nat) for w in wants):
+        return "mal"
+    if d.get("tipo") == "orden" and any(similar(got, w) for w in wants):
         return "bien"
-    if d.get("tipo") == "aclarar" and any(similar(o, want) for o in d.get("opciones") or []):
+    if d.get("tipo") == "aclarar" and any(similar(o, w) for o in d.get("opciones") or [] for w in wants):
         return "aclaró"
     return "mal"

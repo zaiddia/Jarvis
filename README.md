@@ -157,6 +157,15 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Comprensión corregida con la prueba real (v12.33)
+
+La primera prueba de comprensión con Gemini dio 58 % (23 de 40). Lo que se corrigió:
+- **«Sin saldo» era en realidad «límite por minuto».** Gemini responde 429 «You exceeded your current quota… billing» cuando pasas el límite de peticiones; Jarvis lo leía como falta de saldo, lo decía así y no probaba otro modelo. Ahora es «cuota agotada»: prueba hasta 2 modelos más de tu cuenta y, en la prueba de comprensión, espera un minuto y repite. 5 de los 17 fallos eran esto.
+- **La IA devolvía tu frase tal cual** («libera espacio en el disco», «la pantalla está muy oscura»): ahora se le pide la frase de la lista con su misma forma, con ejemplos, y si igual la devuelve sin traducir, lo intenta otra vez diciéndole que esa no la reconoce Jarvis.
+- **Las preguntas sobre tus cosas son órdenes** («qué medicinas tomo» → «qué medicamentos tengo»), y los tiempos como «registré» ya no valen («me tomé un tinto de 3500» → «gasté 3500 en tinto»).
+- **La IA ve mejores ejemplos:** 30 parecidos a tu frase y, de cada habilidad, el más parecido (antes, el primero).
+- **La nota de la prueba es más justa:** acepta otras formas que Jarvis también hace («pausa Spotify», «modo casa», «respiración de 2 minutos»), no cuenta los errores de la IA como «no entendió» y va más despacio (unos 4 minutos las 40 frases) para no gastar tu cuota por minuto.
+
 ## Avisos por evento, proyectos que se repiten, consumo, privacidad y consejo de modelos (v12.32)
 
 - **Avisos por evento** (además de los del PC): «cuando me llegue un correo de la coordinadora, avísame al celular» (revisa tu bandeja cada 5 minutos), «cuando aparezca una reunión nueva en el calendario, recuérdamela la víspera» (te avisa al aparecer y la víspera desde las 6 p. m.), «si el dólar pasa de 4.200, avísame» o «cuando el euro baje de 4.500» (dólar, euro, bitcoin y ethereum; avisa al cruzar el valor, no cada vez que lo mira). «Al celular» va por Telegram o, si no, por WhatsApp. «Mis avisos automáticos» los lista; «borra el aviso automático 2» quita uno. La primera revisión solo aprende lo que ya había: no te avisa de correos o eventos viejos.

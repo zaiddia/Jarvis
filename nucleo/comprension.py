@@ -21,7 +21,7 @@ import guia
 import selector
 from nucleo import J
 
-NL_K = 24                                                  # ejemplos que ve la IA (los más parecidos a tu frase)…
+NL_K = 30                                                  # ejemplos que ve la IA (los más parecidos a tu frase)…
 _KNOW = re.compile(r"^(?:jarvis\s+)?(?:que es(?! mejor| peor| mas barato| mas caro)|que son|que significa|que fue|quien es|quien fue|quienes son|por que|porque|como funciona|"
                    r"como se (?:dice|escribe|hace|calcula|pronuncia)|explica|explicame|define|definicion de|diferencia entre|"
                    r"cual es (?:la|el) (?:capital|diferencia|significado|origen)|cuando (?:fue|nacio|murio|empezo|termino)|"
@@ -67,8 +67,13 @@ def nl_catalog(text):
         for g in cat["grupos"]:
             exs = [e["t"] for e in g["ejemplos"] if e["probar"]]
             if exs and not set(exs) & set(near):
-                rest.append(exs[0])
+                rest.append(_closest(text, exs))          # 12.33: de cada habilidad, la frase más parecida (no la primera)
     return near, rest
+
+
+def _closest(text, exs):
+    words = {w[:5] for w in J.normalize(text).split() if len(w) > 2}
+    return max(exs, key=lambda e: (len(words & {w[:5] for w in J.normalize(e).split() if len(w) > 2}), -exs.index(e)))
 
 
 def nl_prompt(text, examples, more=()):
@@ -77,11 +82,17 @@ def nl_prompt(text, examples, more=()):
             "que hace cosas en el PC y en la vida diaria, y las reconoce con frases como estas:\n" + ex + "\n"
             + (("Otras cosas que sabe hacer (una frase de cada una): " + " · ".join(more) + "\n") if more else "") + "\n"
             f"La persona dijo: «{text}»\n\n"
-            "Si pide que Jarvis HAGA algo que se parece a una de esas frases, reescríbelo como una orden corta en ese estilo, con "
-            "los datos de la persona (horas, montos, nombres, lugares). Conserva «hoy», «mañana», «el viernes», «en 10 minutos» "
-            "tal cual. No inventes datos que la persona no dijo. Si dice «lucas» o «barras», son miles de pesos.\n"
-            "Si es una pregunta de saber, una charla o algo que esas frases no cubren, no lo conviertas.\n"
-            "Si dudas entre dos órdenes, pide aclarar con las dos completas.\n"
+            "Si pide que Jarvis HAGA o CONSULTE algo que cubre una de esas frases, devuelve en «orden» ESA frase de la lista, con "
+            "su misma forma y sus mismas palabras clave, cambiando solo los datos de la persona (horas, montos, nombres, lugares). "
+            "Nunca devuelvas la frase de la persona tal cual ni con otras palabras: Jarvis solo reconoce la forma de la lista. "
+            "Ejemplos: «la pantalla está muy oscura» → «brillo al 90»; «libera espacio en el disco» → «limpia los temporales»; "
+            "«me tomé un tinto de 3500» → «gasté 3500 en tinto»; «en qué se me va la plata» → «resumen del mes».\n"
+            "Las preguntas sobre las cosas de la persona (su agenda, sus gastos, sus medicamentos, sus citas, sus listas, su PC, "
+            "su correo) SÍ son órdenes: «qué medicinas tomo» → «qué medicamentos tengo».\n"
+            "Conserva «hoy», «mañana», «el viernes», «en 10 minutos» tal cual. No inventes datos que la persona no dijo. Si dice "
+            "«lucas» o «barras», son miles de pesos.\n"
+            "Si es una pregunta de saber general, una charla o algo que esas frases no cubren, no lo conviertas (tipo «pregunta» "
+            "o «charla»).\nSi dudas entre dos órdenes, pide aclarar con las dos completas.\n"
             'Responde SOLO con JSON: {"tipo": "orden" | "pregunta" | "charla" | "aclarar", "orden": "…", '
             '"opciones": ["…", "…"], "seguro": true}')
 
@@ -255,6 +266,12 @@ def nl_understand(text, t, early=False):
     if d["tipo"] == "aclarar":
         nl_offer(d["opciones"])
         return True
+    if d["tipo"] == "orden" and J.normalize(d["orden"]) == t:   # 12.33: la devolvió sin traducir: que lo intente con una de la lista
+        try:
+            d = _nl_ask(text, retry_of=d["orden"])
+        except Exception:
+            return False
+        nl_state["last"] = dict(d, frase=text, antes=early, reintento="(sin traducir)")
     if d["tipo"] != "orden" or J.normalize(d["orden"]) == t:
         return False
     orden = d["orden"]
@@ -282,7 +299,8 @@ def nl_understand(text, t, early=False):
 
 # ============================================================================ PRUEBA DE COMPRENSIÓN (12.29)
 NL_TEST_N = 40                                            # frases por prueba (la completa: todas)
-NL_TEST_PAUSE = 1.5                                       # segundos entre preguntas (para no gastar la cuota por minuto)
+NL_TEST_PAUSE = 4.5                                       # segundos entre preguntas: la cuota gratis de Gemini es de pocas por minuto
+NL_TEST_WAIT = 65                                         # si responde «cuota agotada», espera esto y repite (una vez)
 _NLT = re.compile(r"\b(?:haz|hazme|corre|ejecuta|inicia|empieza|lanza)\s+(?:la\s+|una\s+)?prueba de comprension(?:\s+(completa|rapida|corta))?\b|"
                   r"\bque tan bien me entiendes\b")
 nl_test_state = {"busy": False, "last": None}
@@ -295,17 +313,32 @@ def nl_test_run(n=NL_TEST_N, pause=NL_TEST_PAUSE, seed=None):
     rows = frasesnl.rows()
     if n and n < len(rows):
         rows = random.Random(seed).sample(rows, n)
-    res = {"n": 0, "bien": 0, "aclaro": 0, "mal": 0, "filas": [], "corte": ""}
+    res = {"n": 0, "bien": 0, "aclaro": 0, "mal": 0, "filas": [], "corte": "", "saltadas": 0}
+    import time as _t
     for i, (nat, can, _alt) in enumerate(rows):
-        try:
-            d = _nl_ask(nat)
-        except Exception as e:
-            kind = getattr(e, "kind", "")
-            if kind in ("quota", "key", "config", "net", "offline") or res["n"] == 0:
-                res["corte"] = str(getattr(e, "why", e))[:160]
+        d = None
+        for attempt in (0, 1):
+            try:
+                d = _nl_ask(nat)
                 break
-            d = {"tipo": "error", "orden": str(e)[:80], "opciones": []}
-        nota = frasesnl.grade(d, can)
+            except Exception as e:
+                kind = getattr(e, "kind", "")
+                if kind in ("quota", "balance", "server") and attempt == 0:      # 12.33: límite por minuto: espera y repite
+                    J.log_terminal(f"Prueba de comprensión: la IA dijo «{getattr(e, 'why', e)}»; espero {NL_TEST_WAIT} s.", "COMPRENSIÓN")
+                    if J.net.get("watch", True):
+                        _t.sleep(NL_TEST_WAIT)
+                    continue
+                if kind in ("quota", "balance", "key", "config", "net", "offline") or res["n"] == 0:
+                    res["corte"] = str(getattr(e, "why", e))[:160]
+                else:
+                    res["saltadas"] += 1                  # un error suelto no cuenta como «no entendió»
+                d = None
+                break
+        if res["corte"]:
+            break
+        if d is None:
+            continue
+        nota = frasesnl.grade(d, can, nat)
         res["n"] += 1
         res[{"bien": "bien", "aclaró": "aclaro", "mal": "mal"}[nota]] += 1
         got = d.get("orden") or " / ".join(d.get("opciones") or []) or f"({d.get('tipo')})"
@@ -319,9 +352,10 @@ def nl_test_report(res):
     import datetime
     import os
     pct = round(100 * (res["bien"] + res["aclaro"]) / res["n"]) if res["n"] else 0
-    head = (f"Prueba de comprensión — {datetime.datetime.now():%Y-%m-%d %H:%M} — {J._ai_cfg().get('label', 'IA')}\n"
+    head = (f"Prueba de comprensión — {datetime.datetime.now():%Y-%m-%d %H:%M} — {J._ai_cfg().get('label', 'IA')} · v{J.VERSION}\n"
             f"Entendió bien {res['bien']} de {res['n']}" + (f", y en {res['aclaro']} preguntó entre opciones (una era la buena)" if res["aclaro"] else "")
-            + f". Acierto: {pct} %.\n" + (f"Se cortó: {res['corte']}\n" if res["corte"] else "") + "\n")
+            + f". Acierto: {pct} %.\n" + (f"Se cortó: {res['corte']} (las que no alcanzó no cuentan).\n" if res["corte"] else "")
+            + (f"{res['saltadas']} frases no se calificaron por un error de la IA.\n" if res.get("saltadas") else "") + "\n")
     mark = {"bien": "✓", "aclaró": "≈", "mal": "✗"}
     lines = [f"{mark[n]} «{nat}»\n    entendió: {got}\n    esperaba: {can}" for n, nat, got, can in
              sorted(res["filas"], key=lambda r: {"mal": 0, "aclaró": 1, "bien": 2}[r[0]])]
@@ -347,7 +381,8 @@ def nl_test_voice(text, t):
     n = 0 if full else NL_TEST_N
     total = len(frasesnl.rows()) if full else NL_TEST_N
     J.reply(f"Le paso {total} frases dichas como habla la gente a {J._ai_cfg().get('label', 'tu IA')}, sin ejecutar nada; "
-            f"tarda unos {max(1, round(total * (NL_TEST_PAUSE + 1.5) / 60))} minutos. Te aviso al terminar.", "COMPRENSIÓN")
+            f"tarda unos {max(1, round(total * (NL_TEST_PAUSE + 1.5) / 60))} minutos (voy despacio para no gastar tu cuota por minuto). "
+            "Te aviso al terminar.", "COMPRENSIÓN")
 
     def work():
         nl_test_state["busy"] = True
@@ -372,5 +407,5 @@ def nl_test_voice(text, t):
     return True
 
 
-__all__ = ['NL_K', 'NL_TEST_N', 'NL_TEST_PAUSE', '_NLT', 'nl_test_report', 'nl_test_run', 'nl_test_state', 'nl_test_voice', '_CHAT', '_FILLER', '_KNOW', '_PICK', '_RETRY', '_RISKY', '_nl_ask', '_nl_do', '_starters', 'nl_catalog', 'nl_conversational', 'nl_offer', 'nl_pending', 'nl_pick', 'nl_starters', 'nl_examples', 'nl_parse', 'nl_prompt', 'nl_risky', 'nl_run', 'nl_should_try',
+__all__ = ['NL_K', 'NL_TEST_N', 'NL_TEST_WAIT', '_closest', 'NL_TEST_PAUSE', '_NLT', 'nl_test_report', 'nl_test_run', 'nl_test_state', 'nl_test_voice', '_CHAT', '_FILLER', '_KNOW', '_PICK', '_RETRY', '_RISKY', '_nl_ask', '_nl_do', '_starters', 'nl_catalog', 'nl_conversational', 'nl_offer', 'nl_pending', 'nl_pick', 'nl_starters', 'nl_examples', 'nl_parse', 'nl_prompt', 'nl_risky', 'nl_run', 'nl_should_try',
            'nl_state', 'nl_understand']
