@@ -157,6 +157,15 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Háblale como quieras: entiende lenguaje natural (v12.27)
+
+- **Ya no hace falta decir la frase exacta.** Antes, si lo que decías no calzaba con una de sus reglas, la IA solo podía escoger entre unas 110 acciones y lo demás terminaba en una charla. Ahora, cuando ninguna regla reconoce tu frase, la IA la «traduce» a la orden de Jarvis que corresponde, con tus datos, y esa orden se hace por el camino de siempre. Ejemplos: «oye, no me dejes olvidar que mañana tengo que llevar el carro al taller temprano» → recordatorio; «lo del súper ayer fueron como 85 lucas» → gasto de $85.000 en mercado; «la pantalla está muy oscura» → brillo al 90; «me toca odontólogo el martes como a las 3» → cita.
+- **La IA ve todo lo que Jarvis sabe hacer:** las frases más parecidas a la tuya y una de cada habilidad (en modo general, nada del colegio). Con el modelo rápido de tu cuenta tarda un segundo más o menos.
+- **Pregunta antes de equivocarse:** si duda entre dos cosas te dice las dos órdenes completas para que elijas; si la orden traducida borra, apaga, envía o paga algo que no dijiste con esas palabras, o si la IA no está segura, te pide permiso primero. Las preguntas de saber («¿qué es…?», «¿por qué…?») y los saludos van directo a la IA, sin este paso.
+- **Sin IA conectada** funciona como antes (solo frases fijas). Se apaga en Ajustes (nl_understand).
+- **150 frases dichas como habla la gente** quedaron en las pruebas (tests/frases_naturales.txt): cada una debe terminar en la habilidad correcta. Ahí se suma lo que anotes con «No era eso».
+- **Arreglos que salieron al armar esa lista:** «apaga el ventilador» o «apaga la radio» ya no piden apagar el computador; «termina la concentración» ya no intenta cerrar un programa; «qué tan rápido está el internet» ya no responde sobre la velocidad de Jarvis; las citas, pagos y vencimientos entienden «el martes», «este viernes», «el próximo lunes».
+
 ## Jarvis para todo, no solo para el colegio (v12.26)
 
 - **Modo general de verdad.** Sin horario guardado, Jarvis era «docente» las 24 horas. Ahora es docente solo entre semana de 6:30 a 1:30 (o según tu horario y el Wi-Fi del colegio, si los tienes); el resto del tiempo es tu asistente personal. Las búsquedas, los correos, las noticias y los planes ya no le dicen a la IA que eres «el asistente de un docente» cuando estás en modo general.

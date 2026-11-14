@@ -19,6 +19,9 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Háblale como quieras (12.27)", ["oye, no me dejes olvidar que mañana tengo que llevar el carro al taller",
+                                      "lo del súper ayer fueron como 85 lucas", "la pantalla está muy oscura",
+                                      "ponme algo de música tranquila para trabajar", "me toca odontólogo el martes a las 3"]),
     ("Varios pasos de una vez (12.26)", ["busca vuelos a Cartagena y luego hazme un presupuesto del viaje", "organiza mi fin de semana",
                                          "encárgate de la fiesta de cumpleaños de mi hija", "prepárame la semana",
                                          "transcribe el audio, saca el acta y mándasela a la coordinadora"]),

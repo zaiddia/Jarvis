@@ -74,7 +74,7 @@ _DIARY_RE = re.compile(r"\b(?:que hice|que hicimos|que he hecho|resum\w* (?:de )
                        r"resumen de (?:hoy|ayer|la semana|mi semana|mi dia)|como fue (?:mi|el) dia|mi diario)\b")
 
 
-_SPEED_RE = re.compile(r"\b(?:que tan rapido|cuan rapido|que tan lento|cuanto tardas|cuanto te demoras|"
+_SPEED_RE = re.compile(r"\b(?:(?:que tan|cuan) (?:rapido|lento)(?!\s+(?:esta|va|anda|es|funciona)\s+(?:el |mi |la )?(?:internet|wifi|red|conexion|pc|computador|equipo|portatil))|cuanto tardas|cuanto te demoras|"
                        r"por que tardas|por que te demoras|por que eres tan lento|tiempo de respuesta|"
                        r"velocidad de respuesta|eres lento)\b")
 

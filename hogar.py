@@ -150,6 +150,11 @@ def parse_date(text, today=None, future=True):
         if u.startswith("mes"):
             return add_months(today, n)
         return add_months(today, 12 * n)
+    m = re.search(r"\b(?:el|este|esta|para el|el proximo|el otro|proximo)\s+(lunes|martes|miercoles|jueves|viernes|sabado|domingo)\b", t)
+    if m:                                               # 12.27: «el martes», «este viernes», «el próximo lunes»
+        wd = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"].index(m.group(1))
+        ahead = (wd - today.weekday()) % 7 or 7
+        return today + datetime.timedelta(days=ahead)
     m = re.search(r"\b(?:el|para el)\s+(\d{1,2})\b(?!\s*(?:de|:|horas|h\b|am|pm))", t)
     if m and 1 <= int(m.group(1)) <= 31:
         d = int(m.group(1))

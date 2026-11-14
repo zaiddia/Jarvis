@@ -444,7 +444,7 @@ _AUDIO_OUT = re.compile(r"\b(?:cambia|pasa(?:lo)?|pon)\s+(?:la\s+)?(?:salida de 
                         r"bocinas|altavoces|diadema|cascos))\b|\bpasalo a los (?:audifonos|parlantes)\b")
 _FOCUS = re.compile(r"^(?:jarvis\s+)?(?:activa\s+(?:el\s+)?)?(?:modo concentracion|quiero concentrarme|bloque de concentracion|modo enfoque|necesito concentrarme)"
                     r"(?:\s+(?:por|de|durante)?\s*(\d{1,3})\s*(?:minutos?|min)?|\s+(?:por|de|durante)?\s*(una|media|1)\s+hora)?$")
-_FOCUS_END = re.compile(r"\b(?:termina|sal del|salir del|desactiva|quita|acaba)\s+(?:el\s+)?(?:modo\s+)?(?:concentracion|enfoque)\b")
+_FOCUS_END = re.compile(r"\b(?:termina|terminar|sal del|salir del|sal de la|desactiva|quita|acaba|para|deten)\s+(?:el\s+|la\s+)?(?:modo\s+)?(?:concentracion|enfoque)\b")
 
 
 def pc_voice(text, t):

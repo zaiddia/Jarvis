@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.26"
+VERSION = "12.27"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -703,6 +703,7 @@ DEFAULT_SETTINGS = {
     "live_barge_level": 30,
     "live_provider": "gemini",     # "gemini" (gratis), "openai" (ChatGPT, de pago) o "deepgram" (con crédito)
     "live_fallback": True,         # si el elegido falla, probar los otros que tengan clave
+    "nl_understand": True,         # 12.27: entender lenguaje natural (la IA traduce tu frase a la orden de Jarvis)
     "phrase_tips": True,           # 12.26: si la IA tuvo que adivinar, una vez al día te enseña la frase directa
     "tip_last": "",
     "skill_of_day": True,          # 12.26: en el resumen de la mañana, una habilidad que quizá no conoces
@@ -2107,6 +2108,11 @@ def process_command(text):
             return
         if panel.wants(t) and panel_answer(text):       # 12.1: «¿qué pasa si…?» → panel con deslizadores
             return
+        if getattr(_tl, "nl_pass", False):              # 12.27: la orden traducida tampoco calzó: lo dice y no vuelve a la IA
+            _tl.nl_missed = True
+            return
+        if nl_understand(text, t):                      # 12.27: lenguaje natural → la orden de Jarvis que corresponde
+            return
         try:
             phrase_tip(text)                            # 12.26: si hay una frase directa para esto, te la enseña (1 vez al día)
         except Exception:
@@ -2421,6 +2427,7 @@ from nucleo.instantes import *  # noqa: F401,F403,E402
 from nucleo.vidadiaria import *  # noqa: F401,F403,E402
 from nucleo.novedades import *  # noqa: F401,F403,E402
 from nucleo.ayudante import *  # noqa: F401,F403,E402
+from nucleo.comprension import *  # noqa: F401,F403,E402
 from nucleo.transcribir import *  # noqa: F401,F403,E402
 
 # ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)

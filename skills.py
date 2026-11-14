@@ -1605,7 +1605,10 @@ def parse(text):
     # Sistema y energía
     if re.search(r"\b(?:cancela(?:r)?|deten|anula) (?:el )?(?:apagado|reinicio)\b|\bno (?:apagues|reinicies)\b", t):
         return "cancelar_apagado", {}
-    if re.search(rf"\b(?:apaga|apagar|apague|apagate)\b(?:\s+{_PC})?", t) and not re.search(r"\b(?:pantalla|monitor|musica|video|notificacion|alarma|sonido|volumen|luz|linterna)\b", t):
+    _off = re.search(rf"\b(?:apaga|apagar|apague|apagate)\b(?:\s+(?:me\s+)?{_PC})?", t)
+    if _off and not re.search(r"\b(?:pantalla|monitor|musica|video|notificacion|alarma|sonido|volumen|luz|linterna)\b", t) and \
+            re.fullmatch(r"(?:\s*(?:ya|y|todo|de una|ahora|ahora mismo|por favor|porfa|jarvis|a las .+|en .+|dentro de .+|cuando .+|"
+                         r"despues de .+|a la .+|esta noche|hoy))*\s*", t[_off.end():]):     # 12.27: «apaga el ventilador» no apaga el PC
         secs, cuando = _shutdown_delay(t)
         return "apagar", {"segundos": secs, "cuando": cuando}
     if re.search(rf"\b(?:reinicia|reiniciar|reinicie) {_PC}\b", t):
