@@ -42,7 +42,15 @@ def _use_load():
         _use["days"] = {}
 
 
+_flush_lock = threading.Lock()
+
+
 def usage_flush():
+    with _flush_lock:                                     # (en Windows, dos escrituras a la vez se pisan el archivo)
+        _usage_flush()
+
+
+def _usage_flush():
     if not _use["dirty"]:
         return
     try:
@@ -345,7 +353,7 @@ def council_voice(text, t):
     return True
 
 
-__all__ = ['COUNCIL_MAX', '_COUNCIL', '_USE_RE', '_council_one', '_names_cache', '_scrub_text', '_student_names', '_toks', '_use',
+__all__ = ['COUNCIL_MAX', '_flush_lock', '_usage_flush', '_COUNCIL', '_USE_RE', '_council_one', '_names_cache', '_scrub_text', '_student_names', '_toks', '_use',
            '_use_load', '_use_lock', '_use_path', '_usage_warn', 'council_members', 'council_prompt', 'council_run', 'council_voice',
            'privacy_local_cfg', 'privacy_names_in', 'privacy_restore', 'privacy_scrub', 'usage_add', 'usage_flush', 'usage_spoken',
            'usage_today', 'usage_voice']
