@@ -268,3 +268,7 @@ html[data-look="aurora"] .xtab.active { color: #fff; }
 .nlopts button { font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
   color: var(--a); background: rgba(var(--a-rgb), .08); border: 1px solid rgba(var(--a-rgb), .35); }
 .nlopts button:hover { background: rgba(var(--a-rgb), .18); }
+
+/* 12.31: fuentes de las noticias */
+.msg-body a.mdlink { color: var(--a); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.msg-body a.mdlink:hover { filter: brightness(1.25); }

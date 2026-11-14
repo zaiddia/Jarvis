@@ -219,7 +219,7 @@ def morning_report():
     except Exception:
         pass
     if J.settings["morning_news"]:
-        J.reply(J.news_text(), "NOTICIAS")
+        J.news_reply()                                   # 12.31: con la fuente que abre cada noticia
     if J.settings["morning_voice_note"] and J.telegram_ready():      # 9.5: el resumen como nota de voz
         threading.Thread(target=J.send_morning_voice, daemon=True, name="resumen-voz").start()
     elif J.settings["telegram_alerts"] and J.settings["telegram_remote"]:

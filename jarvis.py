@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.30"
+VERSION = "12.31"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -708,6 +708,8 @@ DEFAULT_SETTINGS = {
     "live_provider": "gemini",     # "gemini" (gratis), "openai" (ChatGPT, de pago) o "deepgram" (con crédito)
     "live_fallback": True,         # si el elegido falla, probar los otros que tengan clave
     "nl_understand": True,         # 12.27: entender lenguaje natural (la IA traduce tu frase a la orden de Jarvis)
+    "project_report": True,        # 12.31: al terminar un proyecto, un informe que une todo
+    "project_review": True,        # 12.31: …y un revisor que lo compara con lo que produjo cada paso
     "phrase_tips": True,           # 12.26: si la IA tuvo que adivinar, una vez al día te enseña la frase directa
     "tip_last": "",
     "skill_of_day": True,          # 12.26: en el resumen de la mañana, una habilidad que quizá no conoces

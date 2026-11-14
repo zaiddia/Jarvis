@@ -263,3 +263,124 @@ def chain_steps(t):
 
 def is_project(t, general=False):
     return bool(_TRIGGER.search(t) or _GENERAL_TRIGGER.search(t) or chain_steps(t))
+
+
+# ============================================================================ 12.31: INFORME FINAL, REVISOR Y MODELO POR PASO
+LIGHT = ("orden", "correo", "adjunto")                     # pasos sencillos: el modelo rápido basta
+_NUM = {"uno": 1, "primera": 1, "dos": 2, "segunda": 2, "tres": 3, "tercera": 3, "cuatro": 4, "cuarta": 4, "cinco": 5, "quinta": 5,
+        "seis": 6, "sexta": 6, "siete": 7, "septima": 7, "ocho": 8, "octava": 8}
+
+
+def step_brain(tipo):
+    """«rapido» o «potente» para este tipo de paso (el informe y el revisor van siempre con el potente)."""
+    return "rapido" if tipo in LIGHT else "potente"
+
+
+def report_prompt(st, limit=1800):
+    """Lo que se le pide a la IA para unir todo en un solo informe."""
+    parts = []
+    for i, p in enumerate(st["pasos"], 1):
+        if p["estado"] == "hecho" and p.get("resumen"):
+            parts.append(f"[Paso {i}: {p['titulo']} ({p['tipo']})]\n{str(p['resumen'])[:limit]}")
+    return ("Eres el redactor final de un proyecto que hicieron varios sub-agentes. Une lo que produjeron en UN informe claro "
+            f"para la persona que lo pidió.\nPedido original: «{st['pedido']}»\nProyecto: «{st['nombre']}»\n\n"
+            "Lo que salió de cada paso:\n" + "\n\n".join(parts) + "\n\n"
+            "Reglas: no inventes datos que no estén arriba; si algo no se pudo hacer, dilo. Español claro, sin markdown.\n"
+            'Responde SOLO con JSON: {"titulo": "…", "resumen": "3 a 5 frases con lo esencial", '
+            '"secciones": [{"titulo": "…", "texto": "párrafos"}], "conclusiones": "qué sigue o qué decidir"}')
+
+
+def report_validate(d, st):
+    if not isinstance(d, dict):
+        raise ValueError("el informe no vino en JSON")
+    secs = []
+    for s in (d.get("secciones") or [])[:12]:
+        if isinstance(s, dict) and str(s.get("texto") or "").strip():
+            secs.append({"titulo": str(s.get("titulo") or "Parte").strip()[:120], "texto": str(s["texto"]).strip()[:6000]})
+    if not secs:
+        raise ValueError("el informe vino sin secciones")
+    return {"titulo": str(d.get("titulo") or f"Informe: {st['nombre']}").strip()[:140],
+            "resumen": str(d.get("resumen") or "").strip()[:2000], "secciones": secs,
+            "conclusiones": str(d.get("conclusiones") or "").strip()[:3000], "revision": None}
+
+
+def report_text(rep):
+    out = [rep["titulo"], "", "Resumen", rep["resumen"], ""]
+    for i, s in enumerate(rep["secciones"], 1):
+        out += [f"{i}. {s['titulo']}", s["texto"], ""]
+    if rep["conclusiones"]:
+        out += ["Conclusiones", rep["conclusiones"]]
+    return "\n".join(out)
+
+
+def review_prompt(rep, st, limit=1500):
+    """El revisor: compara el informe con lo que de verdad produjeron los pasos (las fuentes)."""
+    src = "\n\n".join(f"[{p['titulo']}]\n{str(p['resumen'])[:limit]}" for p in st["pasos"] if p["estado"] == "hecho" and p.get("resumen"))
+    return ("Eres el revisor de un informe. Compáralo con lo que produjeron los pasos del proyecto (las fuentes). Busca: datos "
+            "que no estén en las fuentes (inventados), cifras o fechas que no coincidan, contradicciones, y partes del pedido "
+            f"que quedaron sin responder.\nPedido: «{st['pedido']}»\n\nFUENTES:\n{src}\n\nINFORME:\n{report_text(rep)[:9000]}\n\n"
+            'Responde SOLO con JSON: {"veredicto": "bien" | "revisar", "problemas": [{"parte": "número o nombre de la sección", '
+            '"detalle": "qué está mal y qué dicen las fuentes"}]} (máximo 6 problemas; lista vacía si todo está bien).')
+
+
+def review_validate(d):
+    if not isinstance(d, dict):
+        return {"veredicto": "sin revisar", "problemas": []}
+    probs = [{"parte": str(p.get("parte") or "")[:60], "detalle": str(p.get("detalle") or "").strip()[:500]}
+             for p in (d.get("problemas") or [])[:6] if isinstance(p, dict) and str(p.get("detalle") or "").strip()]
+    v = str(d.get("veredicto") or "").strip().lower()
+    return {"veredicto": "revisar" if probs or v == "revisar" else "bien", "problemas": probs}
+
+
+def review_spoken(rev):
+    if not rev or rev["veredicto"] == "sin revisar":
+        return ""
+    if rev["veredicto"] == "bien":
+        return "El revisor no encontró problemas."
+    n = len(rev["problemas"])
+    return f"El revisor marcó {n} cosa{'s' if n != 1 else ''} por revisar; están al final del informe."
+
+
+_EDIT = re.compile(r"\b(?:cambia|corrige|rehaz|mejora|ajusta|acorta|alarga|amplia|reescribe|resume)\s+(?:la\s+|el\s+|las\s+)?"
+                   r"(?:parte|seccion|apartado)?\s*(\d{1,2}|uno|dos|tres|cuatro|cinco|seis|siete|ocho|primera|segunda|tercera|cuarta|"
+                   r"quinta|sexta|septima|octava|conclusiones|resumen)\s+del\s+informe\b(?:\s*[:,;]?\s*(.*))?$")
+
+
+def parse_edit(t):
+    """«cambia la parte 2 del informe: hazla más corta» → (2, "hazla más corta"); «conclusiones» y «resumen» por nombre."""
+    m = _EDIT.search(t)
+    if not m:
+        return None
+    w, how = m.group(1), (m.group(2) or "").strip()
+    verb = re.match(r"\w+", t[m.start():]).group(0)
+    if not how:
+        how = {"acorta": "hazla más corta", "alarga": "hazla más completa", "amplia": "hazla más completa",
+               "resume": "resúmela"}.get(verb, "mejórala: más clara y mejor escrita")
+    part = w if w in ("conclusiones", "resumen") else (int(w) if w.isdigit() else _NUM.get(w, 0))
+    return part, how
+
+
+def edit_prompt(rep, part, how):
+    if part == "resumen":
+        cur, name = rep["resumen"], "el resumen"
+    elif part == "conclusiones":
+        cur, name = rep["conclusiones"], "las conclusiones"
+    else:
+        cur, name = rep["secciones"][part - 1]["texto"], f"la parte {part} («{rep['secciones'][part - 1]['titulo']}»)"
+    return (f"Este es {name} de un informe. Reescríbela según lo que pide la persona: «{how}». No inventes datos nuevos; "
+            "mantén lo que dice el resto del informe. Responde SOLO con el texto nuevo, sin títulos ni comentarios.\n\n"
+            f"Texto actual:\n{cur}\n\nResto del informe (para contexto):\n{report_text(rep)[:5000]}")
+
+
+def apply_edit(rep, part, new_text):
+    t = str(new_text or "").strip()
+    if not t:
+        raise ValueError("vino vacío")
+    if part == "resumen":
+        rep["resumen"] = t
+    elif part == "conclusiones":
+        rep["conclusiones"] = t
+    else:
+        rep["secciones"][part - 1]["texto"] = t
+    rep["revision"] = None                                    # lo cambiado ya no está revisado
+    return rep

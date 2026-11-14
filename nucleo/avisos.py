@@ -81,6 +81,30 @@ def news_text(topic=""):
         return infodia.headlines_spoken(items)          # sin IA: los titulares tal cual
 
 
+def news_reply(topic=""):
+    """12.31: las noticias en voz (sin enlaces) y en el chat, cada una con su fuente que abre la noticia."""
+    if J.is_offline():
+        J.reply("Ahora no hay internet, así que no puedo traer las noticias.", "NOTICIAS")
+        return
+    items = J._news_items(topic)
+    if not items:
+        J.reply("No pude traer las noticias en este momento.", "NOTICIAS")
+        return
+    pairs = []
+    try:
+        pairs = infodia.news_parse(J._extract_json(J.ai_chat([{"role": "user", "content": infodia.news_json_prompt(items, topic)}],
+                                                             json_mode=True, max_tokens=1200)), items)
+    except Exception:
+        pairs = []
+    if not pairs:                                        # sin IA: los titulares tal cual, con su fuente
+        pairs = [(x["titulo"] + ".", x) for x in items[:6]]
+    remote = getattr(J._tl, "remote", False)
+    title = "Noticias" + (f" de {topic}" if topic else "") + (" (toca la fuente para abrir la noticia)" if not remote else "") + ":\n"
+    J.show(title + infodia.news_rich(pairs, remote), "NOTICIAS")
+    if not remote:
+        J.speak(infodia.news_spoken(pairs))
+
+
 _WEATHER_RE = re.compile(r"\b(?:clima|tiempo (?:que hace|hace|va a hacer)|temperatura|pronostico|va a llover|"
                          r"llovera|esta lloviendo|hace (?:frio|calor)|que tal el dia)\b")
 _NEWS_RE = re.compile(r"\b(?:noticias|titulares|que (?:hay de nuevo|esta pasando)|que paso hoy|resumen de noticias)\b")
@@ -100,7 +124,7 @@ def info_voice(text, t):
         m = re.search(r"\bnoticias\s+(?:de|del|sobre|acerca de)\s+(?:la |el |los |las )?(.{3,60})$", t)
         topic = m.group(1).strip() if m and m.group(1).strip() not in ("hoy", "el dia", "colombia hoy") else ""
         J.reply("Buscando las noticias" + (f" de {topic}" if topic else "") + "…", "NOTICIAS")
-        J.reply(J.news_text(topic), "NOTICIAS")
+        J.news_reply(topic)
         return True
     return False
 
@@ -442,6 +466,7 @@ __all__ = [
     '_tone',
     'alert',
     'info_voice',
+    'news_reply',
     'news_text',
     'search_voice',
     'telegram_run',

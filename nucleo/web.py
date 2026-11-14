@@ -669,6 +669,16 @@ def handle_open_url(data):
         webbrowser.open(url)
 
 
+@J.socketio.on("open_link")
+def handle_open_link(data):
+    """12.31: un enlace del chat (la fuente de una noticia): solo páginas web http(s), en tu navegador."""
+    url = str((data or {}).get("url", "")).strip()
+    if not re.fullmatch(r"https?://[^\s<>\"']{4,2000}", url):
+        return {"ok": False}
+    webbrowser.open(url)
+    return {"ok": True}
+
+
 @J.socketio.on("open_fix")
 def handle_open_fix(data):
     """Botón «Arreglar» de la prueba completa: solo abre ajustes de Windows (ms-settings:)."""

@@ -334,7 +334,8 @@
   function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
   function inline(s) {
     return s.replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
-      .replace(/(^|[\s(«])\*([^*\n]+)\*(?=[\s.,;:!?)»]|$)/g, "$1<i>$2</i>").replace(/(^|[\s(«])_([^_\n]+)_(?=[\s.,;:!?)»]|$)/g, "$1<i>$2</i>");
+      .replace(/(^|[\s(«])\*([^*\n]+)\*(?=[\s.,;:!?)»]|$)/g, "$1<i>$2</i>").replace(/(^|[\s(«])_([^_\n]+)_(?=[\s.,;:!?)»]|$)/g, "$1<i>$2</i>")
+      .replace(/\[([^\]\n]{1,80})\]\((https?:\/\/[^\s)]+)\)/g, '<a class="mdlink" href="$2" title="$2">$1</a>');
   }
   function md(text) {
     const lines = esc(text).split("\n");
@@ -1070,6 +1071,12 @@
     vid.hidden = true; $("#vid-box").innerHTML = ""; clearInterval(vidPing); body.classList.remove("has-video");
     if (tell !== false) socket.emit("video_closed", {});
   }
+  el.chat.addEventListener("click", (e) => {               // 12.31: la fuente de una noticia abre el artículo en tu navegador
+    const a = e.target.closest("a.mdlink");
+    if (!a) return;
+    e.preventDefault();
+    if (native) socket.emit("open_link", { url: a.getAttribute("href") }); else window.open(a.href, "_blank", "noopener");
+  });
   socket.on("nl_options", (d) => {                         // 12.29: «¿cuál de estas?» → botones para escoger sin repetir
     const ops = (d && d.opciones) || [];
     if (!ops.length) return;

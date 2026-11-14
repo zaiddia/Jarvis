@@ -125,7 +125,46 @@ def _approvals_worker():
 
 
 # ============================================================================ PROYECTOS CON SUB-AGENTES
-project_run = {"st": None, "cancel": False, "busy": False}
+project_run = {"st": None, "cancel": False, "busy": False}          # (el último en marcha; lo leen el reactor y el tablero)
+MAX_PROJECTS = 2                                                    # 12.31: hasta dos proyectos a la vez
+project_runs = {}                                                   # id -> {"st", "cancel", "pause"}
+
+
+def _sync_run():
+    if project_runs:
+        last = list(project_runs.values())[-1]
+        project_run.update(st=last["st"], busy=True, cancel=False)
+    else:
+        project_run.update(busy=False, cancel=False)
+
+
+def _running():
+    """Los proyectos en marcha (los de verdad; o el que dejó una prueba en project_run)."""
+    if project_runs:
+        return list(project_runs.values())
+    return [{"st": project_run["st"], "cancel": False, "pause": False}] if project_run["busy"] and project_run.get("st") else []
+
+
+def _emit_project(st):
+    try:
+        J.socketio.emit("project_update", project_public(st))
+    except Exception:
+        pass
+
+
+def project_public(st):
+    """Lo que ve el tablero de un proyecto (sin el texto completo de cada paso)."""
+    ctl = project_runs.get(st.get("id"))
+    rep = st.get("informe") or {}
+    return {"id": st.get("id"), "nombre": st.get("nombre"), "pedido": st.get("pedido"), "estado": st.get("estado"),
+            "pausado": bool(ctl and ctl["pause"]), "creado": st.get("creado"), "terminado": st.get("terminado"),
+            "carpeta": st.get("carpeta"), "progreso": proyectos.progress_text(st),
+            "pasos": [{"id": p["id"], "titulo": p["titulo"], "tipo": p["tipo"], "estado": p["estado"], "modelo": p.get("modelo", ""),
+                       "inicio": p.get("inicio", 0), "fin": p.get("fin", 0), "error": p.get("error", ""),
+                       "archivo": os.path.basename(p.get("archivo") or ""), "resumen": str(p.get("resumen") or "")[:400]}
+                      for p in st.get("pasos", [])],
+            "informe": {"titulo": rep.get("titulo"), "ruta": os.path.basename(rep.get("ruta") or ""),
+                        "partes": [s["titulo"] for s in rep.get("secciones", [])], "revision": rep.get("revision")} if rep else None}
 
 
 def _docx_text(path, title, text):
@@ -259,12 +298,29 @@ def _card(st):
     J.card("rutina", st["nombre"], proyectos.progress_text(st), "◆", secs=30, steps=titles, step=min(idx, len(titles) - 1))
 
 
+def _routed_step(st, step):
+    """12.31: cada paso con el modelo que le va (el rápido para lo sencillo, el potente para lo demás)."""
+    brain = proyectos.step_brain(step["tipo"])
+    fm = J.fast_model() if brain == "rapido" else ""
+    step["modelo"] = ("rápido · " + fm) if fm else "potente"
+    J._tl.fast_model = fm
+    try:
+        return J.run_step(st, step)
+    finally:
+        J._tl.fast_model = ""
+
+
 def run_project(st):
     """Lleva el proyecto hasta el final: los pasos listos, en paralelo (como mucho N a la vez)."""
-    if project_run["busy"]:
-        J.reply("Ya estoy con otro proyecto; espera a que termine o di «cancela el proyecto».", "PROYECTO")
+    if st.get("id") in project_runs:
+        J.reply(f"El proyecto «{st['nombre']}» ya está en marcha.", "PROYECTO")
         return
-    project_run.update(st=st, cancel=False, busy=True)
+    if len(project_runs) >= MAX_PROJECTS:
+        J.reply(f"Ya tengo {MAX_PROJECTS} proyectos en marcha; espera a que termine uno o di «cancela el proyecto».", "PROYECTO")
+        return
+    ctl = {"st": st, "cancel": False, "pause": False}
+    project_runs[st["id"]] = ctl
+    _sync_run()
     st["estado"] = "en marcha"
     for p in st["pasos"]:
         if p["estado"] == "en marcha":                 # se había quedado a medias: se repite
@@ -276,17 +332,22 @@ def run_project(st):
         with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="subagente") as ex:
             running = {}
             while True:
-                if project_run["cancel"]:
+                if ctl["cancel"] or project_run.get("cancel"):
+                    ctl["cancel"] = True
                     break
-                for step in proyectos.ready_steps(st):
+                for step in ([] if ctl["pause"] else proyectos.ready_steps(st)):
                     if len(running) >= workers:
                         break
-                    step.update(estado="en marcha", inicio=time.time())
-                    running[ex.submit(J.run_step, st, step)] = step
+                    step.update(estado="en marcha", inicio=time.time(), error="")
+                    running[ex.submit(_routed_step, st, step)] = step
                     J.log_terminal(f"Sub-agente: {step['titulo']}", "PROYECTO")
                 proyectos.save(st)
                 _card(st)
+                _emit_project(st)
                 if not running:
+                    if ctl["pause"] and not proyectos.finished(st):
+                        time.sleep(0.5)                    # en pausa: espera a que digas «sigue»
+                        continue
                     break
                 done, _ = wait(list(running), timeout=5, return_when=FIRST_COMPLETED)
                 for fut in done:
@@ -301,13 +362,17 @@ def run_project(st):
                         step.update(estado="error", error=str(e)[:300], fin=time.time())
                         J.log_terminal(f"Paso «{step['titulo']}»: {e}", "AVISO")
                     proyectos.save(st)
-        if project_run["cancel"]:
+                    _emit_project(st)
+        if ctl["cancel"]:
             st["estado"] = "cancelado"
             msg = f"Cancelé el proyecto «{st['nombre']}». Lo que ya estaba hecho quedó en su carpeta."
         else:
             st.update(estado="terminado", terminado=time.time())
             _write_index(st)
             msg = proyectos.summary_text(st)
+            extra = J.project_report(st)                    # 12.31: un informe que une todo, revisado
+            if extra:
+                msg += " " + extra
             if J.IS_WIN and J.settings["aula_open_docs"] and os.path.isdir(st["carpeta"]):
                 try:
                     os.startfile(st["carpeta"])
@@ -318,8 +383,99 @@ def run_project(st):
         diario.log("orden", f"proyecto: {st['nombre']}")
         J.notify(msg, "PROYECTO")
         _card(st)
+        _emit_project(st)
     finally:
-        project_run.update(busy=False)
+        project_runs.pop(st["id"], None)
+        _sync_run()
+
+
+# ============================================================================ 12.31: INFORME FINAL Y REVISOR
+def _report_docx(st, rep):
+    doc = J.Document()
+    doc.add_heading(rep["titulo"], 0)
+    doc.add_paragraph(f"Pedido: {st['pedido']}").italic = True
+    doc.add_heading("Resumen", 1)
+    doc.add_paragraph(rep["resumen"])
+    for i, s in enumerate(rep["secciones"], 1):
+        doc.add_heading(f"{i}. {s['titulo']}", 1)
+        for para in re.split(r"\n{2,}", s["texto"]):
+            if para.strip():
+                doc.add_paragraph(para.strip())
+    if rep["conclusiones"]:
+        doc.add_heading("Conclusiones", 1)
+        doc.add_paragraph(rep["conclusiones"])
+    files = [p for p in st["pasos"] if p["estado"] == "hecho" and p.get("archivo")]
+    if files:
+        doc.add_heading("Archivos del proyecto", 1)
+        for p in files:
+            doc.add_paragraph(f"{p['titulo']}: {os.path.basename(p['archivo'])}", style="List Bullet")
+    rev = rep.get("revision")
+    if rev and rev["veredicto"] != "sin revisar":
+        doc.add_heading("Revisión", 1)
+        if rev["veredicto"] == "bien":
+            doc.add_paragraph("El revisor comparó el informe con lo que produjo cada paso y no encontró problemas.")
+        else:
+            doc.add_paragraph("El revisor comparó el informe con lo que produjo cada paso y marcó esto para que lo mires:")
+            for x in rev["problemas"]:
+                doc.add_paragraph((f"Parte {x['parte']}: " if x["parte"] else "") + x["detalle"], style="List Bullet")
+    elif rev is None and rep.get("editado"):
+        doc.add_paragraph("(Cambiaste partes después de la revisión: esas partes no están revisadas.)").italic = True
+    path = rep.get("ruta") or os.path.join(st["carpeta"], proyectos.safe_name("Informe final - " + st["nombre"]) + ".docx")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    doc.save(path)
+    rep["ruta"] = path
+    return path
+
+
+def project_report(st):
+    """Une lo que hicieron los pasos en un informe y lo pasa por el revisor. → la frase para el aviso ('' si no se hizo)."""
+    hechos = [p for p in st["pasos"] if p["estado"] == "hecho" and p.get("resumen")]
+    if not J.settings.get("project_report", True) or len(hechos) < 2:
+        return ""
+    try:
+        rep = proyectos.report_validate(J._extract_json(J.ai_chat([{"role": "user", "content": proyectos.report_prompt(st)}],
+                                                                  json_mode=True, max_tokens=5000)), st)
+    except Exception as e:
+        J.log_terminal(f"Informe final de «{st['nombre']}»: {getattr(e, 'why', e)}", "AVISO")
+        return ""
+    if J.settings.get("project_review", True):
+        try:
+            rep["revision"] = proyectos.review_validate(J._extract_json(J.ai_chat(
+                [{"role": "user", "content": proyectos.review_prompt(rep, st)}], json_mode=True, max_tokens=1500)))
+        except Exception as e:
+            J.log_terminal(f"Revisor de «{st['nombre']}»: {getattr(e, 'why', e)}", "AVISO")
+            rep["revision"] = {"veredicto": "sin revisar", "problemas": []}
+    path = _report_docx(st, rep)
+    st["informe"] = rep
+    J.generated_files.add(path)
+    proyectos.save(st)
+    return ("Te dejé un informe final que lo une todo. " + proyectos.review_spoken(rep.get("revision"))).strip()
+
+
+def report_edit(part, how):
+    """«cambia la parte 2 del informe: …» sobre el último proyecto con informe. → mensaje."""
+    st = next((p for p in reversed(proyectos.load_all()) if p.get("informe")), None)
+    if not st:
+        return "Aún no tengo ningún informe de proyecto para cambiar."
+    rep = st["informe"]
+    if isinstance(part, int) and not 1 <= part <= len(rep["secciones"]):
+        return f"El informe «{rep['titulo']}» tiene {len(rep['secciones'])} partes."
+    try:
+        new = J.ai_chat([{"role": "user", "content": proyectos.edit_prompt(rep, part, how)}], max_tokens=2500)
+        proyectos.apply_edit(rep, part, new)
+    except Exception as e:
+        return f"No pude cambiarla: {getattr(e, 'why', e)}"
+    rep["editado"] = True
+    path = _report_docx(st, rep)
+    proyectos.save(st)
+    _emit_project(st)
+    name = part if isinstance(part, str) else f"la parte {part} («{rep['secciones'][part - 1]['titulo']}»)"
+    if J.IS_WIN and J.settings.get("aula_open_docs", True):
+        try:
+            os.startfile(path)
+        except OSError:
+            pass
+    return f"Listo: cambié {name} del informe «{rep['titulo']}». El resto quedó igual."
 
 
 def _write_index(st):
@@ -349,8 +505,8 @@ def plan_project(goal):
 
     def go():
         st = proyectos.new(goal, plan, J.settings["output_dir"])
-        J.reply(f"Empiezo el proyecto «{plan['nombre']}». Te aviso cuando termine; pregúntame «¿cómo va el proyecto?» "
-                "cuando quieras.", "PROYECTO")
+        J.reply(f"Empiezo el proyecto «{plan['nombre']}». Te aviso cuando termine; mientras, puedes seguir hablándome de otras "
+                "cosas. Para verlo paso a paso, di «abre el tablero de proyectos».", "PROYECTO")
         J.run_project(st)
     J.request_approval("proyecto", f"Hacer el proyecto «{plan['nombre']}» ({len(plan['pasos'])} pasos)",
                        proyectos.spoken_plan(plan), on_ok=go,
@@ -364,24 +520,57 @@ _PRJ_CANCEL = re.compile(r"\b(?:cancela|deten|detén|para|parar|detener)\s+(?:el
 _PRJ_RESUME = re.compile(r"\b(?:continua|sigue|retoma|reanuda)\s+(?:con )?(?:el )?proyecto\b")
 
 
+_PRJ_PAUSE = re.compile(r"\b(?:pausa|pausar|deten un momento|espera con)\s+(?:el )?proyecto\b")
+_PRJ_BOARD = re.compile(r"\b(?:abre|abreme|muestra|muestrame|ver)\s+(?:el )?(?:tablero|panel) de (?:los )?proyectos?\b|\btablero de proyectos?\b")
+
+
 def project_voice(text, t):
+    if _PRJ_BOARD.search(t):
+        J.open_projects_page()
+        J.reply("Te abrí el tablero de proyectos: cada paso, su avance, lo que encontró y el informe final.", "PROYECTO")
+        return True
+    ed = proyectos.parse_edit(t)
+    if ed:
+        how = re.split(r"[:,;]\s*", text, maxsplit=1)
+        how = how[1].strip() if len(how) == 2 and len(how[1].strip()) > 3 else ed[1]
+        J.reply("Cambio esa parte del informe…", "PROYECTO")
+        J.start_job("Cambiando el informe", lambda: J.reply(J.report_edit(ed[0], how), "PROYECTO"), "informe")
+        return True
+    run = _running()
     if _PRJ_STATUS.search(t):
-        st = project_run["st"] if project_run["busy"] else (proyectos.load_all() or [None])[-1]
-        J.reply(proyectos.progress_text(st) if st else "No tengo ningún proyecto.", "PROYECTO")
+        if run:
+            J.reply(" ".join(proyectos.progress_text(r["st"]) + (" (en pausa)" if r["pause"] else "") for r in run), "PROYECTO")
+        else:
+            st = (proyectos.load_all() or [None])[-1]
+            J.reply(proyectos.progress_text(st) if st else "No tengo ningún proyecto.", "PROYECTO")
+        return True
+    if _PRJ_PAUSE.search(t):
+        if run:
+            run[-1]["pause"] = True
+            J.reply(f"Pauso «{run[-1]['st']['nombre']}»: termino los pasos que van y no empiezo otros. Di «sigue con el proyecto».", "PROYECTO")
+        else:
+            J.reply("No hay ningún proyecto en marcha.", "PROYECTO")
         return True
     if _PRJ_CANCEL.search(t):
-        if project_run["busy"]:
-            project_run["cancel"] = True
+        if run:
+            run[-1]["cancel"] = True
+            if not project_runs:
+                project_run["cancel"] = True
             J.reply("Vale, cancelo el proyecto en cuanto terminen los pasos que están en marcha.", "PROYECTO")
         else:
             J.reply("No hay ningún proyecto en marcha.", "PROYECTO")
         return True
     if _PRJ_RESUME.search(t):
-        left = proyectos.unfinished()
+        paused = [r for r in run if r["pause"]]
+        if paused:
+            paused[-1]["pause"] = False
+            J.reply(f"Sigo con «{paused[-1]['st']['nombre']}».", "PROYECTO")
+            return True
+        left = [p for p in proyectos.unfinished() if p["id"] not in project_runs]
         if not left:
             J.reply("No tengo ningún proyecto a medias.", "PROYECTO")
-        elif project_run["busy"]:
-            J.reply("Ya estoy con un proyecto.", "PROYECTO")
+        elif len(run) >= MAX_PROJECTS:
+            J.reply("Ya tengo dos proyectos en marcha.", "PROYECTO")
         else:
             J.reply(f"Continúo el proyecto «{left[-1]['nombre']}».", "PROYECTO")
             threading.Thread(target=J.run_project, args=(left[-1],), daemon=True).start()
@@ -391,8 +580,8 @@ def project_voice(text, t):
     if J.state.get("ai") != "ok":
         J.reply("Para hacer proyectos de varios pasos necesito la IA conectada (Ajustes › Inteligencia artificial).", "PROYECTO")
         return True
-    if project_run["busy"]:
-        J.reply("Ya estoy con un proyecto. Pregúntame cómo va, o di «cancela el proyecto».", "PROYECTO")
+    if len(run) >= MAX_PROJECTS:
+        J.reply(f"Ya tengo {MAX_PROJECTS} proyectos en marcha. Pregúntame cómo van, o di «cancela el proyecto».", "PROYECTO")
         return True
     if getattr(J._tl, "capture", None) is None:
         J.reply("Lo planeo y te digo los pasos antes de empezar.", "PROYECTO")
@@ -440,14 +629,74 @@ def handle_approval_resolve(data=None):
 def handle_project_action(data=None):
     d = data or {}
     pid, action = str(d.get("id", "")), d.get("action")
-    st = next((p for p in proyectos.load_all() if p["id"] == pid), None)
-    if action == "cancel" and project_run["busy"]:
-        project_run["cancel"] = True
-    elif action == "resume" and st and not project_run["busy"]:
-        threading.Thread(target=J.run_project, args=(st,), daemon=True).start()
+    ctl = project_runs.get(pid)
+    st = ctl["st"] if ctl else next((p for p in proyectos.load_all() if p["id"] == pid), None)
+    if action == "cancel":
+        if ctl:
+            ctl["cancel"] = True
+        elif project_run["busy"]:
+            project_run["cancel"] = True
+    elif action == "pause" and ctl:
+        ctl["pause"] = True
+    elif action == "resume" and st:
+        if ctl:
+            ctl["pause"] = False
+        elif len(project_runs) < MAX_PROJECTS and st.get("estado") != "terminado":
+            threading.Thread(target=J.run_project, args=(st,), daemon=True).start()
+    elif action == "redo" and st:                       # 12.31: rehacer un paso (y lo que dependía de él)
+        sid = str(d.get("step", ""))
+        ids = {sid}
+        for p in st["pasos"]:                           # los que dependen de él (en orden) también se rehacen
+            if set(p["depende"]) & ids:
+                ids.add(p["id"])
+        for p in st["pasos"]:
+            if p["id"] in ids and p["estado"] != "en marcha":
+                p.update(estado="pendiente", error="", resumen="", archivo="")
+        st["estado"] = "interrumpido" if not ctl else st["estado"]
+        proyectos.save(st)
+        if not ctl and len(project_runs) < MAX_PROJECTS:
+            threading.Thread(target=J.run_project, args=(st,), daemon=True).start()
     elif action == "open" and st and J.IS_WIN and os.path.isdir(st["carpeta"]):
         os.startfile(st["carpeta"])
-    return agent_info()
+    elif action == "report" and st and st.get("informe") and J.IS_WIN:
+        try:
+            os.startfile(st["informe"]["ruta"])
+        except OSError:
+            pass
+    return {**agent_info(), "board": projects_board()}
+
+
+# ============================================================================ 12.31: TABLERO DE PROYECTOS
+_pb = {"win": None}
+
+
+def projects_board(n=8):
+    """Los proyectos para el tablero: los que están en marcha primero, luego los últimos."""
+    live = [r["st"] for r in project_runs.values()]
+    ids = {p["id"] for p in live}
+    rest = [p for p in reversed(proyectos.load_all()) if p["id"] not in ids][: max(0, n - len(live))]
+    return [project_public(p) for p in live + rest]
+
+
+@J.app.route("/proyectos")
+def projects_page():
+    from flask import render_template
+    return render_template("proyectos.html", version=J.VERSION, asset_v=getattr(J, "ASSET_V", ""), look=J.settings.get("look", "clasico"))
+
+
+def open_projects_page():
+    J._open_page("/proyectos", "Proyectos", _pb)
+
+
+@J.socketio.on("projects_state")
+def handle_projects_state(data=None):
+    return {"board": projects_board(), "max": MAX_PROJECTS}
+
+
+@J.socketio.on("open_projects_page")
+def handle_open_projects_page(data=None):
+    open_projects_page()
+    return {"ok": True}
 
 
 @J.mobile_app.route("/api/aprobar", methods=["POST"])
@@ -471,7 +720,7 @@ def agents_start():
 __all__ = [
     'BARE_WINDOW', '_APPROVALS_LIST', '_HISTORY', '_NO_ID', '_PRJ_CANCEL', '_PRJ_RESUME', '_PRJ_STATUS', '_YES_ID',
     '_approvals_worker', '_callbacks', '_card', '_docx_text', '_projects_at_start', '_write_index', 'agent_info',
-    'run_daily_step', 'agents_start', 'approvals_answer', 'approvals_voice', 'handle_agent_info', 'handle_approval_resolve',
+    'run_daily_step', 'MAX_PROJECTS', '_PRJ_BOARD', '_PRJ_PAUSE', '_emit_project', '_pb', '_report_docx', '_routed_step', '_running', '_sync_run', 'handle_open_projects_page', 'handle_projects_state', 'open_projects_page', 'project_public', 'project_report', 'project_runs', 'projects_board', 'projects_page', 'report_edit', 'agents_start', 'approvals_answer', 'approvals_voice', 'handle_agent_info', 'handle_approval_resolve',
     'handle_project_action', 'mobile_approve', 'plan_project', 'project_run', 'project_voice', 'request_approval',
     'resolve_approval', 'run_project', 'run_step',
 ]

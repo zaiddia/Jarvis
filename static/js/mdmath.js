@@ -15,7 +15,8 @@
     return s.replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
       .replace(/(^|[\s(«])\*([^*\n]+)\*(?=[\s.,;:!?)»]|$)/g, "$1<i>$2</i>").replace(/(^|[\s(«])_([^_\n]+)_(?=[\s.,;:!?)»]|$)/g, "$1<i>$2</i>")
       .replace(/(\b[a-zA-Z0-9)])\^(\d{1,2}|n)\b/g, "$1<sup>$2</sup>")                 // x^2 sin $…$: igual se ve bien
-      .replace(/\bsqrt\(/g, "√(");
+      .replace(/\bsqrt\(/g, "√(")
+      .replace(/\[([^\]\n]{1,80})\]\((https?:\/\/[^\s)]+)\)/g, '<a class="mdlink" href="$2" title="$2">$1</a>');                       // 12.31: [Medio](https://…): la fuente de una noticia
   }
   function md(text) {
     const maths = [];

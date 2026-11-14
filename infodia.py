@@ -133,7 +133,12 @@ def parse_rss(xml_text, limit=15):
             title = title[: -len(src) - 3].strip()
         elif not src and " - " in title and len(title.rsplit(" - ", 1)[1]) < 40:
             title, src = [x.strip() for x in title.rsplit(" - ", 1)]
-        out.append({"titulo": title, "fuente": src or "", "fecha": _text(it, "pubDate") or ""})
+        link = _text(it, "link")
+        if not link:                                       # Atom: <link href="…"/>
+            el = it.find("{http://www.w3.org/2005/Atom}link")
+            link = el.get("href", "") if el is not None else ""
+        link = link.strip() if link.strip().lower().startswith(("http://", "https://")) else ""
+        out.append({"titulo": title, "fuente": src or "", "fecha": _text(it, "pubDate") or "", "link": link})
         if len(out) >= limit:
             break
     return out
@@ -169,6 +174,46 @@ def news_prompt(items, topic=""):
             "entre 4 y 6, una o dos frases cada una, claras y neutrales, empezando por las de Colombia. No "
             "inventes nada que no esté en los titulares y nombra el medio cuando ayude. Sin listas ni markdown: "
             "es para escucharse. Termina sin preguntas.\n\nTitulares:\n" + lines)
+
+
+def news_json_prompt(items, topic=""):
+    """12.31: lo mismo, pero diciendo de qué titular sale cada noticia (para poner su fuente y su enlace)."""
+    lines = "\n".join(f"{i}. {n['titulo']}" + (f" ({n['fuente']})" if n["fuente"] else "") for i, n in enumerate(items))
+    return (f"Eres Jarvis, {persona()}. Con estos titulares de hoy" + (f" sobre «{topic}»" if topic else "") +
+            ", escoge las 4 a 6 noticias más importantes (primero las de Colombia) y cuéntalas en una o dos frases claras y "
+            "neutrales cada una, para escucharse (sin markdown). No inventes nada que no esté en el titular.\n"
+            'Responde SOLO con JSON: {"noticias": [{"i": número del titular, "texto": "…"}]}\n\nTitulares:\n' + lines)
+
+
+def news_parse(d, items):
+    """[(texto, titular)] a partir del JSON de la IA (los índices que no existen se descartan)."""
+    out = []
+    for x in (d or {}).get("noticias") or []:
+        try:
+            i = int(x.get("i"))
+        except (TypeError, ValueError, AttributeError):
+            continue
+        texto = re.sub(r"\s+", " ", str(x.get("texto") or "")).strip()
+        if 0 <= i < len(items) and texto and all(i != j for _, j in out):
+            out.append((texto, i))
+    return [(t, items[i]) for t, i in out[:6]]
+
+
+def news_rich(pairs, remote=False):
+    """Lo que se ve en el chat: cada noticia con su fuente, que se toca para abrir la noticia (en Telegram, el enlace a la vista)."""
+    lines = []
+    for texto, it in pairs:
+        src = it.get("fuente") or "Fuente"
+        if it.get("link"):
+            lines.append(f"- {texto} — {src}: {it['link']}" if remote else f"- {texto} — [{src}]({it['link']})")
+        else:
+            lines.append(f"- {texto}" + (f" — {src}" if it.get("fuente") else ""))
+    return "\n".join(lines)
+
+
+def news_spoken(pairs):
+    return " ".join(f"{t}" + (f" Lo cuenta {it['fuente']}." if it.get("fuente") and it["fuente"].lower() not in t.lower() else "")
+                    for t, it in pairs)
 
 
 def headlines_spoken(items, n=5):

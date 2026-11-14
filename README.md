@@ -157,6 +157,17 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Noticias con fuente y proyectos al estilo «Computer» (v12.31)
+
+- **Noticias con su fuente.** Cada noticia sale en el chat con el nombre del medio subrayado; al tocarlo se abre la noticia en tu navegador. En voz no se leen enlaces («… Lo cuenta El Tiempo»). Por Telegram, el enlace va a la vista. Sin IA, salen los titulares, también con su fuente.
+- **Informe final que lo une todo.** Al terminar un proyecto de 2 o más pasos, Jarvis escribe un solo Word con resumen, una parte por tema, conclusiones y la lista de archivos.
+- **Revisor antes de entregar.** Otro sub-agente compara el informe con lo que de verdad produjo cada paso y marca datos que no salen de las fuentes, cifras que no coinciden o partes del pedido sin responder. Lo que encuentre queda al final del informe y te lo dice al avisar.
+- **El modelo que le va a cada paso:** el rápido para lo sencillo (recordatorios, correos, lo que subiste) y el potente para investigar, escribir, el informe y el revisor.
+- **Editar por partes:** «cambia la parte 2 del informe: hazla más corta», «acorta las conclusiones del informe», «corrige el resumen del informe, …». Solo cambia esa parte y vuelve a armar el Word.
+- **Tablero de proyectos** («abre el tablero de proyectos»): cada paso con su estado, cuánto lleva, con qué modelo, lo que encontró y su archivo; el informe con lo que marcó el revisor; botones para pausar, seguir, cancelar, rehacer un paso (y lo que dependía de él), abrir la carpeta y abrir el informe. Se actualiza solo.
+- **Dos proyectos a la vez,** y «pausa el proyecto» / «sigue con el proyecto». Mientras trabajan puedes seguir hablándole de otras cosas.
+- Se apagan en Ajustes: project_report y project_review.
+
 ## Conectar en 3 pasos: WhatsApp y correo (v12.30)
 
 - **Una página para conectar sin buscar en Ajustes.** Di «ayúdame a conectar el WhatsApp», «conecta el correo» o «abre el asistente de conexiones», o pulsa **Conectar paso a paso** en la revisión de salud (antes decía «Ir al ajuste»).
