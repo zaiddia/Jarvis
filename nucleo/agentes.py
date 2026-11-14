@@ -158,7 +158,7 @@ def project_public(st):
     rep = st.get("informe") or {}
     return {"id": st.get("id"), "nombre": st.get("nombre"), "pedido": st.get("pedido"), "estado": st.get("estado"),
             "pausado": bool(ctl and ctl["pause"]), "creado": st.get("creado"), "terminado": st.get("terminado"),
-            "carpeta": st.get("carpeta"), "progreso": proyectos.progress_text(st),
+            "carpeta": st.get("carpeta"), "progreso": proyectos.progress_text(st), "consumo": st.get("consumo"),
             "pasos": [{"id": p["id"], "titulo": p["titulo"], "tipo": p["tipo"], "estado": p["estado"], "modelo": p.get("modelo", ""),
                        "inicio": p.get("inicio", 0), "fin": p.get("fin", 0), "error": p.get("error", ""),
                        "archivo": os.path.basename(p.get("archivo") or ""), "resumen": str(p.get("resumen") or "")[:400]}
@@ -303,11 +303,11 @@ def _routed_step(st, step):
     brain = proyectos.step_brain(step["tipo"])
     fm = J.fast_model() if brain == "rapido" else ""
     step["modelo"] = ("rápido · " + fm) if fm else "potente"
-    J._tl.fast_model = fm
+    J._tl.fast_model, J._tl.project_st = fm, st          # 12.32: lo que gasta cada paso se suma al proyecto
     try:
         return J.run_step(st, step)
     finally:
-        J._tl.fast_model = ""
+        J._tl.fast_model, J._tl.project_st = "", None
 
 
 def run_project(st):
@@ -432,6 +432,14 @@ def project_report(st):
     hechos = [p for p in st["pasos"] if p["estado"] == "hecho" and p.get("resumen")]
     if not J.settings.get("project_report", True) or len(hechos) < 2:
         return ""
+    J._tl.project_st = st
+    try:
+        return _project_report(st)
+    finally:
+        J._tl.project_st = None
+
+
+def _project_report(st):
     try:
         rep = proyectos.report_validate(J._extract_json(J.ai_chat([{"role": "user", "content": proyectos.report_prompt(st)}],
                                                                   json_mode=True, max_tokens=5000)), st)
@@ -720,7 +728,7 @@ def agents_start():
 __all__ = [
     'BARE_WINDOW', '_APPROVALS_LIST', '_HISTORY', '_NO_ID', '_PRJ_CANCEL', '_PRJ_RESUME', '_PRJ_STATUS', '_YES_ID',
     '_approvals_worker', '_callbacks', '_card', '_docx_text', '_projects_at_start', '_write_index', 'agent_info',
-    'run_daily_step', 'MAX_PROJECTS', '_PRJ_BOARD', '_PRJ_PAUSE', '_emit_project', '_pb', '_report_docx', '_routed_step', '_running', '_sync_run', 'handle_open_projects_page', 'handle_projects_state', 'open_projects_page', 'project_public', 'project_report', 'project_runs', 'projects_board', 'projects_page', 'report_edit', 'agents_start', 'approvals_answer', 'approvals_voice', 'handle_agent_info', 'handle_approval_resolve',
+    'run_daily_step', 'MAX_PROJECTS', '_PRJ_BOARD', '_PRJ_PAUSE', '_emit_project', '_pb', '_report_docx', '_project_report', '_routed_step', '_running', '_sync_run', 'handle_open_projects_page', 'handle_projects_state', 'open_projects_page', 'project_public', 'project_report', 'project_runs', 'projects_board', 'projects_page', 'report_edit', 'agents_start', 'approvals_answer', 'approvals_voice', 'handle_agent_info', 'handle_approval_resolve',
     'handle_project_action', 'mobile_approve', 'plan_project', 'project_run', 'project_voice', 'request_approval',
     'resolve_approval', 'run_project', 'run_step',
 ]

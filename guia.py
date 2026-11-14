@@ -19,6 +19,11 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Avisos por evento y proyectos que se repiten (12.32)", ["cuando me llegue un correo de la coordinadora, avísame al celular",
+                                                              "cuando aparezca una reunión nueva en el calendario, recuérdamela la víspera",
+                                                              "si el dólar pasa de 4.200, avísame", "mis avisos automáticos",
+                                                              "cada lunes a las 7, investiga los precios de la canasta familiar y hazme un informe"]),
+    ("Consumo, privacidad y consejo de modelos (12.32)", ["¿cuánto he usado la IA hoy?", "pregúntale al consejo: ¿me conviene comprar o arrendar?"]),
     ("Proyectos con informe y tablero (12.31)", ["abre el tablero de proyectos", "¿cómo va el proyecto?", "pausa el proyecto",
                                                  "sigue con el proyecto", "cambia la parte 2 del informe: hazla más corta",
                                                  "acorta las conclusiones del informe"]),

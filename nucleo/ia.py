@@ -629,6 +629,13 @@ def ai_chat(messages, json_mode=False, max_tokens=None):
     if cfg["kind"] == "ollama" and not cfg["model"]:
         raise J.AIError("No hay modelo seleccionado. Elige uno en Ajustes › Inteligencia artificial.", kind="config",
                       why="no hay modelo elegido. Elige uno en Ajustes, sección IA")
+    mp = None
+    if cfg["kind"] != "ollama" and J.privacy_names_in(json.dumps(messages, ensure_ascii=False)):   # 12.32: datos de estudiantes
+        loc = J.privacy_local_cfg()
+        if loc:
+            cfg = loc                                  # elegiste que no salgan: la IA de tu equipo
+        else:
+            messages, mp = J.privacy_scrub(messages)   # salen como «Estudiante 1», «Estudiante 2»…
     J.thinking += 1
     J.refresh_mode()
     try:
@@ -644,12 +651,18 @@ def ai_chat(messages, json_mode=False, max_tokens=None):
             try:
                 r = J._ollama_chat(cfg, model=cfg["model"], messages=messages, options=opts, keep_alive=J._keep_alive(), **kwargs)
             except Exception as e:
+                J.usage_add(cfg, messages, "", ok=False, kind="net")
                 raise J.AIError(str(e), kind="net", why="Ollama no responde")
-            return J.motorlocal.clean_reply(r["message"]["content"] or "")
+            out = J.motorlocal.clean_reply(r["message"]["content"] or "")
+            J.usage_add(cfg, messages, out)
+            return out
         J._need_key(cfg)
         try:
-            return J._with_fallback(cfg, lambda c: J._cloud_chat(c, messages, json_mode, max_tokens=max_tokens))
+            out = J._with_fallback(cfg, lambda c: J._cloud_chat(c, messages, json_mode, max_tokens=max_tokens))
+            J.usage_add(cfg, messages, out)
+            return J.privacy_restore(out, mp) if mp else out
         except J.AIError as e:
+            J.usage_add(cfg, messages, "", ok=False, kind=e.kind)
             # Se cayó el internet a mitad de la petición: se repite con la IA del equipo.
             if e.kind == "net" and J.net_recheck() and J._ai_cfg()["kind"] == "ollama":
                 J.log_terminal("Sin internet: respondo con la IA de tu equipo.", "RED")
@@ -1279,6 +1292,9 @@ def _skip_think(chunks):
 
 def answer_question_streaming(prompt):
     """Responde una pregunta hablando por frases a medida que el modelo las genera."""
+    if J.settings.get("privacy_students", True) and J.privacy_names_in(prompt + " " + json.dumps(J.chat_history[-8:], ensure_ascii=False)):
+        J.reply(J.ask_ai(prompt, route=False)[1])      # 12.32: con nombres de estudiantes, por la vía que los protege
+        return
     cfg = J._ai_cfg()
     if not J._is_local_ai(cfg) and J.net_preflight():  # 12.20: se cayó el internet: cambia ya a la IA de tu equipo
         cfg = J._ai_cfg()

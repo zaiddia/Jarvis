@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Avisos por evento, proyectos que se repiten, consumo, privacidad y consejo de modelos (v12.32)
+
+- **Avisos por evento** (además de los del PC): «cuando me llegue un correo de la coordinadora, avísame al celular» (revisa tu bandeja cada 5 minutos), «cuando aparezca una reunión nueva en el calendario, recuérdamela la víspera» (te avisa al aparecer y la víspera desde las 6 p. m.), «si el dólar pasa de 4.200, avísame» o «cuando el euro baje de 4.500» (dólar, euro, bitcoin y ethereum; avisa al cruzar el valor, no cada vez que lo mira). «Al celular» va por Telegram o, si no, por WhatsApp. «Mis avisos automáticos» los lista; «borra el aviso automático 2» quita uno. La primera revisión solo aprende lo que ya había: no te avisa de correos o eventos viejos.
+- **Proyectos que se repiten solos:** «cada lunes a las 7, investiga los precios de la canasta familiar y hazme un informe» (también «todos los días a las 6 pm…», «cada mes…»). Lo planea una vez, te pide permiso, y luego lo corre a esa hora; desde la segunda vez agrega al informe «Frente a la vez anterior» (qué subió, qué bajó, qué es nuevo) y te lo manda al celular.
+- **Contador de consumo de la IA:** «¿cuánto he usado la IA hoy?» (llamadas, tokens aproximados, por modelo, y cuántas veces dijo «saturado» o «sin cuota»). Cada proyecto muestra en el tablero cuánto gastó. Con un tope diario (ai_daily_limit en Ajustes) te avisa al llegar al 80 %. Es una cuenta aproximada de Jarvis, no la factura de Google.
+- **Datos de estudiantes protegidos:** si algo que va a la nube trae nombres de las listas de tus cursos, salen como «Estudiante 1», «Estudiante 2»… y Jarvis vuelve a poner los nombres en la respuesta. Con privacy_local_first, si tienes IA local, eso ni siquiera sale de tu equipo. Se apaga con privacy_students.
+- **Consejo de modelos:** «pregúntale al consejo: ¿me conviene comprar o arrendar?». La misma pregunta a varios modelos por separado (el principal, su modelo rápido, otras IA con clave y la IA local; hasta 4) y luego una síntesis: en qué coinciden, en qué no y qué recomendaría. Necesita al menos dos modelos.
+
 ## Noticias con fuente y proyectos al estilo «Computer» (v12.31)
 
 - **Noticias con su fuente.** Cada noticia sale en el chat con el nombre del medio subrayado; al tocarlo se abre la noticia en tu navegador. En voz no se leen enlaces («… Lo cuenta El Tiempo»). Por Telegram, el enlace va a la vista. Sin IA, salen los titulares, también con su fuente.

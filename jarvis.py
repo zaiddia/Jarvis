@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.31"
+VERSION = "12.32"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -708,6 +708,9 @@ DEFAULT_SETTINGS = {
     "live_provider": "gemini",     # "gemini" (gratis), "openai" (ChatGPT, de pago) o "deepgram" (con crédito)
     "live_fallback": True,         # si el elegido falla, probar los otros que tengan clave
     "nl_understand": True,         # 12.27: entender lenguaje natural (la IA traduce tu frase a la orden de Jarvis)
+    "privacy_students": True,      # 12.32: los nombres de tus estudiantes salen a la nube como «Estudiante 1»…
+    "privacy_local_first": False,  # …o, si lo activas y tienes IA local, ni siquiera salen
+    "ai_daily_limit": 0,           # 12.32: tope de llamadas a la IA al día (0 = sin tope); avisa al 80 %
     "project_report": True,        # 12.31: al terminar un proyecto, un informe que une todo
     "project_review": True,        # 12.31: …y un revisor que lo compara con lo que produjo cada paso
     "phrase_tips": True,           # 12.26: si la IA tuvo que adivinar, una vez al día te enseña la frase directa
@@ -976,7 +979,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "school_weeks": (20, 52), "period_current": (1, 6), "practice_goal": (5, 200), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "ai_daily_limit": (0, 100000), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "school_weeks": (20, 52), "period_current": (1, 6), "practice_goal": (5, 200), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -1723,6 +1726,8 @@ def process_command(text):
         return
     if cloud_voice(text, t):                           # 12.8: «trae la copia de mi Drive», «¿cuándo fue la última copia en la nube?»
         return
+    if auto_voice(text, t):                            # 12.32: «cuando me llegue un correo de…», «si el dólar pasa de…», «cada lunes…»
+        return
     if mode_voice(text, t) or trigger_voice(text, t):  # 12.9: «modo general», «cuando conecte el cargador, …»
         return
     if code_review_voice(text, t) or money_voice(text, t):   # 12.11: «revisa este código: …», «¿a cómo está el dólar?»
@@ -1798,6 +1803,8 @@ def process_command(text):
     if fallos_voice(text, t):                          # 12.26: «abre el registro de fallos»
         return
     if connect_voice(text, t):                         # 12.30: «ayúdame a conectar el WhatsApp», «conecta el correo»
+        return
+    if usage_voice(text, t) or council_voice(text, t): # 12.32: «¿cuánto he usado la IA hoy?», «pregúntale al consejo: …»
         return
     if nl_test_voice(text, t):                         # 12.29: «haz la prueba de comprensión» (con tu IA, sin ejecutar nada)
         return
@@ -2445,6 +2452,8 @@ from nucleo.novedades import *  # noqa: F401,F403,E402
 from nucleo.ayudante import *  # noqa: F401,F403,E402
 from nucleo.comprension import *  # noqa: F401,F403,E402
 from nucleo.conectar import *  # noqa: F401,F403,E402
+from nucleo.consumo import *  # noqa: F401,F403,E402
+from nucleo.automatico import *  # noqa: F401,F403,E402
 from nucleo.transcribir import *  # noqa: F401,F403,E402
 
 # ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)
@@ -2701,6 +2710,7 @@ def main():
         motor_start_services()            # 12.6: apaga la IA integrada cuando no se usa
         ialocal_start()                   # 12.19: Ollama encendido solo, sin abrirlo
         novedades_start()                 # 12.22: el reporte de la mañana aunque abras tarde
+        auto_start()                      # 12.32: avisos por evento y proyectos que se repiten
         procedure_start()                 # 12.0: mapa de errores de los procedimientos
         night_start()                     # 12.0: turno de noche
         adventure_start()                 # 12.0: reloj de la aventura matemática

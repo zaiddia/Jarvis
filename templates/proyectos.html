@@ -86,7 +86,7 @@
       ? `${p.pausado ? `<button data-a="resume" data-id="${esc(p.id)}">Seguir</button>` : `<button data-a="pause" data-id="${esc(p.id)}">Pausar</button>`}<button data-a="cancel" data-id="${esc(p.id)}">Cancelar</button>`
       : p.estado !== "terminado" && p.estado !== "cancelado" ? `<button data-a="resume" data-id="${esc(p.id)}">Continuar</button>` : "";
     return `<div class="prj ${LIVE(p) ? "live" : ""}">
-      <div class="top"><h2>${esc(p.nombre)}</h2><span class="${cls}">${p.pausado ? "en pausa" : esc(p.estado)}</span><span class="badge">${done}/${n} pasos</span></div>
+      <div class="top"><h2>${esc(p.nombre)}</h2><span class="${cls}">${p.pausado ? "en pausa" : esc(p.estado)}</span><span class="badge">${done}/${n} pasos</span>${p.consumo ? `<span class="badge" title="Llamadas a la IA y tokens aproximados de este proyecto">IA: ${p.consumo.calls} llamadas · ~${p.consumo.tok >= 1000 ? (p.consumo.tok / 1000).toFixed(1) + " mil" : p.consumo.tok} tokens</span>` : ""}</div>
       <div class="ped">${esc(p.pedido)}</div>
       <div class="bar"><i style="width:${n ? Math.round(100 * done / n) : 0}%"></i></div>
       <table>${rows}</table>${rep}
