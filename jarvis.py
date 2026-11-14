@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.33"
+VERSION = "12.34"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -2127,7 +2127,14 @@ def process_command(text):
             run_skill(*direct)
             return
         if getattr(_tl, "live", False):
-            _tl.no_order = True                        # en vivo: lo responde Gemini directamente
+            # 12.34: en vivo, Gemini ya decidió que es una orden: si ninguna regla la reconoce, antes de rendirse se
+            # traduce a la orden de Jarvis (como con lo escrito). Antes se devolvía «respóndela tú» y Gemini decía «no puedo».
+            if getattr(_tl, "nl_pass", False):
+                _tl.nl_missed = True
+                return
+            if nl_understand(text, t):
+                return
+            _tl.no_order = True                        # de verdad no es una orden: lo responde Gemini
             return
         if panel.wants(t) and panel_answer(text):       # 12.1: «¿qué pasa si…?» → panel con deslizadores
             return

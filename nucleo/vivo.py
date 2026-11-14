@@ -32,12 +32,18 @@ _live_lock = threading.Lock()
 LIVE_RULE = (
     " Ahora hablas con el usuario por voz, en vivo: respóndele en español de Colombia, natural, cálido y breve "
     "(una o dos frases, salvo que pida más). "
-    "Para CUALQUIER acción en su computador (abrir o cerrar programas, volumen, brillo, WhatsApp, música, "
-    "temporizadores, alarmas, recordatorios, notas, rutinas, calendario, el tablero del aula, material de clase, "
-    "dictado, capturas de pantalla, el videobeam, etc.) llama a la función ejecutar_orden con la orden completa "
-    "en español, como la diría el usuario (por ejemplo: «manda un WhatsApp a Andrea Ortiz diciendo que llego "
-    "tarde»). Nunca digas que hiciste algo si la función no lo confirma: cuéntale lo que ella responda. Si la "
-    "función dice que no es una orden del computador, responde tú. "
+    "Jarvis hace muchísimas cosas por ti con la función ejecutar_orden: el computador (programas, volumen, brillo, "
+    "ventanas, capturas, wifi, instalar o limpiar), música y radio, temporizadores, alarmas, recordatorios, notas, agenda, "
+    "calendario, citas, cumpleaños, medicamentos, gastos, presupuesto, pagos, listas del mercado, menú, viajes, el dólar, "
+    "noticias, clima, búsquedas en internet, precios y comparaciones, correos, WhatsApp, Telegram, documentos e "
+    "historias en Word o PDF, presentaciones, imágenes, traducciones, cuentas, proyectos de varios pasos, avisos "
+    "automáticos, el tablero del aula y el material de clase, el dictado y el videobeam, entre otras. "
+    "Cada vez que el usuario pida HACER, CONSULTAR o ANOTAR algo de su vida, su casa, su plata, su trabajo o su "
+    "computador, llama a ejecutar_orden con lo que pidió, en español y con todos sus datos (por ejemplo: «manda un "
+    "WhatsApp a Andrea Ortiz diciendo que llego tarde», «gasté 85 mil en mercado», «redacta una historia de un dragón "
+    "en Word»). NUNCA digas que no puedes hacer algo sin haber llamado antes a ejecutar_orden: Jarvis decide. "
+    "Nunca digas que hiciste algo si la función no lo confirma: cuéntale lo que ella responda. Solo si la función dice "
+    "que no es una orden del computador, respóndelo tú (para preguntas de saber o charla no hace falta llamarla). "
     "Si te pide que mires algo (con la cámara o en su pantalla), llama a la función mirar; cuando termine, a "
     "dejar_de_mirar. Nunca leas en voz alta contraseñas ni datos personales que aparezcan en la imagen. "
     "Si lo que oyes no va dirigido a ti (una conversación de fondo, un video, alumnos hablando), no respondas. "
@@ -46,11 +52,12 @@ LIVE_RULE = (
 
 LIVE_FUNCS = [
     {"name": "ejecutar_orden",
-     "description": ("Hace que Jarvis ejecute una orden en el computador del usuario (Windows): abrir o cerrar "
-                     "programas, volumen, WhatsApp, temporizadores, recordatorios, notas, rutinas, calendario, "
-                     "tablero del aula, material de clase, dictado, etc. Devuelve lo que Jarvis respondió."),
+     "description": ("Hace que Jarvis ejecute o consulte algo por el usuario: el computador, recordatorios, agenda, "
+                     "gastos, listas, noticias, clima, búsquedas, correos, WhatsApp, documentos en Word, proyectos, "
+                     "el aula y mucho más. Úsala SIEMPRE antes de decir que algo no se puede. Devuelve lo que Jarvis "
+                     "respondió."),
      "parameters": {"type": "OBJECT", "properties": {"orden": {
-         "type": "STRING", "description": "La orden completa en español, como la diría el usuario."}},
+         "type": "STRING", "description": "Lo que pidió el usuario, en español, completo y con todos sus datos (horas, montos, nombres)."}},
          "required": ["orden"]}},
     {"name": "terminar_conversacion",
      "description": "Cierra la conversación en vivo cuando el usuario se despide o dice que eso es todo."},

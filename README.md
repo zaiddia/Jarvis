@@ -157,6 +157,12 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Un solo Jarvis: la voz en vivo ya hace lo mismo que lo escrito (v12.34)
+
+- **Por qué parecían «tres Jarvis».** Escrito (o por voz sin la conversación en vivo), tu frase pasa por las reglas y, si ninguna la reconoce, por la capa que entiende lenguaje natural. En la **conversación en vivo** (Gemini Live), Gemini decide si es una orden y se la pasa a Jarvis; pero si la frase que mandaba no calzaba exacto con una regla, Jarvis respondía «eso no es una orden: respóndela tú» sin intentar entenderla, y Gemini decía «no puedo». Además, las instrucciones de la voz en vivo solo le nombraban cosas del PC y del aula, así que para gastos, noticias, correos, documentos o proyectos ni siquiera lo intentaba.
+- **Ahora:** en vivo, si ninguna regla reconoce la orden, se traduce igual que lo escrito antes de rendirse; y Gemini Live sabe todo lo que Jarvis hace y tiene prohibido decir «no puedo» sin haberle preguntado a Jarvis primero. Lo delicado (borrar, enviar, pagar…) no se hace solo: Gemini te pregunta y, si dices que sí, se hace.
+- **Con la IA local** la comprensión ve menos ejemplos (18 en vez de unos 150) para que no se demore; entiende algo menos que Gemini, pero responde más rápido.
+
 ## Comprensión corregida con la prueba real (v12.33)
 
 La primera prueba de comprensión con Gemini dio 58 % (23 de 40). Lo que se corrigió:

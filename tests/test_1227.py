@@ -22,6 +22,7 @@ def nl(jv, monkeypatch):
     monkeypatch.setattr(jv, "save_settings_file", lambda: None)
     monkeypatch.setitem(jv.settings, "assistant_mode", "general")
     monkeypatch.setitem(jv.state, "ai", "ok")
+    monkeypatch.setattr(jv, "_is_local_ai", lambda cfg=None: False)       # como con Gemini (12.34: la local ve menos ejemplos)
     asked, cur = [], {"d": {"tipo": "pregunta"}}
     monkeypatch.setattr(jv, "request_approval", lambda tipo, titulo, detalle="", on_ok=None, **k: (jv._rec.other.append("aprobacion"), cur.update(ok=on_ok)))
 

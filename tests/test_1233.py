@@ -35,6 +35,7 @@ def test_las_formas_alternativas_tambien_las_hace_una_regla(jv, ask, monkeypatch
 
 def test_el_prompt_pide_la_forma_de_la_lista(jv, monkeypatch):
     monkeypatch.setitem(jv.settings, "assistant_mode", "general")
+    monkeypatch.setattr(jv, "_is_local_ai", lambda cfg=None: False)
     near, rest = jv.nl_catalog("cuánto disco me queda")
     p = jv.nl_prompt("cuánto disco me queda", near, rest)
     assert "Nunca devuelvas la frase de la persona tal cual" in p and "«qué medicinas tomo» → «qué medicamentos tengo»" in p

@@ -58,6 +58,12 @@ def nl_examples(text, k=NL_K):
 def nl_catalog(text):
     """Lo que ve la IA: las más parecidas a tu frase y, debajo, una frase de cada habilidad (así no se le escapa ninguna
     aunque no haya palabras en común: «85 lucas en el súper» no comparte palabras con «gasté 20 mil en almuerzo»)."""
+    try:
+        local = J._is_local_ai()
+    except Exception:
+        local = False
+    if local:                                             # 12.34: la IA de tu equipo es más lenta leyendo: menos ejemplos
+        return nl_examples(text, k=18), []
     near = nl_examples(text)
     general = J.current_mode() == "general"
     rest = []
@@ -275,6 +281,12 @@ def nl_understand(text, t, early=False):
     if d["tipo"] != "orden" or J.normalize(d["orden"]) == t:
         return False
     orden = d["orden"]
+    if (not d["seguro"] or nl_risky(orden, t)) and getattr(J._tl, "live", False):
+        J.request_approval("orden", f"¿Hago «{orden}»?", f"Lo entendí de: «{text.strip()}»", quiet=True,
+                           on_ok=lambda: nl_run(orden) or J.reply(f"No supe hacer «{orden}».", "COMPRENSIÓN"))
+        J.reply(f"Entendí «{orden}», pero antes necesito su permiso. Pregúntale si quiere que lo haga; si dice que sí, llama a "
+                "ejecutar_orden con la orden «sí».", "COMPRENSIÓN")   # (en vivo no se habla encima de Gemini)
+        return True
     if not d["seguro"] or nl_risky(orden, t):
         J.request_approval("orden", f"¿Hago «{orden}»?", f"Lo entendí de: «{text.strip()}»",
                            on_ok=lambda: nl_run(orden) or J.reply(f"No supe hacer «{orden}».", "COMPRENSIÓN"),
