@@ -115,8 +115,9 @@ def test_la_ia_ve_todas_las_habilidades(nl):
 def test_traduce_y_hace(nl, ask):
     _reset()
     nl._nl[1]["d"] = {"tipo": "orden", "orden": "gasté 85 mil en mercado", "seguro": True}
-    who, said = ask("lo del súper ayer fueron como 85 lucas")
-    assert who == "GASTOS" and "85.000" in said
+    ask("lo del súper ayer fueron como 85 lucas")
+    said = " ".join(t for t, o in nl._rec.replies if o == "GASTOS")             # (un aviso tardío de otro hilo no cuenta)
+    assert "85.000" in said
     p = nl._nl[0][-1]
     assert "«lo del súper ayer fueron como 85 lucas»" in p and "gasté 20 mil en almuerzo" in p      # ve ejemplos parecidos
     assert nl.nl_state["last"]["orden"] == "gasté 85 mil en mercado"
