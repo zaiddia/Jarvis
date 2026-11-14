@@ -266,7 +266,16 @@ def handle_doc_upload(data=None):
 _DG_PAGE = re.compile(r"\b(?:abre|abreme|muestra|muestrame|abrir)\s+(?:el |la )?(?:generador de documentos|generador|creador de documentos)\b")
 _DG_VERB = r"(?:crea|creame|haz|hazme|prepara|preparame|genera|generame|redacta|redactame|elabora|elaborame|escribe|escribeme)"
 _DG_FMT = {"pdf": "pdf", "word": "word", "texto": "texto", "txt": "texto", "bloc de notas": "texto", "csv": "csv"}
-_DG_TPL = {"informe": "informe", "circular": "circular", "acta": "acta", "documento": "libre", "carta": "libre"}
+_DG_TPL = {"informe": "informe", "circular": "circular", "acta": "acta", "documento": "libre", "carta": "libre", "oficio": "libre",
+           "solicitud": "libre", "comunicado": "libre", "resumen": "libre", "articulo": "libre", "manual": "libre", "instructivo": "libre",
+           # 12.28: lo creativo y personal (antes: «no puedo»)
+           "historia": "creativo", "cuento": "creativo", "relato": "creativo", "poema": "creativo", "poesia": "creativo", "fabula": "creativo",
+           "leyenda": "creativo", "ensayo": "creativo", "discurso": "creativo", "cronica": "creativo", "biografia": "creativo",
+           "guion": "creativo", "cancion": "creativo", "reflexion": "creativo", "novela": "creativo", "texto": "creativo",
+           "mensaje": "creativo", "brindis": "creativo", "dedicatoria": "creativo", "historieta": "creativo", "anecdota": "creativo"}
+_DG_KIND = re.compile(r"\b(?:un|una|el|la|mi|me|nos|le)?\s*(" + "|".join(sorted(_DG_TPL, key=len, reverse=True)) + r")s?\b")
+_DG_FMT_RE = re.compile(r"\b(?:en|de|como|a|para)\s+(?:un\s+|una\s+)?(?:(?:documento|archivo|hoja)\s+(?:de\s+|en\s+)?)?(pdf|word|txt|bloc de notas|csv)\b|"
+                        r"\b(?:guardal[oa]s?|pasal[oa]s?|ponl[oa]s?|dejal[oa]s?|hazl[oa]s?)\s+(?:en|a|como)\s+(?:un\s+)?(pdf|word)\b|\b(docx|\.docx)\b")
 
 
 def docs_voice(text, t):
@@ -274,15 +283,29 @@ def docs_voice(text, t):
         open_docs_page()
         J.reply("Te abrí el generador de documentos: escoge el formato, describe lo que necesitas y te muestro la vista previa.", "DOCUMENTOS")
         return True
-    if not re.match(rf"^(?:por favor )?{_DG_VERB}\b", t):
+    if not re.match(rf"^(?:por favor |oye |jarvis )?(?:me |nos )?(?:puedes |podrias )?{_DG_VERB}\b", t):
         return False
-    fm = re.search(r"\ben (pdf|word|texto|txt|bloc de notas|csv)\b", t)
-    tm = re.search(r"\b(?:un|una|el|la)\s+(informe|circular|acta|documento|carta)\b", t)
-    if not tm or (tm.group(1) in ("documento", "carta") and not fm):
-        return False                                     # lo demás lo atienden el aula y la oficina, como siempre
-    fmt = _DG_FMT[fm.group(1)] if fm else "word"
+    fm = _DG_FMT_RE.search(t)
+    kinds = list(_DG_KIND.finditer(t[:90]))
+    if not kinds:
+        return False
+    tm = next((k for k in kinds if _DG_TPL[k.group(1)] == "creativo" and k.group(1) not in ("texto", "mensaje")), kinds[0])
     tpl = _DG_TPL[tm.group(1)]
-    pedido = re.sub(r"\s+en (?:pdf|word|texto|txt|bloc de notas|csv)\b", "", text, flags=re.I).strip()
+    if tm.group(1) in ("carta", "resumen", "texto", "mensaje", "articulo") and not fm:
+        return False                                     # «escribe un mensaje…», «resume…»: lo atienden el correo, la oficina y la IA
+    if tpl == "creativo" and not fm and J.state.get("ai") == "ok" and not getattr(J._tl, "nl_pass", False):
+        J.answer_question_streaming(text)               # 12.28: «escríbeme un poema»: lo escribe en el chat (con «en Word», el archivo)
+        return True
+    if tpl == "creativo" and not fm:
+        return False                                     # sin IA lista: que siga el camino de siempre (dirá qué falta)
+    if tpl != "creativo" and tm.group(1) not in ("informe", "circular", "acta", "documento") and not fm:
+        return False
+    word = next((g for g in (fm.groups() if fm else ()) if g), "")
+    fmt = {"docx": "word", ".docx": "word"}.get(word) or _DG_FMT.get(word, "word")
+    if tpl == "creativo" and fmt not in ("word", "pdf", "texto"):
+        fmt = "word"
+    pedido = re.sub(r"(?i)\s*,?\s*(?:y\s+)?(?:gu[aá]rdal[oa]s?|p[aá]sal[oa]s?|d[eé]jal[oa]s?|p[oó]nl[oa]s?|h[aá]zl[oa]s?)\s+(?:en|a|como)\s+(?:un\s+)?(?:pdf|word)\b", "", text)
+    pedido = re.sub(r"(?i)\s+(?:en|de|como)\s+(?:un\s+|una\s+)?(?:(?:documento|archivo)\s+(?:de\s+|en\s+)?)?(?:pdf|word|txt|docx)\b", "", pedido).strip(" ,.")
     if gen["busy"]:
         J.reply("Ya estoy preparando otro documento. Te aviso cuando termine.", "DOCUMENTOS")
         return True
@@ -292,15 +315,21 @@ def docs_voice(text, t):
     def work():
         gen["busy"] = True
         try:
-            d = make_draft({"formato": fmt, "plantilla": tpl, "pedido": pedido, "curso": aula.data.get("activo") or ""})
+            school = tpl != "creativo" and J.current_mode() == "docente"
+            d = make_draft({"formato": fmt, "plantilla": tpl, "pedido": pedido, "curso": (aula.data.get("activo") or "") if school else "",
+                            "encabezado": school, "largo": "largo" if re.search(r"\b(?:largo|larga|extens|completo|completa)\w*", t) else "medio"})
             item = save_draft(d["id"])
             if J.IS_WIN and J.settings.get("aula_open_docs", True):
                 try:
                     os.startfile(item["ruta"])
                 except OSError:
                     pass
-            J.reply(f"Listo: «{item['titulo']}» en {documentos.FORMATS[fmt][0]}, en la carpeta Documentos. "
-                    "Para cambiarlo por partes, ábrelo en el generador de documentos.", "DOCUMENTOS")
+            if tpl == "creativo":                         # 12.28: el texto también en el chat, para leerlo ya
+                J.show(f"{item['titulo']}\n\n{item['texto']}", "DOCUMENTOS")
+                J.speak(f"Listo: «{item['titulo']}». Te la dejé en {documentos.FORMATS[fmt][0]}, en la carpeta Documentos, y el texto en el chat.")
+            else:
+                J.reply(f"Listo: «{item['titulo']}» en {documentos.FORMATS[fmt][0]}, en la carpeta Documentos. "
+                        "Para cambiarlo por partes, ábrelo en el generador de documentos.", "DOCUMENTOS")
         except J.AIError as e:
             J.reply(J.ai_error_reply(e), "DOCUMENTOS")
         except Exception as e:
@@ -314,6 +343,8 @@ def docs_voice(text, t):
 
 __all__ = [
     '_DG_FMT',
+    '_DG_FMT_RE',
+    '_DG_KIND',
     '_DG_PAGE',
     '_DG_TPL',
     '_DG_VERB',

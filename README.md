@@ -157,6 +157,13 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Historias, cuentos y textos en Word (v12.28)
+
+- **«Redacta una historia en Word» ya funciona.** Antes Jarvis decía que no podía por tres razones: el generador de documentos solo aceptaba informes, circulares, actas, cartas y «documento» dicho con «en Word»; la regla que le impide a la IA decir que hizo cosas que no hizo la llevaba a responder «no puedo» cuando le pedías un archivo; y el texto para la IA siempre decía «eres un docente».
+- Ahora entiende historias, cuentos, relatos, poemas, fábulas, leyendas, ensayos, discursos, crónicas, biografías, guiones, canciones, reflexiones, brindis y más, con «en Word», «de Word», «en un documento de Word», «y guárdalo en Word», «en PDF». Deja el archivo en la carpeta Documentos y, si es un texto creativo, también el texto en el chat para leerlo ya. En modo general, sin el membrete del colegio.
+- **Sin decir Word** («escríbeme un poema para mi mamá», «redacta una historia»), lo escribe completo en el chat: la IA ya sabe que escribir textos sí lo puede hacer y que Jarvis sí crea archivos de Word.
+- «Hazme un documento sobre el reciclaje» sale en Word aunque no digas el formato.
+
 ## Háblale como quieras: entiende lenguaje natural (v12.27)
 
 - **Ya no hace falta decir la frase exacta.** Antes, si lo que decías no calzaba con una de sus reglas, la IA solo podía escoger entre unas 110 acciones y lo demás terminaba en una charla. Ahora, cuando ninguna regla reconoce tu frase, la IA la «traduce» a la orden de Jarvis que corresponde, con tus datos, y esa orden se hace por el camino de siempre. Ejemplos: «oye, no me dejes olvidar que mañana tengo que llevar el carro al taller temprano» → recordatorio; «lo del súper ayer fueron como 85 lucas» → gasto de $85.000 en mercado; «la pantalla está muy oscura» → brillo al 90; «me toca odontólogo el martes como a las 3» → cita.

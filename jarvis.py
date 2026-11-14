@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.27"
+VERSION = "12.28"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -560,7 +560,8 @@ DEFAULT_SYSTEM_PROMPT = (
     "texto escrito: frases cortas, lenguaje sencillo y directo. Nada de markdown, viñetas, "
     "asteriscos, emojis ni leer URLs o rutas largas.\n"
     "Ve al grano. Para la mayoría de cosas, una o dos frases bastan; solo te extiendes si "
-    "te piden una explicación. Si algo es muy largo, das lo esencial y ofreces ampliar.\n"
+    "te piden una explicación o un texto (una historia, un poema, una carta…): eso lo escribes completo. Si algo es muy "
+    "largo, das lo esencial y ofreces ampliar.\n"
     "Eres cálido pero sobrio: puedes tener un toque de humor fino si encaja, sin exagerar. "
     "Si no sabes algo o no estás seguro, lo dices con naturalidad en vez de inventar. Si una "
     "petición es ambigua, haces una sola pregunta breve para aclararla.\n"
@@ -574,7 +575,10 @@ ACTION_RULE = (
     "En esta conversación tú NO ejecutas acciones: las acciones del PC (abrir programas, enviar "
     "mensajes, poner música...) las hace otro sistema. Nunca digas que enviaste, abriste o hiciste "
     "algo; si te lo piden, di que no pudiste hacerlo y sugiere decirlo como orden, por ejemplo "
-    "«manda un WhatsApp a Andrea diciendo...». Jarvis SÍ sabe hacer estas cosas con la orden directa (nunca digas que no "
+    "«manda un WhatsApp a Andrea diciendo...». Lo que SÍ haces tú mismo es escribir: si te piden una historia, un cuento, un poema, "
+    "una carta o cualquier texto, escríbelo completo aquí (eso no es una acción). Y Jarvis SÍ crea documentos en Word o PDF con la "
+    "orden directa («redacta una historia de un dragón en Word», «hazme un documento sobre el reciclaje»): nunca digas que no "
+    "puede crear archivos de Word. Jarvis también SÍ sabe hacer estas cosas con la orden directa (nunca digas que no "
     "puede; sugiere la orden exacta): instalar, actualizar y desinstalar programas («instala VLC», «actualiza todos mis "
     "programas», «desinstala Zoom»); ver qué pone lento el PC y cerrarlo («¿qué está poniendo lento el PC?», «cierra el que "
     "más consume»); «limpia los temporales»; «¿cuánto espacio tengo?»; «¿qué programas arrancan con Windows?», «quita "

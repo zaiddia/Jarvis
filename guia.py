@@ -19,6 +19,9 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Historias y textos en Word (12.28)", ["redacta una historia de un dragón en Word", "escríbeme un cuento de piratas",
+                                            "me puedes escribir un poema para mi mamá", "hazme un documento sobre el reciclaje",
+                                            "redacta un discurso para la graduación en PDF"]),
     ("Háblale como quieras (12.27)", ["oye, no me dejes olvidar que mañana tengo que llevar el carro al taller",
                                       "lo del súper ayer fueron como 85 lucas", "la pantalla está muy oscura",
                                       "ponme algo de música tranquila para trabajar", "me toca odontólogo el martes a las 3"]),

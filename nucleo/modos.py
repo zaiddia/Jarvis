@@ -16,6 +16,7 @@ import time
 
 import buscar
 import correo
+import documentos
 import equipo
 import horario
 import infodia
@@ -73,6 +74,8 @@ def ai_persona():
 
 for _m in (buscar, correo, infodia, proyectos):
     _m.persona = lambda: J.ai_persona()
+documentos.persona = lambda: ("Eres un docente experto de Colombia y redactas documentos claros y correctos." if current_mode() == "docente"
+                              else "Eres un escritor y redactor experto de Colombia y escribes textos claros, correctos y bien escritos.")
 
 
 def mode_rule():

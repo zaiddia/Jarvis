@@ -23,6 +23,9 @@ FORMATS = {
 # id: (nombre, qué pedirle a la IA, formatos que tienen sentido)
 TEMPLATES = {
     "libre": ("Documento libre", "", tuple(FORMATS)),
+    "creativo": ("Texto creativo", "Un texto creativo o personal (historia, cuento, poema, ensayo, discurso, carta…): un título y el texto "
+                 "completo en párrafos bien escritos, con su propio estilo. Sin apartados formales como «Introducción» o «Conclusiones» "
+                 "salvo que los pidan; un poema va en estrofas (un párrafo por estrofa).", ("word", "pdf", "texto")),
     "informe": ("Informe", "Un informe formal: introducción, desarrollo por apartados, conclusiones y recomendaciones.", tuple(FORMATS)),
     "guia": ("Guía de aprendizaje", "Una guía de aprendizaje para estudiantes: objetivo, saberes previos, explicación con ejemplos resueltos, "
              "actividades paso a paso y autoevaluación.", ("word", "pdf", "texto", "powerpoint")),
@@ -66,6 +69,11 @@ _DOC_SHAPE = ('{"titulo": "…", "subtitulo": "…", "secciones": [\n'
               ']}')
 
 
+def persona():
+    """Quién redacta; modos.py lo cambia según el modo (12.28: no todo documento es de un docente)."""
+    return "Eres un escritor y redactor experto de Colombia y escribes textos claros, correctos y bien escritos."
+
+
 def build_prompt(fmt, template, pedido, grado="", asignatura="", largo="medio", fuente=""):
     """Lo que se le pide a la IA (responde solo JSON)."""
     tname, hint, _ = TEMPLATES.get(template, TEMPLATES["libre"])
@@ -80,8 +88,8 @@ def build_prompt(fmt, template, pedido, grado="", asignatura="", largo="medio", 
         return oficina.pptx_prompt(f"{pedido}" + (f" ({tname})" if template != "libre" else ""), slides, grado) + "\n" + ctx
     if kind == "table":
         return oficina.table_prompt(pedido + (f" — {tname}. {hint}" if hint else "")) + "\n" + ctx
-    return ("Eres un docente experto de Colombia y redactas documentos claros y correctos.\n"
-            f"Petición del docente: «{pedido}».\n{ctx}"
+    return (persona() + "\n"
+            f"Petición: «{pedido}».\n{ctx}"
             f"Extensión aproximada: {label} (unas {words} palabras).\n"
             "Responde SOLO con un JSON con esta forma (usa solo las claves que necesites en cada sección):\n"
             f"{_DOC_SHAPE}\n"
