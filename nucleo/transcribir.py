@@ -381,9 +381,63 @@ _M_SRT = re.compile(r"\bsubtitul\w*|\bsrt\b")
 _M_REF = re.compile(r"\b(?:este|esta|ese|esa|el|la)\s+(?:audio|video|grabacion|nota de voz|reunion|clase grabada|archivo)\b")
 
 
+_MEDIA_ASK = re.compile(r"\b(?:puedes|podrias|sabes|se puede|eres capaz de|tienes como)\s+(?:transcribir|procesar|pasar a texto|hacer subtitulos|"
+                        r"subtitular|sacar el acta|leer|escuchar|ver)\s+(?:un |una |los |las |el |la |mis )?(?:audios?|videos?|grabaciones|notas? de voz|reuniones)\b")
+_MEDIA_WANT = re.compile(r"\b(?:transcrib\w*|subtitul\w*|procesa(?:r|me)?|sacale el texto|saca(?:le)? el acta|hazle subtitulos)\b.{0,40}"
+                         r"\b(?:audio|video|grabacion|nota de voz|reunion grabada|clase grabada)s?\b|"
+                         r"\b(?:audio|video|grabacion|nota de voz)s?\b.{0,30}\b(?:a texto|transcrib\w*|subtitul\w*)")
+_MEDIA_HOW = ("Sí, eso lo hago: transcribir audios y videos, sacar el acta (resumen, acuerdos y compromisos) y hacer subtítulos .srt. "
+              "Súbelo con el clip del HUD (audio o video hasta 300 MB) o envíalo al bot de Telegram (hasta 20 MB), y dime "
+              "«transcríbelo», «saca el acta» o «hazle subtítulos». Si es de YouTube, dime «transcribe el video» con el enlace.")
+
+
+def youtube_transcript(url):
+    """12.35: Gemini ve el video de YouTube y lo transcribe. → texto. Lanza AIError si no se puede."""
+    g = J._gemini_for_stt()
+    if not g:
+        raise J.AIError("Falta la clave de Gemini.", kind="config", why="para transcribir videos de YouTube necesito la clave de Gemini")
+    body = {"contents": [{"role": "user", "parts": [{"file_data": {"file_uri": url}}, {"text": (
+        "Transcribe lo que se dice en este video, en el idioma en que se habla, palabra por palabra y en párrafos. Si hablan "
+        "varias personas, empieza cada intervención con «Persona 1:», «Persona 2:»… Sin comentarios ni resúmenes.")}]}],
+        "generationConfig": {"maxOutputTokens": 8000, "temperature": 0.1}}
+
+    def call(c):
+        return J._gemini_text(J._post(f"{J.GEMINI_BASE}/models/{c['model']}:generateContent", J._gemini_headers(c), body, (), timeout=600))
+    out = J._with_fallback(g, call)
+    if not out:
+        raise J.AIError("Gemini no devolvió la transcripción.", why="Gemini no pudo ver ese video (puede ser privado, muy largo o con restricción de edad)")
+    return out
+
+
+def _yt_transcribe_job(url):
+    try:
+        text = J.youtube_transcript(url)
+    except J.AIError as e:
+        J.notify(f"No pude transcribir el video: {e.why or e}.", "TRANSCRIPCIÓN")
+        return
+    except Exception as e:
+        J.notify(f"No pude transcribir el video: {e}.", "TRANSCRIPCIÓN")
+        return
+    vid = (J._VID_URL.search(url) or [None, "video"])[1]
+    dst = _save_text(f"YouTube {vid}", "transcripción", "Transcripción de video de YouTube", [(url, ""), ("", text)])
+    J.generated_files.add(dst)
+    tr_last.update(text=text, notes="", path=dst, kind="transcribir")
+    J.notify(f"Listo: transcribí el video ({len(text.split())} palabras). Quedó en Word en la carpeta Transcripciones. "
+             "Si es muy largo, puede que Gemini no alcance a escribirlo completo.", "TRANSCRIPCIÓN")
+
+
 def media_voice(text, t):
     """Con un audio o video recién subido: «transcríbelo», «saca el acta». Con una imagen: «déjala de 800 de ancho»."""
+    u = J._VID_URL.search(text)
+    if u and _M_TEXT.search(t):                         # 12.35: «transcribe el video https://youtu.be/…»
+        url = f"https://www.youtube.com/watch?v={u.group(1)}"
+        J.reply("Le pido a Gemini que vea el video y lo transcriba; puede tardar unos minutos. Te aviso al terminar.", "TRANSCRIPCIÓN")
+        J.start_job("Transcribiendo el video", lambda: _yt_transcribe_job(url), "transcripcion")
+        return True
     rec = adjuntos.recent(1800)
+    if _MEDIA_ASK.search(t) or (not any(i["tipo"] in adjuntos.MEDIA for i in rec) and _MEDIA_WANT.search(t)):
+        J.reply(_MEDIA_HOW, "TRANSCRIPCIÓN")            # 12.35: antes la IA decía «esa habilidad no está disponible»
+        return True
     if not rec:
         return False
     last = J._batch_items()[-1]
@@ -413,5 +467,5 @@ def media_voice(text, t):
     return False
 
 
-__all__ = ['CHUNK_SECS', '_M_ACTA', '_M_REF', '_M_SRT', '_M_TEXT', '_whisper_segments', 'subtitle_media', 'subtitles_run', 'tr_last', '_drop_part', '_parts', '_save_text', '_tr_gemini', '_tr_whisper', 'handle_attach_part',
+__all__ = ['CHUNK_SECS', '_MEDIA_ASK', '_MEDIA_HOW', '_MEDIA_WANT', '_yt_transcribe_job', 'youtube_transcript', '_M_ACTA', '_M_REF', '_M_SRT', '_M_TEXT', '_whisper_segments', 'subtitle_media', 'subtitles_run', 'tr_last', '_drop_part', '_parts', '_save_text', '_tr_gemini', '_tr_whisper', 'handle_attach_part',
            'media_action', 'media_chunks', 'media_minutes', 'media_run', 'media_voice', 'minutes_prompt', 'resize_run', 'transcribe_media']

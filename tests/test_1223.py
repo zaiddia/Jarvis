@@ -118,7 +118,7 @@ def test_sin_gemini_ni_whisper_lo_dice(jv, store, monkeypatch):
 def test_por_voz(jv, ask, store, monkeypatch):
     went = []
     monkeypatch.setattr(jv, "_attach_go", lambda its, action, pregunta: went.append((its[0]["nombre"], action)))
-    assert ask("transcribe este audio")[0] != "TRANSCRIPCIÓN"                           # sin nada subido no hace nada
+    assert ask("transcribe este audio")[1].startswith("Sí, eso lo hago")              # 12.35: sin nada subido, explica cómo (no transcribe)
     adjuntos.add("reunion.mp3", b"x" * 2000)
     assert ask("transcríbelo")[0] == "TRANSCRIPCIÓN" and went[-1] == ("reunion.mp3", "transcribir")
     assert ask("saca el acta de la reunión")[0] == "TRANSCRIPCIÓN" and went[-1][1] == "acta"

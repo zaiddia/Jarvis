@@ -157,6 +157,12 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## «Transcribir audio no está disponible»: sí lo está (v12.35)
+
+- Jarvis transcribe audios y videos desde la v12.23, pero solo lo «veía» cuando ya habías subido el archivo. Si decías «transcribe este video», «¿puedes procesar videos?» o «hazle subtítulos a mi video» sin haber subido nada, la orden caía en la IA, que no sabía que Jarvis puede y respondía que esa habilidad no estaba disponible.
+- Ahora, sin nada subido, Jarvis responde que sí y cómo: súbelo con el clip del HUD (hasta 300 MB) o envíalo al bot de Telegram (hasta 20 MB) y di «transcríbelo», «saca el acta» o «hazle subtítulos». La IA (escrita y en vivo) también sabe que puede y tiene prohibido decir que no está disponible.
+- **Nuevo: transcribir videos de YouTube** con el enlace: «transcribe el video https://youtu.be/…». Gemini ve el video y lo transcribe; queda en Word en la carpeta Transcripciones. En videos muy largos puede no alcanzar a escribirlo completo. («Resume este video …» sigue como antes.)
+
 ## Un solo Jarvis: la voz en vivo ya hace lo mismo que lo escrito (v12.34)
 
 - **Por qué parecían «tres Jarvis».** Escrito (o por voz sin la conversación en vivo), tu frase pasa por las reglas y, si ninguna la reconoce, por la capa que entiende lenguaje natural. En la **conversación en vivo** (Gemini Live), Gemini decide si es una orden y se la pasa a Jarvis; pero si la frase que mandaba no calzaba exacto con una regla, Jarvis respondía «eso no es una orden: respóndela tú» sin intentar entenderla, y Gemini decía «no puedo». Además, las instrucciones de la voz en vivo solo le nombraban cosas del PC y del aula, así que para gastos, noticias, correos, documentos o proyectos ni siquiera lo intentaba.

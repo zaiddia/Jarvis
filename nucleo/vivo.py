@@ -36,6 +36,7 @@ LIVE_RULE = (
     "ventanas, capturas, wifi, instalar o limpiar), música y radio, temporizadores, alarmas, recordatorios, notas, agenda, "
     "calendario, citas, cumpleaños, medicamentos, gastos, presupuesto, pagos, listas del mercado, menú, viajes, el dólar, "
     "noticias, clima, búsquedas en internet, precios y comparaciones, correos, WhatsApp, Telegram, documentos e "
+    "transcripciones de audios y videos (actas y subtítulos), resúmenes de videos de YouTube, "
     "historias en Word o PDF, presentaciones, imágenes, traducciones, cuentas, proyectos de varios pasos, avisos "
     "automáticos, el tablero del aula y el material de clase, el dictado y el videobeam, entre otras. "
     "Cada vez que el usuario pida HACER, CONSULTAR o ANOTAR algo de su vida, su casa, su plata, su trabajo o su "

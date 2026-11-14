@@ -19,6 +19,7 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Transcribir videos de YouTube (12.35)", ["transcribe el video https://youtu.be/…", "¿puedes transcribir audios?"]),
     ("Respirar y relajarse (12.33)", ["respiración guiada", "estoy estresado, ayúdame a respirar"]),
     ("Avisos por evento y proyectos que se repiten (12.32)", ["cuando me llegue un correo de la coordinadora, avísame al celular",
                                                               "cuando aparezca una reunión nueva en el calendario, recuérdamela la víspera",

@@ -366,11 +366,11 @@ _TABLE = re.compile(r"\b(?:extrae|saca|pasa|copia)\s+(?:la|las)\s+tablas?\b|\bla
 
 def attachment_voice(text, t):
     import time
+    if J.media_voice(text, t):                         # 12.23: «transcríbelo», «saca el acta» (12.35: también sin nada subido)
+        return True
     rec = adjuntos.recent(1800)
     if not rec:
         return False
-    if J.media_voice(text, t):                         # 12.23: «transcríbelo», «saca el acta», «déjala de 800 de ancho»
-        return True
     last = _batch_items()[-1]
     fresh = time.time() - last["t"] < 300
     ref = bool(_REF.search(t))
