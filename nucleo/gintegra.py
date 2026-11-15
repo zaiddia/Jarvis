@@ -88,6 +88,11 @@ def _last_file(exts=None):
 
 def on_new_file(path):
     """Si activaste «Subir a Drive automáticamente», cada material nuevo va a tu Drive."""
+    try:
+        if J.docente_file(path):                       # 12.37: material del colegio → su carpeta del Drive docente
+            return
+    except Exception:
+        pass
     if not (J.settings["drive_auto"] and J.gdrive_ready()):
         return
     if os.path.splitext(path)[1].lower() not in (".docx", ".pptx", ".xlsx", ".pdf", ".png", ".jpg"):

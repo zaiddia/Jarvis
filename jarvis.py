@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.36"
+VERSION = "12.37"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -882,6 +882,7 @@ DEFAULT_SETTINGS = {
     "dnd_auto": True,              # 12.16: no molestar solo en clase y en videollamadas
     "drive_auto": False,           # 8.7: subir a tu Drive cada material que Jarvis cree
     "drive_folder_id": "",
+    "drive_docente": True,         # 12.37: el material del colegio va solo a su carpeta del Drive docente (si Google está conectado)
     "zeti_since": "",              # 8.7: notas desde esta fecha (AAAA-MM-DD), p. ej. el inicio del periodo
     "zeti_order": "lista",         # «lista» (como está el curso en Jarvis), «apellido» o «alfabetico» (ya escritos Apellidos Nombres)
     "zeti_weights": "35,30,30,5",  # 10.1: Conocer, Hacer, Ser y Autoevaluación (%)
@@ -1811,6 +1812,8 @@ def process_command(text):
         return
     if catalog_voice(text, t):                         # 12.36: «¿qué puedo hacer en modo docente?», «exporta el catálogo docente»
         return
+    if drive_docente_voice(text, t):                   # 12.37: «crea las carpetas docentes en Drive», «abre mi Drive docente»
+        return
     if nl_test_voice(text, t):                         # 12.29: «haz la prueba de comprensión» (con tu IA, sin ejecutar nada)
         return
     if week_voice(text, t):                            # 9.8: «prepárame la semana», «¿cómo viene la semana?»
@@ -2495,9 +2498,27 @@ def _school_gate(fn):
     return gated
 
 
-for _n in catalogo_docente.SCHOOL_ONLY:
-    if callable(globals().get(_n)) and not getattr(globals()[_n], "school_gated", False):
-        globals()[_n] = _school_gate(globals()[_n])
+
+# 12.37: cada habilidad docente que atiende una frase del colegio queda anotada, para que el archivo que produzca se
+# guarde solo en su carpeta del Drive docente.
+from nucleo.drivedocente import *  # noqa: F401,F403,E402
+
+
+def _skill_note(fn, name):
+    import functools
+
+    @functools.wraps(fn)
+    def noted(*a, **k):
+        r = fn(*a, **k)
+        if r:
+            try:
+                note_skill(name, a[1] if len(a) > 1 else "")
+            except Exception:
+                pass
+        return r
+    noted.skill_noted = True
+    return noted
+
 from nucleo.transcribir import *  # noqa: F401,F403,E402
 
 # ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)
@@ -2589,6 +2610,25 @@ from nucleo.guiavoz import *  # noqa: F401,F403,E402
 from nucleo.celular import *  # noqa: F401,F403,E402
 from nucleo.compartir import *  # noqa: F401,F403,E402
 from nucleo.nomolestar import *  # noqa: F401,F403,E402
+
+
+def _wrap_catalog_handlers():
+    """12.36/12.37: al final de la carga (para que no se escape ninguna): las habilidades solo del colegio pasan por el
+    filtro de modo, y todas las del catálogo anotan cuál se usó (para guardar su archivo en su carpeta del Drive docente)."""
+    g = globals()
+    missing = []
+    for n in catalogo_docente.SCHOOL_ONLY:
+        if not callable(g.get(n)):
+            missing.append(n)
+        elif not getattr(g[n], "school_gated", False):
+            g[n] = _school_gate(g[n])
+    for n in sorted({h["handler"] for h in catalogo_docente.H}):
+        if callable(g.get(n)) and not getattr(g[n], "skill_noted", False):
+            g[n] = _skill_note(g[n], n)
+    return missing
+
+
+_wrap_catalog_handlers()
 
 
 # =============================================================================

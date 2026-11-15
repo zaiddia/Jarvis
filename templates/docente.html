@@ -31,6 +31,9 @@
            color: var(--a); background: rgba(var(--a-rgb), .08); border: 1px solid rgba(var(--a-rgb), .3); }
   .frase:hover { background: rgba(var(--a-rgb), .18); }
   .meta { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+  .links { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .lk { font-size: 11.5px; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; padding: 3px 8px; cursor: pointer; }
+  .lk:hover { color: var(--a); border-color: var(--a); }
   .empty { color: var(--muted); text-align: center; padding: 40px; }
   .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--a); color: #03060c; padding: 8px 14px;
            border-radius: 999px; font-weight: 700; display: none; }
@@ -49,7 +52,7 @@
   </div>
   <div class="chips" id="chips"></div>
   <div id="list"><p class="empty">Cargando…</p></div>
-  <p class="meta" style="text-align:center;margin-top:20px">En modo general estas habilidades solo responden si dices algo del colegio (un curso como «7A», «mis estudiantes», «la clase»…). Por voz: «exporta el catálogo docente» lo guarda en Excel.</p>
+  <p class="meta" style="text-align:center;margin-top:20px">En modo general estas habilidades solo responden si dices algo del colegio (un curso como «7A», «mis estudiantes», «la clase»…). Por voz: «exporta el catálogo docente» lo guarda en Excel; «crea las carpetas docentes en Drive» arma tu Drive docente y desde ahí cada material del colegio se guarda solo en su carpeta.</p>
 </div>
 <div class="toast" id="toast"></div>
 <script src="{{ url_for('static', filename='vendor/socket.io.min.js', v=asset_v) }}"></script>
@@ -65,7 +68,8 @@
     $("#list").innerHTML = cats.length ? cats.map((c) => `<h2>${esc(c.nombre)}<small>${esc(c.desc)}</small></h2><div class="grid">` +
       c.habilidades.map((h) => `<div class="card"><h3>${esc(h.nombre)}<span>v${esc(h.v)}</span></h3><p>${esc(h.que)}</p>
         <div>${h.frases.map((f) => `<span class="frase" data-f="${esc(f)}">«${esc(f)}»</span>`).join("")}</div>
-        <div class="meta">Produce: ${esc(h.produce)} · Necesita: ${esc(h.necesita)}</div></div>`).join("") + "</div>").join("")
+        <div class="meta">Produce: ${esc(h.produce)} · Necesita: ${esc(h.necesita)}</div>
+        <div class="links"><span class="lk" data-id="${esc(h.id)}" data-k="formatos">📂 Formatos en Drive</span>${h.drive ? `<span class="lk" data-id="${esc(h.id)}" data-k="drive">📁 Lo que hizo Jarvis</span>` : ""}</div></div>`).join("") + "</div>").join("")
       : '<p class="empty">No encontré habilidades con eso.</p>';
   }
   function chips(all) {
@@ -78,6 +82,8 @@
   $("#q").addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(load, 180); });
   $("#chips").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; cat = c.dataset.c; chips(all); draw(); });
   $("#list").addEventListener("click", (e) => {
+    const l = e.target.closest(".lk");
+    if (l) { socket.emit("teacher_link", { id: l.dataset.id, kind: l.dataset.k }); return; }
     const f = e.target.closest(".frase"); if (!f) return;
     socket.emit("teacher_try", { frase: f.dataset.f }, (r) => { const t = $("#toast"); t.textContent = r && r.ok ? "Enviado a Jarvis: «" + f.dataset.f + "»" : "No pude enviarla"; t.style.display = "block"; setTimeout(() => (t.style.display = "none"), 2200); });
   });

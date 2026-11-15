@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## El Drive docente lo arma y lo llena Jarvis (v12.37)
+
+- **«Crea las carpetas docentes en Drive»**: Jarvis crea en tu Drive «Jarvis › Jarvis · Docente» con las 10 categorías y una carpeta por cada una de las 54 habilidades (los mismos nombres y números de la base de datos), más un índice en Excel. Si ya existen, no las duplica.
+- **Cada material del colegio se guarda solo en su carpeta**: cuando una habilidad docente atiende tu frase (un quiz, los boletines, una rúbrica, el plan de recuperación…), Jarvis anota cuál fue, y el archivo que sale en los siguientes 15 minutos se sube a su carpeta. El índice se actualiza con cuántos archivos hay por habilidad y el enlace al último. Lo que haces en modo general no va ahí. Se apaga en Ajustes › Google › «Drive docente».
+- **En el catálogo docente** («¿qué puedo hacer en modo docente?») cada habilidad tiene «📂 Formatos en Drive» (busca en tu Drive la carpeta de formatos con ese nombre y la abre en tu navegador) y, cuando ya existe, «📁 Lo que hizo Jarvis».
+- Jarvis sigue usando solo el permiso «drive.file»: ve y toca únicamente los archivos y carpetas que él mismo creó, nada más de tu Drive.
+- **Arreglo de la v12.36**: 9 habilidades del colegio (boletines, ensayo de clase, detector de copia, dificultad, juegos, seguimiento de recuperaciones, salón, calendario escolar y video animado) se cargaban después del filtro de modo y en modo general se colaban. Ahora el filtro se aplica al final de la carga y una prueba comprueba que no se escape ninguna.
+
 ## Dos roles bien separados, más rápido y la base de datos docente (v12.36)
 
 - **Modo general ya no actúa como profesor.** Lo que se colaba: «hazme un examen de cultura general», «haz un quiz de películas», «hazme un taller de cocina», «crea una presentación sobre mi viaje» salían como material de clase (con grado, DBA, membrete del colegio y «notas para el docente»), «haz grupos con Ana, Luis…» buscaba tu lista de estudiantes, y la personalidad decía «tiempo libre del docente». Ahora, en modo general:

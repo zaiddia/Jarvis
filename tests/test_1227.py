@@ -136,7 +136,8 @@ def test_lo_que_no_es_orden_sigue_a_la_ia(nl, ask):
     assert len(nl._nl[0]) == n                                             # a las preguntas de saber y saludos no les pregunta
     _settle(nl, t0)
     nl._nl[1]["d"] = {"tipo": "orden", "orden": "compara el iPhone 16 con el Galaxy S25", "seguro": True}
-    assert ask("qué es mejor, el iphone 16 o el galaxy s25")[0] == "COMPARAR"
+    ask("qué es mejor, el iphone 16 o el galaxy s25")
+    assert any(o == "COMPARAR" for _t, o in nl._rec.replies)                      # (un aviso tardío de otro hilo no cuenta)
 
 
 def test_si_la_orden_traducida_no_existe_responde_la_ia_con_tu_frase(nl):

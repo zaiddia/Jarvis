@@ -19,6 +19,7 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Drive docente (12.37)", ["crea las carpetas docentes en Drive", "abre mi Drive docente"]),
     ("Catálogo docente (12.36)", ["¿qué puedo hacer en modo docente?", "habilidades docentes de evaluación", "exporta el catálogo docente"]),
     ("Transcribir videos de YouTube (12.35)", ["transcribe el video https://youtu.be/…", "¿puedes transcribir audios?"]),
     ("Respirar y relajarse (12.33)", ["respiración guiada", "estoy estresado, ayúdame a respirar"]),

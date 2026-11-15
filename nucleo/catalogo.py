@@ -24,7 +24,23 @@ def handle_teacher_catalog(data=None):
         ids = {h["id"] for h in C.search(q)}
         cats = [dict(c, habilidades=[h for h in c["habilidades"] if h["id"] in ids]) for c in cats]
         cats = [c for c in cats if c["habilidades"]]
-    return {"categorias": cats, "total": len(C.H), "modo": J.current_mode()}
+    links = J.folder_links()
+    for c in cats:
+        c["habilidades"] = [dict(h, drive=links.get(h["id"], ""), formatos=J.formats_search_url(h["id"])) for h in c["habilidades"]]
+    return {"categorias": cats, "total": len(C.H), "modo": J.current_mode(), "drive_listo": bool(links)}
+
+
+@J.socketio.on("teacher_link")
+def handle_teacher_link(data=None):
+    """12.37: abre en tu navegador la carpeta de Drive de una habilidad (la de Jarvis o la búsqueda de tus formatos)."""
+    sid, kind = str((data or {}).get("id") or ""), str((data or {}).get("kind") or "")
+    if not any(h["id"] == sid for h in C.H):
+        return {"ok": False}
+    url = J.folder_links().get(sid, "") if kind == "drive" else J.formats_search_url(sid)
+    if not url:
+        return {"ok": False}
+    J._open_link(url)
+    return {"ok": True}
 
 
 @J.socketio.on("teacher_try")
@@ -114,5 +130,5 @@ def catalog_voice(text, t):
     return False
 
 
-__all__ = ['_CAT_ASK', '_CAT_EXPORT', '_CAT_OPEN', '_cd', 'catalog_voice', 'export_teacher_catalog', 'handle_teacher_catalog',
+__all__ = ['_CAT_ASK', '_CAT_EXPORT', '_CAT_OPEN', '_cd', 'catalog_voice', 'export_teacher_catalog', 'handle_teacher_catalog', 'handle_teacher_link',
            'handle_teacher_try', 'open_teacher_catalog', 'teacher_catalog_page']
