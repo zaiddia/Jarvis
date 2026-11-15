@@ -131,13 +131,17 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
         J.reply("No puedo crear documentos: falta instalar python-docx.", "ERROR")
         return
     kind = kind if kind in aula.KINDS else (aula.detect_kind(request) or "taller")
-    if not grade and not re.search(r"\b(?:grado|sexto|septimo|octavo|noveno|decimo|undecimo|once|primaria|bachillerato|preescolar)\b|"
+    general = not J.school_ok(J.normalize(request))     # 12.36: un quiz de cultura general no es material de clase
+    org = "MATERIAL" if general else "AULA"             # (en el HUD, la etiqueta: no es del aula)
+    if general:
+        grade = ""
+    if not general and not grade and not re.search(r"\b(?:grado|sexto|septimo|octavo|noveno|decimo|undecimo|once|primaria|bachillerato|preescolar)\b|"
                                    r"\b(?:para|de|en)\s+(?:el\s+)?\d{1,2}\s?(?:[a-z]\b|°|-\s?\d)", J.normalize(request)):
         act = aula.data.get("activo") or ""             # 10.3: sin grado en la petición, el del curso activo
         if aula.grade_of(act):
             grade = f"{aula.grade_of(act)}° (curso {act})"
     act = aula.data.get("activo") or ""
-    if not J.asignaturas.find(request, J.subject_choices(), J._subjects_text()):     # 10.4: la asignatura del momento
+    if not general and not J.asignaturas.find(request, J.subject_choices(), J._subjects_text()):     # 10.4: la asignatura del momento
         subs = J.subjects_for(act) if act else []
         cur = J.current_subject(act)
         subj = (J.asignaturas.find(cur, subs, J._subjects_text()) if subs and cur else cur if not subs else "") or (subs[0] if len(subs) == 1 else "")
@@ -148,16 +152,16 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
           "saber": "las preguntas tipo Saber", "malla": "la malla curricular", "piar": "los ajustes razonables",
           "lectura": "la lectura nivelada"}[kind]
     if J.material_job["busy"]:
-        J.reply("Ya estoy preparando otro material. Te aviso cuando termine y luego hago este.", "AULA")
+        J.reply("Ya estoy preparando otro material. Te aviso cuando termine y luego hago este.", org)
         return
     J.material_job["busy"] = True
-    J.reply(f"Preparando {lo}. Te aviso cuando esté listo; suele tardar menos de un minuto.", "AULA")
+    J.reply(f"Preparando {lo}. Te aviso cuando esté listo; suele tardar menos de un minuto.", org)
     J.aula_emit({"type": "material", "status": "working", "label": label})
 
     def work():
         try:
-            prompt = aula.build_prompt(kind, request, count or aula.detect_count(request), grade, topic) + J.lessons_ctx() + \
-                J.book_ctx(topic or request, aula.data.get("activo") or "")                                 # 11.5: el libro guía
+            prompt = aula.build_prompt(kind, request, count or aula.detect_count(request), grade, topic, general=general) + (
+                "" if general else J.lessons_ctx() + J.book_ctx(topic or request, aula.data.get("activo") or ""))  # 11.5: el libro guía
             if kind == "plan":                                 # 9.6: lo que ya funcionó en este tema
                 prompt += J.clasevivo.worked_ctx(topic or request)
             m, last_err = None, None
@@ -170,7 +174,7 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
                         J.clasevivo.remember_plan(m, aula.data.get("activo") or "")
                     if kind == "malla":                        # 8.8: para «¿qué temas me faltan del periodo?»
                         J.diarioclase.set_malla(aula.data.get("activo") or m.get("grado") or "curso", m)
-                    if kind in ("quiz", "saber"):
+                    if kind in ("quiz", "saber") and not general:
                         J.banco.add_quiz(m)                    # 7.8: banco de preguntas
                         J.remember_quiz(m)                     # 8.1: «pásalo a Forms»
                     break
@@ -178,10 +182,10 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
                     last_err = e
             if m is None:
                 raise ValueError(str(last_err) or "respuesta no válida")
-            path = aula.build_docx(kind, m, J.settings["output_dir"], J.Document, J.settings["aula_docente"],
-                                   J.settings["aula_institucion"], aula.data["activo"])
+            path = aula.build_docx(kind, m, J.settings["output_dir"], J.Document, "" if general else J.settings["aula_docente"],
+                                   "" if general else J.settings["aula_institucion"], "" if general else aula.data["activo"])
             J.generated_files.add(path)
-            J.log_terminal(f"Material guardado en: {path}", "AULA")
+            J.log_terminal(f"Material guardado en: {path}", org)
             J.aula_emit({"type": "material", "status": "done", "label": label, "title": m["titulo"],
                        "path": path, "name": os.path.basename(path)})
             if J.IS_WIN and J.settings["aula_open_docs"]:
@@ -190,14 +194,14 @@ def generate_material(request, kind=None, count=None, grade="", topic=""):
                 except OSError:
                     pass
             J.reply(f"Listo {lo}: «{m['titulo']}». Lo guardé en la carpeta Material de clase"
-                  + (" y lo abrí." if J.IS_WIN and J.settings["aula_open_docs"] else "."), "AULA")
+                  + (" y lo abrí." if J.IS_WIN and J.settings["aula_open_docs"] else "."), org)
         except J.AIError as e:
             J.aula_emit({"type": "material", "status": "error", "label": label, "error": e.why})
-            J.reply(J.ai_error_reply(e), "AULA")
+            J.reply(J.ai_error_reply(e), org)
         except Exception as e:
             J.log_terminal(f"Material de clase: {e}", "ERROR")
             J.aula_emit({"type": "material", "status": "error", "label": label, "error": str(e)})
-            J.reply(f"No me salió bien {lo}. Inténtalo otra vez, quizá con un tema más concreto.", "AULA")
+            J.reply(f"No me salió bien {lo}. Inténtalo otra vez, quizá con un tema más concreto.", org)
         finally:
             J.material_job["busy"] = False
     J.start_job("Preparando material de clase", work, "material")
@@ -213,9 +217,12 @@ def aula_voice(text, t):
     """Órdenes de voz del aula. Devuelve True si la frase era para el aula."""
     if J._AULA_NOT.search(t):
         return False
+    school = J.school_ok(t)                            # 12.36: en modo general, sin hablar del colegio, solo material general
     try:
         # Material de clase: «crea un quiz de 10 preguntas sobre fracciones para séptimo»
         kind = aula.detect_kind(t)
+        if not school and kind not in ("quiz", "taller", "rubrica"):
+            return False
         # palabras genéricas (actividad, tarea, prueba...) exigen decir el tema con «sobre»
         weak = not re.search(r"\b(?:taller|guia|ficha|quiz|evaluacion|examen|cuestionario|rubrica|"
                              r"plan de clase|planeacion|planificacion|secuencia didactica|saber|icfes|malla|piar|"

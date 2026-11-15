@@ -16,6 +16,7 @@ import json
 import os
 import re
 
+import catalogo_docente
 import frasesnl
 import guia
 import selector
@@ -36,10 +37,15 @@ nl_state = {"last": None}                                  # lo último que ente
 def nl_examples(text, k=NL_K):
     """Las frases de Jarvis más parecidas a lo que dijiste (de la guía y de las órdenes del asistente)."""
     seen, items = set(), []
+    general = J.current_mode() == "general"
     for cat in J.guide():
+        if general and cat["id"] == "colegio":
+            continue
         for g in cat["grupos"]:
             exs = [e["t"] for e in g["ejemplos"] if e["probar"]]
             for e in exs:
+                if general and catalogo_docente.school_explicit(e):      # 12.36: en modo general, ningún ejemplo del colegio
+                    continue
                 if e not in seen:
                     seen.add(e)
                     items.append((e, f"{re.sub(r'[(][0-9.]+[)]', '', g['nombre'])}: {e}"))
@@ -47,12 +53,14 @@ def nl_examples(text, k=NL_K):
         if o not in seen:
             seen.add(o)
             items.append((o, o))
-    tag = ""
-    try:
-        tag = J.memory_embed_tag()
-    except Exception:
-        pass
-    return selector.choose(text, items, k=k, embed=J.memory_embed if tag else None, tag="nl-" + tag if tag else "")
+    if J.current_mode() == "docente":                     # 12.36: la base de datos docente, solo en modo docente
+        for label, f in catalogo_docente.examples():
+            if f not in seen:
+                seen.add(f)
+                items.append((f, label))
+    # 12.36: solo por palabras (sin pedir «embeddings» a la nube): una llamada de red menos por frase; la IA igual ve
+    # una frase de cada habilidad debajo, así que no se le escapa ninguna.
+    return selector.choose(text, items, k=k, embed=None, tag="")
 
 
 def nl_catalog(text):
@@ -183,10 +191,16 @@ def nl_starters():
     return _starters["set"]
 
 
+_LEAD = re.compile(r"^(?:(?:jarvis|oye|mira|ey|hey|bueno|pues|porfa|por favor|uy|ve|vea|ay)\b[ ,]*)+")
+
+
 def nl_conversational(t):
     """12.29: ¿suena a conversación más que a orden? Entonces la IA entiende ANTES que las reglas (no después)."""
     w = re.sub(r"^(?:jarvis|oye jarvis|hola jarvis)[ ,]+", "", t).split()
     if len(w) < 4 or _KNOW.match(" ".join(w)) or _CHAT.match(" ".join(w)):
+        return False
+    rest = _LEAD.sub("", " ".join(w)).split()
+    if rest and len(rest) <= 6 and rest[0][:5] in nl_starters():   # 12.36: «oye, sube el volumen»: orden corta de siempre (instantánea)
         return False
     if _FILLER.match(" ".join(w)):
         return True
@@ -269,6 +283,7 @@ def nl_understand(text, t, early=False):
     finally:
         ack.done()
     nl_state["last"] = dict(d, frase=text, antes=early)
+    J._tl.nl_verdict = d["tipo"]                          # 12.36: si no era orden, la respuesta va directo (sin enrutador)
     if d["tipo"] == "aclarar":
         nl_offer(d["opciones"])
         return True
@@ -419,5 +434,5 @@ def nl_test_voice(text, t):
     return True
 
 
-__all__ = ['NL_K', 'NL_TEST_N', 'NL_TEST_WAIT', '_closest', 'NL_TEST_PAUSE', '_NLT', 'nl_test_report', 'nl_test_run', 'nl_test_state', 'nl_test_voice', '_CHAT', '_FILLER', '_KNOW', '_PICK', '_RETRY', '_RISKY', '_nl_ask', '_nl_do', '_starters', 'nl_catalog', 'nl_conversational', 'nl_offer', 'nl_pending', 'nl_pick', 'nl_starters', 'nl_examples', 'nl_parse', 'nl_prompt', 'nl_risky', 'nl_run', 'nl_should_try',
+__all__ = ['_LEAD', 'NL_K', 'NL_TEST_N', 'NL_TEST_WAIT', '_closest', 'NL_TEST_PAUSE', '_NLT', 'nl_test_report', 'nl_test_run', 'nl_test_state', 'nl_test_voice', '_CHAT', '_FILLER', '_KNOW', '_PICK', '_RETRY', '_RISKY', '_nl_ask', '_nl_do', '_starters', 'nl_catalog', 'nl_conversational', 'nl_offer', 'nl_pending', 'nl_pick', 'nl_starters', 'nl_examples', 'nl_parse', 'nl_prompt', 'nl_risky', 'nl_run', 'nl_should_try',
            'nl_state', 'nl_understand']

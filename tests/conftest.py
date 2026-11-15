@@ -94,6 +94,15 @@ def jv():
     return jarvis
 
 
+@pytest.fixture(autouse=True)
+def _modo_docente(request, monkeypatch):
+    """12.36: las pruebas corren en modo docente salvo que digan otra cosa (antes dependía del día y la hora: los fines
+    de semana, sin horario, era modo general). Las de modo general lo ponen ellas mismas."""
+    if "jv" in request.fixturenames:
+        import jarvis
+        monkeypatch.setitem(jarvis.settings, "assistant_mode", "docente")
+
+
 @pytest.fixture
 def ask(jv):
     """ask(frase) -> (quién la atendió, lo que dijo)."""

@@ -354,12 +354,18 @@ def detect_count(text):
     return to_int(m.group(1)) if m else None
 
 
-def build_prompt(kind, request, count=None, grade="", topic=""):
+def build_prompt(kind, request, count=None, grade="", topic="", general=False):
     n = max(1, min(40, count or DEFAULT_COUNT[kind] or 1))
-    base = ("Eres un docente experto en Colombia que prepara material de clase claro, correcto y "
-            "adecuado a la edad. Escribe en español de Colombia. Usa notación matemática sencilla en "
-            "texto plano (3/4, x², √9, 2·5), sin LaTeX ni markdown. ")
-    pedido = f"Petición del docente: «{request.strip()}»."
+    if general:                                        # 12.36: modo general: para cualquier persona, no para una clase
+        base = ("Eres un experto que prepara material claro, correcto y entretenido para cualquier persona adulta (no es para "
+                "un colegio ni para estudiantes). Escribe en español de Colombia, sin LaTeX ni markdown. ")
+        pedido = f"Petición: «{request.strip()}»."
+        grade = ""
+    else:
+        base = ("Eres un docente experto en Colombia que prepara material de clase claro, correcto y "
+                "adecuado a la edad. Escribe en español de Colombia. Usa notación matemática sencilla en "
+                "texto plano (3/4, x², √9, 2·5), sin LaTeX ni markdown. ")
+        pedido = f"Petición del docente: «{request.strip()}»."
     if topic:
         pedido += f" Tema: {topic}."
     if grade:
@@ -374,14 +380,16 @@ def build_prompt(kind, request, count=None, grade="", topic=""):
                   '"respuesta": "a"|"b"|"c"|"d", "explicacion": str}]}')
         task = (f"Crea una evaluación de {n} preguntas de opción múltiple con 4 opciones cada una y una "
                 "sola correcta. Varía la posición de la respuesta correcta y el nivel de dificultad. "
-                "Las opciones van sin la letra delante. La explicación es una frase para el docente.")
+                "Las opciones van sin la letra delante. La explicación es una frase para "
+                + ("quien corrige." if general else "el docente."))
     elif kind == "taller":
         schema = ('{"titulo": str, "grado": str, "tema": str, "objetivo": str, '
                   '"para_recordar": str, "ejemplo": str, '
                   '"ejercicios": [{"enunciado": str, "respuesta": str}]}')
         task = (f"Crea un taller con {n} ejercicios graduados de menor a mayor dificultad. "
                 "«para_recordar» es una explicación breve del tema (3 a 5 frases) y «ejemplo» un "
-                "ejemplo resuelto paso a paso. «respuesta» es la solución para la clave del docente.")
+                "ejemplo resuelto paso a paso. «respuesta» es la solución para la clave"
+                + ("." if general else " del docente."))
     elif kind == "rubrica":
         schema = ('{"titulo": str, "grado": str, "tema": str, '
                   '"criterios": [{"criterio": str, "descriptores": [str, str, str, str]}]}')

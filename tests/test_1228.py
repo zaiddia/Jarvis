@@ -56,7 +56,7 @@ def test_sin_formato_lo_escribe_en_el_chat(jv, ask, gen):
 
 def test_lo_demas_sigue_igual(jv, ask, gen):
     assert ask("escríbele un correo a la coordinadora diciendo que llego tarde")[0] == "CORREO"
-    assert ask("hazme un quiz de fracciones")[0] == "AULA" and ask("crea una presentación sobre el reciclaje")[0] == "AULA"
+    assert ask("hazme un quiz de fracciones")[0] == "MATERIAL" and ask("crea una presentación sobre el reciclaje")[0] == "DOCUMENTOS"   # 12.36: en modo general no es «para clase»
     assert not gen[0]
 
 

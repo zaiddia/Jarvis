@@ -157,6 +157,16 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Dos roles bien separados, más rápido y la base de datos docente (v12.36)
+
+- **Modo general ya no actúa como profesor.** Lo que se colaba: «hazme un examen de cultura general», «haz un quiz de películas», «hazme un taller de cocina», «crea una presentación sobre mi viaje» salían como material de clase (con grado, DBA, membrete del colegio y «notas para el docente»), «haz grupos con Ana, Luis…» buscaba tu lista de estudiantes, y la personalidad decía «tiempo libre del docente». Ahora, en modo general:
+  - Las **34 habilidades que solo son del colegio** (lista, sorteos, boletines, Classroom, alertas, recuperaciones, Saber, práctica, tutor, clase en vivo…) no responden, **salvo que la frase hable del colegio**: un curso («7A», «séptimo»), «mis estudiantes», «la clase», «el periodo», «el colegio», el nombre de uno de tus cursos… Así, «crea un quiz para 7A» sigue funcionando aunque estés en modo general.
+  - Un quiz, un taller o una rúbrica se hacen **para cualquier persona**: sin grado, sin DBA, sin membrete, sin guardarse en tu banco de preguntas, con la etiqueta MATERIAL; las presentaciones salen sin «para clase» ni pregunta para el salón.
+  - La comprensión de lenguaje natural ya no ve ejemplos del colegio.
+- **Más rápido al escribir:** si la comprensión ya vio que es una pregunta o una charla, la respuesta va directo (antes pasaba además por el enrutador: una llamada menos a la IA); ya no se piden «embeddings» a la nube en cada frase (una llamada de red menos); y una orden corta con «oye» o «porfa» delante («oye, sube el volumen») va directo a la regla, sin pasar por la IA. Las reglas en sí tardan unos 2 milisegundos.
+- **Base de datos de habilidades docentes** (catalogo_docente.py): 54 habilidades en 10 categorías (planeación, material, en el salón, evaluación y notas, estudiantes y familias, Saber, práctica y tutoría, Classroom, gestión, inclusión), cada una con qué hace, las frases para pedirla, qué produce, qué necesita y desde qué versión. Las pruebas comprueban que **cada frase la atiende de verdad su habilidad**. Se ve en la página **«¿qué puedo hacer en modo docente?»** (con buscador y categorías; tocas una frase y se la manda a Jarvis), se consulta por voz («habilidades docentes de evaluación») y se exporta a Excel («exporta el catálogo docente», una hoja por categoría). En modo docente la comprensión de lenguaje natural la usa como ejemplos.
+- Las pruebas ahora corren en modo docente salvo que digan lo contrario (antes dependían del día y la hora).
+
 ## «Transcribir audio no está disponible»: sí lo está (v12.35)
 
 - Jarvis transcribe audios y videos desde la v12.23, pero solo lo «veía» cuando ya habías subido el archivo. Si decías «transcribe este video», «¿puedes procesar videos?» o «hazle subtítulos a mi video» sin haber subido nada, la orden caía en la IA, que no sabía que Jarvis puede y respondía que esa habilidad no estaba disponible.

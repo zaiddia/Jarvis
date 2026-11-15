@@ -11,7 +11,7 @@ MODES = {
     "clase": ("de clase", " MODO CLASE: estás en clase y te escuchan los estudiantes. Responde muy breve y claro, en lenguaje "
                           "sencillo y respetuoso, sin chistes ni temas personales del docente."),
     "jornada": ("concentrado", " MODO JORNADA: es horario de trabajo. Ve al grano, sé eficiente y concreto; nada de charla."),
-    "relajado": ("relajado", " MODO RELAJADO: es tiempo libre del docente. Puedes ser más cálido y cercano, con algo de humor "
+    "relajado": ("relajado", " MODO RELAJADO: es tiempo libre de la persona. Puedes ser más cálido y cercano, con algo de humor "
                              "suave, sin dejar de ser útil. Si pide trabajo, ayúdale, pero no le recuerdes pendientes sin que pregunte."),
 }
 _SET = re.compile(r"\b(?:ponte|personalidad|actitud|pon la personalidad|cambia la personalidad a)\s+(?:de\s+|en\s+|a\s+)?"

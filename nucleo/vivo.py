@@ -647,26 +647,28 @@ def office_voice(text, t):
         J.reply("Ya estoy preparando otro documento. Cuando termine, hago este.", "AULA")
         return True
     what = "la presentación" if kind == "pptx" else "la tabla"
+    general = not J.school_ok(t)                       # 12.36: en modo general, sin membrete del colegio ni «para clase»
+    org = "DOCUMENTOS" if general else "AULA"
     J.office_job["busy"] = True
-    J.reply(f"Preparando {what}. Te aviso cuando esté lista; suele tardar menos de un minuto.", "AULA")
+    J.reply(f"Preparando {what}. Te aviso cuando esté lista; suele tardar menos de un minuto.", org)
 
     def work():
         try:
             if kind == "pptx":
-                m = J._office_ai_json(oficina.pptx_prompt(d["request"], d["count"], d["grade"]),
+                m = J._office_ai_json(oficina.pptx_prompt(d["request"], d["count"], "" if general else d["grade"], general=general),
                                     oficina.pptx_validate, d["request"])
-                path = oficina.build_pptx(m, J.settings["output_dir"], J.settings["aula_docente"],
-                                          J.settings["aula_institucion"], d["grade"])
+                path = oficina.build_pptx(m, J.settings["output_dir"], "" if general else J.settings["aula_docente"],
+                                          "" if general else J.settings["aula_institucion"], "" if general else d["grade"])
                 n = len(m["diapositivas"])
                 msg = (f"Lista la presentación «{m['titulo']}»: {n} diapositivas, con notas para ti debajo de cada una. "
-                       "La guardé en la carpeta Material de clase")
+                       + ("La guardé en tus documentos de Jarvis" if general else "La guardé en la carpeta Material de clase"))
             else:
                 m = J._office_ai_json(oficina.table_prompt(d["request"]), oficina.table_validate, d["request"])
                 path = oficina.build_table_xlsx(m, J.settings["output_dir"])
                 msg = f"Lista la tabla «{m['titulo']}» con {len(m['filas'])} filas. La guardé en Documentos, Jarvis, Planillas"
             opened = J._open_doc(path)
             J.log_terminal(f"Guardado en: {path}", "AULA")
-            J.notify(msg + (" y la abrí." if opened else "."), "AULA")
+            J.notify(msg + (" y la abrí." if opened else "."), org)
         except ImportError:
             J.notify("Para crear presentaciones y hojas de Excel falta un componente. Actualiza Jarvis o ejecuta instalar.bat.", "ERROR")
         except J.AIError as e:

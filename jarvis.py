@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.35"
+VERSION = "12.36"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1658,6 +1658,7 @@ def process_command(text):
     _tl.cmd_text = text                               # 7.4: para aprender tus costumbres
     if not getattr(_tl, "nl_pass", False):
         _tl.nl_tried = ""                             # 12.29: la comprensión, una vez por frase
+        _tl.nl_verdict = ""
     if not getattr(_tl, "polite", False):
         order = polite_to_order(t)
         if order and order != t:
@@ -1807,6 +1808,8 @@ def process_command(text):
     if connect_voice(text, t):                         # 12.30: «ayúdame a conectar el WhatsApp», «conecta el correo»
         return
     if usage_voice(text, t) or council_voice(text, t): # 12.32: «¿cuánto he usado la IA hoy?», «pregúntale al consejo: …»
+        return
+    if catalog_voice(text, t):                         # 12.36: «¿qué puedo hacer en modo docente?», «exporta el catálogo docente»
         return
     if nl_test_voice(text, t):                         # 12.29: «haz la prueba de comprensión» (con tu IA, sin ejecutar nada)
         return
@@ -2151,6 +2154,8 @@ def process_command(text):
             pass
         # Preguntas claras -> respuesta en streaming (más rápida, sin pasar por el enrutador).
         is_question = text.strip().endswith("?") or bool(QUESTION_RE.search(t))
+        if getattr(_tl, "nl_verdict", "") in ("pregunta", "charla"):
+            is_question = True                          # 12.36: la comprensión ya vio que no es una orden: sin enrutador (una llamada menos)
         # Con conectores MCP, también las preguntas pasan por el enrutador («¿qué tengo en Notion?»).
         has_mcp = settings["ai_router"] and bool(mcp_hub.catalog(1))
         _tl.fast_model = brain_for(text)                 # 12.1: dos cerebros (rápido o potente)
@@ -2463,6 +2468,36 @@ from nucleo.comprension import *  # noqa: F401,F403,E402
 from nucleo.conectar import *  # noqa: F401,F403,E402
 from nucleo.consumo import *  # noqa: F401,F403,E402
 from nucleo.automatico import *  # noqa: F401,F403,E402
+from nucleo.catalogo import *  # noqa: F401,F403,E402
+
+# ============================================================================ 12.36: DOS ROLES SEPARADOS
+# Las habilidades del colegio (catalogo_docente.SCHOOL_ONLY) solo atienden en modo docente o si la frase habla del colegio
+# («7A», «mis estudiantes», «la clase», «el periodo», el nombre de un curso tuyo…). En modo general no se meten.
+import catalogo_docente  # noqa: E402
+
+
+def school_ok(t=""):
+    """¿Esta frase es del colegio? Sí en modo docente; en modo general, solo si lo dice."""
+    if current_mode() == "docente":
+        return True
+    return catalogo_docente.school_explicit(t, list(aula.data.get("cursos") or {}))
+
+
+def _school_gate(fn):
+    import functools
+
+    @functools.wraps(fn)
+    def gated(text, t, *a, **k):
+        if not school_ok(t):
+            return False
+        return fn(text, t, *a, **k)
+    gated.school_gated = True
+    return gated
+
+
+for _n in catalogo_docente.SCHOOL_ONLY:
+    if callable(globals().get(_n)) and not getattr(globals()[_n], "school_gated", False):
+        globals()[_n] = _school_gate(globals()[_n])
 from nucleo.transcribir import *  # noqa: F401,F403,E402
 
 # ── 12.8: boletines del periodo en PDF (uno por estudiante) → nucleo/boletines.py (lógica en boletin.py)

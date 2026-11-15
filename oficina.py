@@ -89,7 +89,19 @@ def detect_grade(t):
 # =============================================================================
 # Presentación (PowerPoint)
 # =============================================================================
-def pptx_prompt(request, count, grade=""):
+def pptx_prompt(request, count, grade="", general=False):
+    if general:                                        # 12.36: modo general: una presentación cualquiera, no una clase
+        return (
+            "Eres un experto en presentaciones claras y atractivas. Prepara el contenido de una presentación (no es para una clase).\n"
+            f"Petición: «{request}».\n"
+            f"Debe tener {count} diapositivas de contenido (sin contar la portada).\n"
+            "Responde SOLO con un JSON con esta forma exacta:\n"
+            '{"titulo": "…", "subtitulo": "…", "diapositivas": [\n'
+            '  {"tipo": "contenido", "titulo": "…", "puntos": ["…", "…", "…"], "notas": "…"}\n'
+            "]}\n"
+            "Reglas: todas de tipo «contenido», con 3 a 5 puntos cortos (máximo 14 palabras cada uno), claros y correctos; la "
+            "última, un cierre con lo más importante o los próximos pasos. En «notas» escribe, en 2 o 3 frases, qué decir en "
+            "esa diapositiva. Español de Colombia, sin markdown ni emojis.")
     return (
         "Eres un docente experto de Colombia. Prepara el contenido de una presentación para clase.\n"
         f"Petición del docente: «{request}».\n"

@@ -149,8 +149,9 @@ def test_si_la_orden_traducida_no_existe_responde_la_ia_con_tu_frase(nl):
 
 def test_aclarar_y_delicado(nl, ask):
     nl._nl[1]["d"] = {"tipo": "aclarar", "opciones": ["gasté 85 mil en mercado", "mi presupuesto de comida es de 85 mil"]}
-    who, said = ask("85 lucas de comida")
-    assert who == "COMPRENSIÓN" and "«gasté 85 mil en mercado» o «mi presupuesto de comida es de 85 mil»" in said
+    ask("85 lucas de comida")
+    said = " ".join(t for t, o in nl._rec.replies if o == "COMPRENSIÓN")            # (un aviso tardío de otro hilo no cuenta)
+    assert "«gasté 85 mil en mercado» o «mi presupuesto de comida es de 85 mil»" in said
     nl._nl[1]["d"] = {"tipo": "orden", "orden": "vacía la lista del mercado", "seguro": True}
     nl._rec.clear()
     assert nl.nl_understand("el mercado ya quedó hecho", nl.normalize("el mercado ya quedó hecho"))
