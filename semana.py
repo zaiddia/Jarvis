@@ -34,31 +34,95 @@ def courses_of_week(items):
     return out
 
 
+def grade_key(curso):
+    """El grado de un curso («7A», «7-2», «Séptimo B», «11 Física» → 7, 7, 7, 11) o None."""
+    t = _plain(curso).replace("grado", " ")
+    words = [ORD.get(w, w) for w in re.split(r"[\s\-_.·]+", t) if w]
+    m = re.match(r"^(\d{1,2})(?!\d)", words[0]) if words else None
+    g = int(m.group(1)) if m else None
+    return g if g and 1 <= g <= 11 else None
+
+
+ORD = {"primero": "1", "segundo": "2", "tercero": "3", "cuarto": "4", "quinto": "5", "sexto": "6", "septimo": "7", "octavo": "8",
+       "noveno": "9", "decimo": "10", "undecimo": "11", "once": "11", "diez": "10"}
+
+
+def group_courses(rows):
+    """12.38: varios cursos del mismo grado, la misma materia y el mismo tema → un solo material para todos.
+    rows: [{"curso", "materia", "tema", ...}] → [{"grado", "materia", "tema", "cursos": [...], "filas": [...]}] en orden."""
+    groups, order = {}, []
+    for r in rows:
+        g = grade_key(r["curso"])
+        k = (g if g is not None else "c:" + r["curso"], _plain(r.get("materia", "")).strip(), _plain(r.get("tema", "")).strip())
+        if k not in groups:
+            groups[k] = {"grado": g, "materia": r.get("materia", ""), "tema": r.get("tema", ""), "cursos": [], "filas": []}
+            order.append(k)
+        if r["curso"] not in groups[k]["cursos"]:
+            groups[k]["cursos"].append(r["curso"])
+        groups[k]["filas"].append(r)
+    return [groups[k] for k in order]
+
+
+def courses_label(cursos):
+    return cursos[0] if len(cursos) == 1 else ", ".join(cursos[:-1]) + " y " + cursos[-1]
+
+
 def week_plan(items, topic_for, monday, with_quiz=True, max_steps=8):
-    """Plan de proyecto (formato de proyectos.validate_plan) y lista de cursos sin tema. topic_for(curso) → tema o ""."""
+    """Plan de proyecto (formato de proyectos.validate_plan) y lista de cursos sin tema. topic_for(curso) → tema o "".
+    12.38: los cursos del mismo grado, materia y tema comparten el plan y la evaluación (7A, 7B y 7C: uno solo)."""
     courses = courses_of_week(items)
-    pasos, sin_tema = [], []
+    rows, sin_tema = [], []
     for curso, c in courses.items():
         tema = (topic_for(curso) or "").strip()
         if not tema:
             sin_tema.append(curso)
             continue
-        dias = ", ".join(DIAS[d] for d in c["dias"])
-        mat = f" de {c['materia']}" if c["materia"] else ""
-        n = c["sesiones"]
-        pid = re.sub(r"\W", "", curso)[:8] or f"c{len(pasos)}"
-        pasos.append({"id": f"pl{pid}", "tipo": "plan", "titulo": f"Plan de clase {curso}: {tema}",
-                      "pedido": f"Plan de clase{mat} para el curso {curso} sobre «{tema}», para {n} {'sesiones' if n != 1 else 'sesión'} "
-                                f"de la semana ({dias}), con actividades para cada sesión.", "depende": []})
+        rows.append({"curso": curso, "materia": c["materia"], "tema": tema, "dias": c["dias"], "sesiones": c["sesiones"]})
+    pasos = []
+    for g in group_courses(rows):
+        tema, cursos = g["tema"], g["cursos"]
+        dias = ", ".join(DIAS[d] for d in sorted({d for r in g["filas"] for d in r["dias"]}))
+        mat = f" de {g['materia']}" if g["materia"] else ""
+        n = max(r["sesiones"] for r in g["filas"])
+        pid = re.sub(r"\W", "", "".join(cursos))[:8] or f"c{len(pasos)}"
+        quien = f"el curso {cursos[0]}" if len(cursos) == 1 else f"los cursos {courses_label(cursos)} (grado {g['grado']}°, el mismo material para todos)"
+        pasos.append({"id": f"pl{pid}", "tipo": "plan", "titulo": f"Plan de clase {courses_label(cursos)}: {tema}",
+                      "pedido": f"Plan de clase{mat} para {quien} sobre «{tema}», para {n} {'sesiones' if n != 1 else 'sesión'} "
+                                f"de la semana ({dias}), con actividades para cada sesión.", "depende": [], "cursos": cursos})
         if with_quiz:
-            pasos.append({"id": f"qz{pid}", "tipo": "quiz", "titulo": f"Evaluación corta {curso}: {tema}",
-                          "pedido": f"Evaluación corta de 5 preguntas{mat} para {curso} sobre «{tema}», para el cierre de la semana.",
-                          "depende": [f"pl{pid}"]})
+            pasos.append({"id": f"qz{pid}", "tipo": "quiz", "titulo": f"Evaluación corta {courses_label(cursos)}: {tema}",
+                          "pedido": f"Evaluación corta de 5 preguntas{mat} para {courses_label(cursos)} sobre «{tema}», para el cierre de la semana.",
+                          "depende": [f"pl{pid}"], "cursos": cursos})
     if len(pasos) > max_steps:                         # muchos cursos: primero los planes, luego las evaluaciones que quepan
         plans = [p for p in pasos if p["tipo"] == "plan"][:max_steps]
         rest = [p for p in pasos if p["tipo"] != "plan" and p["depende"][0] in {x["id"] for x in plans}]
         pasos = plans + rest[:max_steps - len(plans)]
     return {"nombre": f"Semana del {monday:%d/%m}", "pasos": pasos}, sin_tema
+
+
+def day_plan(items, topic_for, day, max_steps=8):
+    """12.38: el material de las clases de un día (para dejarlo listo la noche anterior), agrupando por grado/materia/tema.
+    → (pasos, cursos sin tema)."""
+    rows, sin_tema = [], []
+    for x in sorted((x for x in items if x["dia"] == day.weekday() and x.get("curso")), key=lambda x: x["inicio"]):
+        if any(r["curso"] == x["curso"] for r in rows) or x["curso"] in sin_tema:
+            continue
+        tema = (topic_for(x["curso"]) or "").strip()
+        if not tema:
+            sin_tema.append(x["curso"])
+            continue
+        rows.append({"curso": x["curso"], "materia": x.get("materia", ""), "tema": tema, "inicio": x["inicio"]})
+    pasos = []
+    for g in group_courses(rows)[:max_steps]:
+        cursos = g["cursos"]
+        mat = f" de {g['materia']}" if g["materia"] else ""
+        pid = re.sub(r"\W", "", "".join(cursos))[:8] or f"d{len(pasos)}"
+        quien = f"el curso {cursos[0]}" if len(cursos) == 1 else f"los cursos {courses_label(cursos)} (el mismo material para todos)"
+        pasos.append({"id": f"cl{pid}", "tipo": "plan", "titulo": f"Clase de mañana {courses_label(cursos)}: {g['tema']}",
+                      "pedido": f"Plan de clase{mat} para {quien} sobre «{g['tema']}», para una sesión el {DIAS[day.weekday()]} "
+                                f"{day.day} de {MESES[day.month - 1]}, con inicio, desarrollo, cierre y una pregunta de salida.",
+                      "depende": [], "cursos": cursos})
+    return pasos, sin_tema
 
 
 def next_monday(today):

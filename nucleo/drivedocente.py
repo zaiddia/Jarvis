@@ -16,8 +16,10 @@ import threading
 import time
 import urllib.parse
 
+import aula
 import catalogo_docente as C
 import gservicios
+import semana
 from nucleo import J
 
 FOLDER = "application/vnd.google-apps.folder"
@@ -25,7 +27,7 @@ XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 ROOT_NAME = "Jarvis · Docente"
 INDEX_NAME = "00 Índice de material docente.xlsx"
 RECENT = 15 * 60                                   # un archivo nuevo es de la última habilidad usada si fue hace < 15 min
-_dd = {"last": "", "t": 0.0, "lock": threading.Lock()}
+_dd = {"last": "", "t": 0.0, "cursos": [], "lock": threading.Lock()}
 _LINK = "https://drive.google.com/drive/folders/"
 
 
@@ -86,13 +88,43 @@ def skill_for(handler, t):
     return best["id"]
 
 
+def courses_in(t):
+    """12.38: los cursos tuyos que nombra la frase o el nombre de archivo («7A», «7-A», «7 A», «Séptimo B»…), en orden."""
+    s = re.sub(r"[-_.·]+", " ", C.norm(t))
+    s = re.sub(r"\b(\d{1,2})\s+([a-f])\b", r"\1\2", s)
+    out = []
+    for c in aula.data.get("cursos") or {}:
+        base = re.sub(r"[-_.·]+", " ", C.norm(str(c).split(" · ")[0])).strip()
+        tight = base.replace(" ", "")
+        if not base:
+            continue
+        if any(re.search(rf"(?<![a-z0-9]){re.escape(k)}(?![a-z0-9])", s) for k in {base, tight}):
+            out.append(c)
+    return sorted(out, key=aula.course_sort_key)
+
+
+def course_folder(courses):
+    """La subcarpeta dentro de la habilidad: el curso («7A»), o el grado si son varios del mismo («Grado 7°»), o ninguna."""
+    if len(courses) == 1:
+        return re.sub(r"[\\/:*?\"<>|]", "-", courses[0])
+    gs = {semana.grade_key(c) for c in courses}
+    if courses and len(gs) == 1 and None not in gs:
+        return f"Grado {gs.pop()}°"
+    return ""
+
+
 def note_skill(handler, t):
     """Lo llama el envoltorio de cada habilidad docente cuando atendió una frase del colegio."""
     if not J.school_ok(t):
         return
     sid = skill_for(handler, t)
     if sid:
-        _dd["last"], _dd["t"] = sid, time.time()
+        _dd["last"], _dd["t"], _dd["cursos"] = sid, time.time(), courses_in(t)
+
+
+def note_skill_direct(sid, courses):
+    """Para lo automático (respaldo, resumen, clase de mañana): qué habilidad produce el archivo que viene."""
+    _dd["last"], _dd["t"], _dd["cursos"] = sid, time.time(), list(courses or [])
 
 
 def recent_skill():
@@ -140,13 +172,18 @@ def build_tree():
     return len(d["skills"])
 
 
-def file_material(path, sid):
-    """Sube el archivo a la carpeta de su habilidad y actualiza el índice. → enlace del archivo."""
+def file_material(path, sid, courses=()):
+    """Sube el archivo a la carpeta de su habilidad (y del curso o grado) y actualiza el índice. → enlace del archivo."""
     client = J.classroom_client()
     with _dd["lock"]:
         d = dd_load()
         folder = ensure_skill_folder(client, d, sid)
         d.pop("_checked_root", None)
+        sub = course_folder(list(courses or []))
+        if sub:                                        # 12.38: varios cursos y grados: una subcarpeta por curso (o grado)
+            key = f"{sid}|{sub}"
+            d.setdefault("subs", {})[key] = _ensure(client, d.get("subs", {}).get(key, ""), sub, folder)
+            folder = d["subs"][key]
         f = gservicios.upload(client, path, folder)
         d["files"].setdefault(sid, []).append({"n": os.path.basename(path), "l": f.get("webViewLink", ""), "t": time.strftime("%Y-%m-%d %H:%M")})
         d["files"][sid] = d["files"][sid][-200:]
@@ -207,27 +244,29 @@ def write_index(client, d):
 
 
 # ---------------------------------------------------------------- automático
-def docente_file(path):
+def docente_file(path, sid=None):
     """Desde on_new_file: si el archivo es de una habilidad docente reciente, va a su carpeta. True si se encargó."""
-    sid = recent_skill()
+    sid = sid or recent_skill()
     if not (sid and J.settings.get("drive_docente", True) and J.gdrive_ready()):
         return False
     if os.path.splitext(path)[1].lower() not in (".docx", ".pptx", ".xlsx", ".pdf", ".png", ".jpg", ".mp4", ".csv", ".zip", ".mp3"):
         return False
     _cats, skills = tree_names()
+    courses = courses_in(os.path.splitext(os.path.basename(path))[0]) or list(_dd.get("cursos") or [])
 
     def work():
         try:
-            J.drive_docente_upload(path, sid)
-            J.log_terminal(f"Guardado en Drive › {ROOT_NAME} › {skills[sid][1]}: {os.path.basename(path)}", "DRIVE")
+            J.drive_docente_upload(path, sid, courses)
+            sub = course_folder(courses)
+            J.log_terminal(f"Guardado en Drive › {ROOT_NAME} › {skills[sid][1]}{' › ' + sub if sub else ''}: {os.path.basename(path)}", "DRIVE")
         except Exception as e:
             J.note_error("DRIVE", e)
     J.start_job("Guardando en el Drive docente", work, "drive")
     return True
 
 
-def drive_docente_upload(path, sid):
-    return file_material(path, sid)
+def drive_docente_upload(path, sid, courses=()):
+    return file_material(path, sid, courses)
 
 
 def folder_links():
@@ -269,6 +308,6 @@ def drive_docente_voice(text, t):
 
 
 __all__ = ['FOLDER', 'INDEX_NAME', 'RECENT', 'ROOT_NAME', 'XLSX', '_LINK', '_OPEN', '_TREE', '_dd', '_ensure', '_path', '_words',
-           'build_tree', 'dd_load', 'dd_save', 'docente_file', 'drive_docente_upload', 'drive_docente_voice', 'ensure_skill_folder',
-           'file_material', 'folder_links', 'formats_search_url', 'index_xlsx', 'note_skill', 'recent_skill', 'skill_for',
+           'build_tree', 'course_folder', 'courses_in', 'dd_load', 'dd_save', 'docente_file', 'drive_docente_upload', 'drive_docente_voice', 'ensure_skill_folder',
+           'file_material', 'folder_links', 'formats_search_url', 'index_xlsx', 'note_skill', 'note_skill_direct', 'recent_skill', 'skill_for',
            'tree_names', 'write_index']

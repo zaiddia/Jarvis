@@ -77,6 +77,11 @@ def propose_week(today=None, say=True):
         return None
 
     def go():
+        try:
+            J.mark_week_prepared(plan, monday)          # 12.38: la clase de mañana no repite lo que ya preparó la semana
+        except Exception:
+            pass
+        J.note_skill_direct("semana", [])
         st = proyectos.new("prepárame la semana", plan, J.settings["output_dir"])
         J.reply(f"Preparo «{plan['nombre']}»: {len(plan['pasos'])} materiales. Te aviso cuando estén.", "SEMANA")
         J.run_project(st)
@@ -185,6 +190,10 @@ def close_period(say=True):
                 f"{'s' if len(paths) - 1 != 1 else ''} para Zeti, en Documentos, Jarvis, Cierre de periodo." +
                 (" Para quienes deben recuperar: " + "; ".join(f"«haz los planes de recuperación de {s['curso']}»" for s in risk[:3]) + "."
                  if risk else " Nadie quedó en riesgo. 🎉"), "CIERRE")
+    try:
+        J.close_followups()                            # 12.38: boletines y planes de recuperación, por aprobar
+    except Exception as e:
+        J.note_error("CIERRE", e)
     return paths
 
 
@@ -327,7 +336,7 @@ def inbox_voice(text, t):
 def _weekly_routines_worker():
     time.sleep(180)
     while True:
-        for fn in (J.week_prep_tick, J.period_tick, J.inbox_tick):
+        for fn in (J.week_prep_tick, J.period_tick, J.inbox_tick, J.auto_ticks):
             try:
                 fn()
             except Exception as e:

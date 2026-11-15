@@ -46,6 +46,10 @@ H = [
     dict(id="ensayo", cat="planeacion", nombre="Ensayo de clase", handler="rehearsal_voice", v="12.0",
          que="Ensayas la clase con estudiantes simulados que se equivocan como los tuyos; al final, informe.",
          frases=["ensaya la clase de factorización con 9A"], produce="Informe en Word", necesita="IA conectada"),
+    dict(id="clase_manana", cat="planeacion", nombre="La clase de mañana lista", handler="night_prep_voice", v="12.38",
+         que="En la noche deja listo el plan de las clases del día siguiente que aún no tengan material; los cursos del mismo grado, "
+             "materia y tema comparten un solo plan.",
+         frases=["prepárame las clases de mañana"], produce="Plan en Word por grupo de cursos", necesita="Tu horario y la malla o el diario"),
     # ------------------------------------------------------------------ material
     dict(id="quiz", cat="material", nombre="Evaluación / quiz", handler="aula_voice", v="7.0",
          que="Evaluación de opción múltiple con clave y explicación.",
@@ -193,8 +197,19 @@ H = [
          que="Exporta lo que le enseñaste a Jarvis para que un colega lo importe.", frases=["exporta mi kit para colegas"],
          produce="Archivo .zip", necesita="—"),
     dict(id="cierre", cat="gestion", nombre="Cierre de periodo", handler="period_voice", v="9.8",
-         que="Notas, pendientes y reportes del cierre de periodo.", frases=["cierra el periodo de 7A"], produce="Reportes",
+         que="Notas, pendientes y reportes del cierre de periodo; luego te propone los boletines de todos los cursos y los planes "
+             "de recuperación de los cursos en riesgo.", frases=["cierra el periodo de 7A"], produce="Reportes",
          necesita="Notas del periodo"),
+    dict(id="formatos", cat="gestion", nombre="Formatos del colegio", handler="formats_voice", v="12.38",
+         que="Subes tu formato en Word y lo que haga una habilidad sale sobre él; uno para todos, por grado o por curso.",
+         frases=["¿qué formatos tengo?", "usa este formato para los planes de clase de séptimo"], produce="Documentos con tu formato",
+         necesita="El formato en Word subido al chat"),
+    dict(id="respaldo_notas", cat="gestion", nombre="Respaldo semanal de notas y asistencia", handler="grades_backup_voice", v="12.38",
+         que="Cada viernes, un Excel con una hoja por curso (notas, promedio y faltas) y un resumen por grado.",
+         frases=["haz el respaldo de notas"], produce="Excel", necesita="Tus cursos y notas"),
+    dict(id="resumen_semana", cat="gestion", nombre="Resumen docente del viernes", handler="friday_voice", v="12.38",
+         que="Por grado y por curso: lo visto, lo que sigue, las notas puestas y quién va en riesgo; Word y mensaje a tu WhatsApp.",
+         frases=["hazme el resumen docente de la semana"], produce="Word + mensaje", necesita="Tus cursos (y el diario de clase)"),
     # ------------------------------------------------------------------ inclusión
     dict(id="piar", cat="inclusion", nombre="Ajustes razonables (PIAR)", handler="aula_voice", v="8.2",
          que="Ajustes razonables para un estudiante según su diagnóstico o barrera.",

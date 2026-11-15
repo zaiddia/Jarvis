@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.37"
+VERSION = "12.38"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -846,6 +846,15 @@ DEFAULT_SETTINGS = {
     "weekly_summary": True,        # 8.3: resumen de la semana al celular
     "weekly_day": "viernes",
     "weekly_hour": 16,
+    "auto_backup": True,           # 12.38: cada viernes, Excel de notas y asistencia (una hoja por curso, resumen por grado)
+    "auto_backup_last": "",
+    "docente_friday": True,        # 12.38: resumen docente del viernes por grado y curso (Word + WhatsApp)
+    "docente_friday_hour": 14,
+    "docente_friday_last": "",
+    "night_prep": True,            # 12.38: en la noche, el plan de las clases de mañana que aún no tengan material
+    "night_prep_hour": 19,
+    "night_prep_last": "",
+    "close_followups": True,       # 12.38: tras el cierre, proponer boletines y planes de recuperación de cada curso
     "weekly_sent": "",
     "update_night": True,          # 8.3: instalar de noche las versiones nuevas (con copia de seguridad)
     "google_scopes": "",           # 8.5: permisos que diste al conectar tu cuenta de Google (Gmail, Classroom, Forms)
@@ -982,7 +991,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "ai_daily_limit": (0, 100000), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "school_weeks": (20, 52), "period_current": (1, 6), "practice_goal": (5, 200), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "ai_daily_limit": (0, 100000), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "docente_friday_hour": (10, 22), "night_prep_hour": (15, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "school_weeks": (20, 52), "period_current": (1, 6), "practice_goal": (5, 200), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -1814,6 +1823,8 @@ def process_command(text):
         return
     if drive_docente_voice(text, t):                   # 12.37: «crea las carpetas docentes en Drive», «abre mi Drive docente»
         return
+    if formats_voice(text, t) or grades_backup_voice(text, t) or friday_voice(text, t) or night_prep_voice(text, t):
+        return                                         # 12.38: formatos del colegio, respaldo, resumen docente, clase de mañana
     if nl_test_voice(text, t):                         # 12.29: «haz la prueba de comprensión» (con tu IA, sin ejecutar nada)
         return
     if week_voice(text, t):                            # 9.8: «prepárame la semana», «¿cómo viene la semana?»
@@ -2502,6 +2513,7 @@ def _school_gate(fn):
 # 12.37: cada habilidad docente que atiende una frase del colegio queda anotada, para que el archivo que produzca se
 # guarde solo en su carpeta del Drive docente.
 from nucleo.drivedocente import *  # noqa: F401,F403,E402
+from nucleo.docenteauto import *  # noqa: F401,F403,E402
 
 
 def _skill_note(fn, name):
@@ -2629,6 +2641,7 @@ def _wrap_catalog_handlers():
 
 
 _wrap_catalog_handlers()
+Document = templated_document_factory(Document)    # 12.38: los documentos de una habilidad salen sobre tu formato (si lo subiste)
 
 
 # =============================================================================

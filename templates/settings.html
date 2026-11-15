@@ -963,6 +963,22 @@
         <div class="range"><input type="range" id="f-week-h" min="0" max="23" step="1" data-key="week_prep_hour" data-unit=":00"><output></output></div></div>
       <div class="field"><div class="ft"><label for="f-week-q">Incluir evaluación corta por curso</label></div>
         <label class="switch"><input type="checkbox" id="f-week-q" data-key="week_prep_quiz"><span></span></label></div>
+      <div class="field"><div class="ft"><label for="f-np-on">La clase de mañana lista</label>
+        <p>En la noche (domingo a jueves) prepara el plan de las clases del día siguiente que aún no tengan material. Los cursos del mismo grado, materia y tema comparten un solo plan (7A, 7B y 7C: uno). También: «prepárame las clases de mañana».</p></div>
+        <label class="switch"><input type="checkbox" id="f-np-on" data-key="night_prep"><span></span></label></div>
+      <div class="field"><div class="ft"><label for="f-np-h">Desde las</label></div>
+        <div class="range"><input type="range" id="f-np-h" min="15" max="23" step="1" data-key="night_prep_hour" data-unit=":00"><output></output></div></div>
+      <div class="field"><div class="ft"><label for="f-fr-on">Resumen docente del viernes</label>
+        <p>Por grado y por curso: lo visto, lo que sigue, las notas puestas y quién va en riesgo. En Word y un mensaje corto a tu WhatsApp. También: «hazme el resumen docente de la semana».</p></div>
+        <label class="switch"><input type="checkbox" id="f-fr-on" data-key="docente_friday"><span></span></label></div>
+      <div class="field"><div class="ft"><label for="f-bk-on">Respaldo de notas y asistencia cada viernes</label>
+        <p>Un Excel con una hoja por curso y un resumen por grado (y en tu Drive docente, si está conectado). También: «haz el respaldo de notas».</p></div>
+        <label class="switch"><input type="checkbox" id="f-bk-on" data-key="auto_backup"><span></span></label></div>
+      <div class="field"><div class="ft"><label for="f-fr-h">El viernes desde las</label></div>
+        <div class="range"><input type="range" id="f-fr-h" min="10" max="22" step="1" data-key="docente_friday_hour" data-unit=":00"><output></output></div></div>
+      <div class="field"><div class="ft"><label for="f-cf-on">Cierre de periodo completo</label>
+        <p>Después del consolidado te deja por aprobar los boletines de todos tus cursos y los planes de recuperación de los cursos con estudiantes en riesgo. Nada se envía a las familias sin que tú lo mandes.</p></div>
+        <label class="switch"><input type="checkbox" id="f-cf-on" data-key="close_followups"><span></span></label></div>
 
     </div>
     <div class="sgroup" id="g-exportar-notas-para-zeti-y-quices-para-k">

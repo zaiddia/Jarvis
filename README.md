@@ -157,6 +157,16 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Modo docente automático, para varios grados y cursos (v12.38)
+
+- **Varios grados y varios cursos.** Jarvis reconoce el grado de cada curso («7A», «7-2», «Séptimo B», «11 Física»). Los cursos del mismo grado, materia y tema comparten un solo material: la semana lista y la clase de mañana hacen «Plan de clase 7A, 7B y 7C: Fracciones» en vez de tres iguales (y así caben más cursos en el límite de pasos). En el Drive docente, dentro de cada habilidad, una subcarpeta por curso («7A») o por grado («Grado 7°») cuando el material es de varios cursos del mismo grado.
+- **Formatos del colegio.** Subes tu formato en Word al chat y dices «usa este formato para los planes de clase» (para todos), «… de séptimo» (para ese grado) o «… de 7A» (para ese curso). Lo que haga esa habilidad sale sobre el formato: encabezado, pie, logo, márgenes y estilos. Gana el más específico (curso, luego grado, luego general). «¿Qué formatos tengo?», «quita el formato de las rúbricas». Solo usa archivos que tú subes al chat.
+- **Respaldo de notas y asistencia cada viernes.** Un Excel con una hoja por curso (actividades, promedio y faltas, con fórmulas) y un resumen por grado (promedio del curso, cuántos en riesgo, faltas). También: «haz el respaldo de notas».
+- **Resumen docente del viernes.** Por grado y por curso: lo visto en la semana (del diario de clase), lo que sigue de la malla, las notas puestas y quién va en riesgo. En Word y un mensaje corto a tu WhatsApp (o al chat). También: «hazme el resumen docente de la semana».
+- **La clase de mañana lista.** Domingo a jueves en la noche, con tu horario, prepara el plan de las clases del día siguiente que aún no tengan material (no repite lo que ya hizo la semana lista ni prepara para festivos o recesos). También: «prepárame las clases de mañana».
+- **Cierre de periodo completo.** Después del consolidado, deja por aprobar los boletines de todos tus cursos y los planes de recuperación de los cursos con estudiantes en riesgo. Nada se envía a las familias sin que tú lo mandes.
+- Todo se apaga o se cambia de hora en Ajustes › Aula y colegio. El catálogo docente ahora tiene 58 habilidades.
+
 ## El Drive docente lo arma y lo llena Jarvis (v12.37)
 
 - **«Crea las carpetas docentes en Drive»**: Jarvis crea en tu Drive «Jarvis › Jarvis · Docente» con las 10 categorías y una carpeta por cada una de las 54 habilidades (los mismos nombres y números de la base de datos), más un índice en Excel. Si ya existen, no las duplica.
