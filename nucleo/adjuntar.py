@@ -5,6 +5,7 @@ con la IA con visión) y convertirlos entre formatos («pásalo a Word», «conv
 Solo trabaja con los archivos que TÚ subes al chat. Los nombres globales de Jarvis se usan como J.<nombre>.
 """
 import base64
+import confianza
 import io
 import os
 import re
@@ -184,7 +185,8 @@ def ask_files(its, question):
         extra = f" (Hay {len(imgs)} imágenes; esta es la primera.)" if len(imgs) > 1 else ""
         return J._vision_text(f"El docente te muestra este archivo ({adjuntos.describe(it)}){extra}. Pregunta: «{q}».{rule}", img)
     body = "\n\n".join(texts)[:40000]
-    return J.ai_chat([{"role": "user", "content": f"El docente subió estos archivos:\n{body}\n\nPregunta: «{q}».{rule}" + J.lessons_ctx()}],
+    return J.ai_chat([{"role": "user", "content": f"El docente subió estos archivos:\n{confianza.wrap(body, 'ARCHIVOS SUBIDOS')}\n\n"
+                                                  f"Pregunta: «{q}».{rule}{confianza.RULE}" + J.lessons_ctx()}],
                      max_tokens=1800).strip()
 
 

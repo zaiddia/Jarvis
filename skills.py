@@ -104,7 +104,84 @@ _ctx = {
     "contacts": lambda: "",
     "setting": lambda key: "",
     "log": print,
+    "late": lambda msg: None,                        # 12.39: lo que no se pudo confirmar se avisa después
 }
+
+
+# 12.39: Jarvis dice lo que COMPROBÓ. «Abriendo X» es el intento; unos segundos después mira si apareció su ventana
+# (o si se cerró), y si no, lo dice en vez de dar por hecho algo que no pasó.
+VERIFY_OPEN_SECS = 12
+VERIFY_CLOSE_SECS = 6
+
+
+def _late(msg):
+    try:
+        _ctx["late"](msg)
+    except Exception:
+        pass
+
+
+def _verify_async(check, bad_msg, ok_log="", secs=8.0, sync=False):
+    def run():
+        end = time.time() + secs
+        while time.time() < end:
+            try:
+                if check():
+                    if ok_log:
+                        _log(ok_log)
+                    return True
+            except Exception:
+                return None
+            time.sleep(0.5)
+        _late(bad_msg)
+        return False
+    if sync:
+        return run()
+    threading.Thread(target=run, daemon=True, name="comprobar").start()
+    return None
+
+
+def _name_hits(display, w):
+    words = [x for x in normalize(display).split() if len(x) > 2] or [normalize(display)]
+    title, proc = normalize(w.get("title", "")), normalize(str(w.get("proc", "")).rsplit(".", 1)[0])
+    return any(x in title or x in proc or (proc and proc in x) for x in words)
+
+
+def _already_open(display):
+    """La ventana de esa app si ya está abierta (para traerla al frente en vez de abrir otra copia)."""
+    if not IS_WIN:
+        return None
+    try:
+        wins = list_windows()
+    except Exception:
+        return None
+    for w in wins:
+        if w.get("proc") in PROTECTED or w.get("proc") in set(BROWSER_PROCS.values()) or w.get("cls") == "CabinetWClass":
+            continue
+        if _name_hits(display, w):
+            return w
+    return None
+
+
+def _verify_opened(display, before):
+    if not IS_WIN:
+        return
+
+    def check():
+        return any(w["hwnd"] not in before and _name_hits(display, w) for w in list_windows())
+    _verify_async(check, f"Pedí abrir {display}, pero después de {VERIFY_OPEN_SECS} segundos no veo su ventana. Puede seguir "
+                         "cargando o no haber abierto; si no aparece, dime «ábrelo otra vez».", f"Comprobado: {display} abrió.", VERIFY_OPEN_SECS)
+
+
+def _verify_closed(label, hwnds):
+    if not IS_WIN or not hwnds:
+        return
+
+    def check():
+        alive = {w["hwnd"] for w in list_windows()}
+        return not (set(hwnds) & alive)
+    _verify_async(check, f"{label.capitalize()} sigue abierto: quizá te está preguntando si guardas los cambios. "
+                         f"Si no responde, di «cierra {label} a la fuerza».", f"Comprobado: {label} se cerró.", VERIFY_CLOSE_SECS)
 
 
 def configure(**kwargs):
@@ -686,7 +763,13 @@ def open_app(nombre):
     if bk and IS_WIN:
         display, target = BUILTIN_APPS[bk]
         try:
+            w = _already_open(display)
+            if w:
+                focus_window(w["hwnd"])
+                return f"{display} ya estaba abierto: te lo traje al frente."
+            before = {x["hwnd"] for x in list_windows()}
             _launch(target)
+            _verify_opened(display, before)
             return f"Abriendo {display}."
         except OSError:
             q = normalize(display)          # no está en el PATH: buscar en el menú Inicio
@@ -698,7 +781,13 @@ def open_app(nombre):
             hit = _apps.get(ak) if ak else None
         if hit:
             display, kind, target = hit
+            w = _already_open(display)                 # 12.39: ya está abierta: al frente, sin abrir otra copia
+            if w:
+                focus_window(w["hwnd"])
+                return f"{display} ya estaba abierto: te lo traje al frente."
+            before = {x["hwnd"] for x in list_windows()} if IS_WIN else set()
             _launch_app(kind, target)
+            _verify_opened(display, before)
             bp = next((p for n, p in BROWSER_PROCS.items() if normalize(display) == n or normalize(display).startswith(n + " ")), "")
             if bp:
                 note_browser(bp)                       # 12.11: abriste un navegador: lo que pidas en la web va ahí
@@ -779,7 +868,11 @@ def _close(nombre, force):
                 continue
         if not killed:
             raise SkillError(f"No encontré procesos de «{nombre}».")
-        return f"Cerré a la fuerza {label} ({killed} proceso(s))."
+        time.sleep(1.5)                                       # 12.39: «cerré» solo si de verdad ya no está
+        left = sum(1 for p in psutil.process_iter(["name"]) if p.pid != OWN_PID and (p.info["name"] or "").lower() in procs)
+        if left:
+            return f"Intenté cerrar {label} a la fuerza, pero quedan {left} proceso(s) abiertos; puede necesitar permisos de administrador."
+        return f"Cerré a la fuerza {label} ({killed} proceso(s)); comprobé que ya no está abierto."
 
     targets = [w for w in targets if w["proc"] not in PROTECTED]
     if not targets:
@@ -790,6 +883,7 @@ def _close(nombre, force):
         raise SkillError(f"No encontré ninguna ventana abierta de «{nombre}».")
     for w in targets:
         user32.PostMessageW(w["hwnd"], WM_CLOSE, 0, 0)
+    _verify_closed(label, [w["hwnd"] for w in targets])     # 12.39: se comprueba que de verdad se cerró
     n = len(targets)
     return f"Cerrando {label}." if n == 1 else f"Cerrando {n} ventanas de {label}."
 

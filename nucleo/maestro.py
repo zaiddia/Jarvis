@@ -138,7 +138,7 @@ def handle_pages(data=None):
 def watch_check(item):
     """Revisa una página. Devuelve el aviso (o "")."""
     try:
-        text = investigar.page_text(J._get_text(item["url"], timeout=20)[:1500000], limit=200000)
+        text = investigar.page_text(J._get_public(item["url"], timeout=20)[:1500000], limit=200000)
     except Exception as e:
         J.log_terminal(f"Vigilante web, {item['nombre']}: {e}", "AVISO")
         return ""

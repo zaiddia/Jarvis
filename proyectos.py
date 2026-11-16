@@ -154,6 +154,7 @@ def save(st):
         with _lock:
             os.makedirs(_dir, exist_ok=True)
             p = os.path.join(_dir, st["id"] + ".json")
+            st["actualizado"] = time.time()                 # 12.39: para saber si vale la pena seguir solo tras un corte
             with open(p + ".tmp", "w", encoding="utf-8") as f:
                 json.dump(st, f, ensure_ascii=False, indent=1)
             os.replace(p + ".tmp", p)
@@ -176,7 +177,7 @@ def load_all():
 
 
 def unfinished():
-    return [p for p in load_all() if p.get("estado") in ("en marcha", "interrumpido")]
+    return [p for p in load_all() if p.get("estado") in ("en marcha", "interrumpido", "esperando cuota")]
 
 
 def ready_steps(st):

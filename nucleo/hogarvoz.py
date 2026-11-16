@@ -606,7 +606,7 @@ def audio_voice(text, t):
     if url:
         J.reply("Leyendo la página para pasarla a audio…", "AUDIO")
         try:
-            page = investigar.page_text(J._get_text(url.group(0), timeout=15), 200_000)
+            page = investigar.page_text(J._get_public(url.group(0), timeout=15), 200_000)
         except Exception as e:
             J.reply(f"No pude abrir esa página: {e}", "AUDIO")
             return True

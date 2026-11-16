@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.38"
+VERSION = "12.39"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -854,7 +854,8 @@ DEFAULT_SETTINGS = {
     "night_prep": True,            # 12.38: en la noche, el plan de las clases de mañana que aún no tengan material
     "night_prep_hour": 19,
     "night_prep_last": "",
-    "close_followups": True,       # 12.38: tras el cierre, proponer boletines y planes de recuperación de cada curso
+    "close_followups": True,
+    "project_auto_resume": True,   # 12.39: un proyecto cortado (reinicio, apagón) sigue solo desde su último paso       # 12.38: tras el cierre, proponer boletines y planes de recuperación de cada curso
     "weekly_sent": "",
     "update_night": True,          # 8.3: instalar de noche las versiones nuevas (con copia de seguridad)
     "google_scopes": "",           # 8.5: permisos que diste al conectar tu cuenta de Google (Gmail, Classroom, Forms)
@@ -1665,6 +1666,7 @@ def process_command(text):
     if not t:
         return
     rapidez.mark("orden")
+    note_user_activity()                              # 12.39: estás hablando con Jarvis (las horas de silencio no te callan)
     _tl.cmd_text = text                               # 7.4: para aprender tus costumbres
     if not getattr(_tl, "nl_pass", False):
         _tl.nl_tried = ""                             # 12.29: la comprensión, una vez por frase
@@ -1750,6 +1752,8 @@ def process_command(text):
     if copy_voice(text, t) or game_voice(text, t) or difficulty_voice(text, t):            # 12.12: copia, juegos, dificultad
         return
     if dnd_voice(text, t) or guide_voice(text, t) or autotest_voice(text, t) or compartir_voice(text, t):   # 12.16
+        return
+    if agenda_voice(text, t) or quiet_voice(text, t):   # 12.39: «esta noche a las 2 investiga…», «¿qué tengo programado?», horas de silencio
         return
     if pc_doctor_voice(text, t) or mi_dia_voice(text, t):   # 12.15: médico del PC, vencimientos, medicamentos, citas, cumpleaños, presupuesto…
         return
@@ -2045,7 +2049,7 @@ def process_command(text):
     # Aula: sorteo, grupos, asistencia, semáforo, tablero y material de clase
     if info_voice(text, t):
         return
-    if research_voice(text, t):                        # «investiga a fondo…» → informe con fuentes
+    if research_control_voice(text, t) or research_voice(text, t):                        # «investiga a fondo…» → informe con fuentes
         return
     if search_modes_voice(text, t):                    # 12.22: «busca el precio de…», «compara X con Y»
         return
@@ -2514,6 +2518,7 @@ def _school_gate(fn):
 # guarde solo en su carpeta del Drive docente.
 from nucleo.drivedocente import *  # noqa: F401,F403,E402
 from nucleo.docenteauto import *  # noqa: F401,F403,E402
+from nucleo.agenda import *  # noqa: F401,F403,E402
 
 
 def _skill_note(fn, name):
@@ -2743,7 +2748,8 @@ def main():
                      talleres_dir=lambda: settings["talleres_dir"],
                      contacts=lambda: settings["contacts"],
                      setting=lambda key: settings.get(key, ""),
-                     log=lambda m: log_terminal(m, "PC"))
+                     log=lambda m: log_terminal(m, "PC"),
+                     late=lambda m: notify(m, "PC"))       # 12.39: lo que no se pudo confirmar, dicho después
 
     # El servidor se abre primero para estar «en línea» cuanto antes; lo pesado (audio, modelo de
     # voz, índice de apps, IA) se carga en segundo plano y no retrasa el arranque.
@@ -2789,6 +2795,7 @@ def main():
         live_class_start()                # 9.6: clase en vivo y banco de actividades
         students_plus_start()             # 9.7: alertas tempranas y celebraciones
         routines98_start()                # 9.8: semana lista, cierre de periodo y bandeja limpia
+        agenda_start()                    # 12.39: las tareas para más tarde
         mood_start()                      # 9.9: personalidad y color del día
         colleagues_start()                # 10.0: retoma un acta abierta
         zeti_apply()                      # 10.1: pesos y escala de la institución

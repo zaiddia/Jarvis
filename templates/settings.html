@@ -721,6 +721,10 @@
         <div class="ft"><label for="f-pj-par">Sub-agentes a la vez</label><p>Más es más rápido, pero gasta más de tu IA al mismo tiempo.</p></div>
         <div class="range"><input type="range" id="f-pj-par" min="1" max="4" step="1" data-key="project_parallel"><output></output></div>
       </div>
+      <div class="field">
+        <div class="ft"><label for="f-pj-auto">Si se corta, seguir solo</label><p>Cada paso queda guardado. Si el equipo se reinicia o se apaga, al volver el proyecto sigue desde el último paso (si se cortó hace menos de 6 horas y lo que falta no envía nada ni toca tu PC; si no, te pregunta). Si se acaba la cuota de la IA, espera 5 minutos y sigue. Un proyecto que se corta 3 veces se da por fallido.</p></div>
+        <label class="switch"><input type="checkbox" id="f-pj-auto" data-key="project_auto_resume"><span></span></label>
+      </div>
 
     </div>
     <div class="sgroup" id="g-que-necesita-mi-atencion">

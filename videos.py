@@ -4,6 +4,7 @@ Se lee la transcripción (subtítulos) del video: de la página de YouTube o, si
 «…más» › «Mostrar transcripción», copiar). Con ella se arma el quiz con el minuto exacto de cada respuesta y una guía
 de pausas para ver el video en clase.
 """
+import confianza
 import datetime
 import html
 import json
@@ -116,7 +117,7 @@ def quiz_prompt(titulo, transcript, n=8, grado="", asignatura=""):
             "Además, una guía de 3 a 5 pausas para verlo en clase: el minuto y una pregunta para hacerle al curso en esa pausa, y un resumen de "
             'tres frases. Responde SOLO con JSON: {"titulo": str, "tema": str, "resumen": str, "preguntas": [{"enunciado": str, "opciones": '
             '[str, str, str, str], "respuesta": "a"|"b"|"c"|"d", "explicacion": str, "minuto": "mm:ss"}], "pausas": [{"minuto": "mm:ss", '
-            f'"pregunta": str}}]}}\nTranscripción:\n{transcript}')
+            f'"pregunta": str}}]}}\nTranscripción:\n' + confianza.wrap(transcript, "TRANSCRIPCIÓN") + confianza.RULE)
 
 
 def clean_quiz(d, n=8):

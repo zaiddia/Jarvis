@@ -6,6 +6,7 @@
 Los nombres globales de Jarvis se usan como J.<nombre>.
 """
 import base64
+import confianza
 import datetime
 import json
 import os
@@ -230,7 +231,21 @@ _RESEARCH_STRIP = re.compile(
 research_state = {"busy": False}
 
 
+_MINUTES = re.compile(r"\s*,?\s*(?:durante|por|en|unos|con)\s+(\d{1,2}|un|una|dos|tres|cinco|diez|quince|veinte|media)\s+(minutos?|horas?|hora)\b", re.I)
+_NUMW = {"un": 1, "una": 1, "dos": 2, "tres": 3, "cinco": 5, "diez": 10, "quince": 15, "veinte": 20, "media": 0.5}
+
+
+def research_minutes(text):
+    """12.39: «investiga X durante 10 minutos» → 10 (como mucho 30); sin tiempo → 0."""
+    m = _MINUTES.search(text)
+    if not m:
+        return 0
+    n = _NUMW.get(m.group(1).lower()) or float(m.group(1))
+    return int(min(30, n * 60 if m.group(2).lower().startswith("hora") else n))
+
+
 def research_topic(text):
+    text = _MINUTES.sub(" ", text)
     q = _RESEARCH_STRIP.sub("", text.strip())
     q = re.sub(r"\s*(?:,\s*)?(?:y\s+)?(?:hazme|haz|dame|preparame|con) (?:un |el )?(?:documento|informe|word|resumen)\b.*$", "", q, flags=re.I)
     q = re.sub(r"\b(?:en internet|en la web|con fuentes|a fondo)\b", "", q, flags=re.I)
@@ -244,10 +259,11 @@ def research_voice(text, t):
     if len(topic) < 3:
         J.reply("¿Sobre qué quieres que investigue?", "INVESTIGA")
         return True
+    mins = research_minutes(t)
     if getattr(J._tl, "capture", None) is not None:      # desde Telegram, MCP o una tarea: se espera el resultado
-        J.reply(J.research(topic, sync=True), "INVESTIGA")
+        J.reply(J.research(topic, sync=True, **({"minutes": mins} if mins else {})), "INVESTIGA")
         return True
-    J.research(topic)
+    J.research(topic, **({"minutes": mins} if mins else {}))
     return True
 
 
@@ -268,11 +284,15 @@ def _sources_for(plan):
 
 def _read_page(s):
     try:
-        s["texto"] = investigar.page_text(J._get_text(s["url"], timeout=10)[:600000])
+        s["texto"] = investigar.page_text(J._get_public(s["url"], timeout=10)[:600000])
     except Exception:
         s["texto"] = ""
-    if len(s["texto"]) < 120:
+    s["leida"] = len(s["texto"]) >= 120                 # 12.39: si solo queda el resumen del buscador, sus datos no se dan por comprobados
+    if not s["leida"]:
         s["texto"] = s.get("resumen", "")
+    s["texto"], s["sospechoso"] = confianza.scan(s["texto"])   # 12.39: frases que intentan darle órdenes a la IA, fuera
+    if s["sospechoso"]:
+        J.log_terminal(f"La página {s['url']} traía instrucciones para la IA; las quité: {s['sospechoso'][0][:120]}", "SEGURIDAD")
     return s
 
 
@@ -299,6 +319,12 @@ def _save_report(report, sources, topic, folder=None):
         doc.add_heading("Fuentes", 1)
         for i, s in enumerate(sources, 1):
             doc.add_paragraph(f"[{i}] {s['titulo']} — {s['fuente']}. {s['url']}")
+        if report.get("nota") or report.get("evidencia"):        # 12.39: cómo se comprobó
+            doc.add_heading("Cómo se comprobó", 1)
+            if report.get("nota"):
+                doc.add_paragraph(report["nota"]).italic = True
+            for ln in report.get("evidencia") or []:
+                doc.add_paragraph(ln, style="List Bullet")
         path = base + ".docx"
         doc.save(path)
     else:
@@ -308,9 +334,11 @@ def _save_report(report, sources, topic, folder=None):
     return path
 
 
-def research(topic, sync=False, folder=None, full=False):
+def research(topic, sync=False, folder=None, full=False, minutes=0):
     """Investiga a fondo. sync=True: espera y devuelve el texto (Telegram, tareas, MCP).
-    folder: dónde guardar el informe; full=True (con sync): devuelve {"msg", "path", "resumen"} (proyectos)."""
+    folder: dónde guardar el informe; full=True (con sync): devuelve {"msg", "path", "resumen"} (proyectos).
+    12.39: minutes = cuánto tiempo darle (más búsquedas, más fuentes y rondas de repaso). Cada dato del informe se
+    comprueba con código contra el texto de su página: lo que no está, no entra."""
     if J.is_offline():
         msg = "Ahora no hay internet, así que no puedo investigar."
         if sync:
@@ -322,10 +350,13 @@ def research(topic, sync=False, folder=None, full=False):
         if not sync:
             J.reply(msg, "INVESTIGA")
         return msg
+    n_q, n_src, rounds = investigar.budget_size(minutes)
     if not sync:
-        J.reply(f"Investigo a fondo sobre {topic}: busco, leo las fuentes y te preparo un informe con citas. "
-                "Me toma uno o dos minutos; te aviso cuando esté.", "INVESTIGA")
+        J.reply(f"Investigo a fondo sobre {topic}" + (f" durante unos {minutes} minutos" if minutes else "") +
+                ": busco, leo las fuentes, compruebo cada dato contra su página y te preparo un informe con citas. "
+                + ("Puedes seguir hablándome; " if minutes else "Me toma uno o dos minutos; ") + "te aviso cuando esté.", "INVESTIGA")
     out = {}
+    research_state.update(topic=topic, stage="plan", started=time.time(), deadline=time.time() + max(90, minutes * 60), stop=False)
 
     def work():
         research_state["busy"] = True
@@ -335,23 +366,62 @@ def research(topic, sync=False, folder=None, full=False):
             plan = investigar.default_plan(topic)
             if ai_ok:
                 try:
-                    plan = investigar.parse_plan(J.ai_chat([{"role": "user", "content": investigar.plan_prompt(topic)}],
-                                                           json_mode=True, max_tokens=250), topic)
+                    plan = investigar.parse_plan(J.ai_chat([{"role": "user", "content": investigar.plan_prompt(topic, n_q)}],
+                                                           json_mode=True, max_tokens=400), topic)
                 except Exception:
                     pass
-            sources = J._sources_for(plan)
+            research_state["stage"] = "busco"
+            sources = J._sources_for_more(plan, n_src) if n_src > investigar.MAX_SOURCES else J._sources_for(plan)
             if not sources:
                 out["msg"] = f"No encontré fuentes en internet sobre {topic}. Prueba con otras palabras."
                 return
+            research_state["stage"] = "leo"
             with ThreadPoolExecutor(max_workers=6) as ex:
                 sources = list(ex.map(J._read_page, sources))
-            report = None
+            report, ok, bad, unknown, flagged = None, [], [], 0, sum(1 for s in sources if s.get("sospechoso"))
             if ai_ok:
                 try:
-                    txt = J.ai_chat([{"role": "user", "content": investigar.report_prompt(topic, sources)}], max_tokens=2400)
-                    report = investigar.parse_report(txt, topic)
+                    research_state["stage"] = "compruebo"
+                    ok, bad = J._research_findings(topic, sources, [])
+                    for _ in range(rounds):                     # repaso: lo que falta, mientras quede tiempo
+                        if research_state.get("stop") or time.time() > research_state["deadline"] - 60 or not ok:
+                            break
+                        research_state["stage"] = "repaso"
+                        extra_q = J._research_gaps(topic, ok)
+                        if not extra_q:
+                            break
+                        known = {s["url"] for s in sources}
+                        more = [x for x in J._sources_for(extra_q) if x["url"] not in known][:4]
+                        if not more:
+                            break
+                        with ThreadPoolExecutor(max_workers=4) as ex:
+                            more = list(ex.map(J._read_page, more))
+                        base = len(sources)
+                        sources += more
+                        flagged += sum(1 for s in more if s.get("sospechoso"))
+                        o2, b2 = J._research_findings(topic, sources, [x["dato"] for x in ok], only_from=base)
+                        ok += o2
+                        bad += b2
+                    if ok:
+                        research_state["stage"] = "escribo"
+                        txt = J.ai_chat([{"role": "user", "content": investigar.verified_report_prompt(topic, ok, sources)}], max_tokens=2600)
+                        report, mapping, unknown = investigar.check_report(investigar.parse_report(txt, topic), ok)
+                        sources = investigar.renumber_sources(sources, mapping)
+                        report["evidencia"] = investigar.evidence_lines(ok, mapping)
+                        report["nota"] = investigar.check_note(ok, bad, unknown, flagged)
+                        for x in ok:
+                            x["fuente"] = mapping[x["fuente"]]
                 except Exception as e:
-                    J.log_terminal(f"Investigación: la IA no pudo escribir el informe ({e}).", "AVISO")
+                    J.log_terminal(f"Investigación: la comprobación de datos no terminó ({e}); uso el informe de siempre.", "AVISO")
+                    report = None
+                if not report:                                 # sin datos comprobados: el informe de siempre, avisando
+                    try:
+                        txt = J.ai_chat([{"role": "user", "content": investigar.report_prompt(topic, sources) + confianza.RULE}], max_tokens=2400)
+                        report = investigar.parse_report(txt, topic)
+                        report["nota"] = ("Comprobación: no pude verificar las citas palabra por palabra esta vez; revisa las fuentes "
+                                          "antes de usar un dato.")
+                    except Exception as e:
+                        J.log_terminal(f"Investigación: la IA no pudo escribir el informe ({e}).", "AVISO")
             if not report or (not report["resumen"] and not report["secciones"]):
                 report = investigar.fallback_report(topic, sources)
             path = J._save_report(report, sources, topic, folder)
@@ -360,14 +430,18 @@ def research(topic, sync=False, folder=None, full=False):
             J.generated_files.add(path)
             opened = J._open_doc(path) if not folder else False
             where = "Documentos, carpeta Jarvis, Investigaciones" + ("" if opened else f" ({os.path.basename(path)})")
-            out["msg"] = investigar.spoken_summary(report, len(sources), where)
+            out["msg"] = investigar.spoken_summary(report, len(sources), where) + (
+                f" Comprobé {len(ok)} datos contra sus páginas." if ok else "")
             out["path"] = path
+            out["comprobados"], out["descartados"] = len(ok), len(bad)
             diario.log("busqueda", f"investigación: {topic}")
-            J.log_terminal(f"Investigación «{topic}»: {len(sources)} fuentes, {time.time() - t0:.0f} s → {path}", "INVESTIGA")
+            J.log_terminal(f"Investigación «{topic}»: {len(sources)} fuentes, {len(ok)} datos comprobados, {len(bad)} descartados, "
+                           f"{time.time() - t0:.0f} s → {path}", "INVESTIGA")
         except Exception as e:
             out["msg"] = f"No pude terminar la investigación: {e}"
         finally:
             research_state["busy"] = False
+            research_state["stage"] = ""
         if not sync:
             J.notify(out["msg"], "INVESTIGA")
             if out.get("path"):
@@ -378,6 +452,65 @@ def research(topic, sync=False, folder=None, full=False):
         return out if full else out.get("msg", "")
     J.start_job("Investigando", work, "investigacion")
     return ""
+
+
+def _sources_for_more(plan, limit):
+    groups = []
+    for q in plan:
+        res = []
+        for lite in (False, True):
+            try:
+                res = buscar.parse_results(J._get_text(buscar.search_url(q, lite=lite), timeout=12), limit=8)
+            except Exception as e:
+                J.log_terminal(f"Investigación, búsqueda «{q}»: {e}", "AVISO")
+            if res:
+                break
+        groups.append(res)
+    return investigar.merge_results(groups, limit=limit)
+
+
+def _research_findings(topic, sources, known, only_from=0):
+    """Pide los datos con su cita textual y los comprueba con código. → (comprobados, descartados)."""
+    subset = [dict(s, leida=s.get("leida") if i >= only_from else False) for i, s in enumerate(sources)]
+    raw = J.ai_chat([{"role": "user", "content": investigar.findings_prompt(topic, subset, known)}], json_mode=True, max_tokens=3500)
+    found = [x for x in investigar.parse_findings(raw, len(sources)) if x["fuente"] - 1 >= only_from]
+    return investigar.verify_findings(found, sources)
+
+
+def _research_gaps(topic, findings):
+    try:
+        d = J.ai_chat([{"role": "user", "content": investigar.review_prompt(topic, findings)}], json_mode=True, max_tokens=300)
+        m = re.search(r"\{.*\}", str(d), re.S)
+        qs = json.loads(m.group(0) if m else d).get("busquedas") or []
+        return [str(q).strip() for q in qs if str(q).strip()][:3]
+    except Exception:
+        return []
+
+
+_R_HOW = re.compile(r"\bcomo va (?:la )?investigacion\b|\bya (?:casi )?terminas(?:te)? (?:la )?investigacion\b")
+_R_STOP = re.compile(r"\b(?:ya (?:es )?suficiente|ya basta|ya,? escribelo|terminala ya|escribe ya el informe)\b.*\binvestigacion\b|"
+                     r"\b(?:escribe|escribeme) (?:ya )?(?:el informe|lo que tengas) de la investigacion\b|\bya,? escribe (?:el informe|lo que tengas)\b")
+_STAGE = {"plan": "planeando las búsquedas", "busco": "buscando fuentes", "leo": "leyendo las páginas", "compruebo": "sacando y comprobando datos",
+          "repaso": "repasando qué falta", "escribo": "escribiendo el informe"}
+
+
+def research_control_voice(text, t):
+    """12.39: «¿cómo va la investigación?», «ya, escribe lo que tengas»."""
+    if not research_state.get("busy"):
+        if _R_HOW.search(t):
+            J.reply("No estoy investigando nada ahora.", "INVESTIGA")
+            return True
+        return False
+    if _R_HOW.search(t):
+        mins = (time.time() - research_state.get("started", time.time())) / 60
+        J.reply(f"Voy {_STAGE.get(research_state.get('stage'), 'trabajando')} sobre «{research_state.get('topic')}» (llevo {mins:.0f} min).", "INVESTIGA")
+        return True
+    if _R_STOP.search(t):
+        research_state["stop"] = True
+        research_state["deadline"] = time.time()
+        J.reply("Listo: no busco más y escribo el informe con lo que ya comprobé.", "INVESTIGA")
+        return True
+    return False
 
 
 @J.socketio.on("research_folder")
@@ -397,5 +530,7 @@ __all__ = [
     '_read_page', '_save_report', '_sources_for', 'fetch_guide', 'guides_ctx', 'guides_for', 'guides_start',
     'handle_guias_delete', 'handle_guias_folder', 'handle_guias_install', 'handle_guias_list', 'handle_guias_preview',
     'handle_research_folder', 'research', 'research_state', 'research_topic', 'research_voice', 'router_catalog',
+    '_MINUTES', '_NUMW', '_R_HOW', '_R_STOP', '_STAGE', '_research_findings', '_research_gaps', '_sources_for_more',
+    'research_control_voice', 'research_minutes',
     'tool_stats', 'tools_start',
 ]

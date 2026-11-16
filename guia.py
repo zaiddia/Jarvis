@@ -19,6 +19,9 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Más confiable (12.39)", ["investiga a fondo los portátiles para docentes durante 10 minutos", "¿cómo va la investigación?",
+                               "esta noche a las 2 investiga las becas para docentes en Colombia", "¿qué tengo programado?",
+                               "pasa el reporte de la mañana a las 6:45", "no me hables sin que te pregunte entre las 11 de la noche y las 6 de la mañana"]),
     ("Docente automático (12.38)", ["usa este formato para los planes de clase de séptimo", "¿qué formatos tengo?", "haz el respaldo de notas",
                                      "hazme el resumen docente de la semana", "prepárame las clases de mañana"]),
     ("Drive docente (12.37)", ["crea las carpetas docentes en Drive", "abre mi Drive docente"]),

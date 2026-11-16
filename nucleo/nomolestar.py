@@ -47,7 +47,14 @@ def dnd_intercept(text, origin):
     """Lo llama notify: True si el aviso se guardó o se mostró en silencio (no se dice en voz alta)."""
     r = dnd_reason()
     if not r:
-        return False
+        if not J.quiet_holds(origin):                  # 12.39: horas de silencio: solo lo que nadie pidió espera
+            return False
+        r = "horas de silencio"
+        J.log_terminal(text, origin)
+        dnd["was"] = r
+        dnd["queue"].append({"t": text, "o": origin, "h": time.strftime("%H:%M")})
+        del dnd["queue"][:-40]
+        return True
     dnd["was"] = r
     J.log_terminal(text, origin)
     if origin in CRITICAL:
@@ -68,7 +75,8 @@ def dnd_flush(intro=None):
     q, dnd["queue"] = dnd["queue"], []
     if not q:
         return False
-    head = intro or {"clase": "Mientras estabas en clase", "videollamada": "Mientras estabas en la videollamada"}.get(dnd["was"], "Mientras no te molesté")
+    head = intro or {"clase": "Mientras estabas en clase", "videollamada": "Mientras estabas en la videollamada",
+                     "horas de silencio": "Mientras eran tus horas de silencio"}.get(dnd["was"], "Mientras no te molesté")
     items = [x["t"] for x in q]
     msg = f"{head}: " + " ".join(items[:5]) + (f" Y {len(items) - 5} avisos más en el registro." if len(items) > 5 else "")
     J.reply(msg, "AVISOS")
@@ -78,9 +86,9 @@ def dnd_flush(intro=None):
 def _dnd_worker():
     while True:
         try:
-            if dnd["queue"] and not dnd_reason():
+            if dnd["queue"] and not dnd_reason() and not J.quiet_holds("AVISOS"):
                 time.sleep(4)                                  # que termine de salir de la llamada o de la clase
-                if not dnd_reason():
+                if not dnd_reason() and not J.quiet_holds("AVISOS"):
                     dnd_flush()
         except Exception as e:
             J.note_error("NO MOLESTAR", e)

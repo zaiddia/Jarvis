@@ -3,6 +3,7 @@
 Parte de Jarvis (antes dentro de jarvis.py). Los nombres globales de Jarvis se usan como J.<nombre>.
 """
 import buscar
+import confianza
 import infodia
 import json
 import os
@@ -11,6 +12,7 @@ import skills
 import tempfile
 import threading
 import time
+import urllib.error
 import urllib.request
 
 from nucleo import J
@@ -29,6 +31,30 @@ def _get_text(url, timeout=12):
                                                "Accept-Language": "es-CO,es;q=0.9"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read().decode("utf-8", "replace")
+
+
+class _PublicRedirects(urllib.request.HTTPRedirectHandler):
+    """12.39: cada salto de una redirección se revisa otra vez (una página pública no puede mandarte a tu red)."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not confianza.public_url(newurl):
+            raise urllib.error.URLError("la página redirige a una dirección de tu red local; no la sigo")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _get_public(url, timeout=12):
+    """12.39: leer una página de internet que no elegiste tú del todo (buscador, enlaces, vigilante): nunca hacia tu
+    red local ni tu equipo, ni siquiera tras una redirección; como mucho 3 MB."""
+    fake = getattr(J._get_text, "__module__", "") != __name__        # (en las pruebas, la red es de mentira)
+    if not confianza.public_url(url, resolve=not fake):
+        raise ValueError("ese enlace apunta a tu red local o a este equipo; por seguridad no lo abro")
+    if fake:
+        return J._get_text(url, timeout=timeout)
+    req = urllib.request.Request(url, headers={"User-Agent": f"Mozilla/5.0 (Jarvis/{J.VERSION})",
+                                               "Accept-Language": "es-CO,es;q=0.9"})
+    opener = urllib.request.build_opener(_PublicRedirects())
+    with opener.open(req, timeout=timeout) as r:
+        return r.read(3_000_000).decode("utf-8", "replace")
 
 
 def _geo(city):
@@ -446,6 +472,7 @@ def tono_sismo_alerta():
 
 
 __all__ = [
+    '_PublicRedirects', '_get_public',
     'FORECAST_URL',
     'GEO_URL',
     'TELEGRAM_API',

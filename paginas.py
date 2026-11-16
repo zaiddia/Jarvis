@@ -4,6 +4,7 @@ Jarvis revisa la página cada cierto tiempo (6 horas por defecto), compara su te
 contenido nuevo, te avisa con lo nuevo (resumido por la IA si está conectada). Sirve para circulares de la Secretaría de
 Educación, convocatorias, noticias del colegio o cualquier página pública.
 """
+import confianza
 import datetime
 import hashlib
 import json
@@ -118,4 +119,5 @@ def check(item, text, now=None):
 
 def summary_prompt(nombre, new_lines):
     return (f"En la página «{nombre}» apareció este texto nuevo. Resume en 1 a 3 frases, en español y sin inventar nada, qué "
-            "publicaron de nuevo (si es solo un cambio menor de menús o fechas, dilo en una frase):\n" + "\n".join(new_lines[:40])[:5000])
+            "publicaron de nuevo (si es solo un cambio menor de menús o fechas, dilo en una frase):\n"
+            + confianza.wrap("\n".join(new_lines[:40])[:5000], "PÁGINA") + confianza.RULE)

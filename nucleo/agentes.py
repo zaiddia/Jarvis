@@ -335,7 +335,10 @@ def run_project(st):
                 if ctl["cancel"] or project_run.get("cancel"):
                     ctl["cancel"] = True
                     break
-                for step in ([] if ctl["pause"] else proyectos.ready_steps(st)):
+                waiting = time.time() < ctl.get("quota_until", 0)   # 12.39: sin cuota: el proyecto espera, no se pierde
+                if not waiting and st.get("estado") == "esperando cuota":
+                    st["estado"] = "en marcha"
+                for step in ([] if ctl["pause"] or waiting else proyectos.ready_steps(st)):
                     if len(running) >= workers:
                         break
                     step.update(estado="en marcha", inicio=time.time(), error="")
@@ -345,6 +348,9 @@ def run_project(st):
                 _card(st)
                 _emit_project(st)
                 if not running:
+                    if waiting and not proyectos.finished(st):
+                        time.sleep(1)
+                        continue
                     if ctl["pause"] and not proyectos.finished(st):
                         time.sleep(0.5)                    # en pausa: espera a que digas «sigue»
                         continue
@@ -359,8 +365,18 @@ def run_project(st):
                         if step["archivo"]:
                             J.generated_files.add(step["archivo"])
                     except Exception as e:
-                        step.update(estado="error", error=str(e)[:300], fin=time.time())
-                        J.log_terminal(f"Paso «{step['titulo']}»: {e}", "AVISO")
+                        if _is_quota(e) and step.get("esperas", 0) < QUOTA_WAITS:
+                            step.update(estado="pendiente", esperas=step.get("esperas", 0) + 1, error="")
+                            ctl["quota_until"] = time.time() + J.QUOTA_PAUSE
+                            st["estado"] = "esperando cuota"
+                            J.log_terminal(f"Paso «{step['titulo']}»: no hay cuota de IA; espero {max(1, J.QUOTA_PAUSE // 60)} minutos y sigo "
+                                           f"desde aquí (intento {step['esperas']} de {QUOTA_WAITS}).", "PROYECTO")
+                            if step["esperas"] == 1:
+                                J.notify(f"Se acabó la cuota de la IA en «{st['nombre']}». No pierdo nada: espero {max(1, J.QUOTA_PAUSE // 60)} minutos "
+                                         "y sigo desde el paso en que iba.", "PROYECTO")
+                        else:
+                            step.update(estado="error", error=str(e)[:300], fin=time.time())
+                            J.log_terminal(f"Paso «{step['titulo']}»: {e}", "AVISO")
                     proyectos.save(st)
                     _emit_project(st)
         if ctl["cancel"]:
@@ -597,11 +613,38 @@ def project_voice(text, t):
     return True
 
 
+QUOTA_PAUSE = 300
+QUOTA_WAITS = 6
+MAX_INTERRUPTIONS = 3
+AUTO_RESUME_SECS = 6 * 3600
+ACTING = ("correo", "orden", "adjunto")
+
+
+def _is_quota(e):
+    return getattr(e, "kind", "") in ("quota",) or "cuota" in str(e).lower() or "429" in str(e)
+
+
 def _projects_at_start():
+    """12.39: lo que se cortó (reinicio, apagón) sigue desde el último paso guardado. Un proyecto cortado 3 veces se da
+    por fallido (no se reintenta para siempre). Si se cortó hace menos de 6 h y lo que falta no envía ni hace nada en
+    tu PC, sigue solo; si no, te pregunta."""
+    now = time.time()
     for st in proyectos.unfinished():
-        st["estado"] = "interrumpido"
+        if st.get("estado") in ("en marcha", "esperando cuota"):
+            st["interrupciones"] = int(st.get("interrupciones", 0)) + 1
+        st["estado"] = "interrumpido" if int(st.get("interrupciones", 0)) < MAX_INTERRUPTIONS else "fallido"
+        if st["estado"] == "fallido":
+            J.log_terminal(f"El proyecto «{st['nombre']}» se cortó {st['interrupciones']} veces; lo doy por fallido (lo hecho quedó en su carpeta).", "PROYECTO")
         proyectos.save(st)
-    left = proyectos.unfinished()
+    left = [p for p in proyectos.unfinished() if p.get("estado") != "fallido"]
+    auto = [p for p in left if J.settings.get("project_auto_resume", True)
+            and now - float(p.get("actualizado") or p.get("creado") or 0) < AUTO_RESUME_SECS
+            and not any(s["estado"] != "hecho" and s["tipo"] in ACTING for s in p["pasos"])]
+    for st in auto[-MAX_PROJECTS:]:
+        hechos = sum(1 for p in st["pasos"] if p["estado"] == "hecho")
+        J.notify(f"Se había cortado «{st['nombre']}» ({hechos} de {len(st['pasos'])} pasos hechos). Sigo desde ahí.", "PROYECTO")
+        threading.Thread(target=J.run_project, args=(st,), daemon=True, name="proyecto-sigue").start()
+    left = [p for p in left if p not in auto]
     if left:
         st = left[-1]
         hechos = sum(1 for p in st["pasos"] if p["estado"] == "hecho")
@@ -726,6 +769,7 @@ def agents_start():
 
 
 __all__ = [
+    'ACTING', 'AUTO_RESUME_SECS', 'MAX_INTERRUPTIONS', 'QUOTA_PAUSE', 'QUOTA_WAITS', '_is_quota',
     'BARE_WINDOW', '_APPROVALS_LIST', '_HISTORY', '_NO_ID', '_PRJ_CANCEL', '_PRJ_RESUME', '_PRJ_STATUS', '_YES_ID',
     '_approvals_worker', '_callbacks', '_card', '_docx_text', '_projects_at_start', '_write_index', 'agent_info',
     'run_daily_step', 'MAX_PROJECTS', '_PRJ_BOARD', '_PRJ_PAUSE', '_emit_project', '_pb', '_report_docx', '_project_report', '_routed_step', '_running', '_sync_run', 'handle_open_projects_page', 'handle_projects_state', 'open_projects_page', 'project_public', 'project_report', 'project_runs', 'projects_board', 'projects_page', 'report_edit', 'agents_start', 'approvals_answer', 'approvals_voice', 'handle_agent_info', 'handle_approval_resolve',

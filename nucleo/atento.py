@@ -3,6 +3,7 @@ de un enlace o de un texto que pegas (también la lectura nivelada en tres nivel
 
 Los nombres globales de Jarvis se usan como J.<nombre>.
 """
+import confianza
 import datetime
 import re
 import threading
@@ -235,14 +236,15 @@ def link_material_voice(text, t):
 
     def work():
         try:
-            body = investigar.page_text(J._get_text(link, timeout=15)[:800000])
+            body = investigar.page_text(J._get_public(link, timeout=15)[:800000])
         except Exception as e:
             J.notify(f"No pude abrir la página ({e}). Copia el texto y dímelo con «nivela este texto: …».", "AULA")
             return
         if len(body) < 200:
             J.notify("Esa página casi no tiene texto que pueda leer (puede pedir inicio de sesión). Copia el texto y pégamelo.", "AULA")
             return
-        J.generate_material(f"{head}. Basado en el contenido de esta página ({investigar.host(link)}):\n{body[:7000]}", kind)
+        J.generate_material(f"{head}. Basado en el contenido de esta página ({investigar.host(link)}):\n"
+                            + confianza.wrap(body[:7000], "PÁGINA") + confianza.RULE, kind)
     J.start_job("Leyendo la página para el material", work, "enlace")
     return True
 
