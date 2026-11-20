@@ -157,6 +157,19 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Profesor particular y comprador inteligente (v12.40)
+
+- **Tu profesor particular de lo que quieras.** «Quiero aprender inglés» (o guitarra, Excel, cocina…; «desde cero», «nivel B1», «20 minutos al día»): Jarvis arma un plan de 24 lecciones cortas.
+  - «Dame la lección de hoy»: explicación corta, ejemplos y ejercicios que respondes uno por uno («pista», «no sé», «salir de la lección»). Si dices una orden corta en medio («sube el volumen»), se cumple sin romper la lección.
+  - Lo que aprendes y lo que fallas queda en **tarjetas de repaso con repetición espaciada**: «repasa inglés» trae solo las que tocan hoy (lo que sabes vuelve cada vez más tarde; lo que fallas, mañana).
+  - **«Practica inglés conmigo»** (también francés, portugués, alemán, italiano…): Jarvis conversa en el idioma, con frases para tu nivel, y si te equivocas agrega «Corrección: …» en español. Hablando funciona mejor con la voz en vivo; escribiendo también vale. «Termina la práctica».
+  - Recordatorio diario (por defecto a las 7 de la noche; «recuérdame practicar inglés a las 6 de la tarde»), racha de días seguidos y «¿cómo voy en inglés?»: lecciones, racha, tarjetas dominadas y porcentaje de acierto.
+- **Comprador inteligente.** «Quiero comprar un portátil de unos 2 millones para trabajar y ver películas», «ayúdame a escoger una nevera de 1,5 millones», «¿qué celular me recomiendas de 800 mil?»:
+  - Busca en Alkosto, Ktronix, Éxito, Falabella y Mercado Libre, y **comprueba con código que el precio de cada producto está de verdad en su página** (igual que las citas de la v12.39). Lo que no se puede comprobar, o se pasa del presupuesto (más de 10 %), se descarta y queda anotado.
+  - Te dice el más barato y el que más te conviene para tu uso, y deja en Word la tabla con precios, tiendas, enlaces, pros, contras, consejos de compra y «Cómo se comprobó».
+  - **«Vigila el precio del 2»** (o «del recomendado», «del más barato»): lo revisa dos veces al día y te avisa si baja al menos 3 %. «¿Qué precios estás vigilando?», «deja de vigilar el precio del portátil».
+  - «Quiero comprar leche» sigue siendo de la lista del mercado: el comparador solo entra si das un presupuesto, un uso o pides una recomendación.
+
 ## Más confiable: citas comprobadas, tareas que sobreviven y agenda (v12.39)
 
 Ideas tomadas de Mark LVII (FatihMakes, CC BY-NC 4.0) y escritas desde cero para Jarvis; no se copió código.

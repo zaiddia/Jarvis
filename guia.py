@@ -19,6 +19,10 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Profesor particular (12.40)", ["quiero aprender inglés desde cero", "dame la lección de hoy", "repasa inglés", "practica inglés conmigo",
+                                     "¿cómo voy en inglés?", "recuérdame practicar guitarra a las 6 de la tarde"]),
+    ("Comprador inteligente (12.40)", ["quiero comprar un portátil de unos 2 millones para trabajar", "¿qué celular me recomiendas de 800 mil?",
+                                       "vigila el precio del recomendado", "¿qué precios estás vigilando?"]),
     ("Más confiable (12.39)", ["investiga a fondo los portátiles para docentes durante 10 minutos", "¿cómo va la investigación?",
                                "esta noche a las 2 investiga las becas para docentes en Colombia", "¿qué tengo programado?",
                                "pasa el reporte de la mañana a las 6:45", "no me hables sin que te pregunte entre las 11 de la noche y las 6 de la mañana"]),

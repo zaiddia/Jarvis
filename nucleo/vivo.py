@@ -150,7 +150,7 @@ def _live_system():
         recent = " Conversación reciente: " + " | ".join(
             f"{'Usuario' if m['role'] == 'user' else 'Tú'}: {str(m['content'])[:200]}" for m in hist) + "."
     return (J.settings["system_prompt"] + J.VOICE_RULE + f" Hoy es {J.fecha_hablada(now.date())}, son las "
-            f"{now:%H:%M}." + J._notes_ctx() + J._user_ctx() + recent + J.LIVE_RULE)
+            f"{now:%H:%M}." + J._notes_ctx() + J._user_ctx() + recent + J.LIVE_RULE + J.study_ctx())
 
 
 def _live_attempts():

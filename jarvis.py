@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.39"
+VERSION = "12.40"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1671,6 +1671,10 @@ def process_command(text):
     if not getattr(_tl, "nl_pass", False):
         _tl.nl_tried = ""                             # 12.29: la comprensión, una vez por frase
         _tl.nl_verdict = ""
+    if session_answer(text, t):                       # 12.40: en una lección o un repaso, lo que dices es tu respuesta
+        return
+    if _st["convo"] and (study_voice(text, t) or convo_answer(text, t)):   # 12.40: práctica de conversación en otro idioma
+        return
     if not getattr(_tl, "polite", False):
         order = polite_to_order(t)
         if order and order != t:
@@ -1754,6 +1758,8 @@ def process_command(text):
     if dnd_voice(text, t) or guide_voice(text, t) or autotest_voice(text, t) or compartir_voice(text, t):   # 12.16
         return
     if agenda_voice(text, t) or quiet_voice(text, t):   # 12.39: «esta noche a las 2 investiga…», «¿qué tengo programado?», horas de silencio
+        return
+    if study_voice(text, t) or shop_voice(text, t):     # 12.40: profesor particular y comprador inteligente
         return
     if pc_doctor_voice(text, t) or mi_dia_voice(text, t):   # 12.15: médico del PC, vencimientos, medicamentos, citas, cumpleaños, presupuesto…
         return
@@ -2519,6 +2525,8 @@ def _school_gate(fn):
 from nucleo.drivedocente import *  # noqa: F401,F403,E402
 from nucleo.docenteauto import *  # noqa: F401,F403,E402
 from nucleo.agenda import *  # noqa: F401,F403,E402
+from nucleo.particular import *  # noqa: F401,F403,E402
+from nucleo.compras import *  # noqa: F401,F403,E402
 
 
 def _skill_note(fn, name):

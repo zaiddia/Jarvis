@@ -146,10 +146,11 @@ def later_tick(now=None):
 def _ag_worker():
     time.sleep(60)
     while True:
-        try:
-            J.later_tick()
-        except Exception as e:
-            J.note_error("AGENDA", e)
+        for fn in (J.later_tick, J.study_tick, J.watch_tick):   # 12.40: práctica diaria y precios vigilados
+            try:
+                fn()
+            except Exception as e:
+                J.note_error("AGENDA", e)
         time.sleep(60)
 
 
