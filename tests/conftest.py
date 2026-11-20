@@ -101,6 +101,11 @@ def _modo_docente(request, monkeypatch):
     if "jv" in request.fixturenames:
         import jarvis
         monkeypatch.setitem(jarvis.settings, "assistant_mode", "docente")
+        # 12.40: una práctica de idioma o una lección abierta en una prueba no se cuela en la siguiente
+        monkeypatch.setitem(jarvis._st, "convo", "")
+        monkeypatch.setitem(jarvis._st, "session", None)
+        monkeypatch.setitem(jarvis._cm, "busy", False)
+        monkeypatch.setitem(jarvis._cm, "last", None)
 
 
 @pytest.fixture

@@ -15,12 +15,14 @@ import json
 import os
 import re
 import threading
+import time
 
 import cursopersonal as CP
 from nucleo import J
 
 _st = {"lock": threading.Lock(), "session": None, "convo": ""}
 CP_ORIGIN = "PROFESOR"
+CONVO_IDLE = 30 * 60
 
 
 def _cp_path():
@@ -285,7 +287,7 @@ def start_convo(lang):
             d["cursos"][key] = CP.new_course(lang)            # sin plan todavía: igual puedes conversar
         d["activo"] = key
         cp_save(d)
-    _st["convo"] = key
+    _st["convo"], _st["convo_t"] = key, time.time()
     c = d["cursos"][key]
     try:
         if J.live.get("active"):
@@ -320,6 +322,11 @@ def convo_answer(text, t):
     la comprensión de órdenes en español (una llamada menos y nada de confusiones con frases en inglés)."""
     if not _st["convo"] or _CONVO_OFF.search(t) or _EXIT.match(t):
         return False
+    if time.time() - _st.get("convo_t", time.time()) > CONVO_IDLE:   # media hora sin hablar: la práctica terminó sola
+        _st["convo"] = ""
+        J.log_terminal("La práctica de idioma terminó sola (media hora sin hablar).", CP_ORIGIN)
+        return False
+    _st["convo_t"] = time.time()
     words = t.split()
     if words and words[0][:5] in J.nl_starters() and len(words) <= 6:
         return False
@@ -435,6 +442,6 @@ def study_tick(now=None):
     return sent
 
 
-__all__ = ['CP_ORIGIN', '_CONVO', '_CONVO_OFF', '_DROP', '_EXIT', '_HINT', '_HOW', '_LEARN', '_LESSON', '_REMIND', '_REVIEW', '_SKIP', '_ask_current',
+__all__ = ['CONVO_IDLE', 'CP_ORIGIN', '_CONVO', '_CONVO_OFF', '_DROP', '_EXIT', '_HINT', '_HOW', '_LEARN', '_LESSON', '_REMIND', '_REVIEW', '_SKIP', '_ask_current',
            '_cp_path', '_find', '_grade', '_st', 'convo_answer', 'cp_load', 'cp_save', 'end_convo', 'finish_session', 'learn_voice_start', 'make_course',
            'session_answer', 'start_convo', 'start_lesson', 'study_review', 'study_ctx', 'study_tick', 'study_voice']
