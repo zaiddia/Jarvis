@@ -860,6 +860,7 @@
         status.textContent = `${ok ? "✓" : "✕"} ${lista}; ${res.test_msg || ""}`
           + (ok && (pick || dirty) ? " ⚠ Pulsa «Guardar» para que Jarvis la use: probar no guarda." : "");
         toast(ok ? "La IA responde correctamente." : "La IA no responde: mira el motivo.", ok ? "ok" : "err");
+        if (ok && !dirty) socket.emit("get_settings", (r) => { if (r && r.offline_info) { meta.offline_info = r.offline_info; renderAiNow(r.offline_info.ahora); } });   // 12.45
       } else {
         status.className = "status ok";
         status.textContent = `✓ Conectado · ${lista}. Pulsa «Probar» para comprobar que responde.`;

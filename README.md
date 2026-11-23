@@ -157,6 +157,11 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Arreglo (v12.45)
+
+- Al pulsar «Probar» y responder bien, «Ahora responde» se pone en verde de inmediato (antes podía seguir en rojo hasta un minuto
+  por un error viejo, por ejemplo de cuando aún no había clave). Si la IA tarda más de 12 s en contestar una palabra, la prueba lo avisa.
+
 ## Kimi K3.1 Pro gratis con NVIDIA Build (v12.44)
 
 - Nuevo proveedor en Ajustes › Inteligencia artificial: **NVIDIA Build (Kimi K3.1 Pro gratis)**. Se crea una cuenta en

@@ -22,3 +22,13 @@ def test_la_voz_no_lee_el_razonamiento(jv):
     parts = ["Ho", "la <thi", "nk>esto no", " se dice</th", "ink> profe", ", ¿qué tal?"]
     assert "".join(jv.skip_think(iter(parts))) == "Hola  profe, ¿qué tal?"
     assert "".join(jv.skip_think(iter(["2 < 3 y", " listo"]))) == "2 < 3 y listo"
+
+
+def test_probar_bien_pone_en_verde(jv, monkeypatch):
+    monkeypatch.setitem(jv.settings, "ai_provider", "nvidia")
+    monkeypatch.setitem(jv.settings, "nvidia_api_key", "nvapi-prueba")
+    monkeypatch.setitem(jv.state, "ai", "error")
+    monkeypatch.setattr(jv, "ai_list_models", lambda cfg: ["moonshotai/kimi-k3.1-pro"])
+    monkeypatch.setattr(jv, "_cloud_chat", lambda cfg, m, *a, **k: "listo")
+    r = jv.ai_test({"ai_provider": "nvidia"})
+    assert r["test_ok"] and jv.state["ai"] == "ok" and jv.ai_now()["donde"] == "nube"

@@ -735,8 +735,13 @@ def ai_test(override=None):
                 model=model, messages=msgs, options={"num_predict": 8})["message"]["content"]
         else:
             out = J._cloud_chat(dict(cfg, model=model), msgs)
+        secs = time.time() - t0
+        if override is None or cfg["ai_provider"] == J.settings.get("ai_provider"):
+            J.set_state(ai="ok", ai_label=f"{cfg['label']} · {model}")    # 12.45: «Ahora responde» se pone al día ya
+        slow = (f" Ojo: tardó {secs:.0f} s en una respuesta de una palabra; para conversar por voz puede sentirse lento."
+                if secs > 12 else "")
         return {"models": models, "recommended": rec, "model": model, "test_ok": True,
-                "test_msg": f"responde bien con «{model}» ({time.time() - t0:.1f} s): «{out.strip()[:40]}»"}
+                "test_msg": f"responde bien con «{model}» ({secs:.1f} s): «{out.strip()[:40]}».{slow}"}
     except Exception as e:
         why = getattr(e, "why", str(e))
         res = {"models": models, "recommended": rec, "model": model, "test_ok": False,
