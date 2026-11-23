@@ -157,6 +157,13 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## ¿Por qué tarda pensando? (v12.49)
+
+- «Jarvis, ¿por qué tardas?» ahora cuenta cada consulta a la IA de la última respuesta: cuántas fueron (entender la orden,
+  responder), cuánto tardó cada una, con qué modelo y si le mandé mucho texto.
+- Si una IA rechaza un parámetro (por ejemplo «pensar poco»), Jarvis lo recuerda y no lo vuelve a mandar: antes perdía una
+  petición completa en cada respuesta con esa IA.
+
 ## IteraCompute y respaldo entre las IA gratis (v12.48)
 
 - Nuevo proveedor **IteraCompute (Qwen3.8 27B gratis)**: hasta 30 millones de tokens al mes, sin tarjeta. Clave en

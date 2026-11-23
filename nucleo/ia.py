@@ -134,9 +134,16 @@ def _drop_path(obj, path):
     return obj
 
 
+_rejected = {}                                         # 12.49: (servidor, modelo) → parámetros que no acepta (no se vuelven a mandar)
+
+
 def _post(url, headers, payload, optional=(), timeout=180, stream=False):
     """POST que se adapta: si el proveedor rechaza un parámetro opcional (temperatura,
-    modo JSON, «pensamiento»...), lo quita y reintenta una vez."""
+    modo JSON, «pensamiento»...), lo quita y reintenta una vez. 12.49: y lo recuerda, para no
+    perder una petición en cada respuesta."""
+    key = (J._host(url), str((payload or {}).get("model", "")) if isinstance(payload, dict) else "")
+    for p in _rejected.get(key, ()):
+        payload = J._drop_path(payload, p)
     try:
         return J._http("POST", url, headers, payload, timeout, stream)
     except J.AIError as e:
@@ -144,6 +151,8 @@ def _post(url, headers, payload, optional=(), timeout=180, stream=False):
             raise
         low = e.raw.lower()
         drop = [p for p, words in optional if any(w in low for w in words)]
+        if drop:
+            _rejected.setdefault(key, set()).update(drop)
         if not drop and any(w in low for w in ("unsupported", "not supported", "unknown",
                                                 "unrecognized", "invalid", "extra", "not allowed")):
             drop = [p for p, _ in optional]
@@ -779,7 +788,10 @@ def ai_chat(messages, json_mode=False, max_tokens=None):
             return out
         J._need_key(cfg)
         try:
+            t0 = time.time()
             out = J._with_fallback(cfg, lambda c: J._cloud_chat(c, messages, json_mode, max_tokens=max_tokens))
+            J.rapidez.ai_note("entender la orden" if json_mode and (max_tokens or 999) <= 300 else
+                              "trabajo largo" if cfg.get("heavy") else "responder", cfg, time.time() - t0, messages)
             J.usage_add(cfg, messages, out)
             return J.privacy_restore(out, mp) if mp else out
         except J.AIError as e:
@@ -1373,7 +1385,17 @@ def _stream_chunks(cfg, msgs):
     La conexión se abre ya (así, si el modelo no existe, se cambia por otro antes de hablar)."""
     if cfg["kind"] != "ollama":
         J._need_key(cfg)
-        return J._with_fallback(cfg, lambda c: J._cloud_stream(c, msgs))
+        t0 = time.time()
+        it = J._with_fallback(cfg, lambda c: J._cloud_stream(c, msgs))
+
+        def timed():                                   # 12.49: cuánto tardó en llegar la primera palabra
+            first = True
+            for ch in it:
+                if first:
+                    first = False
+                    J.rapidez.ai_note("responder", cfg, time.time() - t0, msgs)
+                yield ch
+        return timed()
 
     def oll():
         J.ollama_ensure(cfg["ollama_host"])
@@ -1540,6 +1562,7 @@ __all__ = [
     '_cloud_chat',
     'skip_think',
     'heavy_pick',
+    '_rejected',
     'backup_cfg',
     'BACKUP_ORDER',
     'heavy',

@@ -44,6 +44,26 @@ def mark(name, now=None):
     return None
 
 
+def ai_note(what, cfg, secs, messages=None):
+    """12.49: una consulta a la IA dentro del turno: qué (entender la orden / responder), con qué modelo, cuánto tardó
+    y cuánto texto le mandé."""
+    global cur
+    try:
+        chars = sum(len(str(m.get("content") or "")) for m in messages or [])
+    except Exception:
+        chars = 0
+    item = {"que": what, "ia": f"{str(cfg.get('model') or '').split('/')[-1]} ({cfg.get('label', '')})", "s": round(secs, 1),
+            "palabras": chars // 6}
+    with _lock:
+        last_ai.append(item)
+        del last_ai[:-12]
+        if cur is not None:
+            cur.setdefault("ia", []).append(item)
+
+
+last_ai = []
+
+
 def finish_without_voice():
     with _lock:
         if cur is not None and "respuesta" in cur and "sonando" not in cur:
@@ -57,7 +77,7 @@ def _finish():
     cur = None
     if "transcripcion" not in t:
         t["transcripcion"] = t["t0"]
-    out = {"src": t["src"], "total": round((t.get("sonando") or t.get("respuesta") or t["t0"]) - t["t0"], 2)}
+    out = {"src": t["src"], "total": round((t.get("sonando") or t.get("respuesta") or t["t0"]) - t["t0"], 2), "ia": t.get("ia", [])}
     for name, a, b in STAGES:
         if a in t and b in t:
             out[name] = round(max(0.0, t[b] - t[a]), 2)
@@ -82,12 +102,27 @@ def summary(n=20):
             avg[name] = round(sum(vals) / len(vals), 2)
     stages = {k: avg[k] for k, _, _ in STAGES if k in avg}
     avg["lenta"] = max(stages, key=stages.get) if stages else ""
+    avg["ia"] = next((r["ia"] for r in reversed(items) if r.get("ia")), [])
     return avg
+
+
+def ai_detail(calls):
+    """12.49: «la IA respondió 2 veces: entender la orden 1.2 s y responder 6.3 s con qwen3.8-27b (IteraCompute)»."""
+    if not calls:
+        return ""
+    parts = [f"{c['que']} {c['s']:.1f} s con {c['ia']}" for c in calls]
+    txt = (f"En la última respuesta le pregunté a la IA {len(calls)} veces: " if len(calls) > 1 else "En la última respuesta, la IA tardó: ")
+    txt += "; ".join(parts) + "."
+    big = max(calls, key=lambda c: c["palabras"])
+    if big["palabras"] > 2500:
+        txt += f" Le mandé unas {big['palabras']} palabras de instrucciones y contexto."
+    return txt
 
 
 TIPS = {
     "transcribir": "la segunda etapa del reconocimiento: con Whisper prueba un modelo más pequeño, o deja «Gemini» si tienes buena conexión",
-    "pensar": "la IA: con Ollama prueba un modelo más pequeño (llama3.2 o qwen3:4b); en la nube, uno «flash» o «mini»",
+    "pensar": "la IA: en la nube usa Gemini (flash) para conversar y deja Kimi o Qwen3.8 para los trabajos pesados; "
+              "o di «compara las IA gratis» y escoge la más rápida. Con Ollama, un modelo más pequeño",
     "voz": "generar la voz: Piper (sin internet) es la más rápida; la de Gemini, la más lenta",
     "esperar": "el equipo está ocupado: cierra programas pesados",
     "arrancar": "el audio tarda en empezar: revisa la salida de sonido",
@@ -101,6 +136,8 @@ def spoken(s):
     if s.get("lenta"):
         txt += f", y lo que más tarda es {NAMES[s['lenta']]} ({s[s['lenta']]:.1f} s)"
     txt += "."
+    if s.get("ia"):
+        txt += " " + ai_detail(s["ia"])
     if s["total"] > SLOW_TOTAL and s.get("lenta") in TIPS:
         txt += " Para ir más rápido: " + TIPS[s["lenta"]] + "."
     return txt
