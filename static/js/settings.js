@@ -314,6 +314,30 @@
     }
   }
   socket.on("motor", renderMotor);
+  function renderNv(r) {                                                         // 12.47: modelos gratis de NVIDIA
+    const st = $("#nv-status"), list = $("#nv-list"), btn = $("#btn-nv-bench");
+    if (!st || !r) return;
+    btn.disabled = !!r.corriendo;
+    st.textContent = r.corriendo ? (r.msg || "Probando…") : (r.resultados || []).length ? "Del más rápido al más lento:" : "Sin probar todavía.";
+    list.textContent = "";
+    (r.resultados || []).forEach((m) => {
+      const row = document.createElement("div"); row.className = "row"; row.style.margin = "4px 0";
+      const name = m.modelo.split("/").pop();
+      const tag = (m.modelo === r.conversar ? " · conversa" : "") + (m.modelo === r.pesados ? " · trabajos pesados" : "");
+      const lab = document.createElement("span"); lab.className = "status" + (m.ok ? " ok" : " err"); lab.style.flex = "1";
+      lab.textContent = `${m.ok ? "✓" : "✕"} ${name}: ${m.ok ? m.s.toFixed(1) + " s" : "no respondió"}${tag}`;
+      row.appendChild(lab);
+      if (m.ok) [["conversar", "Para conversar"], ["pesados", "Para trabajos pesados"]].forEach(([para, txt]) => {
+        const b = document.createElement("button"); b.className = "btn btn-ghost"; b.type = "button"; b.textContent = txt;
+        b.addEventListener("click", () => socket.emit("nvidia_bench", { action: "usar", modelo: m.modelo, para }, (x) => { renderNv(x); toast(x.msg, "ok"); }));
+        row.appendChild(b);
+      });
+      list.appendChild(row);
+    });
+  }
+  socket.on("nvidia_bench", renderNv);
+  socket.emit("nvidia_bench", {}, renderNv);
+  $("#btn-nv-bench").addEventListener("click", () => socket.emit("nvidia_bench", { action: "probar" }, (r) => { renderNv(r); if (r.msg) $("#nv-status").textContent = r.msg; }));
   socket.emit("motor", {}, renderMotor);
   $("#btn-motor-install").addEventListener("click", () => socket.emit("motor", { action: "instalar", modelo: $("#f-motor-pick").value }, (r) => { renderMotor(r); $("#motor-status").textContent = r.msg || ""; }));
   $("#btn-motor-vision").addEventListener("click", () => socket.emit("motor", { action: "vision" }, (r) => { renderMotor(r); $("#motor-vision-status").textContent = r.msg || ""; }));

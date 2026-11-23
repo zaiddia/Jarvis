@@ -416,7 +416,7 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
     if sp.get("min_tokens"):                           # 12.44: los que piensan gastan tokens antes de responder (Kimi en NVIDIA)
         max_tokens = max(int(max_tokens or 0), sp["min_tokens"])
     body = {"model": cfg["model"], "messages": msgs, tp: max_tokens}
-    if sp.get("reasoning_effort"):
+    if sp.get("reasoning_effort") and re.search(sp.get("reasoning_re", "."), str(cfg.get("model") or ""), re.I):
         body["reasoning_effort"] = sp["reasoning_effort"]      # pensar poco: responde antes (si no lo acepta, se quita solo)
     if cfg.get("ai_provider") == "motor":
         body["cache_prompt"] = True                    # 12.7: la IA integrada reusa lo ya leído
@@ -679,10 +679,13 @@ def heavy_pick(max_tokens, cfg):
     if (max_tokens or 0) < HEAVY_MIN_TOKENS or J.net.get("offline") or time.time() < heavy["pause_until"]:
         return None
     pid = "nvidia" if want == "auto" else want
-    if pid == cfg.get("ai_provider") or pid not in J.PROVIDERS or J.PROVIDERS[pid]["group"] != "cloud":
+    hm = str(J.settings.get("ai_heavy_model") or "") if pid == "nvidia" else ""      # 12.47: p. ej. Kimi aunque converses con Qwen
+    if pid not in J.PROVIDERS or J.PROVIDERS[pid]["group"] != "cloud":
+        return None
+    if pid == cfg.get("ai_provider") and (not hm or hm == cfg.get("model")):
         return None
     try:
-        hc = J._ai_cfg({"ai_provider": pid})
+        hc = J._ai_cfg({"ai_provider": pid, f"{pid}_model": hm})
     except Exception:
         return None
     if not hc.get("key"):

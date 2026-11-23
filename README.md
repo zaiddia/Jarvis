@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Modelos gratis de NVIDIA: compara y escoge (v12.47)
+
+- Con la misma clave de NVIDIA hay varios modelos gratis (Kimi, Qwen, GLM, Llama…). En Ajustes › Inteligencia artificial, «Comparar
+  velocidad» (o «Jarvis, compara los modelos de NVIDIA») les hace la misma pregunta y los ordena del más rápido al más lento.
+- Junto a cada uno: «Para conversar» (queda como tu IA principal) o «Para trabajos pesados». Se puede conversar con un Qwen rápido y
+  dejar Kimi para los documentos y planes.
+- «Pensar poco» solo se le pide a Kimi; a los demás no, así no se pierde una petición en cada respuesta.
+
 ## Dos IA: la rápida para conversar y Kimi para los trabajos pesados (v12.46)
 
 - Nuevo ajuste «IA para trabajos pesados» (Ajustes › Inteligencia artificial). En «Automática», si guardaste la clave de NVIDIA, los

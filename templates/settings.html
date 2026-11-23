@@ -507,6 +507,12 @@
           {% for pid, p in providers.items() if p.group == "cloud" %}<option value="{{ pid }}">{{ p.label }}</option>{% endfor %}
         </select>
       </div>
+      <div class="field stack">
+        <div class="ft"><label>Modelos gratis de NVIDIA (12.47)</label><p>Con tu misma clave de NVIDIA hay varios modelos gratis (Kimi, Qwen y otros). «Comparar velocidad» les hace la misma pregunta y los ordena del más rápido al más lento; después eliges uno para conversar o para los trabajos pesados. También: «Jarvis, compara los modelos de NVIDIA».</p>
+          <p class="status" id="nv-status"></p></div>
+        <div class="row"><button class="btn btn-ghost" type="button" id="btn-nv-bench">Comparar velocidad</button></div>
+        <div id="nv-list"></div>
+      </div>
       {% for pid, p in providers.items() if p.group == "cloud" %}
       <div data-provider="{{ pid }}" hidden>
         <div class="field stack">

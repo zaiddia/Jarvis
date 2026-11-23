@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.46"
+VERSION = "12.47"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -638,7 +638,7 @@ PROVIDERS = {
     "nvidia": dict(label="NVIDIA Build (Kimi K3.1 Pro gratis)", short="NVIDIA", kind="openai", group="cloud",       # 12.44
                    base="https://integrate.api.nvidia.com/v1", model="moonshotai/kimi-k3.1-pro", no_temp=True,
                    prefer=[r"^moonshotai/kimi-k3\.1-pro$", r"^moonshotai/kimi-k3", r"^moonshotai/kimi"],
-                   thinks=True, reasoning_effort="low", min_tokens=4096,
+                   thinks=True, reasoning_effort="low", reasoning_re=r"kimi", min_tokens=4096,
                    key_url="https://build.nvidia.com/moonshotai/kimi-k3_1-pro", key_hint="nvapi-…",
                    note="Gratis con una cuenta de NVIDIA (piden verificar el celular). Límite de unas 40 peticiones por minuto. "
                         "Kimi siempre piensa antes de responder: escribe y razona muy bien, pero tarda más que Gemini para la voz."),
@@ -746,7 +746,8 @@ DEFAULT_SETTINGS = {
     "stt_refine": "auto",          # 2ª etapa para las frases dirigidas a Jarvis: auto | gemini | whisper | off
     # IA
     "ai_provider": "ollama",       # cualquiera de PROVIDERS
-    "ai_heavy_provider": "auto",   # 12.46: IA para trabajos pesados en segundo plano: "auto" (Kimi en NVIDIA si hay clave), "off" o un proveedor
+    "ai_heavy_provider": "auto",
+    "ai_heavy_model": "",          # 12.47: modelo para los trabajos pesados (vacío = el del proveedor)   # 12.46: IA para trabajos pesados en segundo plano: "auto" (Kimi en NVIDIA si hay clave), "off" o un proveedor
     "ollama_host": "http://127.0.0.1:11434",
     "ollama_model": "llama3.2",
     "offline_auto": True,          # sin internet: usar la IA de tu equipo (Ollama) y la voz Piper
@@ -1755,6 +1756,8 @@ def process_command(text):
         return
     if motor_voice(text, t):                           # 12.6: «instala la IA integrada» · 12.8: «dale visión a la IA local»
         return
+    if nvidia_bench_voice(text, t):                    # 12.47: «compara los modelos de NVIDIA»
+        return
     if health_panel_voice(text, t):                    # 12.8: «abre el panel de salud»
         return
     if boletin_voice(text, t):                         # 12.8: «haz los boletines de 7A», «boletín de Ana de 7A»
@@ -2499,6 +2502,7 @@ from nucleo.estadoia import *  # noqa: F401,F403,E402
 
 # ── 12.6: la IA local integrada (motor llama.cpp dentro de Jarvis, sin Ollama) → nucleo/motor.py (lógica en motorlocal.py)
 from nucleo.motor import *  # noqa: F401,F403,E402
+from nucleo.nvmodelos import *  # noqa: F401,F403,E402
 from nucleo.ialocal import *  # noqa: F401,F403,E402
 from nucleo.instantes import *  # noqa: F401,F403,E402
 from nucleo.vidadiaria import *  # noqa: F401,F403,E402
