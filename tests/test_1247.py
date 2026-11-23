@@ -57,7 +57,7 @@ def test_por_voz(jv, monkeypatch):
     monkeypatch.setattr(jv, "nv_bench_job", lambda: jobs.append(1) or True)
     import nucleo.nvmodelos as nm
     monkeypatch.setattr(nm, "nv_bench_job", lambda: jobs.append(1) or True)
-    for p in ("compara los modelos de NVIDIA", "¿cuál modelo de NVIDIA es más rápido?", "prueba la velocidad de los modelos de nvidia"):
+    for p in ("compara los modelos de NVIDIA", "¿cuál modelo de NVIDIA es más rápido?", "prueba la velocidad de los modelos de nvidia", "compara las IA gratis"):
         jv._rec.clear()
         jv.process_command(p)
-    assert len(jobs) == 3
+    assert len(jobs) == 4

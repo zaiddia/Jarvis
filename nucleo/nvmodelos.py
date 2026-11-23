@@ -34,9 +34,9 @@ def nv_rank(results):
 def nv_report(results):
     ok = [r for r in results if r["ok"]]
     if not ok:
-        return "Ningún modelo de NVIDIA respondió en la prueba. Revisa la clave en Ajustes › Inteligencia artificial."
+        return "Ninguna IA gratis respondió en la prueba. Revisa las claves en Ajustes › Inteligencia artificial."
     best = ok[0]
-    txt = f"El más rápido de NVIDIA es {best['modelo'].split('/')[-1]} ({best['s']:.1f} s)."
+    txt = f"El más rápido es {best['modelo'].split('/')[-1]} ({best['s']:.1f} s)."
     if len(ok) > 1:
         txt += " Le siguen " + ", ".join(f"{r['modelo'].split('/')[-1]} ({r['s']:.1f} s)" for r in ok[1:4]) + "."
     slow = [r for r in results if not r["ok"]]
@@ -45,14 +45,34 @@ def nv_report(results):
     return txt + " En Ajustes › Inteligencia artificial puedes dejar uno para conversar o para los trabajos pesados."
 
 
+FREE_PROVIDERS = ("nvidia", "iteracompute")      # 12.48: las gratis con varios modelos que vale la pena comparar
+
+
+def nv_pairs():
+    """[(cfg, modelo)] de todas las IA gratis con clave guardada."""
+    pairs = []
+    for pid in FREE_PROVIDERS:
+        if not J.settings.get(f"{pid}_api_key"):
+            continue
+        cfg = J._ai_cfg({"ai_provider": pid})
+        if pid == "nvidia":
+            try:
+                pairs += [(cfg, m) for m in nv_candidates(J.ai_list_models(cfg))]
+            except Exception:
+                pairs.append((cfg, cfg["model"]))
+        else:
+            pairs.append((cfg, cfg["model"] or J.PROVIDERS[pid].get("model", "")))
+    return pairs
+
+
 def nv_bench_run(pause=1.6):
-    """Mide cada modelo con la misma pregunta corta. → lista ordenada [{"modelo", "s", "ok", "texto"}]."""
-    cfg = J._ai_cfg({"ai_provider": "nvidia"})
-    J._need_key(cfg)
-    cands = nv_candidates(J.ai_list_models(cfg))
+    """Mide cada modelo con la misma pregunta corta. → lista ordenada [{"modelo", "proveedor", "s", "ok", "texto"}]."""
+    pairs = nv_pairs()
+    if not pairs:
+        raise ValueError("no hay claves guardadas de NVIDIA ni de IteraCompute")
     res = []
-    for i, m in enumerate(cands):
-        nv["msg"] = f"Probando {m.split('/')[-1]} ({i + 1} de {len(cands)})…"
+    for i, (cfg, m) in enumerate(pairs):
+        nv["msg"] = f"Probando {m.split('/')[-1]} ({i + 1} de {len(pairs)})…"
         J.socketio.emit("nvidia_bench", nv_state())
         t0 = time.time()
         try:
@@ -60,17 +80,18 @@ def nv_bench_run(pause=1.6):
             ok = len(out.strip()) >= 8
         except Exception as e:
             out, ok = f"({getattr(e, 'why', e)})", False
-        res.append({"modelo": m, "s": round(time.time() - t0, 1), "ok": ok, "texto": out.strip()[:80]})
-        if pause and i < len(cands) - 1:
+        res.append({"modelo": m, "proveedor": cfg["ai_provider"], "s": round(time.time() - t0, 1), "ok": ok, "texto": out.strip()[:80]})
+        if pause and i < len(pairs) - 1:
             time.sleep(pause)                          # límite gratis: unas 40 peticiones por minuto
     return nv_rank(res)
 
 
 def nv_state():
+    prov = J.settings.get("ai_provider", "")
+    hp = J.settings.get("ai_heavy_provider", "auto")
     return {"corriendo": nv["running"], "msg": nv["msg"], "resultados": nv["results"], "cuando": nv["at"],
-            "conversar": J.settings.get("nvidia_model", "") if J.settings.get("ai_provider") == "nvidia" else "",
-            "pesados": J.settings.get("ai_heavy_model", "") or (J.settings.get("nvidia_model", "")
-                                                               if J.settings.get("ai_heavy_provider") in ("auto", "nvidia") else "")}
+            "conversar": J.settings.get(f"{prov}_model", "") if prov in FREE_PROVIDERS else "",
+            "pesados": J.settings.get("ai_heavy_model", "") or (J.settings.get(f"{hp}_model", "") if hp in FREE_PROVIDERS else "")}
 
 
 def nv_bench_job():
@@ -90,21 +111,23 @@ def nv_bench_job():
             nv["running"], nv["msg"] = False, ""
         J.notify(msg, "IA")
         J.socketio.emit("nvidia_bench", nv_state())
-    J.start_job("Comparando los modelos de NVIDIA", work, "nvidia-modelos")
+    J.start_job("Comparando las IA gratis", work, "nvidia-modelos")
     return True
 
 
 def nv_use(model, para):
     """Deja un modelo de la última prueba para «conversar» (tu IA principal) o para los «pesados». → texto."""
-    if model not in {r["modelo"] for r in nv["results"]}:
+    row = next((r for r in nv["results"] if r["modelo"] == model), None)
+    if not row:
         return "Ese modelo no está en la última prueba; pulsa primero «Comparar velocidad»."
-    short = model.split("/")[-1]
+    pid = row.get("proveedor") or "nvidia"
+    short, plabel = model.split("/")[-1], J.PROVIDERS[pid]["short"]
     if para == "conversar":
-        J.settings.update(ai_provider="nvidia", nvidia_model=model)
-        out = f"Listo: ahora converso con {short} de NVIDIA."
+        J.settings.update({"ai_provider": pid, f"{pid}_model": model})
+        out = f"Listo: ahora converso con {short} de {plabel}."
     else:
-        J.settings.update(ai_heavy_provider="nvidia", ai_heavy_model=model)
-        out = f"Listo: los trabajos pesados los hace {short} de NVIDIA."
+        J.settings.update(ai_heavy_provider=pid, ai_heavy_model=model)
+        out = f"Listo: los trabajos pesados los hace {short} de {plabel}."
     try:
         J.save_settings_file()
     except OSError:
@@ -122,10 +145,10 @@ def handle_nvidia_bench(data=None):
     d = data or {}
     act = str(d.get("action") or "")
     if act == "probar":
-        if not J.settings.get("nvidia_api_key"):
-            return {"ok": False, "msg": "Primero guarda la clave de NVIDIA.", **nv_state()}
+        if not any(J.settings.get(f"{p}_api_key") for p in FREE_PROVIDERS):
+            return {"ok": False, "msg": "Primero guarda la clave de NVIDIA o de IteraCompute.", **nv_state()}
         started = nv_bench_job()
-        return {"ok": True, "msg": "Probando los modelos de NVIDIA (tarda uno o dos minutos)…" if started else "Ya los estoy probando.",
+        return {"ok": True, "msg": "Probando las IA gratis (tarda uno o dos minutos)…" if started else "Ya los estoy probando.",
                 **nv_state()}
     if act == "usar":
         return {"ok": True, "msg": nv_use(str(d.get("modelo") or ""), "conversar" if d.get("para") == "conversar" else "pesados"),
@@ -133,8 +156,8 @@ def handle_nvidia_bench(data=None):
     return {"ok": True, **nv_state()}
 
 
-_NV_VOICE = re.compile(r"\b(?:compara|comparar|prueba|probar|mide|medir)\s+(?:la velocidad de\s+)?(?:los|las)\s+(?:modelos|ias|inteligencias artificiales)"
-                       r"\s+de\s+nvidia\b|\bcual (?:modelo|ia) de nvidia es (?:el |la )?mas rapid[oa]\b")
+_NV_VOICE = re.compile(r"\b(?:compara|comparar|prueba|probar|mide|medir)\s+(?:la velocidad de\s+)?(?:los|las)\s+(?:modelos|ias?|inteligencias? artificiales?)"
+                       r"\s+(?:de\s+nvidia|gratis|gratuit[oa]s)\b|\bcual (?:modelo|ia) (?:de nvidia|gratis) es (?:el |la )?mas rapid[oa]\b")
 
 
 def nvidia_bench_voice(text, t):
@@ -144,5 +167,5 @@ def nvidia_bench_voice(text, t):
     return True
 
 
-__all__ = ["NV_PICK", "NV_MAX", "NV_TEST", "nv", "nv_candidates", "nv_rank", "nv_report", "nv_bench_run", "nv_state", "nv_bench_job",
+__all__ = ["FREE_PROVIDERS", "nv_pairs", "NV_PICK", "NV_MAX", "NV_TEST", "nv", "nv_candidates", "nv_rank", "nv_report", "nv_bench_run", "nv_state", "nv_bench_job",
            "nv_use", "handle_nvidia_bench", "_NV_VOICE", "nvidia_bench_voice"]

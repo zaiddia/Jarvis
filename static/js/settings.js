@@ -322,7 +322,7 @@
     list.textContent = "";
     (r.resultados || []).forEach((m) => {
       const row = document.createElement("div"); row.className = "row"; row.style.margin = "4px 0";
-      const name = m.modelo.split("/").pop();
+      const name = m.modelo.split("/").pop() + (m.proveedor === "iteracompute" ? " (IteraCompute)" : "");
       const tag = (m.modelo === r.conversar ? " · conversa" : "") + (m.modelo === r.pesados ? " · trabajos pesados" : "");
       const lab = document.createElement("span"); lab.className = "status" + (m.ok ? " ok" : " err"); lab.style.flex = "1";
       lab.textContent = `${m.ok ? "✓" : "✕"} ${name}: ${m.ok ? m.s.toFixed(1) + " s" : "no respondió"}${tag}`;

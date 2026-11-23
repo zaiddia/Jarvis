@@ -413,9 +413,14 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
             parts.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64," + b64}})
         msgs[-1]["content"] = [{"type": "text", "text": msgs[-1]["content"]}] + parts
     tp = sp.get("tokens_param", "max_tokens")
+    asked = int(max_tokens or 0)
     if sp.get("min_tokens"):                           # 12.44: los que piensan gastan tokens antes de responder (Kimi en NVIDIA)
-        max_tokens = max(int(max_tokens or 0), sp["min_tokens"])
+        max_tokens = max(asked, sp["min_tokens"])
+    if sp.get("max_out"):
+        max_tokens = min(max_tokens, sp["max_out"])     # 12.48: IteraCompute: hasta 8.192 por respuesta
     body = {"model": cfg["model"], "messages": msgs, tp: max_tokens}
+    if sp.get("quick_no_think") and asked < J.HEAVY_MIN_TOKENS:
+        body["chat_template_kwargs"] = {"enable_thinking": False}   # 12.48: Qwen3.8 sin pensar para lo corto: responde ya
     if sp.get("reasoning_effort") and re.search(sp.get("reasoning_re", "."), str(cfg.get("model") or ""), re.I):
         body["reasoning_effort"] = sp["reasoning_effort"]      # pensar poco: responde antes (si no lo acepta, se quita solo)
     if cfg.get("ai_provider") == "motor":
@@ -586,8 +591,17 @@ def _with_fallback(cfg, fn):
     try:
         return fn(cfg)
     except J.AIError as e:
-        if e.kind in ("server", "quota") and not J._is_local_ai(cfg):
-            return J._try_other_models(cfg, fn, e)     # 12.22: saturado o sin cuota: prueba con otro modelo, solo esta vez
+        if e.kind in ("server", "quota", "balance") and not J._is_local_ai(cfg):
+            try:
+                if e.kind == "balance":
+                    raise e
+                return J._try_other_models(cfg, fn, e)     # 12.22: saturado o sin cuota: prueba con otro modelo, solo esta vez
+            except J.AIError as e2:
+                bk = J.backup_cfg(cfg)                 # 12.48: tampoco: otra IA gratis que tengas configurada
+                if not bk:
+                    raise
+                J.log_terminal(f"{cfg['label']} está {J._SHORT_REASON.get(e2.kind, 'sin responder')}; respondo con {bk['label']}.", "IA")
+                return fn(J._ensure_model(bk))
         if e.kind != "model" or cfg["kind"] == "ollama":
             raise
         try:
@@ -667,6 +681,25 @@ def _current_model(cfg):
 
 
 HEAVY_MIN_TOKENS = 2400
+BACKUP_ORDER = ("gemini", "nvidia", "iteracompute")
+
+
+def backup_cfg(cfg):
+    """12.48: la IA de respaldo cuando la tuya se llena o se cae: otra gratis que tenga clave (o la que elegiste). → cfg o None."""
+    want = str(J.settings.get("ai_backup_provider", "auto") or "off")
+    if want == "off" or cfg.get("backup") or cfg.get("heavy") or J.net.get("offline"):
+        return None
+    for pid in (BACKUP_ORDER if want == "auto" else (want,)):
+        if pid == cfg.get("ai_provider") or pid not in J.PROVIDERS:
+            continue
+        try:
+            bc = J._ai_cfg({"ai_provider": pid})
+        except Exception:
+            continue
+        if bc.get("key"):
+            bc["backup"] = True
+            return bc
+    return None
 heavy = {"pause_until": 0.0}
 
 
@@ -678,8 +711,13 @@ def heavy_pick(max_tokens, cfg):
         return None
     if (max_tokens or 0) < HEAVY_MIN_TOKENS or J.net.get("offline") or time.time() < heavy["pause_until"]:
         return None
-    pid = "nvidia" if want == "auto" else want
-    hm = str(J.settings.get("ai_heavy_model") or "") if pid == "nvidia" else ""      # 12.47: p. ej. Kimi aunque converses con Qwen
+    if want == "auto":                                 # 12.48: Kimi en NVIDIA; si no hay su clave, Qwen3.8 en IteraCompute
+        pid = next((p for p in ("nvidia", "iteracompute") if J.settings.get(f"{p}_api_key")), "nvidia")
+    else:
+        pid = want
+    hm = str(J.settings.get("ai_heavy_model") or "")
+    if hm and not (want == pid or (want == "auto" and pid == "nvidia")):
+        hm = ""                                        # 12.47: p. ej. Kimi aunque converses con Qwen
     if pid not in J.PROVIDERS or J.PROVIDERS[pid]["group"] != "cloud":
         return None
     if pid == cfg.get("ai_provider") and (not hm or hm == cfg.get("model")):
@@ -1502,6 +1540,8 @@ __all__ = [
     '_cloud_chat',
     'skip_think',
     'heavy_pick',
+    'backup_cfg',
+    'BACKUP_ORDER',
     'heavy',
     'HEAVY_MIN_TOKENS',
     '_cloud_stream',

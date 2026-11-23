@@ -157,6 +157,16 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## IteraCompute y respaldo entre las IA gratis (v12.48)
+
+- Nuevo proveedor **IteraCompute (Qwen3.8 27B gratis)**: hasta 30 millones de tokens al mes, sin tarjeta. Clave en
+  platform.iteracompute.com. Para lo corto, Qwen3.8 responde sin pensar (rápido); para lo largo, piensa poco.
+- **IA de respaldo** (Ajustes › Inteligencia artificial): si tu IA se llena o se cae, Jarvis responde con otra que tenga clave
+  (Gemini, NVIDIA o IteraCompute, en ese orden), sin que hagas nada.
+- La comparación de velocidad ahora incluye IteraCompute junto a los modelos de NVIDIA. Los trabajos pesados, en «Automática»,
+  usan Kimi en NVIDIA; si no hay su clave, Qwen3.8 en IteraCompute.
+- Es un servicio nuevo y pequeño: por eso queda como una más de las gratis y no como la única.
+
 ## Modelos gratis de NVIDIA: compara y escoge (v12.47)
 
 - Con la misma clave de NVIDIA hay varios modelos gratis (Kimi, Qwen, GLM, Llama…). En Ajustes › Inteligencia artificial, «Comparar

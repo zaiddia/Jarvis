@@ -502,13 +502,21 @@
       <div class="field">
         <div class="ft"><label for="f-heavy-provider">IA para trabajos pesados (12.46)</label><p>Los documentos, planes de clase, guías e investigaciones que Jarvis prepara en segundo plano los hace esta IA; lo de todos los días sigue con la de arriba (rápida). «Automática» usa Kimi K3.1 Pro de NVIDIA si guardaste su clave. Si falla o se llena su límite, el trabajo lo hace tu IA de siempre.</p></div>
         <select class="inp" id="f-heavy-provider" data-key="ai_heavy_provider" style="max-width:340px">
-          <option value="auto">Automática (Kimi en NVIDIA si hay clave)</option>
+          <option value="auto">Automática (Kimi en NVIDIA; si no, Qwen3.8 en IteraCompute)</option>
           <option value="off">Ninguna: todo con la IA de arriba</option>
           {% for pid, p in providers.items() if p.group == "cloud" %}<option value="{{ pid }}">{{ p.label }}</option>{% endfor %}
         </select>
       </div>
+      <div class="field">
+        <div class="ft"><label for="f-backup-provider">IA de respaldo (12.48)</label><p>Si tu IA se llena (límite gratis) o se cae, Jarvis responde con otra que tenga clave guardada, sin que tengas que hacer nada. «Automática» prueba Gemini, NVIDIA e IteraCompute, en ese orden.</p></div>
+        <select class="inp" id="f-backup-provider" data-key="ai_backup_provider" style="max-width:340px">
+          <option value="auto">Automática (otra gratis con clave)</option>
+          <option value="off">Ninguna</option>
+          {% for pid, p in providers.items() if p.group == "cloud" %}<option value="{{ pid }}">{{ p.label }}</option>{% endfor %}
+        </select>
+      </div>
       <div class="field stack">
-        <div class="ft"><label>Modelos gratis de NVIDIA (12.47)</label><p>Con tu misma clave de NVIDIA hay varios modelos gratis (Kimi, Qwen y otros). «Comparar velocidad» les hace la misma pregunta y los ordena del más rápido al más lento; después eliges uno para conversar o para los trabajos pesados. También: «Jarvis, compara los modelos de NVIDIA».</p>
+        <div class="ft"><label>IA gratis: compara y escoge (12.47)</label><p>Con tu clave de NVIDIA hay varios modelos gratis (Kimi, Qwen y otros), y con la de IteraCompute, Qwen3.8 27B. «Comparar velocidad» les hace la misma pregunta y los ordena del más rápido al más lento; después eliges uno para conversar o para los trabajos pesados. También: «Jarvis, compara los modelos de NVIDIA».</p>
           <p class="status" id="nv-status"></p></div>
         <div class="row"><button class="btn btn-ghost" type="button" id="btn-nv-bench">Comparar velocidad</button></div>
         <div id="nv-list"></div>

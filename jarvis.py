@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.47"
+VERSION = "12.48"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -642,6 +642,13 @@ PROVIDERS = {
                    key_url="https://build.nvidia.com/moonshotai/kimi-k3_1-pro", key_hint="nvapi-…",
                    note="Gratis con una cuenta de NVIDIA (piden verificar el celular). Límite de unas 40 peticiones por minuto. "
                         "Kimi siempre piensa antes de responder: escribe y razona muy bien, pero tarda más que Gemini para la voz."),
+    "iteracompute": dict(label="IteraCompute (Qwen3.8 27B gratis)", short="IteraCompute", kind="openai", group="cloud",   # 12.48
+                         base="https://api.iteracompute.com/v1", model="qwen/qwen3.8-27b", no_temp=True,
+                         prefer=[r"^qwen/qwen3\.8-27b$", r"qwen3\.8", r"qwen"],
+                         thinks=True, reasoning_effort="low", min_tokens=2048, max_out=8192, quick_no_think=True,
+                         key_url="https://platform.iteracompute.com", key_hint="pega aquí tu clave",
+                         note="Gratis cada mes (hasta 30 millones de tokens), sin tarjeta. Es un servicio nuevo y pequeño: "
+                              "Jarvis lo usa también de respaldo si otra IA se llena o falla."),
     "xai": dict(label="Grok (xAI)", short="Grok", kind="openai", group="cloud",
                 base="https://api.x.ai/v1", model="", prefer=[r"^grok.*fast", r"^grok"],
                 key_url="https://console.x.ai", key_hint="xai-…", note="Pago por uso."),
@@ -747,7 +754,8 @@ DEFAULT_SETTINGS = {
     # IA
     "ai_provider": "ollama",       # cualquiera de PROVIDERS
     "ai_heavy_provider": "auto",
-    "ai_heavy_model": "",          # 12.47: modelo para los trabajos pesados (vacío = el del proveedor)   # 12.46: IA para trabajos pesados en segundo plano: "auto" (Kimi en NVIDIA si hay clave), "off" o un proveedor
+    "ai_heavy_model": "",
+    "ai_backup_provider": "auto",  # 12.48: si tu IA se llena o se cae: "auto" (otra gratis con clave: Gemini, NVIDIA, IteraCompute), "off" o un proveedor          # 12.47: modelo para los trabajos pesados (vacío = el del proveedor)   # 12.46: IA para trabajos pesados en segundo plano: "auto" (Kimi en NVIDIA si hay clave), "off" o un proveedor
     "ollama_host": "http://127.0.0.1:11434",
     "ollama_model": "llama3.2",
     "offline_auto": True,          # sin internet: usar la IA de tu equipo (Ollama) y la voz Piper
@@ -1061,6 +1069,7 @@ def _validate(key, value):
         raise ValueError("la dirección debe empezar por https://")
     choices = {"theme": THEMES, "look": ("aurora", "clasico"), "assistant_mode": ("auto", "docente", "general"), "ai_provider": tuple(PROVIDERS),
                "ai_heavy_provider": ("auto", "off") + tuple(p for p, sp in PROVIDERS.items() if sp["group"] == "cloud"),
+               "ai_backup_provider": ("auto", "off") + tuple(p for p, sp in PROVIDERS.items() if sp["group"] == "cloud"),
                "zeti_order": ("lista", "apellido", "alfabetico"), "hud_expanded": ("estrecho", "amplio", "grande"),
                "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
@@ -1133,7 +1142,7 @@ ENV_ALIASES = {
     "CHATGPT_API_KEY": "chatgpt_api_key", "DEEPSEEK_API_KEY": "deepseek_api_key",
     "MOONSHOT_API_KEY": "kimi_api_key", "KIMI_API_KEY": "kimi_api_key",
     "XAI_API_KEY": "xai_api_key", "MISTRAL_API_KEY": "mistral_api_key",
-    "GROQ_API_KEY": "groq_api_key", "NVIDIA_API_KEY": "nvidia_api_key", "NVAPI_KEY": "nvidia_api_key", "OPENROUTER_API_KEY": "openrouter_api_key",
+    "GROQ_API_KEY": "groq_api_key", "NVIDIA_API_KEY": "nvidia_api_key", "NVAPI_KEY": "nvidia_api_key", "ITERACOMPUTE_API_KEY": "iteracompute_api_key", "OPENROUTER_API_KEY": "openrouter_api_key",
 }
 env_overrides = {}
 _file_values = {}
