@@ -105,7 +105,7 @@ def test_archivo_de_vision():
     assert motorlocal.entry_for_file("gemma-3-4b-it-Q4_K_M.gguf")["vision"] and motorlocal.entry_for_file("mio.gguf") is None
     a = motorlocal.server_args("srv", "m.gguf", mmproj="v.gguf")
     assert a[a.index("--mmproj") + 1] == "v.gguf" and "--mmproj" not in motorlocal.server_args("srv", "m.gguf")
-    assert motorlocal.recommend(16, 50)["id"] == "qwen3-4b"                           # para escribir, el de solo texto
+    assert motorlocal.recommend(16, 50)["id"] == "qwen3.5-4b"                         # para escribir, el de solo texto
 
 
 def test_imagenes_van_a_la_ia_local_si_ve(jv, monkeypatch, tmp_path):
@@ -148,7 +148,7 @@ def test_dar_vision_pide_permiso(jv, monkeypatch):
     monkeypatch.setattr(jv, "motor_paths", lambda: ("/x/llama-server", "/x/Qwen3-4B-Instruct-2507-Q4_K_M.gguf"))
     jv._rec.clear()
     assert jv.motor_voice("dale visión a la IA local", "dale vision a la ia local")
-    assert asked[-1][0] == "instalar" and "Qwen3 VL 4B" in asked[-1][1] and not jobs     # su modelo no ve: propone el que ve
+    assert asked[-1][0] == "instalar" and "Gemma 4 E2B" in asked[-1][1] and not jobs     # su modelo no ve: propone el que ve
     asked[-1][2]()
     assert jobs == [1]
     monkeypatch.setattr(jv, "motor_paths", lambda: ("/x/llama-server", "/x/gemma-3-4b-it-Q4_K_M.gguf"))

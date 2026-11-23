@@ -602,6 +602,11 @@ def _cloud_chat(cfg, messages, json_mode=False, image_path=None, max_tokens=None
         if image_path and not J.motor_sees():
             raise J.AIError("La IA integrada no ve imágenes.", kind="config",
                             why="la IA integrada todavía no ve imágenes: di «Jarvis, dale visión a la IA local»")
+        if J.mini_use(json_mode, image_path, max_tokens):       # 12.41: entender una orden lo hace el cerebro mini (más rápido)
+            try:
+                return J.mini_chat(cfg, messages, json_mode, max_tokens)
+            except Exception as e:
+                J.log_terminal(f"El cerebro mini no respondió ({str(e)[:60]}); pregunto a la IA grande.", "IA LOCAL")
         return J.motorlocal.clean_reply(J.openai_chat(cfg, messages, json_mode, max_tokens or (900 if json_mode else 450),
                                                       image_path=image_path))
     tokens = max_tokens or (1024 if json_mode else 2048)

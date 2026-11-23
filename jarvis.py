@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.40"
+VERSION = "12.41"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -743,6 +743,11 @@ DEFAULT_SETTINGS = {
     "offline_model": "",
     "motor_model": "",             # 12.6: el modelo .gguf de la IA integrada (vacío = el que esté descargado)
     "motor_autostop": True,
+    "motor_threads": 0,            # 12.41: núcleos para la IA integrada (0 = los físicos; lo ajusta «optimiza la IA local»)
+    "motor_mtp_n": 0,              # 12.41: palabras que adivina por paso (decodificación especulativa; 0 = apagada)
+    "motor_kv": "",                # 12.41: memoria del contexto comprimida («q8_0») en equipos con poca RAM
+    "motor_mini": False,           # 12.41: cerebro mini (Qwen3.5 0.8B) para entender las órdenes; la grande responde
+    "motor_tuned": "",             # 12.41: resumen de la última prueba de velocidad
     "motor_backend": "auto",       # 12.7: "auto" (la más rápida: tarjeta gráfica o procesador), "gpu" o "cpu"        # 12.6: apagar la IA integrada a los 20 min sin uso (libera memoria)
     "update_repo": "zaiddia/Jarvis",  # repositorio de GitHub con las versiones (usuario/nombre)
     "update_auto": True,           # mirar una vez al día si hay versión nueva (solo avisa)

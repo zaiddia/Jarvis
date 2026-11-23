@@ -15,7 +15,7 @@ def test_reglas_del_motor():
     sib = [{"rfilename": "README.md"}, {"rfilename": "mmproj-F16.gguf"}, {"rfilename": "Qwen3-4B-Q8_0.gguf"}, {"rfilename": "Qwen3-4B-Q4_K_M.gguf"},
            {"rfilename": "big-00001-of-00002.gguf"}]
     assert motorlocal.pick_gguf(sib, "Q4_K_M") == "Qwen3-4B-Q4_K_M.gguf"
-    assert motorlocal.recommend(16, 50)["id"] == "qwen3-4b" and motorlocal.recommend(4, 50)["id"] == "gemma3-1b" and motorlocal.recommend(2, 50) is None
+    assert motorlocal.recommend(16, 50)["id"] == "qwen3.5-4b" and motorlocal.recommend(4, 50)["id"] == "qwen3.5-0.8b" and motorlocal.recommend(2, 50) is None
     assert motorlocal.recommend(16, 1) is None                                     # sin disco
     a = motorlocal.server_args("llama-server.exe", "m.gguf", threads=3)
     assert a[:3] == ["llama-server.exe", "-m", "m.gguf"] and "127.0.0.1" in a and "-t" in a

@@ -9,8 +9,22 @@ PORT = 8091
 RELEASES_API = "https://api.github.com/repos/ggml-org/llama.cpp/releases?per_page=8"
 
 # Modelos que se probaron bien en español para tareas de docente (cuantización Q4_K_M: buena calidad y liviana).
+# 12.41: primero los de 2026 (Qwen3.5 y Gemma 4: más rápidos y mejores en equipos sin tarjeta gráfica). «nuevo» = piden un
+# motor llama.cpp reciente (se actualiza solo al instalarlos); «mtp» = traen su «adivinador» para la decodificación
+# especulativa (escribe varias palabras por paso, misma respuesta).
+MIN_ENGINE_DATE = "2026-06-15"     # motor con Qwen3.5, Gemma 4 y «--spec-type draft-mtp»
+MINI_ID = "qwen3.5-0.8b"          # el cerebro mini: entiende las órdenes (la IA grande queda para conversar y escribir)
+MINI_PORT = 8092
 CATALOG = [
-    {"id": "qwen3-4b", "nombre": "Qwen3 4B Instruct (recomendado)", "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF", "patron": "Q4_K_M", "gb": 2.5,
+    {"id": "qwen3.5-4b", "nombre": "Qwen3.5 4B (recomendado, 2026)", "repo": "unsloth/Qwen3.5-4B-GGUF", "patron": "Q4_K_M", "gb": 2.8,
+     "ram": 8, "archivo": r"qwen3\.5-4b", "nuevo": True},
+    {"id": "gemma4-e2b", "nombre": "Gemma 4 E2B (rápido, también ve imágenes)", "repo": "unsloth/gemma-4-E2B-it-GGUF", "patron": "Q4_K_M",
+     "gb": 3.2, "ram": 8, "vision": True, "vision_gb": 1.0, "archivo": r"gemma-4-e2b", "nuevo": True, "mtp": True},
+    {"id": "gemma4-e4b", "nombre": "Gemma 4 E4B (mejor calidad, también ve imágenes)", "repo": "unsloth/gemma-4-E4B-it-GGUF", "patron": "Q4_K_M",
+     "gb": 5.0, "ram": 12, "vision": True, "vision_gb": 1.0, "archivo": r"gemma-4-e4b", "nuevo": True, "mtp": True},
+    {"id": "qwen3.5-0.8b", "nombre": "Qwen3.5 0.8B (mini: muy rápido, para equipos con poca memoria)", "repo": "unsloth/Qwen3.5-0.8B-GGUF",
+     "patron": "Q4_K_M", "gb": 0.6, "ram": 4, "archivo": r"qwen3\.5-0\.8b", "nuevo": True},
+    {"id": "qwen3-4b", "nombre": "Qwen3 4B Instruct (2025)", "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF", "patron": "Q4_K_M", "gb": 2.5,
      "ram": 8, "archivo": r"qwen3-4b-instruct"},
     {"id": "qwen3-vl-4b", "nombre": "Qwen3 VL 4B (también ve imágenes)", "repo": "lmstudio-community/Qwen3-VL-4B-Instruct-GGUF", "patron": "Q4_K_M",
      "gb": 2.5, "ram": 8, "vision": True, "vision_gb": 0.8, "archivo": r"qwen3-vl-4b"},
@@ -21,7 +35,7 @@ CATALOG = [
     {"id": "gemma3-1b", "nombre": "Gemma 3 1B (liviano)", "repo": "unsloth/gemma-3-1b-it-GGUF", "patron": "Q4_K_M", "gb": 0.8, "ram": 4,
      "archivo": r"gemma-3-1b"},
 ]
-VISION_ID = "qwen3-vl-4b"           # 12.8: el que se instala para que vea, si tu modelo no puede
+VISION_ID = "gemma4-e2b"            # 12.8: el que se instala para que vea, si tu modelo no puede (12.41: Gemma 4 E2B)
 
 
 def asset_suffix(is_win=True, gpu=False):
@@ -44,7 +58,8 @@ def pick_release(releases, is_win=True, gpu=False):
 def pick_gguf(siblings, patron="Q4_K_M"):
     """El archivo .gguf del modelo con esa cuantización (sin los de visión «mmproj» ni los partidos en varias piezas)."""
     names = [s.get("rfilename", s) if isinstance(s, dict) else str(s) for s in siblings or []]
-    ok = [n for n in names if n.lower().endswith(".gguf") and "mmproj" not in n.lower() and not re.search(r"-\d{5}-of-\d{5}", n)]
+    ok = [n for n in names if n.lower().endswith(".gguf") and "mmproj" not in n.lower()
+          and "mtp" not in n.lower().replace("\\", "/").split("/")[0] and not os.path.basename(n).lower().startswith("mtp-") and not re.search(r"-\d{5}-of-\d{5}", n)]
     exact = [n for n in ok if patron.lower() in n.lower()]
     if exact:
         return sorted(exact, key=len)[0]
@@ -109,6 +124,8 @@ def recommend(ram_gb, free_gb):
     for m in CATALOG:
         if m.get("vision"):
             continue                                   # para escribir, el Qwen3 de solo texto es mejor; los de visión, a pedido
+        if m["id"] == MINI_ID and ram_gb >= 6:
+            continue                                   # el mini es para equipos con muy poca memoria (o de ayudante)
         if ram_gb >= m["ram"] and free_gb >= m["gb"] + 1.0:
             return m
     return None
@@ -118,7 +135,51 @@ def by_id(mid):
     return next((m for m in CATALOG if m["id"] == mid), None)
 
 
-def server_args(exe, model_path, port=PORT, ctx=4096, threads=0, threads_batch=0, gpu=False, mmproj=""):
+def pick_mtp(siblings):
+    """12.41: el «adivinador» MTP que viene con el modelo (archivo «mtp-…gguf» en la raíz; el Q8 si hay). → nombre o ""."""
+    names = [s.get("rfilename", s) if isinstance(s, dict) else str(s) for s in siblings or []]
+    mt = [n for n in names if n.lower().endswith(".gguf") and "/" not in n and os.path.basename(n).lower().startswith("mtp-")]
+    q8 = [n for n in mt if "q8" in n.lower()]
+    return sorted(q8 or mt, key=len)[0] if (q8 or mt) else ""
+
+
+def engine_date_old(date, min_date=MIN_ENGINE_DATE):
+    """¿El motor instalado es anterior al que piden los modelos nuevos? (sin fecha conocida: sí)."""
+    return not re.match(r"\d{4}-\d{2}-\d{2}$", str(date or "")) or str(date) < min_date
+
+
+def tune_candidates(phys, logical, has_mtp=False, low_ram=False):
+    """12.41: las combinaciones que vale la pena medir en tu PC (núcleos, adivinador MTP, memoria comprimida).
+    La primera es la de siempre (la base para comparar)."""
+    phys = max(1, int(phys or 1))
+    logical = max(phys, int(logical or phys))
+    threads = []
+    for t in (phys, max(1, phys - 1), max(1, phys // 2), logical):
+        if t not in threads:
+            threads.append(t)
+    out = [{"threads": phys, "mtp": 0, "kv": ""}]
+    out += [{"threads": t, "mtp": 0, "kv": ""} for t in threads if t != phys]
+    if has_mtp:
+        out += [{"threads": phys, "mtp": n, "kv": ""} for n in (2, 4)]
+    if low_ram:
+        out.append({"threads": phys, "mtp": 0, "kv": "q8_0"})
+    return out
+
+
+def pick_best(results, margin=0.05):
+    """La configuración más rápida; una distinta de la base solo si gana al menos un 5 % (menos ruido, menos sorpresas).
+    results: [(config, tokens/s)] con la base primero."""
+    ok = [(c, v) for c, v in results if v > 0]
+    if not ok:
+        return None, 0.0
+    base_c, base_v = results[0] if results[0][1] > 0 else ok[0]
+    best_c, best_v = max(ok, key=lambda cv: cv[1])
+    if best_v < base_v * (1 + margin):
+        return base_c, base_v
+    return best_c, best_v
+
+
+def server_args(exe, model_path, port=PORT, ctx=4096, threads=0, threads_batch=0, gpu=False, mmproj="", draft="", draft_n=0, kv=""):
     """12.7, más rápida: un solo turno a la vez con todo el contexto (-np 1), reusa lo ya leído del mensaje anterior
     (--cache-reuse: el «system prompt» de Jarvis no se vuelve a procesar en cada pregunta), atención rápida (-fa auto)
     y, si hay tarjeta gráfica, el modelo entero en ella (-ngl 99)."""
@@ -130,6 +191,10 @@ def server_args(exe, model_path, port=PORT, ctx=4096, threads=0, threads_batch=0
         a += ["-t", str(threads)]
     if threads_batch:
         a += ["-tb", str(threads_batch)]
+    if draft and draft_n:                              # 12.41: decodificación especulativa con el adivinador MTP del modelo
+        a += ["--model-draft", draft, "--spec-type", "draft-mtp", "--spec-draft-n-max", str(draft_n)]
+    if kv:                                             # 12.41: la memoria del contexto comprimida (menos RAM, casi igual)
+        a += ["-ctk", kv, "-ctv", kv]
     return a
 
 

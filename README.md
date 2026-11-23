@@ -157,6 +157,19 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## IA local más rápida (v12.41)
+
+- **Modelos de 2026** en la IA integrada: Qwen3.5 4B (recomendado para escribir), Gemma 4 E2B y E4B (también ven imágenes) y Qwen3.5 0.8B
+  (mini, para equipos con muy poca memoria). Los modelos de antes siguen funcionando. Al instalar uno nuevo, Jarvis actualiza solo el
+  motor llama.cpp si es anterior a junio de 2026.
+- **Prueba de velocidad que se ajusta a tu PC** («Jarvis, optimiza la IA local» o Ajustes › IA › «Probar y ajustar», con tu permiso).
+  Mide varias combinaciones y deja la más rápida: cuántos núcleos del procesador usar, el **adivinador MTP** de Gemma 4 (decodificación
+  especulativa: escribe varias palabras por paso y la respuesta es la misma) y la **memoria comprimida** del contexto si tienes 8 GB o
+  menos. Un cambio solo se queda si acelera al menos un 5 %. Si el motor no arranca con un ajuste, vuelve solo a lo normal.
+- **Cerebro mini**: Qwen3.5 0.8B entiende las órdenes dichas a tu manera mientras la IA grande queda para conversar y escribir. Se prueba
+  con frases del banco de comprensión y se deja encendido solo si acierta casi igual que la grande y responde más rápido. Si falla, contesta la grande.
+- Cuánto acelera depende de cada equipo (procesador, memoria, tarjeta gráfica): por eso se mide en el tuyo y no se promete un número.
+
 ## Profesor particular y comprador inteligente (v12.40)
 
 - **Tu profesor particular de lo que quieras.** «Quiero aprender inglés» (o guitarra, Excel, cocina…; «desde cero», «nivel B1», «20 minutos al día»): Jarvis arma un plan de 24 lecciones cortas.

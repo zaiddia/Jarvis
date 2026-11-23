@@ -306,11 +306,18 @@
       vs.className = "status" + (m.ve ? " ok" : "");
       vb.hidden = !!m.ve; vb.disabled = !!m.instalando;
     }
+    const ts = $("#motor-tune-status"), tb = $("#btn-motor-tune");                  // 12.41: más rápida en este equipo
+    if (ts && tb) {
+      ts.textContent = m.ajuste || (m.viejo ? "Tu motor es anterior a junio de 2026: al ajustar se actualiza (los modelos nuevos y el adivinador lo necesitan)." : m.modelo ? "Sin ajustar todavía." : "Primero instala la IA integrada.");
+      ts.className = "status" + (m.ajuste ? " ok" : "");
+      tb.disabled = !m.modelo || !!m.instalando;
+    }
   }
   socket.on("motor", renderMotor);
   socket.emit("motor", {}, renderMotor);
   $("#btn-motor-install").addEventListener("click", () => socket.emit("motor", { action: "instalar", modelo: $("#f-motor-pick").value }, (r) => { renderMotor(r); $("#motor-status").textContent = r.msg || ""; }));
   $("#btn-motor-vision").addEventListener("click", () => socket.emit("motor", { action: "vision" }, (r) => { renderMotor(r); $("#motor-vision-status").textContent = r.msg || ""; }));
+  $("#btn-motor-tune").addEventListener("click", () => socket.emit("motor", { action: "ajustar" }, (r) => { renderMotor(r); $("#motor-tune-status").textContent = r.msg || ""; }));
   $("#btn-motor-toggle").addEventListener("click", () => socket.emit("motor", { action: $("#btn-motor-toggle").textContent === "Apagar" ? "apagar" : "encender" }, (r) => { renderMotor(r); setTimeout(() => socket.emit("motor", {}, renderMotor), 8000); }));
   socket.on("connect", () => {
     socket.emit("get_settings", (res) => {
