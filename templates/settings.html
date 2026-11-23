@@ -499,6 +499,14 @@
           </optgroup>
         </select>
       </div>
+      <div class="field">
+        <div class="ft"><label for="f-heavy-provider">IA para trabajos pesados (12.46)</label><p>Los documentos, planes de clase, guías e investigaciones que Jarvis prepara en segundo plano los hace esta IA; lo de todos los días sigue con la de arriba (rápida). «Automática» usa Kimi K3.1 Pro de NVIDIA si guardaste su clave. Si falla o se llena su límite, el trabajo lo hace tu IA de siempre.</p></div>
+        <select class="inp" id="f-heavy-provider" data-key="ai_heavy_provider" style="max-width:340px">
+          <option value="auto">Automática (Kimi en NVIDIA si hay clave)</option>
+          <option value="off">Ninguna: todo con la IA de arriba</option>
+          {% for pid, p in providers.items() if p.group == "cloud" %}<option value="{{ pid }}">{{ p.label }}</option>{% endfor %}
+        </select>
+      </div>
       {% for pid, p in providers.items() if p.group == "cloud" %}
       <div data-provider="{{ pid }}" hidden>
         <div class="field stack">

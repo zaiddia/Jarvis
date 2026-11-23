@@ -435,7 +435,7 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
 def openai_chat(cfg, messages, json_mode=False, max_tokens=1024, image_path=None):
     body, opt = J._oa_body(cfg, messages, max_tokens, json_mode, image_path=image_path)
     data = J._post(cfg["base"] + "/chat/completions", J._oa_headers(cfg), body, opt,
-                   timeout=600 if cfg.get("ai_provider") == "motor" else 180)      # 12.8: la IA del equipo, con fotos, tarda más
+                   timeout=600 if cfg.get("ai_provider") == "motor" or cfg["spec"].get("thinks") else 180)      # 12.8: la IA del equipo, con fotos, tarda más
     try:
         return (data["choices"][0]["message"].get("content") or "").strip()
     except (KeyError, IndexError, TypeError):
@@ -666,10 +666,46 @@ def _current_model(cfg):
     return cfg["model"]
 
 
+HEAVY_MIN_TOKENS = 2400
+heavy = {"pause_until": 0.0}
+
+
+def heavy_pick(max_tokens, cfg):
+    """12.46: la IA para trabajos pesados (documentos, planes, investigaciones) que corren en segundo plano: Kimi en
+    NVIDIA si tiene clave (o el proveedor elegido). Lo de todos los días sigue con tu IA rápida. → cfg o None."""
+    want = str(J.settings.get("ai_heavy_provider", "auto") or "off")
+    if want == "off" or not getattr(J._tl, "in_job", False) or getattr(J._tl, "no_heavy", False):
+        return None
+    if (max_tokens or 0) < HEAVY_MIN_TOKENS or J.net.get("offline") or time.time() < heavy["pause_until"]:
+        return None
+    pid = "nvidia" if want == "auto" else want
+    if pid == cfg.get("ai_provider") or pid not in J.PROVIDERS or J.PROVIDERS[pid]["group"] != "cloud":
+        return None
+    try:
+        hc = J._ai_cfg({"ai_provider": pid})
+    except Exception:
+        return None
+    if not hc.get("key"):
+        return None
+    hc["heavy"] = True
+    if not getattr(J._tl, "heavy_said", False):
+        J._tl.heavy_said = True
+        msg = f"Este trabajo lo preparo con {hc['label']} ({hc['model'].split('/')[-1]}): tarda un poco más, pero queda mejor."
+        J.log_terminal(msg, "IA")
+        try:
+            J.notice_add(msg, "aviso", "IA")
+        except Exception:
+            pass
+    return hc
+
+
 def ai_chat(messages, json_mode=False, max_tokens=None):
     cfg = J._ai_cfg()
     if not J._is_local_ai(cfg) and J.net_preflight():  # 12.20: se cayó el internet: cambia ya, sin esperar a la nube
         cfg = J._ai_cfg()
+    hv = None if J._is_local_ai(cfg) and cfg.get("offline") else J.heavy_pick(max_tokens, cfg)
+    if hv:
+        cfg = hv
     if cfg["kind"] == "ollama" and not cfg["model"]:
         raise J.AIError("No hay modelo seleccionado. Elige uno en Ajustes › Inteligencia artificial.", kind="config",
                       why="no hay modelo elegido. Elige uno en Ajustes, sección IA")
@@ -707,6 +743,15 @@ def ai_chat(messages, json_mode=False, max_tokens=None):
             return J.privacy_restore(out, mp) if mp else out
         except J.AIError as e:
             J.usage_add(cfg, messages, "", ok=False, kind=e.kind)
+            if cfg.get("heavy"):                       # 12.46: la de trabajos pesados falló o se llenó: lo hace tu IA de siempre
+                if e.kind in ("quota", "balance", "server", "net", "key"):
+                    heavy["pause_until"] = time.time() + (120 if e.kind in ("quota", "server", "net") else 3600)
+                J.log_terminal(f"{cfg['label']} no pudo ({e.why if hasattr(e, 'why') else e}); lo hago con tu IA de siempre.", "IA")
+                J._tl.no_heavy = True
+                try:
+                    return J.ai_chat(messages, json_mode, max_tokens)
+                finally:
+                    J._tl.no_heavy = False
             # Se cayó el internet a mitad de la petición: se repite con la IA del equipo.
             if e.kind == "net" and J.net_recheck() and J._ai_cfg()["kind"] == "ollama":
                 J.log_terminal("Sin internet: respondo con la IA de tu equipo.", "RED")
@@ -1453,6 +1498,9 @@ __all__ = [
     '_classify',
     '_cloud_chat',
     'skip_think',
+    'heavy_pick',
+    'heavy',
+    'HEAVY_MIN_TOKENS',
     '_cloud_stream',
     '_current_model',
     '_drop_path',

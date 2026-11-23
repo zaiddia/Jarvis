@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.45"
+VERSION = "12.46"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -746,6 +746,7 @@ DEFAULT_SETTINGS = {
     "stt_refine": "auto",          # 2ª etapa para las frases dirigidas a Jarvis: auto | gemini | whisper | off
     # IA
     "ai_provider": "ollama",       # cualquiera de PROVIDERS
+    "ai_heavy_provider": "auto",   # 12.46: IA para trabajos pesados en segundo plano: "auto" (Kimi en NVIDIA si hay clave), "off" o un proveedor
     "ollama_host": "http://127.0.0.1:11434",
     "ollama_model": "llama3.2",
     "offline_auto": True,          # sin internet: usar la IA de tu equipo (Ollama) y la voz Piper
@@ -1058,6 +1059,7 @@ def _validate(key, value):
     if key == "zeti_url" and v and not v.startswith("https://"):
         raise ValueError("la dirección debe empezar por https://")
     choices = {"theme": THEMES, "look": ("aurora", "clasico"), "assistant_mode": ("auto", "docente", "general"), "ai_provider": tuple(PROVIDERS),
+               "ai_heavy_provider": ("auto", "off") + tuple(p for p, sp in PROVIDERS.items() if sp["group"] == "cloud"),
                "zeti_order": ("lista", "apellido", "alfabetico"), "hud_expanded": ("estrecho", "amplio", "grande"),
                "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,

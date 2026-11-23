@@ -133,6 +133,7 @@ def start_job(label, fn, name="trabajo"):
     _emit_jobs()
 
     def run():
+        J._tl.in_job = True                            # 12.46: trabajo en segundo plano (puede usar la IA de trabajos pesados)
         try:
             fn()
         except Exception as e:                         # que un fallo no quede mudo: al registro de errores

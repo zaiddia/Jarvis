@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Dos IA: la rápida para conversar y Kimi para los trabajos pesados (v12.46)
+
+- Nuevo ajuste «IA para trabajos pesados» (Ajustes › Inteligencia artificial). En «Automática», si guardaste la clave de NVIDIA, los
+  trabajos largos que Jarvis hace en segundo plano (documentos, planes de clase, guías, investigaciones, bancos de preguntas) los escribe
+  Kimi K3.1 Pro; la conversación y las órdenes siguen con tu IA de siempre (Gemini), que responde en uno o dos segundos.
+- Jarvis avisa en la campana «Este trabajo lo preparo con NVIDIA (kimi-k3.1-pro)…». Si Kimi falla, tarda demasiado o se llena el límite
+  gratis, el trabajo lo termina tu IA de siempre y Kimi descansa unos minutos.
+
 ## Arreglo (v12.45)
 
 - Al pulsar «Probar» y responder bien, «Ahora responde» se pone en verde de inmediato (antes podía seguir en rojo hasta un minuto
