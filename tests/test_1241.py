@@ -181,7 +181,8 @@ def test_por_voz_pide_permiso(jv, monkeypatch):
     monkeypatch.setitem(mt.engine, "job", False)
     for phrase in ("optimiza la IA local", "Jarvis, prueba la velocidad de la IA local", "quiero que la IA local sea más rápida",
                    "optimizar la IA local", "optimiza tu IA local", "optimiza la IA", "acelera el modelo local", "mejora la IA local",
-                   "ajusta la velocidad de la IA local", "haz la prueba de velocidad"):        # 12.42: dicho de otras formas
+                   "ajusta la velocidad de la IA local", "haz la prueba de velocidad",
+                   "optimice la IA local", "acelere su IA local", "mejore la velocidad de la IA local"):     # 12.43: de usted        # 12.42: dicho de otras formas
         jv._rec.clear()
         jv.process_command(phrase)
         assert asked and asked[-1][0] == "instalar" and "velocidad" in asked[-1][1], phrase

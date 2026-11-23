@@ -846,10 +846,11 @@ _MOTOR_EYES = re.compile(r"\b(?:dale|darle|ponle|instala(?:le)?|activa(?:le)?)\s
                          r"(?:\s+(?:local|integrada|sin internet))?\b|\bque la (?:ia|inteligencia artificial) (?:local|integrada|sin internet) (?:vea|pueda ver)\b")
 
 
-_MOTOR_TUNE = re.compile(r"\b(?:optimiza|optimizar|optimices|optimizes|acelera|acelerar|afina|afinar|ajusta|ajustar|mejora|mejorar|"
+_MOTOR_TUNE = re.compile(r"\b(?:optimiza|optimizar|optimices|optimizes|optimice|acelera|acelerar|acelere|afina|afinar|afine|ajusta|ajustar|ajuste|"
+                         r"mejora|mejorar|mejore|(?:mejore|ajuste|pruebe|mida) la velocidad de|hagame mas rapida|haga mas rapida|"
                          r"(?:mejora|mejorar|ajusta|ajustar|prueba|probar|mide|medir) la velocidad de|haz mas rapida|hazme mas rapida)\s+(?:a\s+)?"
-                         r"(?:la\s+|tu\s+|mi\s+|el\s+)?(?:ia|inteligencia artificial|modelo|motor)\s+(?:local|integrad[oa]|sin internet|de jarvis)\b|"
-                         r"\b(?:optimiza|optimizar|optimices|acelera|acelerar)\s+(?:la\s+|tu\s+)?(?:ia|inteligencia artificial)$|"
+                         r"(?:la\s+|tu\s+|mi\s+|el\s+|su\s+)?(?:ia|inteligencia artificial|modelo|motor)\s+(?:local|integrad[oa]|sin internet|de jarvis)\b|"
+                         r"\b(?:optimiza|optimizar|optimices|optimice|acelera|acelerar|acelere)\s+(?:la\s+|tu\s+|su\s+)?(?:ia|inteligencia artificial)$|"
                          r"\bque la (?:ia|inteligencia artificial) (?:local|integrada) (?:sea|vaya|responda|conteste) mas rapid[oa]\b|"
                          r"\bhaz (?:la )?prueba de velocidad(?: de la (?:ia|inteligencia artificial)(?: local| integrada)?)?$")
 

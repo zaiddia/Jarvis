@@ -157,6 +157,10 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Arreglo (v12.43)
+
+- «Optimice la IA local», «acelere su IA local», «mejore la velocidad de la IA local»: la prueba de velocidad también se pide de usted.
+
 ## Arreglo (v12.42)
 
 - «Optimiza la IA local» ahora se entiende dicho de muchas formas («optimizar la IA local», «optimiza tu IA», «acelera el modelo
