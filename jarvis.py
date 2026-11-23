@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.43"
+VERSION = "12.44"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -635,6 +635,13 @@ PROVIDERS = {
                  prefer=[r"^kimi-k\d+(\.\d+)?$", r"^kimi", r"moonshot"],
                  key_url="https://platform.moonshot.ai/console/api-keys", key_hint="sk-…",
                  note="Si tu cuenta de Moonshot es de China, usa «Personalizado» con https://api.moonshot.cn/v1."),
+    "nvidia": dict(label="NVIDIA Build (Kimi K3.1 Pro gratis)", short="NVIDIA", kind="openai", group="cloud",       # 12.44
+                   base="https://integrate.api.nvidia.com/v1", model="moonshotai/kimi-k3.1-pro", no_temp=True,
+                   prefer=[r"^moonshotai/kimi-k3\.1-pro$", r"^moonshotai/kimi-k3", r"^moonshotai/kimi"],
+                   thinks=True, reasoning_effort="low", min_tokens=4096,
+                   key_url="https://build.nvidia.com/moonshotai/kimi-k3_1-pro", key_hint="nvapi-…",
+                   note="Gratis con una cuenta de NVIDIA (piden verificar el celular). Límite de unas 40 peticiones por minuto. "
+                        "Kimi siempre piensa antes de responder: escribe y razona muy bien, pero tarda más que Gemini para la voz."),
     "xai": dict(label="Grok (xAI)", short="Grok", kind="openai", group="cloud",
                 base="https://api.x.ai/v1", model="", prefer=[r"^grok.*fast", r"^grok"],
                 key_url="https://console.x.ai", key_hint="xai-…", note="Pago por uso."),
@@ -1123,7 +1130,7 @@ ENV_ALIASES = {
     "CHATGPT_API_KEY": "chatgpt_api_key", "DEEPSEEK_API_KEY": "deepseek_api_key",
     "MOONSHOT_API_KEY": "kimi_api_key", "KIMI_API_KEY": "kimi_api_key",
     "XAI_API_KEY": "xai_api_key", "MISTRAL_API_KEY": "mistral_api_key",
-    "GROQ_API_KEY": "groq_api_key", "OPENROUTER_API_KEY": "openrouter_api_key",
+    "GROQ_API_KEY": "groq_api_key", "NVIDIA_API_KEY": "nvidia_api_key", "NVAPI_KEY": "nvidia_api_key", "OPENROUTER_API_KEY": "openrouter_api_key",
 }
 env_overrides = {}
 _file_values = {}

@@ -413,7 +413,11 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
             parts.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64," + b64}})
         msgs[-1]["content"] = [{"type": "text", "text": msgs[-1]["content"]}] + parts
     tp = sp.get("tokens_param", "max_tokens")
+    if sp.get("min_tokens"):                           # 12.44: los que piensan gastan tokens antes de responder (Kimi en NVIDIA)
+        max_tokens = max(int(max_tokens or 0), sp["min_tokens"])
     body = {"model": cfg["model"], "messages": msgs, tp: max_tokens}
+    if sp.get("reasoning_effort"):
+        body["reasoning_effort"] = sp["reasoning_effort"]      # pensar poco: responde antes (si no lo acepta, se quita solo)
     if cfg.get("ai_provider") == "motor":
         body["cache_prompt"] = True                    # 12.7: la IA integrada reusa lo ya leído
         body["chat_template_kwargs"] = {"enable_thinking": False}   # 12.20: sin «pensar en voz alta»: responde antes
@@ -424,7 +428,8 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
     if stream:
         body["stream"] = True
     return body, (("temperature", ("temperature",)), ("response_format", ("response_format", "json")),
-                  (tp, (tp,)), ("chat_template_kwargs", ("chat_template_kwargs", "enable_thinking")))
+                  (tp, (tp,)), ("chat_template_kwargs", ("chat_template_kwargs", "enable_thinking")),
+                  ("reasoning_effort", ("reasoning_effort", "reasoning")))
 
 
 def openai_chat(cfg, messages, json_mode=False, max_tokens=1024, image_path=None):
@@ -454,7 +459,35 @@ def openai_stream(cfg, messages, image_path=None):
                 txt = (ch.get("delta") or {}).get("content")
                 if txt:
                     yield txt
-    return it()
+    return J.skip_think(it()) if cfg["spec"].get("thinks") else it()
+
+
+def skip_think(chunks):
+    """12.44: quita del texto en vivo lo que va entre <think> y </think> (para que la voz no lea el razonamiento)."""
+    buf, inside = "", False
+    for c in chunks:
+        buf += c
+        out = ""
+        while buf:
+            if inside:
+                j = buf.find("</think>")
+                if j < 0:
+                    buf = buf[-8:]
+                    break
+                buf, inside = buf[j + 8:], False
+            else:
+                i = buf.find("<think>")
+                if i < 0:
+                    keep = next((k for k in range(min(7, len(buf)), 0, -1) if "<think>".startswith(buf[-k:])), 0)
+                    out += buf[:len(buf) - keep]
+                    buf = buf[len(buf) - keep:]
+                    break
+                out += buf[:i]
+                buf, inside = buf[i + 7:], True
+        if out:
+            yield out
+    if buf and not inside:
+        yield buf
 
 
 # ---- Lista de modelos y elección automática -----------------------------------
@@ -610,6 +643,8 @@ def _cloud_chat(cfg, messages, json_mode=False, image_path=None, max_tokens=None
         return J.motorlocal.clean_reply(J.openai_chat(cfg, messages, json_mode, max_tokens or (900 if json_mode else 450),
                                                       image_path=image_path))
     tokens = max_tokens or (1024 if json_mode else 2048)
+    if cfg["spec"].get("thinks"):                      # 12.44: si el razonamiento llega mezclado en el texto, no se lee en voz alta
+        return J.motorlocal.clean_reply(J.openai_chat(cfg, messages, json_mode, tokens, image_path))
     if cfg["kind"] == "gemini":
         return J.gemini_chat(cfg, messages, json_mode, tokens, image_path)
     if cfg["kind"] == "anthropic":
@@ -1412,6 +1447,7 @@ __all__ = [
     '_api_message',
     '_classify',
     '_cloud_chat',
+    'skip_think',
     '_cloud_stream',
     '_current_model',
     '_drop_path',

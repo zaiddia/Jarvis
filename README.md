@@ -157,6 +157,15 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Kimi K3.1 Pro gratis con NVIDIA Build (v12.44)
+
+- Nuevo proveedor en Ajustes › Inteligencia artificial: **NVIDIA Build (Kimi K3.1 Pro gratis)**. Se crea una cuenta en
+  build.nvidia.com, se verifica el celular, en la página de Kimi K3.1 Pro se pulsa «Generate API Key» y la clave «nvapi-…» se pega en Jarvis.
+  No hace falta LiteLLM ni ningún puente: Jarvis habla directo con NVIDIA.
+- Kimi siempre piensa antes de responder: Jarvis le pide pensar poco, le deja espacio para pensar y no lee el razonamiento en voz alta.
+- Límite gratuito: unas 40 peticiones por minuto; si se llena, Jarvis espera o usa tu IA de respaldo.
+- También se puede poner la clave en el archivo .env como `NVIDIA_API_KEY=nvapi-…`.
+
 ## Arreglo (v12.43)
 
 - «Optimice la IA local», «acelere su IA local», «mejore la velocidad de la IA local»: la prueba de velocidad también se pide de usted.
