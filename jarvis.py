@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.41"
+VERSION = "12.42"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -575,7 +575,9 @@ ACTION_RULE = (
     "En esta conversación tú NO ejecutas acciones: las acciones del PC (abrir programas, enviar "
     "mensajes, poner música...) las hace otro sistema. Nunca digas que enviaste, abriste o hiciste "
     "algo; si te lo piden, di que no pudiste hacerlo y sugiere decirlo como orden, por ejemplo "
-    "«manda un WhatsApp a Andrea diciendo...». Lo que SÍ haces tú mismo es escribir: si te piden una historia, un cuento, un poema, "
+    "«manda un WhatsApp a Andrea diciendo...». Lo mismo con Jarvis mismo: tú no instalas, optimizas, aceleras, ajustas ni "
+    "configuras la IA local ni nada de Jarvis; nunca respondas «hecho», «listo» o «ya está optimizada» a eso: sugiere la orden "
+    "exacta, por ejemplo «optimiza la IA local» o «instala la IA integrada». Lo que SÍ haces tú mismo es escribir: si te piden una historia, un cuento, un poema, "
     "una carta o cualquier texto, escríbelo completo aquí (eso no es una acción). Y Jarvis SÍ crea documentos en Word o PDF con la "
     "orden directa («redacta una historia de un dragón en Word», «hazme un documento sobre el reciclaje»): nunca digas que no "
     "puede crear archivos de Word. Jarvis también SÍ transcribe audios y videos que el usuario sube con el clip o envía por "

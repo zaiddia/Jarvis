@@ -157,6 +157,12 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Arreglo (v12.42)
+
+- «Optimiza la IA local» ahora se entiende dicho de muchas formas («optimizar la IA local», «optimiza tu IA», «acelera el modelo
+  local», «mejora la IA local», «haz la prueba de velocidad»…). Antes algunas llegaban a la IA de conversación, que podía responder
+  «hecho» sin haber hecho nada; ahora además tiene prohibido decir que instaló, optimizó o configuró algo de Jarvis.
+
 ## IA local más rápida (v12.41)
 
 - **Modelos de 2026** en la IA integrada: Qwen3.5 4B (recomendado para escribir), Gemma 4 E2B y E4B (también ven imágenes) y Qwen3.5 0.8B

@@ -179,11 +179,14 @@ def test_por_voz_pide_permiso(jv, monkeypatch):
     monkeypatch.setattr(jv, "motor_tune_job", lambda: jobs.append(1))
     monkeypatch.setattr(jv, "motor_ready", lambda: True)
     monkeypatch.setitem(mt.engine, "job", False)
-    for phrase in ("optimiza la IA local", "Jarvis, prueba la velocidad de la IA local", "quiero que la IA local sea más rápida"):
+    for phrase in ("optimiza la IA local", "Jarvis, prueba la velocidad de la IA local", "quiero que la IA local sea más rápida",
+                   "optimizar la IA local", "optimiza tu IA local", "optimiza la IA", "acelera el modelo local", "mejora la IA local",
+                   "ajusta la velocidad de la IA local", "haz la prueba de velocidad"):        # 12.42: dicho de otras formas
         jv._rec.clear()
         jv.process_command(phrase)
         assert asked and asked[-1][0] == "instalar" and "velocidad" in asked[-1][1], phrase
     asked[-1][2]()
     assert jobs == [1]
+    assert "ya está optimizada" in jv.ACTION_RULE and "optimiza la IA local" in jv.ACTION_RULE   # la IA no finge haberlo hecho
     st = jv.motor_status()
     assert {"mini", "adivina", "ajuste", "viejo"} <= set(st)

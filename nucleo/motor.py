@@ -846,9 +846,12 @@ _MOTOR_EYES = re.compile(r"\b(?:dale|darle|ponle|instala(?:le)?|activa(?:le)?)\s
                          r"(?:\s+(?:local|integrada|sin internet))?\b|\bque la (?:ia|inteligencia artificial) (?:local|integrada|sin internet) (?:vea|pueda ver)\b")
 
 
-_MOTOR_TUNE = re.compile(r"\b(?:optimiza|acelera|ajusta|afina|mejora la velocidad de|prueba la velocidad de|haz mas rapida)\s+(?:a\s+)?"
-                         r"(?:la\s+)?(?:ia|inteligencia artificial)\s+(?:local|integrada|sin internet)\b|"
-                         r"\bque la (?:ia|inteligencia artificial) (?:local|integrada) (?:sea|vaya|responda) mas rapid[oa]\b")
+_MOTOR_TUNE = re.compile(r"\b(?:optimiza|optimizar|optimices|optimizes|acelera|acelerar|afina|afinar|ajusta|ajustar|mejora|mejorar|"
+                         r"(?:mejora|mejorar|ajusta|ajustar|prueba|probar|mide|medir) la velocidad de|haz mas rapida|hazme mas rapida)\s+(?:a\s+)?"
+                         r"(?:la\s+|tu\s+|mi\s+|el\s+)?(?:ia|inteligencia artificial|modelo|motor)\s+(?:local|integrad[oa]|sin internet|de jarvis)\b|"
+                         r"\b(?:optimiza|optimizar|optimices|acelera|acelerar)\s+(?:la\s+|tu\s+)?(?:ia|inteligencia artificial)$|"
+                         r"\bque la (?:ia|inteligencia artificial) (?:local|integrada) (?:sea|vaya|responda|conteste) mas rapid[oa]\b|"
+                         r"\bhaz (?:la )?prueba de velocidad(?: de la (?:ia|inteligencia artificial)(?: local| integrada)?)?$")
 
 
 def motor_voice(text, t):
