@@ -45,7 +45,8 @@ def step_key(step):
 def learn_note(name, args):
     """Anota una acción que pediste tú (no las de rutinas, tareas, celular ni enlaces)."""
     tl = J._tl
-    if not J.settings["learn_enabled"] or getattr(tl, "remote", False) or getattr(tl, "capture", None) is not None:
+    if (not J.settings["learn_enabled"] or getattr(tl, "remote", False) or getattr(tl, "capture", None) is not None
+            or J.private_on()):                        # 12.52: en modo privado no aprende costumbres
         return
     if J.routine_state["running"]:
         return

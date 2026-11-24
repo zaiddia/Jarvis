@@ -508,6 +508,13 @@
         </select>
       </div>
       <div class="field">
+        <div class="ft"><label for="f-assistant-style">Estilo de respuesta (12.52)</label><p>Cómo te habla Jarvis. También por voz: «modo breve», «modo amable», «modo divertido», «modo formal» o «modo normal». En todos, si la respuesta es larga, la primera frase dice lo principal.</p></div>
+        <select class="inp" id="f-assistant-style" data-key="assistant_style" style="max-width:340px">
+          <option value="normal">Normal</option><option value="breve">Breve (una frase)</option><option value="amable">Amable</option>
+          <option value="divertido">Divertido</option><option value="formal">Formal (de usted)</option>
+        </select>
+      </div>
+      <div class="field">
         <div class="ft"><label for="f-backup-provider">IA de respaldo (12.48)</label><p>Si tu IA se llena (límite gratis) o se cae, Jarvis responde con otra que tenga clave guardada, sin que tengas que hacer nada. «Automática» prueba Gemini, NVIDIA e IteraCompute, en ese orden.</p></div>
         <select class="inp" id="f-backup-provider" data-key="ai_backup_provider" style="max-width:340px">
           <option value="auto">Automática (otra gratis con clave)</option>

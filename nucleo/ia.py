@@ -1154,6 +1154,8 @@ def load_memory():
 
 
 def save_memory():
+    if J.private_on():                                 # 12.52: en modo privado no se guarda la charla
+        return
     try:
         os.makedirs(J.CONFIG_DIR, exist_ok=True)
         tmp = J.MEMORY_PATH + ".tmp"
@@ -1297,7 +1299,7 @@ def _extract_json(text):
 def system_static():
     """12.7: la parte FIJA de las instrucciones va primero (igual en cada pregunta del día): así la IA local (y la de la
     nube) reusa lo ya leído y responde antes. Lo que cambia con cada orden va después."""
-    return (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + J.MATH_RULE + J.mode_rule() +
+    return (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + J.MATH_RULE + J.mode_rule() + J.style_rule() +
             f" Hoy es {J.fecha_hablada(datetime.date.today())}.")
 
 
@@ -1465,7 +1467,8 @@ def answer_question_streaming(prompt):
         # contexto y menos turnos: cada palabra de más son décimas de segundo antes de la primera frase.
         system = J.system_static() + J.motorlocal.trim_context(dynamic, 1200)
     else:
-        system = (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + f" Hoy es {J.fecha_hablada(datetime.date.today())}." + dynamic)
+        system = (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + J.style_rule()
+                  + f" Hoy es {J.fecha_hablada(datetime.date.today())}." + dynamic)
     user_msg = {"role": "user", "content": prompt}
     keep = J.settings["history_turns"] * 2
     history = J.chat_history[-keep:] if keep else []

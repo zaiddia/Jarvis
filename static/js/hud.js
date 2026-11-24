@@ -249,6 +249,13 @@
   const nearBottom = (b) => b.scrollHeight - b.scrollTop - b.clientHeight < 60;
 
   let lastDay = "";
+  /* 12.52: lo clave primero — en las respuestas largas, la primera frase va en negrita */
+  function keyFirst(text) {
+    const s = String(text || "");
+    if (s.length < 280 || /^\s*([#>*\-|`$]|\d+[.)])/.test(s) || s.includes("**")) return s;
+    const m = s.match(/^([^\n]{20,220}?[.!?])(\s+)/);
+    return m ? `**${m[1]}**${m[2]}${s.slice(m[0].length)}` : s;
+  }
   function addChat(item, live = true) {
     $(".empty", el.chat)?.remove();
     hasMessages = true;
@@ -277,7 +284,7 @@
     meta.append(t);
     const b = document.createElement("div");
     b.className = "msg-body";
-    if (isUser) b.textContent = item.text; else b.innerHTML = window.JMD ? window.JMD.md(item.text) : md(item.text);
+    if (isUser) b.textContent = item.text; else { const kt = keyFirst(item.text); b.innerHTML = window.JMD ? window.JMD.md(kt) : md(kt); }
     m.append(meta, b);
     if (!isUser && item.text && item.text.length > 2) {                       // 11.8: proyectar, Word, más corto, en voz, graficar
       $$(".msg.lastj", el.chat).forEach((x) => x.classList.remove("lastj"));

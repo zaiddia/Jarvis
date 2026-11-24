@@ -19,6 +19,7 @@ import unicodedata
 _lock = threading.Lock()
 _dir = None
 enabled = True
+paused = False                     # 12.52: en modo privado no se guarda la conversación
 keep_days = 180
 
 STOP = set("""a al algo como con contra cual cuando de del desde donde dos e el ella ellas ellos en entre era es esa
@@ -70,7 +71,7 @@ def tokens(text):
 
 def log(role, text, now=None):
     """Anota una línea de la conversación. Nunca falla."""
-    if not (enabled and _dir) or not str(text).strip():
+    if paused or not (enabled and _dir) or not str(text).strip():
         return
     now = now or datetime.datetime.now()
     item = {"ts": now.isoformat(timespec="seconds"), "r": "u" if role == "user" else "j", "x": redact(text).strip()[:600]}

@@ -19,6 +19,10 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Nuevas habilidades (12.52)", ["retroalimenta estas redacciones", "piénsalo bien: ¿cómo organizo la nivelación de 9B?",
+                                    "rápido: ¿cuánto es el 15 % de 80 mil?", "modo privado", "sal del modo privado", "modo breve", "modo normal",
+                                    "hazme una infografía sobre el ciclo del agua para quinto",
+                                    "créame una herramienta para llevar el préstamo de calculadoras", "abre mis herramientas"]),
     ("Estudio de cine (12.50)", ["crea una película de 6 escenas sobre el ciclo del agua para quinto", "abre las escenas de la película",
                                  "arma la película"]),
     ("IA gratis (12.47-12.48)", ["compara los modelos de NVIDIA", "compara las IA gratis"]),

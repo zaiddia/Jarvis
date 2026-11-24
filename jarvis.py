@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.51"
+VERSION = "12.52"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -753,6 +753,7 @@ DEFAULT_SETTINGS = {
     "stt_refine": "auto",          # 2ª etapa para las frases dirigidas a Jarvis: auto | gemini | whisper | off
     # IA
     "ai_provider": "ollama",       # cualquiera de PROVIDERS
+    "assistant_style": "normal",   # 12.52: estilo de respuesta: normal, breve, amable, divertido o formal
     "ai_heavy_provider": "auto",
     "ai_heavy_model": "",
     "ai_backup_provider": "auto",  # 12.48: si tu IA se llena o se cae: "auto" (otra gratis con clave: Gemini, NVIDIA, IteraCompute), "off" o un proveedor          # 12.47: modelo para los trabajos pesados (vacío = el del proveedor)   # 12.46: IA para trabajos pesados en segundo plano: "auto" (Kimi en NVIDIA si hay clave), "off" o un proveedor
@@ -1068,6 +1069,7 @@ def _validate(key, value):
     if key == "zeti_url" and v and not v.startswith("https://"):
         raise ValueError("la dirección debe empezar por https://")
     choices = {"theme": THEMES, "look": ("aurora", "clasico"), "assistant_mode": ("auto", "docente", "general"), "ai_provider": tuple(PROVIDERS),
+               "assistant_style": ("normal", "breve", "amable", "divertido", "formal"),
                "ai_heavy_provider": ("auto", "off") + tuple(p for p, sp in PROVIDERS.items() if sp["group"] == "cloud"),
                "ai_backup_provider": ("auto", "off") + tuple(p for p, sp in PROVIDERS.items() if sp["group"] == "cloud"),
                "zeti_order": ("lista", "apellido", "alfabetico"), "hud_expanded": ("estrecho", "amplio", "grande"),
@@ -1743,6 +1745,8 @@ def process_command(text):
         return
     if rehearsal_capture(text, t):                     # 12.0: durante el ensayo, lo que dices es para los estudiantes simulados
         return
+    if private_voice(text, t) or think_voice(text, t):  # 12.52: «modo privado», «piénsalo bien: …», «rápido: …»
+        return
     if not getattr(_tl, "live", False) and nl_understand(text, t, early=True):   # 12.29: lo conversacional, primero la IA
         return
     _parts = chain_split(text)                         # 12.1: «pon un temporizador, abre la pizarra y muéstrales el QR»
@@ -1819,6 +1823,8 @@ def process_command(text):
         return
     if cine_voice(text, t):                            # 12.50: «crea una película sobre…», «arma la película»
         return
+    if nuevas52_voice(text, t):                        # 12.52: vigía de páginas, escritura de la clase, infografías,
+        return                                         #        herramientas a tu medida y estilos («modo breve»)
     if video_anim_voice(text, t) or video_qr_voice(text, t):    # 12.0: «hazme un video de 2 minutos que explique …», «muestra el QR del video»
         return
     if procedure_voice(text, t):                       # 12.0: «revisa el procedimiento de Juan», «mapa de errores de 9A», «refuerzo del error más común»
@@ -2618,6 +2624,7 @@ from nucleo.pizarron import *  # noqa: F401,F403,E402
 # → nucleo/videomate.py (lógica en animar.py)
 from nucleo.videomate import *  # noqa: F401,F403,E402
 from nucleo.estudiocine import *  # noqa: F401,F403,E402
+from nucleo.nuevas52 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)

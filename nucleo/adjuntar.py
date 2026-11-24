@@ -18,7 +18,7 @@ from nucleo import J
 ACTIONS = {"acta": "Acta: resumen y acuerdos", "transcribir": "Solo transcribir", "subtitulos": "Subtítulos (.srt)", "redim:w800": "800 px de ancho", "redim:carne": "Tamaño carné",
            "redim:mitad": "A la mitad", "recibo": "Registrar recibo", "audio": "Convertir en audio", "describir": "¿Qué es?", "resumir": "Resumir", "texto": "Sacar el texto", "tabla": "Tabla a Excel", "revisar": "Revisar trabajo", "procedimiento": "Revisar procedimiento",
            "preguntas": "Hacer un quiz", "editar": "Editar con IA", "codigo": "Revisar código", "codigo_ej": "Ejercicios con este código",
-           "copia": "Detectar copia"}
+           "copia": "Detectar copia", "escritura": "Retroalimentar escritura"}
 
 
 _batch = {"ids": []}             # lo último que subiste junto (una tarjeta): a eso se refieren «únelos», «¿qué dicen?»
@@ -83,7 +83,9 @@ def card_of(its):
             "tipos": sorted(kinds), "preview": _preview(its[0]) if len(its) == 1 else "",
             "acciones": [{"a": a, "t": ACTIONS[a]} for a in acts] + [{"a": "conv:" + c, "t": "→ " + conversiones.TARGETS[c]} for c in convs]
             + ([{"a": a, "t": "↔ " + ACTIONS[a]} for a in ("redim:w800", "redim:carne", "redim:mitad")] if len(its) == 1 and kinds == {"imagen"} else [])
-            + ([{"a": "copia", "t": ACTIONS["copia"]}] if len(its) >= 2 and kinds <= {"texto", "word", "pdf"} else [])}      # 12.12: ¿se copiaron?
+            + ([{"a": "copia", "t": ACTIONS["copia"]}] if len(its) >= 2 and kinds <= {"texto", "word", "pdf"} else [])      # 12.12: ¿se copiaron?
+            + ([{"a": "escritura", "t": ACTIONS["escritura"]}] if kinds <= {"texto", "word", "pdf", "imagen"}
+               and not any(i["nombre"].lower().endswith(J.codigo.CODE_EXTS) for i in its) else [])}      # 12.52: redacciones
 
 
 @J.socketio.on("attach")
@@ -246,6 +248,9 @@ def attach_run(its, action, pregunta=""):
         if action == "audio":                          # 12.15: el documento en audio
             J.audio_from_item(its[0])
             J.notify(f"Convirtiendo «{its[0]['nombre']}» en audio; te aviso cuando esté.", "AUDIO")
+            return None
+        if action == "escritura":                      # 12.52: retroalimentación de escritura de toda la clase
+            J._writing_start(its)
             return None
         if action == "copia":                          # 12.12: detector de copia
             msg, path = J.copy_check_files(its)

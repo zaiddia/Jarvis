@@ -106,6 +106,10 @@ def _modo_docente(request, monkeypatch):
         monkeypatch.setitem(jarvis._st, "session", None)
         monkeypatch.setitem(jarvis._cm, "busy", False)
         monkeypatch.setitem(jarvis._cm, "last", None)
+        # 12.52: un «modo privado» o un «modo breve» de una prueba no se cuela en la siguiente
+        if jarvis.priv["on"]:
+            jarvis.private_set(False)
+        monkeypatch.setitem(jarvis.settings, "assistant_style", "normal")
 
 
 @pytest.fixture

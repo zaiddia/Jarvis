@@ -16,6 +16,7 @@ import unicodedata
 _lock = threading.Lock()
 _dir = None
 enabled = True
+paused = False                     # 12.52: en modo privado no se anota nada
 keep_days = 30
 
 # Tipos de entrada y cómo se cuentan
@@ -44,7 +45,7 @@ def _path(day):
 
 def log(kind, text, now=None):
     """Anota una entrada. Nunca falla (el diario no debe estorbar a nada)."""
-    if not (enabled and _dir) or not str(text).strip():
+    if paused or not (enabled and _dir) or not str(text).strip():
         return
     if _PRIVATE.search(_norm(text)):
         text = "(algo privado, no lo anoto)"

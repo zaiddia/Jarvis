@@ -157,6 +157,24 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Nuevas habilidades del mercado (v12.52)
+
+- **Retroalimentación de escritura de toda la clase**: sube las redacciones (fotos, PDF o Word, varias a la vez) y di
+  «retroalimenta estas redacciones» (o el botón «Retroalimentar escritura»). Cada estudiante recibe lo que hizo bien, qué
+  mejorar y sus errores con la corrección; el grupo, los 3 errores más comunes y una mini-clase de 15 minutos. Todo en un Word.
+- **«Piénsalo bien: …»** manda la pregunta a la IA de trabajos pesados (Kimi) y te responde cuando termine; **«Rápido: …»**
+  responde en una o dos frases con la IA rápida.
+- **Modo privado**: «modo privado» → no se guarda historial, diario ni costumbres; al salir («sal del modo privado») Jarvis
+  olvida lo conversado. Se cierra solo tras una hora sin actividad.
+- **Lo clave primero**: en las respuestas largas, la primera frase dice lo principal (y en el HUD va en negrita).
+- **Infografías** gratis y con el texto exacto: «hazme una infografía sobre el ciclo del agua para quinto» (también oscura o
+  sobria, o «conviértelo en infografía» con un documento subido). PNG y PDF en Documentos › Jarvis › Infografías.
+- **Herramientas a tu medida**: «créame una herramienta para llevar el préstamo de calculadoras». Jarvis construye una
+  mini-app que funciona sin internet y guarda sus datos en tu equipo; por seguridad no puede conectarse a ninguna parte.
+  «Abre mis herramientas» para verlas.
+- **Estilos**: «modo breve», «modo amable», «modo divertido», «modo formal» y «modo normal» (también en Ajustes › IA).
+- El vigía de páginas (9.4) y el pódcast con dos voces (11.4) ya existían: siguen igual.
+
 ## Motor más estable y seguro (v12.51)
 
 - **Techos de versión** (restricciones.txt): las librerías reciben sus correcciones, pero no un cambio de versión mayor que
