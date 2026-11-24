@@ -133,6 +133,8 @@ def search(query, asignatura="", k=4):
         return []
     cands = []
     for bid, meta in index["libros"].items():
+        if (meta.get("asignatura") == "Institucional") != (asignatura == "Institucional"):
+            continue                                   # 12.53: los documentos del colegio no se mezclan con el material de clase
         if asignatura and meta.get("asignatura") and norm(meta["asignatura"]).split()[0] not in norm(asignatura) \
                 and norm(asignatura).split()[0] not in norm(meta["asignatura"]):
             continue

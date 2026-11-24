@@ -68,6 +68,9 @@ def parse_grade(text):
     return v if 1.0 <= v <= 5.0 else None
 
 
+listeners = []          # 12.53: quien quiera enterarse de cada nota nueva (las reglas «si alguien saca menos de 3…»)
+
+
 def add(curso, estudiante, actividad, nota, origen="voz", fecha=None, dim=None):
     with _lock:
         lst = data.setdefault(curso, {}).setdefault(estudiante, [])
@@ -78,6 +81,11 @@ def add(curso, estudiante, actividad, nota, origen="voz", fecha=None, dim=None):
             it["dim"] = dim
         lst.append(it)
         save()
+    for fn in list(listeners):
+        try:
+            fn(curso, estudiante, it["actividad"], it["nota"], origen)
+        except Exception:
+            pass
 
 
 def average(curso, estudiante):

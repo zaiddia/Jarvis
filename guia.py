@@ -19,6 +19,9 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Colegio (12.53)", ["situación de convivencia: en el descanso Juan empujó a Pedro y se golpeó la rodilla; es la tercera vez",
+                         "¿qué dice el SIEE sobre las recuperaciones?", "¿qué documentos del colegio tienes?", "arma mi portafolio de evidencias",
+                         "¿qué reglas tengo?"]),
     ("Nuevas habilidades (12.52)", ["retroalimenta estas redacciones", "piénsalo bien: ¿cómo organizo la nivelación de 9B?",
                                     "rápido: ¿cuánto es el 15 % de 80 mil?", "modo privado", "sal del modo privado", "modo breve", "modo normal",
                                     "hazme una infografía sobre el ciclo del agua para quinto",

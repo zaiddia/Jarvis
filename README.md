@@ -157,6 +157,23 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Colegio: convivencia, documentos, portafolio y reglas (v12.53)
+
+- **Asistente de convivencia (Ley 1620 y Decreto 1965)**: «situación de convivencia: …» → tipo I, II o III sugerido, los
+  pasos del protocolo, a quién informar, datos que faltan, el registro para firmar y la citación al acudiente (Word en
+  Documentos › Jarvis › Convivencia). Usa tu manual de convivencia si lo guardaste. Si el relato sugiere riesgo para la vida
+  o abuso, lo primero que dice es qué hacer ya (123, Línea 141 del ICBF, coordinación). La decisión es del comité.
+- **Documentos del colegio con página**: sube el PEI, el SIEE o el manual y di «guárdalo como documento del colegio»; luego
+  «¿qué dice el SIEE sobre las recuperaciones?» responde citando documento y página. No se mezclan con el material de clase.
+- **Portafolio de evidencias** (Decreto 1278, Guía 31): «arma mi portafolio de evidencias» junta lo que hiciste con Jarvis en
+  el año, lo organiza por competencias (académica, administrativa, comunitaria), escribe una reflexión por cada una y deja
+  un Word con el índice y un ZIP con los archivos.
+- **Reglas automáticas**: «si alguien saca menos de 3 en un quiz, prepárale un refuerzo y avísame», «si un estudiante falta 3
+  veces seguidas, recuérdame llamar al acudiente», «cuando alguien saque 5, felicítalo». Los avisos se juntan (uno por tanda,
+  no uno por estudiante). «¿Qué reglas tengo?», «borra la regla 2».
+- La proyección de notas ya existía (10.2: «¿quiénes pueden perder el año en 7A?», «¿cuánto necesita Ana para aprobar?») y
+  los planes de recuperación con carta al acudiente (8.8).
+
 ## Nuevas habilidades del mercado (v12.52)
 
 - **Retroalimentación de escritura de toda la clase**: sube las redacciones (fotos, PDF o Word, varias a la vez) y di
