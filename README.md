@@ -157,6 +157,18 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Comisión de evaluación y orientación vocacional (v12.54)
+
+- **Acta de la comisión de evaluación y promoción** (Decreto 1290): «prepara el acta de la comisión de evaluación de
+  séptimo» (o «actas de las comisiones de evaluación» para todos tus grados). Con tus notas, el periodo actual, lo que
+  falta para aprobar, las fallas y las recuperaciones arma los casos de desempeño bajo o en riesgo, verifica los compromisos
+  del acta anterior, propone recomendaciones y compromisos con fecha y, en el último periodo, el concepto de promoción según
+  tu SIEE (si lo guardaste). Word con asistentes, orden del día y firmas, en Documentos › Jarvis › Comisiones.
+- **Orientación vocacional para once**: «abre el test vocacional para 11A» pone un QR en el proyector; cada estudiante
+  responde 30 preguntas de intereses en su celular (unos 7 minutos) y ve su perfil al instante. «Cierra el test vocacional»,
+  «resultados del test vocacional de 11A» y «orientación vocacional para Ana» (Word con carreras afines, qué hacer este año y
+  rutas para estudiar en Colombia; becas y fechas, a consultar en las páginas oficiales). Es orientación, no diagnóstico.
+
 ## Colegio: convivencia, documentos, portafolio y reglas (v12.53)
 
 - **Asistente de convivencia (Ley 1620 y Decreto 1965)**: «situación de convivencia: …» → tipo I, II o III sugerido, los

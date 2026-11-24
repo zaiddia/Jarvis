@@ -19,6 +19,8 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Cierre del año (12.54)", ["prepara el acta de la comisión de evaluación de séptimo", "abre el test vocacional para 11A",
+                                "resultados del test vocacional de 11A", "orientación vocacional para Ana de 11A"]),
     ("Colegio (12.53)", ["situación de convivencia: en el descanso Juan empujó a Pedro y se golpeó la rodilla; es la tercera vez",
                          "¿qué dice el SIEE sobre las recuperaciones?", "¿qué documentos del colegio tienes?", "arma mi portafolio de evidencias",
                          "¿qué reglas tengo?"]),
