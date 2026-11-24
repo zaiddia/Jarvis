@@ -19,6 +19,8 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Estudio de cine (12.50)", ["crea una película de 6 escenas sobre el ciclo del agua para quinto", "abre las escenas de la película",
+                                 "arma la película"]),
     ("IA gratis (12.47-12.48)", ["compara los modelos de NVIDIA", "compara las IA gratis"]),
     ("IA local más rápida (12.41)", ["optimiza la IA local", "prueba la velocidad de la IA local", "dale visión a la IA local"]),
     ("Profesor particular (12.40)", ["quiero aprender inglés desde cero", "dame la lección de hoy", "repasa inglés", "practica inglés conmigo",

@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.49"
+VERSION = "12.50"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1817,6 +1817,8 @@ def process_command(text):
         return
     if beam_voice(text, t):                            # 11.8: «proyecta eso», «pon la imagen en el proyector»
         return
+    if cine_voice(text, t):                            # 12.50: «crea una película sobre…», «arma la película»
+        return
     if video_anim_voice(text, t) or video_qr_voice(text, t):    # 12.0: «hazme un video de 2 minutos que explique …», «muestra el QR del video»
         return
     if procedure_voice(text, t):                       # 12.0: «revisa el procedimiento de Juan», «mapa de errores de 9A», «refuerzo del error más común»
@@ -2615,6 +2617,7 @@ from nucleo.pizarron import *  # noqa: F401,F403,E402
 # ── 12.0: videos animados estilo 3Blue1Brown, narrados y con subtítulos
 # → nucleo/videomate.py (lógica en animar.py)
 from nucleo.videomate import *  # noqa: F401,F403,E402
+from nucleo.estudiocine import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)

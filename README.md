@@ -157,6 +157,17 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Estudio de cine (v12.50)
+
+- «Jarvis, crea una película de 8 escenas sobre el ciclo del agua para quinto»: la IA de trabajos pesados escribe el guion,
+  una ficha fija de cada personaje y escenario (se copia igual en todas las escenas, así no cambian de cara ni de ropa) y las
+  instrucciones de cada escena. Se abre una página con un botón «Copiar» por escena, para pegar en Google Flow o Meta Vibes.
+- Los clips se descargan a la carpeta «clips» del proyecto (Documentos › Jarvis › Cine) con su número: escena 1, escena 2…
+- «Arma la película»: Jarvis los une en orden a 1280×720, les pone su narración (si es más larga que el clip, congela el
+  final), subtítulos en español y música suave si dejaste un .mp3 en la carpeta del proyecto. Todo en tu PC, gratis.
+- Jarvis no maneja Flow ni Vibes (no tienen API gratis): tú pegas y descargas. «Abre las escenas de la película» vuelve a
+  abrir la página.
+
 ## ¿Por qué tarda pensando? (v12.49)
 
 - «Jarvis, ¿por qué tardas?» ahora cuenta cada consulta a la IA de la última respuesta: cuántas fueron (entender la orden,
