@@ -90,7 +90,7 @@ rem ---- 3. Dependencias: primero todas juntas, que es mucho mas rapido ----
 echo [3/6] Instalando componentes. La primera vez tarda unos minutos...
 set "FALLOS="
 set "CRITICO="
-"%VPY%" -m pip install --prefer-binary -r requirements.txt >> "%LOG%" 2>&1
+"%VPY%" -m pip install --prefer-binary -c restricciones.txt -r requirements.txt >> "%LOG%" 2>&1
 if not errorlevel 1 (
   echo       Todos los componentes instalados.
   goto :componentes_ok
@@ -98,7 +98,7 @@ if not errorlevel 1 (
 echo       Alguno fallo. Los instalo uno por uno para saber cual...
 for /f "usebackq eol=# tokens=1" %%P in ("requirements.txt") do (
   <nul set /p "=      - %%P ... "
-  "%VPY%" -m pip install --prefer-binary %%P >> "%LOG%" 2>&1
+  "%VPY%" -m pip install --prefer-binary -c restricciones.txt %%P >> "%LOG%" 2>&1
   if errorlevel 1 (
     echo FALLO
     set "FALLOS=!FALLOS! %%P"

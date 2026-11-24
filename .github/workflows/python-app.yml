@@ -41,11 +41,13 @@ jobs:
           # Una por una, como el instalador: si alguna opcional falla, las demás siguen.
           $fallos = @()
           Get-Content requirements.txt | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') } | ForEach-Object {
-            python -m pip install $_ 2>&1 | Out-Null
+            python -m pip install -c restricciones.txt $_ 2>&1 | Out-Null
             if ($LASTEXITCODE -ne 0) { $fallos += $_; Write-Host "::warning::No se instaló $_" }
           }
           python -m pip install pytest pytest-timeout pyflakes pyyaml
           if ($fallos.Count -gt 0) { Write-Host "Sin instalar: $($fallos -join ', ')" }
+          python tests/verificar_dependencias.py      # 12.51: que carguen de verdad (si no, las pruebas no valen)
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::Faltan librerías"; exit 1 }
 
       - name: Revisar el código
         run: python tests/revisar_codigo.py

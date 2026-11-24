@@ -1,0 +1,37 @@
+# 12.51: techos de versión de las dependencias (pip install -c restricciones.txt).
+# Permiten las correcciones de cada librería, pero no un cambio de versión mayor que podría romper el .exe de un día
+# para otro sin haber tocado nada. Se suben a propósito, después de probar. Revisado: noviembre de 2026.
+flask<4
+flask-socketio<6
+python-socketio<6
+python-engineio<5
+werkzeug<4
+vosk<0.4
+sounddevice<0.6
+pygame-ce<3
+edge-tts<8
+ollama<0.7
+pywebview<7
+pystray<0.20
+Pillow<14
+pyautogui<0.10
+pyperclip<2
+psutil<8
+schedule<2
+python-docx<2
+sympy<2
+opencv-python-headless<6
+icalendar<8
+recurring-ical-events<4
+websockets<18
+python-pptx<2
+openpyxl<4
+qrcode<9
+cryptography<51
+pypdf<8
+pypdfium2<6
+imageio-ffmpeg<0.9
+playwright<2
+fpdf2<3
+numpy<3
+pyinstaller<7

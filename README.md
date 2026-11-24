@@ -157,6 +157,16 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Motor más estable y seguro (v12.51)
+
+- **Techos de versión** (restricciones.txt): las librerías reciben sus correcciones, pero no un cambio de versión mayor que
+  pueda romper Jarvis de un día para otro. Los usan la compilación del .exe, las pruebas, instalar.bat y la actualización.
+- **Librerías revisadas antes de compilar**: si alguna no se instaló o no carga, la compilación se detiene en vez de
+  publicar un .exe incompleto. El registro de cada compilación muestra las versiones exactas que lleva.
+- **Conexión fijada**: al leer páginas de internet, Jarvis resuelve la dirección una sola vez, la revisa y se conecta justo
+  a ella (con el certificado del nombre original). Una página ya no puede cambiar de dirección a última hora para entrar a
+  tu red local («DNS rebinding»).
+
 ## Estudio de cine (v12.50)
 
 - «Jarvis, crea una película de 8 escenas sobre el ciclo del agua para quinto»: la IA de trabajos pesados escribe el guion,

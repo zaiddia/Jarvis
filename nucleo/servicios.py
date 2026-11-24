@@ -161,8 +161,10 @@ def install_update():
         if res["requirements_changed"]:
             J._upd_progress("Instalando componentes nuevos (puede tardar unos minutos)…")
             try:
+                cons = os.path.join(J.APP_DIR, "restricciones.txt")       # 12.51: sin saltos de versión mayor
                 r = subprocess.run([J._python_console(), "-m", "pip", "install", "-q", "-r",
-                                    os.path.join(J.APP_DIR, "requirements.txt")], cwd=J.APP_DIR,
+                                    os.path.join(J.APP_DIR, "requirements.txt")] + (["-c", cons] if os.path.exists(cons) else []),
+                                   cwd=J.APP_DIR,
                                    capture_output=True, text=True, timeout=900,
                                    creationflags=0x08000000 if J.IS_WIN else 0)
                 if r.returncode != 0:

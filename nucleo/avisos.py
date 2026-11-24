@@ -52,7 +52,8 @@ def _get_public(url, timeout=12):
         return J._get_text(url, timeout=timeout)
     req = urllib.request.Request(url, headers={"User-Agent": f"Mozilla/5.0 (Jarvis/{J.VERSION})",
                                                "Accept-Language": "es-CO,es;q=0.9"})
-    opener = urllib.request.build_opener(_PublicRedirects())
+    opener = urllib.request.build_opener(_PublicRedirects(), confianza.PinnedHTTPHandler(),   # 12.51: se conecta a la
+                                         confianza.PinnedHTTPSHandler())                    # dirección que revisó
     with opener.open(req, timeout=timeout) as r:
         return r.read(3_000_000).decode("utf-8", "replace")
 

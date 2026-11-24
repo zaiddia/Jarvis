@@ -62,10 +62,15 @@ jobs:
           $py = ".venv\Scripts\python.exe"
           & $py -m pip install --upgrade pip
           Get-Content requirements.txt | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') } | ForEach-Object {
-            & $py -m pip install $_ 2>&1 | Out-Null
+            & $py -m pip install -c restricciones.txt $_ 2>&1 | Out-Null
             if ($LASTEXITCODE -ne 0) { Write-Host "::warning::No se instaló $_" }
           }
-          & $py -m pip install pyinstaller
+          & $py -m pip install -c restricciones.txt pyinstaller
+          # 12.51: si falta una librería, se detiene aquí (antes salía un .exe incompleto con solo un aviso)
+          & $py tests/verificar_dependencias.py
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::Faltan librerías: no compilo un Jarvis incompleto."; exit 1 }
+          Write-Host "Versiones exactas de esta compilación:"
+          & $py -m pip freeze
           & $py descargar_modelo.py
 
       - name: Compilar (compilar.bat)
