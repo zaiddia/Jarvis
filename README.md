@@ -157,6 +157,18 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Imágenes gratis con SenseNova (v12.61)
+
+- Jarvis ya creaba imágenes con Gemini o ChatGPT; ahora también con **SenseNova U1.5** (de SenseTime), **gratis mientras
+  dure su beta**, con la misma clave `sk-` de SenseNova de la sección IA. Funciona igual que siempre: «hazme una ilustración
+  del ciclo del agua», «tres opciones de un afiche del día del idioma», «una imagen horizontal de la célula para proyectar»,
+  y después «otra versión», «cámbiale el fondo a azul», «hazla vertical».
+- *Ajustes › Imágenes para la clase › Quién crea las imágenes*: **SenseNova**, o **Automático** (Gemini, si no ChatGPT, y
+  si no hay ninguna de esas, SenseNova).
+- Sin marca de agua y en buena resolución (1536 px; 2048 px de ancho en horizontal).
+- **Privacidad**: sus servidores están en China. En automático, Jarvis nunca le manda **una foto tuya** para editar (puede
+  tener caras de estudiantes); solo si escoges SenseNova a propósito.
+
 ## SenseNova como IA (v12.60)
 
 - Nuevo proveedor en *Ajustes › Inteligencia artificial*: **SenseNova** (de SenseTime), con el modelo

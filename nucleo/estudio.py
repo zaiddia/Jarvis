@@ -21,12 +21,16 @@ _oa_model = {"name": "", "checked": 0.0}
 
 
 # ============================================================================ QUIÉN LAS CREA
-def image_backend():
-    """(proveedor, cfg) o (None, mensaje)."""
+def image_backend(allow_cn=True):
+    """(proveedor, cfg) o (None, mensaje). allow_cn=False: en automático no manda una foto tuya a SenseNova (China)."""
     pref = J.settings.get("image_provider", "auto")
     g = J._gemini_for_stt()
     o = J._ai_cfg({"ai_provider": "chatgpt"})
     o = o if o.get("key") else None
+    sn = J._ai_cfg({"ai_provider": "sensenova"})
+    sn = sn if sn.get("key") else None
+    if pref == "sensenova":                                # 12.61: gratis en su beta
+        return ("sensenova", sn) if sn else (None, "para crear imágenes con SenseNova necesito su clave (Ajustes › Inteligencia artificial)")
     if pref == "gemini":
         return ("gemini", g) if g else (None, "para crear imágenes con Gemini necesito su clave (Ajustes › Inteligencia artificial)")
     if pref == "chatgpt":
@@ -38,9 +42,15 @@ def image_backend():
         if name == "gemini" and not J.image_model():
             continue
         return name, cfg
+    if sn and allow_cn:
+        return "sensenova", sn                             # 12.61: si no hay Gemini ni ChatGPT con imágenes, la gratis
+    if sn:
+        return None, ("para editar una foto tuya en automático no uso SenseNova (sus servidores están en China); escógela "
+                      "en Ajustes › Imágenes si quieres, o pon una clave de Gemini o ChatGPT")
     if g:
         return None, "tu cuenta de Gemini no tiene un modelo de imágenes disponible; pon una clave de ChatGPT en Ajustes › Inteligencia artificial o revisa tu cuenta de Gemini"
-    return None, "para crear imágenes necesito tu clave de Gemini o de ChatGPT (Ajustes › Inteligencia artificial)"
+    return None, ("para crear imágenes necesito tu clave de Gemini, de ChatGPT o de SenseNova (gratis), en Ajustes › "
+                  "Inteligencia artificial")
 
 
 def openai_image_model(cfg):
@@ -114,6 +124,13 @@ def _one_image(prov, cfg, prompt, aspect="", src=None):
             if data is None:
                 raise e
         return imagenes.extract(data)
+    if prov == "sensenova":
+        b64 = base64.b64encode(_png_bytes(src)).decode() if src else ""
+        model = J.settings.get("image_model_sensenova", "").strip() or imagenes.SENSENOVA_MODEL
+        path = "/images/edits" if src else "/images/generations"
+        data = J._http("POST", f"{cfg['base']}{path}", {"Authorization": f"Bearer {cfg['key']}"},
+                       imagenes.sensenova_payload(model, prompt, aspect, b64), timeout=240)
+        return imagenes.sensenova_extract(data, J._sn_fetch)
     model = J.openai_image_model(cfg)
     if src:
         fields = {"model": model, "prompt": prompt, "n": "1"}
@@ -126,9 +143,25 @@ def _one_image(prov, cfg, prompt, aspect="", src=None):
     return imagenes.openai_extract(data)
 
 
+def _sn_fetch(url, limit=25 * 1024 * 1024):
+    """Descarga el enlace temporal de la imagen de SenseNova (solo https, con tope de tamaño)."""
+    if not str(url).startswith("https://"):
+        raise ValueError("enlace de imagen no válido")
+    req = urllib.request.Request(url, headers={"User-Agent": f"Jarvis/{J.VERSION}"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            raw = r.read(limit + 1)
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        raise ValueError(f"no pude descargar la imagen ({e})")
+    if len(raw) > limit:
+        raise ValueError("la imagen es demasiado grande")
+    return raw
+
+
 def studio_generate(tema, estilo="", formato="", n=1, folder=None, src=None, instruccion=""):
     """Crea (o edita, con «src») n imágenes. → [rutas]. Lanza RuntimeError con un mensaje claro."""
-    prov, cfg = J.image_backend()
+    own_photo = bool(src) and not any(x["path"] == src for x in studio["items"])     # una foto tuya, no una creada aquí
+    prov, cfg = J.image_backend(allow_cn=not own_photo)
     if not prov:
         raise RuntimeError(cfg)
     prompt = imagenes.edit_prompt(instruccion, estilo) if src else imagenes.build_prompt(tema, estilo, formato)
@@ -271,5 +304,5 @@ def studio_voice(text, t):
     return True
 
 
-__all__ = ['_AGAIN', '_FMT', '_IMG_REF', '_NOT_EDIT', '_PRINT', '_STRONG', '_WEAK', '_oa_model', '_one_image', '_png_bytes', '_post_multipart', '_studio_source',
+__all__ = ['_AGAIN', '_FMT', '_IMG_REF', '_NOT_EDIT', '_PRINT', '_STRONG', '_WEAK', '_oa_model', '_one_image', '_png_bytes', '_post_multipart', '_sn_fetch', '_studio_source',
            'handle_studio_action', 'image_backend', 'openai_image_model', 'studio', 'studio_generate', 'studio_info', 'studio_run', 'studio_voice']

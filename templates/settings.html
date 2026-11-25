@@ -859,16 +859,19 @@
     <div class="sgroup" id="g-imagenes-para-la-clase">
       <div class="group">Imágenes para la clase</div>
       <p class="pane-intro">«Jarvis, hazme una ilustración del ciclo del agua», «tres opciones de un afiche del día del idioma en acuarela», «dibújame un triángulo rectángulo para colorear», «una imagen horizontal de la célula para proyectar». Después: «otra versión», «cámbiale el fondo a azul», «hazla vertical», «imprímela». También puedes editar una foto que subas al chat. Se guardan en <code>Documentos\Jarvis\Imágenes</code>.</p>
-      <div class="field stack"><div class="ft"><label for="f-img-provider">Quién crea las imágenes</label><p><b>Automático</b>: Gemini si tienes su clave (y tu cuenta tiene modelo de imágenes); si no, ChatGPT. Las claves se ponen en la sección IA. Crear imágenes puede tener costo según tu cuenta.</p></div>
+      <div class="field stack"><div class="ft"><label for="f-img-provider">Quién crea las imágenes</label><p><b>Automático</b>: Gemini si tienes su clave (y tu cuenta tiene modelo de imágenes); si no, ChatGPT; si no, SenseNova (gratis en su beta, servidores en China: en automático nunca le manda una foto tuya para editar). Las claves se ponen en la sección IA. Crear imágenes puede tener costo según tu cuenta.</p></div>
         <select class="inp" id="f-img-provider" data-key="image_provider" style="max-width:340px">
           <option value="auto">Automático</option>
           <option value="gemini">Gemini (Google)</option>
           <option value="chatgpt">ChatGPT (OpenAI)</option>
+          <option value="sensenova">SenseNova (gratis en beta)</option>
         </select></div>
       <div class="field stack"><div class="ft"><label for="f-img-model">Modelo de imágenes de Gemini</label><p>Déjalo vacío para que Jarvis use el que tenga tu cuenta.</p></div>
         <input class="inp mono narrow" type="text" id="f-img-model" data-key="image_model" placeholder="automático"></div>
       <div class="field stack"><div class="ft"><label for="f-img-model-oa">Modelo de imágenes de ChatGPT</label><p>Vacío: el más nuevo de tu cuenta (por ejemplo gpt-image-2).</p></div>
         <input class="inp mono narrow" type="text" id="f-img-model-oa" data-key="image_model_openai" placeholder="automático"></div>
+      <div class="field stack"><div class="ft"><label for="f-img-model-sn">Modelo de imágenes de SenseNova</label><p>Vacío: sensenova-u1.5-lite. También existe sensenova-u1.5-fast (más rápido).</p></div>
+        <input class="inp mono narrow" type="text" id="f-img-model-sn" data-key="image_model_sensenova" placeholder="automático"></div>
 
     </div>
     <div class="sgroup" id="g-kit-para-colegas">

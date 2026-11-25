@@ -225,6 +225,38 @@ def openai_extract(data):
     return base64.b64decode(b), ".png"
 
 
+# 12.61: SenseNova U1.5 (SenseTime): API de imágenes al estilo OpenAI, gratis en su beta. Lados múltiplos de 32 (512-4096).
+SENSENOVA_MODEL = "sensenova-u1.5-lite"
+SENSENOVA_SIZES = {"1:1": "1536x1536", "16:9": "2048x1152", "3:4": "1536x2048"}
+
+
+def sensenova_payload(model, prompt_text, aspect="", src_b64=""):
+    body = {"model": model or SENSENOVA_MODEL, "prompt": prompt_text, "n": 1,
+            "size": SENSENOVA_SIZES.get(aspect, "auto" if src_b64 else "1536x1536"),
+            "watermark": False, "prompt_extend": True, "response_format": "b64_json"}
+    if src_b64:
+        body["images"] = [{"image_url": "data:image/png;base64," + src_b64}]
+    return body
+
+
+def sensenova_extract(data, fetch):
+    """(bytes, extensión). Acepta b64_json o un enlace temporal (lo descarga con fetch(url) → bytes)."""
+    try:
+        item = (data.get("data") or [])[0]
+    except (AttributeError, IndexError, TypeError):
+        item = None
+    if not isinstance(item, dict):
+        raise ValueError("el modelo no devolvió ninguna imagen")
+    if item.get("b64_json"):
+        raw = base64.b64decode(item["b64_json"])
+    elif str(item.get("url", "")).startswith("https://"):
+        raw = fetch(item["url"])
+    else:
+        raise ValueError("el modelo no devolvió ninguna imagen")
+    ext = ".jpg" if raw[:3] == b"\xff\xd8\xff" else ".webp" if raw[8:12] == b"WEBP" else ".png"
+    return raw, ext
+
+
 def multipart(fields, files):
     """Cuerpo multipart/form-data (para editar con OpenAI). → (bytes, content_type)."""
     import uuid

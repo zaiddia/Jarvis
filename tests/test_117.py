@@ -81,7 +81,7 @@ def _wait(jv, text):
 def test_quien_crea_las_imagenes(jv, monkeypatch):
     monkeypatch.setattr(jv, "_gemini_for_stt", lambda: None)
     monkeypatch.setitem(jv.settings, "chatgpt_api_key", "")
-    assert jv.image_backend()[0] is None and "Gemini o de ChatGPT" in jv.image_backend()[1]
+    assert jv.image_backend()[0] is None and "Gemini, de ChatGPT o de SenseNova" in jv.image_backend()[1]
     monkeypatch.setitem(jv.settings, "chatgpt_api_key", "sk-falsa")
     assert jv.image_backend()[0] == "chatgpt"
     monkeypatch.setattr(jv, "_gemini_for_stt", lambda: {"key": "AIza"})
