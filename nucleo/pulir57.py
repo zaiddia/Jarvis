@@ -47,6 +47,11 @@ def _p57_photo():
 
 
 def pulir57_voice(text, t):
+    d = J.skills.parse(text) if re.match(r"^(?:jarvis )?(?:llama|marca|haz(?:le|me)? una llamada|llamada)", t) else None
+    if d and d[0] == "llamar" and not J.skills.resolve_contact(d[1]["contacto"]):        # 12.58: sin número, ni preguntar «¿llamo?»
+        J.reply(f"No tengo el número de «{d[1]['contacto']}». Añádelo en Ajustes › Cuentas y mensajes › Contactos, o dime "
+                "el número con el código de país, por ejemplo «llama al +57 300 123 4567».", "PC")
+        return True
     if _P57_PHOTO.match(t):
         J.reply("Mira a la cámara: en tres segundos.", "CÁMARA")
         J.start_job("Tomando la foto", J._p57_photo, "foto")

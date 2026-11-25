@@ -404,6 +404,8 @@ _REMOTE_DELETE_RE = re.compile(r"\b(?:borra|borrar|elimina|eliminar|olvida|olvid
 def remote_blocked(name, args=None):
     """El motivo si esta acción no se hace desde el celular; None si se puede."""
     sk = skills.REGISTRY.get(name)
+    if name == "llamar":                                 # 12.58: la llamada sale del computador, no tiene sentido desde el celular
+        return "Las llamadas las hago en el computador con Enlace Móvil. Desde el celular, llama tú directamente."
     if sk is not None and sk.dangerous:
         return "Por seguridad, eso (apagar, reiniciar, cerrar sesión, borrar…) no lo hago desde el celular."
     if name == "ventana" and J.normalize((args or {}).get("accion", "")).startswith("cerr"):

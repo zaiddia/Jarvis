@@ -1033,6 +1033,94 @@ def screen_off():
     return "Apago la pantalla. Mueve el ratón o toca una tecla para encenderla."
 
 
+# 12.58: lo que suena en el equipo, según los controles multimedia de Windows (Spotify, YouTube en el navegador, el
+# reproductor…). No escucha el audio: solo pregunta a Windows el título y el artista que la app publica.
+_PS_NOW_PLAYING = r"""
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$asTask = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' })[0]
+Function Await($t, $type) { $n = $asTask.MakeGenericMethod($type).Invoke($null, @($t)); $n.Wait(-1) | Out-Null; $n.Result }
+[Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager,Windows.Media.Control,ContentType=WindowsRuntime] | Out-Null
+[Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties,Windows.Media.Control,ContentType=WindowsRuntime] | Out-Null
+$mgr = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
+foreach ($s in @($mgr.GetCurrentSession()) + @($mgr.GetSessions())) {
+  if ($null -eq $s) { continue }
+  $p = Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
+  Write-Output ("@@" + $s.SourceAppUserModelId + "|" + $s.GetPlaybackInfo().PlaybackStatus + "|" + $p.Title + "|" + $p.Artist + "|" + $p.AlbumTitle)
+}
+"""
+_MEDIA_APPS = (("spotify", "Spotify"), ("chrome", "Chrome"), ("msedge", "Edge"), ("firefox", "Firefox"), ("brave", "Brave"),
+               ("opera", "Opera"), ("zunemusic", "el Reproductor multimedia"), ("vlc", "VLC"), ("itunes", "iTunes"),
+               ("applemusic", "Apple Music"), ("deezer", "Deezer"), ("youtube", "YouTube Music"), ("tidal", "Tidal"))
+
+
+def parse_now_playing(out):
+    """Las líneas «@@app|estado|título|artista|álbum» → la sesión que suena (o la primera con título). None si no hay."""
+    seen, rows = set(), []
+    for ln in str(out or "").splitlines():
+        if not ln.startswith("@@"):
+            continue
+        parts = (ln[2:].split("|") + [""] * 5)[:5]
+        app_id, status, title, artist, album = (x.strip() for x in parts)
+        if not title or (app_id, title) in seen:
+            continue
+        seen.add((app_id, title))
+        low = app_id.lower()
+        app = next((n for k, n in _MEDIA_APPS if k in low), "")
+        rows.append({"app": app, "playing": status.lower() == "playing", "titulo": title, "artista": artist, "album": album})
+    if not rows:
+        return None
+    return next((r for r in rows if r["playing"]), rows[0])
+
+
+def now_playing_text(info):
+    if not info:
+        return ("En el computador no está sonando nada que Windows me informe. Si es una canción de afuera (la radio, otro "
+                "celular), no la puedo reconocer: no escucho el audio.")
+    t = info["titulo"]
+    if info["app"] in ("Chrome", "Edge", "Firefox", "Brave", "Opera"):        # en el navegador el «título» suele ser el del video
+        t = re.sub(r"\s*[-–|]\s*YouTube(?: Music)?\s*$", "", t)
+    who = f" de {info['artista']}" if info["artista"] and info["artista"].lower() not in t.lower() else ""
+    where = f" en {info['app']}" if info["app"] else ""
+    if info["playing"]:
+        return f"Está sonando «{t}»{who}{where}."
+    return f"Está en pausa «{t}»{who}{where}. Di «pausa» para que siga."
+
+
+@skill("que_suena", "Dice qué canción o video está sonando en el equipo (Spotify, YouTube en el navegador, el reproductor…)")
+def now_playing():
+    try:
+        r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", _PS_NOW_PLAYING],
+                           capture_output=True, timeout=20, creationflags=CREATE_NO_WINDOW)
+    except (OSError, subprocess.SubprocessError):
+        raise SkillError("No pude preguntarle a Windows qué está sonando.")
+    return now_playing_text(parse_now_playing(r.stdout.decode("utf-8", "replace")))
+
+
+# 12.58: llamadas con Enlace Móvil (Phone Link): Windows llama desde tu celular conectado. Jarvis solo abre «tel:».
+def _call_confirm(args):
+    c = str(args.get("contacto", "")).strip()
+    num = resolve_contact(c)
+    return f"¿Llamo a {c} ({num}) desde tu celular? Di «sí» o «no»." if num else f"¿Llamo a {c}? Di «sí» o «no»."
+
+
+@skill("llamar", "Llama por teléfono a un contacto de la agenda o a un número, desde tu celular con Enlace Móvil de Windows",
+       "contacto", dangerous=True, confirm=_call_confirm)
+def call(contacto):
+    num = resolve_contact(contacto)
+    if not num:
+        raise SkillError(f"No tengo el número de «{contacto}». Añádelo en Ajustes › Cuentas y mensajes › Contactos, "
+                         "o dime el número con el código de país (por ejemplo «llama al +57 300 123 4567»).")
+    try:
+        os.startfile("tel:" + num)                       # Windows lo pasa a Enlace Móvil (o pregunta con qué app)
+    except (OSError, AttributeError):
+        raise SkillError("No pude abrir la llamada. Revisa que Enlace Móvil esté instalado y con tu celular conectado "
+                         "(Windows › Enlace Móvil › Llamadas).")
+    return (f"Llamando a {contacto} desde tu celular. Si Windows te pregunta con qué app, elige Enlace Móvil "
+            "y marca «usar siempre».")
+
+
 @skill("tema_windows", "Pone Windows en modo oscuro o en modo claro", "modo: oscuro|claro")
 def windows_theme(modo="oscuro"):
     if os.name != "nt":
@@ -1751,6 +1839,16 @@ def parse(text):
     if re.fullmatch(r"(?:baja(?:le)?|disminuye|reduce|menos) (?:el |un poco (?:el )?)?brillo(?: de la pantalla)?(?: un poco)?|"
                     r"(?:pon(?:me)?|dame) menos brillo|(?:hay )?mucho brillo", t):
         return "brillo", {"nivel": "bajar"}
+    if re.fullmatch(r"(?:jarvis )?(?:que|cual) (?:cancion|tema|musica|video|canción) (?:esta sonando|suena|es esta|es este|estoy escuchando|esta puesta|tengo puesta)(?: ahora| ahorita)?|"
+                    r"(?:jarvis )?como se llama (?:esta|esa|la) cancion(?: que (?:suena|esta sonando))?|(?:jarvis )?quien canta (?:esta|esa) cancion|"
+                    r"(?:jarvis )?que (?:esta sonando|suena)(?: ahora| ahorita)?", t):                     # 12.58
+        return "que_suena", {}
+    m = re.match(r"^(?:jarvis )?(?:llama(?:le)?|marca(?:le)?|haz(?:le)? una llamada|hazme una llamada|llamada) (?:a |al |a la |al numero )?(.+?)(?: por (?:telefono|celular|el celular))?$", t)
+    if m and not re.search(r"\b(?:whatsapp|wasap|telegram|zoom|meet|teams|skype|videollamada|reunion)\b", t) \
+            and not re.match(r"(?:la atencion|atencion|mi atencion|lista|asistencia)\b", m.group(1)):          # 12.58: «llama a Juan»
+        orig_m = re.search(r"(?i)\b(?:a|al|a la|al número|al numero)\s+(.+?)(?:\s+por\s+(?:tel[eé]fono|celular|el celular))?\s*[.!?]*$", orig)
+        who = re.sub(r"(?i)^(?:a\s+)?mi\s+", "", (orig_m.group(1) if orig_m else m.group(1)).strip())
+        return "llamar", {"contacto": who}
     m = re.fullmatch(r"(?:pon(?:me)?|activa|usa|cambia a|pasa a) (?:el )?(?:modo|tema) (oscuro|claro|noche|dia)(?: (?:de|en) windows| en el (?:pc|computador))?", t)
     if m:                                                                                          # 12.57
         return "tema_windows", {"modo": "oscuro" if m.group(1) in ("oscuro", "noche") else "claro"}

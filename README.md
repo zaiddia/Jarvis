@@ -157,6 +157,16 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## ¿Qué está sonando? y llamadas (v12.58)
+
+- **«¿Qué canción está sonando?»** (o «¿cómo se llama esta canción?», «¿quién canta esta canción?»): Jarvis le pregunta a
+  Windows qué se reproduce en el equipo (Spotify, YouTube en el navegador, el Reproductor multimedia, VLC…) y te dice el
+  título, el artista y en qué app. No escucha el audio: una canción que suena fuera del computador no la puede reconocer.
+- **«Llama a Juan»** (o «llámale a mi mamá», «llama al +57 300 123 4567»): busca el número en tu agenda de contactos, te
+  pregunta «¿llamo a Juan (+57…)?» y, si dices que sí, la llamada sale de tu celular con **Enlace Móvil** de Windows. La
+  primera vez Windows pregunta con qué app: elige Enlace Móvil y «usar siempre». Necesitas Enlace Móvil con el celular
+  conectado y el contacto en *Ajustes › Cuentas y mensajes › Contactos* («Juan = +573001112233»).
+
 ## Revisión con frases reales (v12.57)
 
 Pasé 75 frases de uso diario por Jarvis y corregí las que iban al lugar equivocado:
