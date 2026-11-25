@@ -123,6 +123,8 @@ def attention_tick(now=None):
     J.push_chat("jarvis", msg, "ATENCIÓN")
     if s["attention_phone"]:
         J.phone_send("🧭 " + msg)
+    else:
+        J.r55_away_send("🧭 " + msg)                    # 12.55: si no estás frente al computador
     return new
 
 

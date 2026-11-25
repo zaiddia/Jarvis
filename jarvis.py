@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.54"
+VERSION = "12.55"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -958,7 +958,11 @@ DEFAULT_SETTINGS = {
     "attention_from": 7,
     "attention_to": 19,
     "attention_weekend": False,
-    "attention_phone": False,      # …y mandarlo también al celular
+    "attention_phone": False,      # …y mandarlo también al celular (siempre, aunque estés en el computador)
+    "phone_away": True,            # 12.55: lo proactivo, lo importante y los recordatorios, al celular solo cuando no estás
+    "phone_away_min": 10,          # …tras tantos minutos sin usar el computador
+    "phone_away_max": 10,          # …como mucho tantos avisos al día (los recordatorios tuyos no cuentan)
+    "nl_memo": True,               # 12.55: recordar las frases que la IA ya entendió, para ir directo la próxima vez
     "lessons_learn": True,         # 9.4: proponer lecciones cuando corriges a Jarvis
     "watch_hours": 6,              # 9.4: cada cuántas horas revisar las páginas vigiladas
     "morning_voice_note": True,    # 9.5: el reporte de la mañana también como nota de voz en Telegram
@@ -1017,7 +1021,7 @@ RANGES = {
     "mic_sensitivity": (0, 60), "min_command_chars": (0, 20), "quake_min_mag": (3.0, 7.0),
     "hud_x": (-1, 20000), "hud_y": (-1, 20000), "copilot_interval": (1, 60), "notes_notice_min": (0, 240), "calendar_notice_min": (0, 120),
     "camera_index": (0, 9),
-    "proactive_max": (0, 50), "ai_daily_limit": (0, 100000), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "docente_friday_hour": (10, 22), "night_prep_hour": (15, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "school_weeks": (20, 52), "period_current": (1, 6), "practice_goal": (5, 200), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
+    "proactive_max": (0, 50), "phone_away_min": (2, 120), "phone_away_max": (1, 50), "ai_daily_limit": (0, 100000), "proactive_break_min": (30, 300), "diary_days": (1, 365), "history_days": (7, 730), "tool_select_max": (10, 80), "project_parallel": (1, 4), "email_days": (1, 14), "risk_grade": (1.0, 5.0), "risk_absences": (1, 30), "weekly_hour": (0, 23), "docente_friday_hour": (10, 22), "night_prep_hour": (15, 23), "recovery_days": (3, 30), "live_quiz_secs": (10, 120), "drive_backup_keep": (2, 50), "attention_from": (0, 23), "attention_to": (1, 24), "watch_hours": (1, 72), "scale_superior": (3.0, 5.0), "school_weeks": (20, 52), "period_current": (1, 6), "practice_goal": (5, 200), "scale_alto": (2.5, 5.0), "scale_basico": (1.0, 4.5), "week_prep_hour": (0, 23), "inbox_hour": (4, 11), "inbox_max": (1, 10), "mobile_port": (1024, 65535),
 }
 
 settings = dict(DEFAULT_SETTINGS)
@@ -1750,6 +1754,8 @@ def process_command(text):
     if colegio53_voice(text, t):                       # 12.53: convivencia (Ley 1620), reglas, documentos del colegio, portafolio
         return
     if cierre54_voice(text, t):                        # 12.54: acta de la comisión de evaluación, test y orientación vocacional
+        return
+    if rapido55_voice(text, t):                        # 12.55: al instante sin la IA («gracias», «habla más despacio»…), avisos al celular
         return
     if not getattr(_tl, "live", False) and nl_understand(text, t, early=True):   # 12.29: lo conversacional, primero la IA
         return
@@ -2631,6 +2637,7 @@ from nucleo.estudiocine import *  # noqa: F401,F403,E402
 from nucleo.nuevas52 import *  # noqa: F401,F403,E402
 from nucleo.colegio53 import *  # noqa: F401,F403,E402
 from nucleo.cierre54 import *  # noqa: F401,F403,E402
+from nucleo.rapido55 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)

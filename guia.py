@@ -19,6 +19,8 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Más rápido y al celular (12.55)", ["pon música relajante", "baja el brillo", "habla más despacio", "¿cuántas frases has aprendido?",
+                                         "¿qué me mandaste al celular hoy?"]),
     ("Cierre del año (12.54)", ["prepara el acta de la comisión de evaluación de séptimo", "abre el test vocacional para 11A",
                                 "resultados del test vocacional de 11A", "orientación vocacional para Ana de 11A"]),
     ("Colegio (12.53)", ["situación de convivencia: en el descanso Juan empujó a Pedro y se golpeó la rodilla; es la tercera vez",

@@ -222,7 +222,7 @@ def morning_report():
         J.news_reply()                                   # 12.31: con la fuente que abre cada noticia
     if J.settings["morning_voice_note"] and J.telegram_ready():      # 9.5: el resumen como nota de voz
         threading.Thread(target=J.send_morning_voice, daemon=True, name="resumen-voz").start()
-    elif J.settings["telegram_alerts"] and J.settings["telegram_remote"]:
+    elif J.settings["telegram_alerts"] and J.telegram_ready():          # 12.55: ya no exige «recibir órdenes desde Telegram»
         resumen = [f"☀️ Buenos días. Hoy es {hoy}."]
         if J.settings["weather_city"].strip():
             resumen.append(J.weather_text())

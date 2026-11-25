@@ -269,7 +269,11 @@ def _nl_do(orden, text, t):
 def nl_understand(text, t, early=False):
     """La capa de comprensión. → True si ya quedó atendido; False para seguir (con las reglas si early, si no con la IA de siempre).
     early (12.29): se llama ANTES de las reglas para frases que suenan a conversación."""
-    if not nl_should_try(text, t) or getattr(J._tl, "nl_tried", "") == t:
+    if getattr(J._tl, "nl_tried", "") == t:
+        return False
+    if J.r55_memo_try(text, t):                           # 12.55: una frase que ya entendió antes va directo, sin preguntarle a la IA
+        return True
+    if not nl_should_try(text, t):
         return False
     if early and not nl_conversational(t):
         return False
@@ -309,6 +313,7 @@ def nl_understand(text, t, early=False):
                            say=f"Entendí: {orden}. ¿Lo hago? Di «sí» o «no».")
         return True
     if _nl_do(orden, text, t):
+        J.r55_memo_put(t, orden)
         return True
     try:                                                  # 12.29: segundo intento, diciéndole qué no sirvió
         d2 = _nl_ask(text, retry_of=orden)
@@ -319,6 +324,7 @@ def nl_understand(text, t, early=False):
         if nl_risky(d2["orden"], t) or not d2["seguro"]:
             return False
         if _nl_do(d2["orden"], text, t):
+            J.r55_memo_put(t, d2["orden"])
             return True
     J.log_terminal(f"«{orden}» tampoco la reconocí; " + ("sigo con las reglas." if early else "lo respondo con la IA."), "COMPRENSIÓN")
     return False

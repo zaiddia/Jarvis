@@ -110,6 +110,9 @@ def _modo_docente(request, monkeypatch):
         if jarvis.priv["on"]:
             jarvis.private_set(False)
         monkeypatch.setitem(jarvis.settings, "assistant_style", "normal")
+        # 12.55: las frases que una prueba «enseñó» no se cuelan en la siguiente
+        monkeypatch.setitem(jarvis.r55_memo, "data", {})
+        monkeypatch.setattr(jarvis, "_r55_memo_save", lambda: None)
 
 
 @pytest.fixture

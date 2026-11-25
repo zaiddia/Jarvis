@@ -157,6 +157,20 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Más rápido y avisos al celular cuando no estás (v12.55)
+
+- **Frases ya entendidas**: cuando la IA traduce una frase tuya a una orden y funciona, Jarvis la guarda; la próxima vez esa
+  frase va directo, sin preguntarle a la IA (de segundos a milisegundos, y funciona aunque la IA esté apagada). Nunca guarda
+  órdenes delicadas ni nada en modo privado. «¿Cuántas frases has aprendido?» · «olvida las frases aprendidas».
+- **Al instante, sin la IA**: «pon música», «pon música relajante», «pon algo de salsa», «baja / sube el brillo», «apaga la
+  pantalla», «manda un mensaje a mamá por WhatsApp diciendo que ya voy», «qué recordatorios tengo», «lee mis correos»,
+  «cuántos perdieron en 9A», «habla más despacio / más rápido», «gracias», «buenas noches».
+- **Avisos al celular solo cuando no estás**: lo proactivo, lo que necesita tu atención y tus recordatorios te llegan por
+  Telegram (o WhatsApp) cuando llevas 10 minutos sin usar el computador ni hablarle a Jarvis; como mucho 10 al día (tus
+  recordatorios no cuentan) y nada en las horas de silencio. «Avísame al celular cuando no esté» · «no me mandes avisos al
+  celular» · «¿qué me mandaste al celular hoy?». Ajustes › Cuentas y mensajes.
+- **Arreglado**: los avisos y el resumen escrito de la mañana ya no exigen tener activado «Controlar Jarvis desde el celular».
+
 ## Comisión de evaluación y orientación vocacional (v12.54)
 
 - **Acta de la comisión de evaluación y promoción** (Decreto 1290): «prepara el acta de la comisión de evaluación de

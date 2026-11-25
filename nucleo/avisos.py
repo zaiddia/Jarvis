@@ -262,8 +262,10 @@ def alert(text, origin="JARVIS"):
     J.whatsapp_alert(text)                             # 7.9: también al WhatsApp, si lo configuraste
     J.windows_toast(text, origin)                      # 7.2: también como notificación de Windows
     J.notice_add(text, "aviso", origin)                # 9.2: queda en la campana del HUD
-    if J.settings["telegram_alerts"] and J.settings["telegram_remote"]:
+    if J.settings["telegram_alerts"] and J.settings["telegram_remote"] and J.telegram_ready():
         threading.Thread(target=J.telegram_send, args=(f"🔔 {text}",), daemon=True).start()
+    elif J.settings["telegram_alerts"] and J.telegram_ready():        # (el WhatsApp ya lo manda whatsapp_alert)
+        J.r55_away_send(f"🔔 {text}", important=True)   # 12.55: tu recordatorio te llega al celular si no estás en el computador
 
 
 _TG_HELP = ("Soy Jarvis, en tu computador. Escríbeme como me hablarías, por ejemplo:\n"

@@ -143,8 +143,7 @@ def _pro_say(key, text, optional=True):
     J.hud_show()
     J.reply(text, "PROACTIVO")
     diario.log("aviso", text)
-    if J.settings["telegram_alerts"] and J.settings["telegram_remote"] and J._idle_seconds() > 600:
-        threading.Thread(target=J.telegram_send, args=(f"✦ {text}",), daemon=True).start()
+    J.r55_away_send(f"✦ {text}")                        # 12.55: al celular solo si no estás frente al computador
     return True
 
 

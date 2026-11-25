@@ -1012,8 +1012,35 @@ def media(accion):
     return {"nexttrack": "Siguiente.", "prevtrack": "Anterior.", "stop": "Detenido."}.get(key, "Hecho.")
 
 
-@skill("brillo", "Ajusta el brillo de la pantalla (portátiles)", "nivel: 0-100")
+def _brightness_now():
+    """El brillo actual (0-100) o None si la pantalla no lo informa."""
+    ps = "(Get-CimInstance -Namespace root/WMI -ClassName WmiMonitorBrightness | Select-Object -First 1).CurrentBrightness"
+    try:
+        r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
+                           capture_output=True, text=True, timeout=15, creationflags=CREATE_NO_WINDOW)
+        return int(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip().isdigit() else None
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+
+
+@skill("apagar_pantalla", "Apaga la pantalla (el equipo sigue encendido; se prende al mover el ratón o tocar una tecla)")
+def screen_off():
+    if os.name != "nt":
+        raise SkillError("Apagar la pantalla solo funciona en Windows.")
+    ps = ("Add-Type -Namespace J -Name W -MemberDefinition '[DllImport(\"user32.dll\")] public static extern int "
+          "SendMessage(int h, int m, int w, int l);'; [J.W]::SendMessage(0xFFFF, 0x0112, 0xF170, 2)")
+    subprocess.Popen(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], creationflags=CREATE_NO_WINDOW)
+    return "Apago la pantalla. Mueve el ratón o toca una tecla para encenderla."
+
+
+@skill("brillo", "Ajusta el brillo de la pantalla (portátiles)", "nivel: 0-100, o subir / bajar")
 def brightness(nivel):
+    rel = normalize(str(nivel))
+    if rel in ("subir", "bajar"):                       # 12.55: «sube / baja el brillo» sin decir el número
+        cur = _brightness_now()
+        if cur is None:
+            raise SkillError("Esta pantalla no permite cambiar el brillo desde Windows.")
+        nivel = cur + (20 if rel == "subir" else -20)
     n = to_int(str(nivel))
     if n is None:
         raise SkillError("¿A qué nivel pongo el brillo?", need="nivel")
@@ -1661,6 +1688,11 @@ def _shutdown_delay(t):
     return 60, ""
 
 
+_GENRES = (r"salsa|vallenato|merengue|bachata|reggaeton|regueton|rock|pop|jazz|clasica|cumbia|champeta|balada|ranchera|bolero|"
+           r"electronica|lofi|lo fi|instrumental|musica|trap|rap|hip hop|tango|blues|reggae|gospel|alabanza|villancico|carranga|"
+           r"guasca|popular|despecho|rumba|tropical|urbano|llanera|joropo|porro|bambuco|currulao|son cubano|timba|piano|guitarra")
+
+
 def parse(text):
     """Devuelve (habilidad, argumentos) para órdenes directas, o None."""
     t = normalize(text)
@@ -1695,6 +1727,14 @@ def parse(text):
         return "brillo", {"nivel": 100}
     if re.search(r"\bbrillo (?:al )?minimo\b", t):
         return "brillo", {"nivel": 10}
+    if re.fullmatch(r"(?:sube(?:le)?|aumenta(?:le)?|mas) (?:el |un poco (?:el )?)?brillo(?: de la pantalla)?(?: un poco)?|"
+                    r"(?:pon(?:me)?|dame) mas brillo", t):                                 # 12.55
+        return "brillo", {"nivel": "subir"}
+    if re.fullmatch(r"(?:baja(?:le)?|disminuye|reduce|menos) (?:el |un poco (?:el )?)?brillo(?: de la pantalla)?(?: un poco)?|"
+                    r"(?:pon(?:me)?|dame) menos brillo|(?:hay )?mucho brillo", t):
+        return "brillo", {"nivel": "bajar"}
+    if re.fullmatch(r"(?:apaga|apagar|apague) (?:la |el )?(?:pantalla|monitor)(?: un rato| por (?:ahora|un rato))?", t):
+        return "apagar_pantalla", {}
 
     # Sistema y energía
     if re.search(r"\b(?:cancela(?:r)?|deten|anula) (?:el )?(?:apagado|reinicio)\b|\bno (?:apagues|reinicies)\b", t):
@@ -1785,6 +1825,11 @@ def parse(text):
                  r"(.+?)\s+(?:que|diciendo|dile que|:)\s+(.+)$", orig, re.I)
     if m:
         return "whatsapp", {"contacto": m.group(1).strip(), "mensaje": m.group(2).strip()}
+    # 12.55: «manda un mensaje a mamá por whatsapp diciendo que ya voy» · «escríbele a Juan por WhatsApp que llego tarde»
+    m = re.match(rf"^\s*{_ENVIAR}\s+(?:un\s+|una\s+)?(?:mensaje\s+|nota\s+)?a\s+(.+?)\s+(?:por|en|al)\s+{_WA}\s+"
+                 r"(?:que|diciendo(?:le)?(?: que)?|dile que|:)\s*(.+)$", orig, re.I)
+    if m:
+        return "whatsapp", {"contacto": m.group(1).strip(), "mensaje": m.group(2).strip()}
     # Sin mensaje: «manda un whatsapp a Andrea» -> Jarvis pregunta qué mensaje enviar
     m = re.match(rf"^\s*{_ENVIAR}\s+(?:un\s*|una\s+)?(?:mensaje\s+)?(?:de\s+|por\s+)?{_WA}\s+a\s+"
                  r"([\w\s+]+?)[\s.,!?]*$", orig, re.I)
@@ -1853,6 +1898,13 @@ def parse(text):
     m = re.match(r"^\s*(?:reproduce|reproducir|ponme)\s+(.+)$", orig, re.I)
     if m:
         return "youtube", {"consulta": m.group(1)}
+    # 12.55: «pon música», «pon música relajante», «pon algo de salsa», «pon un poco de vallenato» (sin pasar por la IA)
+    if re.fullmatch(r"pon(?:me)?(?: (?:algo de|un poco de|una cancion de|canciones de))? (?:musica|canciones)", t):
+        return "youtube", {"consulta": "mix de música"}
+    m = re.match(r"^\s*pon(?:me)?\s+(?:algo de\s+|un poco de\s+)?(?:m[uú]sica|canciones)\s+(?:de\s+)?(.{2,60}?)\s*[.!]*$", orig, re.I) \
+        or re.match(rf"^\s*pon(?:me)?\s+(?:algo|un poco)\s+de\s+((?:{_GENRES})\b.{{0,40}}?)\s*[.!]*$", t)
+    if m:
+        return "youtube", {"consulta": "música " + m.group(1).strip()}
     m = re.match(r"^\s*(?:busca|buscar|googlea|investiga)(?:\s+en\s+(?:google|internet|la web))?\s+(.+?)"
                  r"(?:\s+en\s+(?:google|internet|la web))?\s*$", orig, re.I)
     if m:

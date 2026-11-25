@@ -1429,6 +1429,18 @@
         <label class="switch"><input type="checkbox" id="f-tg-alerts" data-key="telegram_alerts"><span></span></label>
       </div>
       <div class="field">
+        <div class="ft"><label for="f-phone-away">Al celular solo cuando no estoy</label><p>Lo proactivo, lo que necesita tu atención y tus recordatorios te llegan al celular cuando llevas un rato sin usar el computador. Si estás frente a él, te aviso aquí.</p></div>
+        <label class="switch"><input type="checkbox" id="f-phone-away" data-key="phone_away"><span></span></label>
+      </div>
+      <div class="field">
+        <div class="ft"><label for="f-phone-away-min">Minutos sin usar el computador</label></div>
+        <div class="range"><input type="range" id="f-phone-away-min" min="2" max="120" step="1" data-key="phone_away_min"><output></output></div>
+      </div>
+      <div class="field">
+        <div class="ft"><label for="f-phone-away-max">Máximo de avisos al celular al día</label><p>Tus recordatorios no cuentan: siempre te llegan.</p></div>
+        <div class="range"><input type="range" id="f-phone-away-max" min="1" max="50" step="1" data-key="phone_away_max"><output></output></div>
+      </div>
+      <div class="field">
         <div class="ft"><label for="f-tg-voice">Responder con voz a las notas de voz</label><p>Mándale una nota de voz al bot: Jarvis la entiende y, si esto está encendido, te contesta también con un audio.</p></div>
         <label class="switch"><input type="checkbox" id="f-tg-voice" data-key="telegram_voice_reply"><span></span></label>
       </div>
