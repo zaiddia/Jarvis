@@ -157,6 +157,21 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## El panel y los Ajustes ya no se abren y se cierran solos (v12.59)
+
+- **La causa**: al reiniciarse para actualizar, el Jarvis viejo se cerraba pero su motor de ventanas (Microsoft Edge
+  WebView2) seguía vivo unos segundos con la carpeta de las ventanas tomada; si el Jarvis nuevo abría sus ventanas en ese
+  momento, cada ventana (el panel, los Ajustes) se abría y se cerraba al instante.
+- **El arreglo**: antes de abrir sus ventanas, Jarvis espera a que esos procesos terminen y, si se quedan colgados, los
+  cierra (son del Jarvis anterior). Si aun así el panel se cae, Jarvis se reinicia solo una vez (no más de una vez cada 10
+  minutos) y, si vuelve a pasar, lo abre en el navegador. Si los Ajustes se cierran solos al abrirse, se abren en el navegador.
+- **Por voz**: «reiníciate», «abre los ajustes en el navegador», «abre el panel en el navegador». Sin panel, los ajustes
+  siempre están en http://127.0.0.1:5000/ajustes.
+- **En la conversación en vivo**: el «sí» a «¿instalo la versión…?» ahora sí instala la actualización (antes se volvía
+  «actualiza todos mis programas»), un «sí» o «no» suelto ya no se traduce como otra orden, y Gemini ya no inventa la
+  versión: sabe en cuál está.
+- El .exe se reinicia bien a sí mismo (antes intentaba abrir jarvis.py).
+
 ## ¿Qué está sonando? y llamadas (v12.58)
 
 - **«¿Qué canción está sonando?»** (o «¿cómo se llama esta canción?», «¿quién canta esta canción?»): Jarvis le pregunta a

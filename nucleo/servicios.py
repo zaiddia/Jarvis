@@ -118,7 +118,10 @@ def _python_console():
 
 def restart_jarvis(delay=1.0):
     """Abre un Jarvis nuevo (que espera a que este se cierre) y cierra este."""
-    args = [sys.executable, os.path.join(J.APP_DIR, "jarvis.py"), *sys.argv[1:]]
+    if getattr(sys, "frozen", False):                  # 12.59: el .exe se reinicia a sí mismo (no hay jarvis.py)
+        args = [sys.executable, *sys.argv[1:]]
+    else:
+        args = [sys.executable, os.path.join(J.APP_DIR, "jarvis.py"), *sys.argv[1:]]
     env = dict(os.environ, JARVIS_WAIT_PID=str(os.getpid()))
     kw = {"cwd": J.APP_DIR, "env": env, "close_fds": True}
     if J.IS_WIN:

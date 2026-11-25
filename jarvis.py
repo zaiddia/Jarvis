@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.58"
+VERSION = "12.59"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1762,6 +1762,8 @@ def process_command(text):
         return
     if cierre54_voice(text, t):                        # 12.54: acta de la comisión de evaluación, test y orientación vocacional
         return
+    if ventanas59_voice(text, t):                      # 12.59: «reiníciate», «abre los ajustes en el navegador»
+        return
     if pulir57_voice(text, t):                         # 12.57: «tómame una foto»
         return
     if humano56_voice(text, t):                        # 12.56: «usa la voz con emoción», «pon la voz colombiana», «voz de mujer»
@@ -2652,6 +2654,7 @@ from nucleo.cierre54 import *  # noqa: F401,F403,E402
 from nucleo.rapido55 import *  # noqa: F401,F403,E402
 from nucleo.humano56 import *  # noqa: F401,F403,E402
 from nucleo.pulir57 import *  # noqa: F401,F403,E402
+from nucleo.ventanas59 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)
@@ -2928,14 +2931,13 @@ def main():
                      "Di «mostrar panel» o pulsa Ctrl+Alt+J.", "SISTEMA")
     if webview is not None and not force_browser:
         try:
+            vw59_wait_webview(os.path.join(CONFIG_DIR, "webview"))   # 12.59: que el Jarvis anterior suelte las ventanas
             create_hud(start_hidden, loader=not server_ready)
             webview.start(private_mode=False, storage_path=os.path.join(CONFIG_DIR, "webview"))
             if hud.get("quitting"):
                 os._exit(0)
             hud["window"] = None                       # 11.8.1: se cerró sola (no pediste salir): Jarvis sigue
-            log_terminal("La ventana del HUD se cerró sin pedir salir; Jarvis sigue funcionando (icono de la bandeja o "
-                         "«mostrar panel»).", "AVISO")
-            note_error("HUD", "la ventana del HUD se cerró sin pedir salir")
+            vw59_hud_died()                            # 12.59: se reinicia una vez para recuperarla (o abre el navegador)
             start_hidden = True
         except Exception as e:
             hud["window"] = None

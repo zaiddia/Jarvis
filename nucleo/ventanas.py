@@ -305,8 +305,12 @@ def open_settings_window():
     sw = J.webview.create_window("Ajustes · Jarvis", f"{J.URL}/ajustes", width=ww, height=wh,
                                min_size=(420, 520), background_color="#03060c")
 
+    opened_at = time.time()
+    J.hud["settings_by_us"] = False
+
     def _closed():
         J.hud["settings_win"] = None
+        J.vw59_settings_closed(opened_at, J.hud.get("settings_by_us", False))   # 12.59: si se cayó al abrirse, en el navegador
     sw.events.closed += _closed
     J.hud["settings_win"] = sw
 
@@ -409,6 +413,7 @@ def welcome_voice(text, t):
 def close_settings_window():
     sw = J.hud["settings_win"]
     if sw is not None:
+        J.hud["settings_by_us"] = True
         try:
             sw.destroy()
         except Exception:

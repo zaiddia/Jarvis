@@ -150,7 +150,7 @@ def _live_system():
         recent = " Conversación reciente: " + " | ".join(
             f"{'Usuario' if m['role'] == 'user' else 'Tú'}: {str(m['content'])[:200]}" for m in hist) + "."
     return (J.settings["system_prompt"] + J.VOICE_RULE + J.style_rule() + f" Hoy es {J.fecha_hablada(now.date())}, son las "
-            f"{now:%H:%M}." + J._notes_ctx() + J._user_ctx() + recent + J.LIVE_RULE + J.study_ctx())
+            f"{now:%H:%M}. Eres Jarvis versión {J.VERSION}: si te preguntan la versión, di esa y nunca otra." + J._notes_ctx() + J._user_ctx() + recent + J.LIVE_RULE + J.study_ctx())
 
 
 def _live_attempts():
@@ -460,6 +460,9 @@ def live_run_order(order):
     order = re.sub(r"\s+", " ", str(order or "")).strip()[:400]
     if not order:
         return {"error": "La orden llegó vacía."}
+    res = J.vw59_live_confirm(order)                   # 12.59: «sí» a la actualización; un «sí» suelto no es otra orden
+    if res is not None:
+        return res
     J.pending.update(skill=None, args=None, expires=0)  # nunca confirmar algo peligroso desde aquí
     direct = skills.parse(order)
     sk = skills.REGISTRY.get(direct[0]) if direct else None
