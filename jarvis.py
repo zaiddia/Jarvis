@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.55"
+VERSION = "12.56"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -705,8 +705,12 @@ DEFAULT_SETTINGS = {
     "tts_backend": "edge",         # "edge" (online), "piper" (offline) o "gemini" (muy natural, con tu clave)
     "gemini_tts_voice": "Charon",
     "gemini_tts_model": "gemini-3.8-flash-lite-tts",
-    "gemini_tts_style": "natural, cálido y conversacional, a buen ritmo",
-    "tts_voice": "es-ES-AlvaroNeural",
+    "gemini_tts_style": "natural, cálido y conversacional, a buen ritmo, con acento latinoamericano",
+    "tts_voice": "es-CO-GonzaloNeural",   # 12.56: colombiana por defecto (antes Álvaro, de España)
+    "voice_co_done": False,        # 12.56: ya se pasó una vez la voz de España a la colombiana
+    "tts_tone_auto": True,         # 12.56: con la voz de Gemini, el tono cambia según lo que dice
+    "empathy": True,               # 12.56: si suenas cansado, estresado o contento, responde primero como persona
+    "verify_facts": True,          # 12.56: datos que cambian (cargos, precios, resultados): buscar antes de responder
     "piper_voice": "",             # ruta a un modelo .onnx de Piper (vacío = busca en recursos\\piper)
     "tts_rate": 0,
     "tts_volume": 0,
@@ -1755,6 +1759,8 @@ def process_command(text):
         return
     if cierre54_voice(text, t):                        # 12.54: acta de la comisión de evaluación, test y orientación vocacional
         return
+    if humano56_voice(text, t):                        # 12.56: «usa la voz con emoción», «pon la voz colombiana», «voz de mujer»
+        return
     if rapido55_voice(text, t):                        # 12.55: al instante sin la IA («gracias», «habla más despacio»…), avisos al celular
         return
     if not getattr(_tl, "live", False) and nl_understand(text, t, early=True):   # 12.29: lo conversacional, primero la IA
@@ -2638,6 +2644,7 @@ from nucleo.nuevas52 import *  # noqa: F401,F403,E402
 from nucleo.colegio53 import *  # noqa: F401,F403,E402
 from nucleo.cierre54 import *  # noqa: F401,F403,E402
 from nucleo.rapido55 import *  # noqa: F401,F403,E402
+from nucleo.humano56 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)
@@ -2842,6 +2849,7 @@ def main():
         students_start()                  # 8.9: abre los datos de estudiantes cifrados (con la clave ya leída)
         cloud_start()                     # 12.8: la copia cifrada de cada noche en tu Drive
         modes_start()                     # 12.9: modo docente/general, disparadores y avisos de batería
+        hu56_migrate()                    # 12.56: la voz colombiana (una sola vez)
         daily_start()                     # 12.9: avisos de pagos
         midia_start()                     # 12.15: vencimientos, medicamentos, citas, cumpleaños, presupuesto y viajes
         compartir_start()                 # 12.16: resumen del mes

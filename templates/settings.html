@@ -305,6 +305,18 @@
         <div class="ft"><label for="f-gstyle">Forma de hablar</label><p>Describe el tono con tus palabras: «cálido y tranquilo», «enérgico y alegre», «pausado, como un profesor». La velocidad y el tono de abajo solo aplican a Edge y Piper.</p></div>
         <input class="inp" type="text" id="f-gstyle" data-key="gemini_tts_style" maxlength="200" placeholder="natural, cálido y conversacional">
       </div>
+      <div class="field" data-ttsbk="gemini" hidden>
+        <div class="ft"><label for="f-tone-auto">Tono según lo que digo</label><p>Con alegría si es una buena noticia, con calma si es algo delicado, con ánimo si estás cansado.</p></div>
+        <label class="switch"><input type="checkbox" id="f-tone-auto" data-key="tts_tone_auto"><span></span></label>
+      </div>
+      <div class="field">
+        <div class="ft"><label for="f-empathy">Notar cómo estoy</label><p>Si lo que dices suena a cansancio, estrés o alegría, Jarvis responde primero como persona y luego ayuda.</p></div>
+        <label class="switch"><input type="checkbox" id="f-empathy" data-key="empathy"><span></span></label>
+      </div>
+      <div class="field">
+        <div class="ft"><label for="f-verify">Confirmar datos que cambian</label><p>Quién ocupa un cargo, precios, resultados o lo de hoy: busca en internet antes de responder y dice de dónde lo sacó (tarda un segundo más).</p></div>
+        <label class="switch"><input type="checkbox" id="f-verify" data-key="verify_facts"><span></span></label>
+      </div>
       <div class="field stack" data-ttsbk="edge">
         <div class="ft"><label for="f-voice">Voz (Edge)</label><p>Voces neuronales de Microsoft Edge. Pulsa ↻ para cargar el catálogo completo en español.</p></div>
         <div class="row">

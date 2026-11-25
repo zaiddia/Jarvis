@@ -5,6 +5,7 @@ Parte de Jarvis (antes dentro de jarvis.py). Los nombres globales de Jarvis se u
 from collections import deque
 import asyncio
 import json
+import humano
 import mathtext
 import os
 import queue
@@ -136,7 +137,7 @@ def _clean_for_speech(text):
                 break
         parts.append(line if re.search(r"[.!?:;…]$", line) else line + ".")
         total += len(line)
-    return " ".join(parts).strip()
+    return humano.spoken_list(" ".join(parts).strip())          # 12.56: «a; b; c» dicho como se habla
 
 
 def speak(text, voice=None, rate=None, volume=None, pitch=None, force=False, backend=None, gemini=None,
@@ -204,6 +205,8 @@ def _gemini_tts(text, path, over=None):
     voice = over.get("gemini_tts_voice") or J.settings["gemini_tts_voice"]
     model = over.get("gemini_tts_model") or J.settings["gemini_tts_model"]
     style = (over.get("gemini_tts_style", J.settings["gemini_tts_style"]) or "").strip()
+    if J.settings.get("tts_tone_auto", True) and "gemini_tts_style" not in over:
+        style = humano.voice_style(text, style)          # 12.56: el tono según lo que dice (alegre, calmado, ánimo, serio)
     cacheable = len(text) <= 80                       # frases cortas y repetidas: «¿Sí?», «Hecho.»
     key = hashlib.sha1(f"{model}|{voice}|{style}|{text}".encode("utf-8")).hexdigest()
     cached = os.path.join(J.VOICE_CACHE_DIR, key + ".wav")
@@ -464,6 +467,7 @@ _tl = threading.local()                 # _tl.quiet: este hilo ejecuta una rutin
 
 
 def reply(text, origin="JARVIS"):
+    text = humano.vary(text)                             # 12.56: «Hecho.» no siempre igual
     J.log_terminal(text, origin)
     cap = getattr(J._tl, "capture", None)
     if cap is not None:                     # orden pedida en la conversación en vivo: la dice Gemini

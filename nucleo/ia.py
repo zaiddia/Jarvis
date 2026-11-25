@@ -1311,7 +1311,7 @@ def _is_local_ai(cfg=None):
 def ask_ai(prompt, route=False):
     """Devuelve ('chat', respuesta) o ('skill', nombre, args)."""
     local = J._is_local_ai()
-    dynamic = J._notes_ctx() + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.study_ctx() + J.persona_ctx()   # 9.4: tus lecciones y el modo tutor
+    dynamic = J._notes_ctx() + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.study_ctx() + J.persona_ctx() + J.human_ctx(prompt)   # 9.4 y 12.56 (cómo suenas)
     if local:                                          # 12.7: en el equipo, menos texto que leer = respuesta más rápida
         dynamic = J.motorlocal.trim_context(dynamic, 1500)
     system = J.system_static() + dynamic
@@ -1461,7 +1461,7 @@ def answer_question_streaming(prompt):
         J.reply(J.ask_ai(prompt, route=False)[1])
         return
     local = J._is_local_ai(cfg)
-    dynamic = J._notes_ctx() + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.study_ctx() + J.persona_ctx()   # 9.4: tus lecciones y el modo tutor
+    dynamic = J.facts_ctx(prompt) + J._notes_ctx() + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.study_ctx() + J.persona_ctx() + J.human_ctx(prompt)   # 9.4 y 12.56 (cómo suenas)
     if local:
         # 12.20: en tu equipo, el mismo comienzo fijo que las demás órdenes (ya está leído: no se relee) y menos
         # contexto y menos turnos: cada palabra de más son décimas de segundo antes de la primera frase.

@@ -157,6 +157,23 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Más humano y más confiable (v12.56)
+
+- **Voz colombiana por defecto**: Gonzalo (o Salomé) en lugar de Álvaro, de España. Si tenías la de España que venía por
+  defecto, pasa sola a la colombiana una vez; puedes volver a escoger cualquiera. «Pon la voz colombiana» · «voz de mujer» /
+  «voz de hombre».
+- **Voz con emoción**: «usa la voz con emoción» activa la voz de Gemini (con tu clave) y el tono cambia según lo que dice:
+  con alegría una buena noticia, con calma algo delicado, con ánimo si estás cansado, sereno un aviso urgente. Si se agota el
+  cupo gratis, vuelve sola a la voz de siempre. «Vuelve a la voz normal».
+- **Suena a persona**: las confirmaciones cambian («Listo, ya quedó», «Ya está», «Ahí está»…) y las listas se dicen como se
+  hablan («llamar a mamá, luego pagar el internet, y por último calificar 7B»). En horario de trabajo sigue siendo concreto,
+  pero ya no seco.
+- **Nota cómo estás**: si lo que dices suena a cansancio, estrés, frustración, tristeza o alegría, responde primero como
+  persona y luego ayuda. Si suena a crisis, responde con calidez y te recuerda la Línea 106 (salud mental) y el 123.
+- **Respuestas verificadas**: si la pregunta depende de datos que cambian (quién ocupa un cargo, precios, resultados, lo de
+  hoy), busca en internet antes de responder, dice de dónde lo sacó y, si no lo pudo confirmar, lo dice en vez de adivinar.
+- Todo se ajusta en *Ajustes › Voz*.
+
 ## Más rápido y avisos al celular cuando no estás (v12.55)
 
 - **Frases ya entendidas**: cuando la IA traduce una frase tuya a una orden y funciona, Jarvis la guarda; la próxima vez esa
