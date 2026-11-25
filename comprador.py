@@ -52,7 +52,7 @@ def cop(n):
 
 _BUY = re.compile(r"^(?:jarvis[ ,]+)?(?:oye[ ,]+)?(?:quiero|voy a|necesito|pienso|me gustaria|quisiera|estoy pensando en)\s+comprar(?:me)?\s+(.+)$|"
                   r"^(?:jarvis[ ,]+)?(?:ayudame|me ayudas)\s+a\s+(?:comprar|escoger|elegir)\s+(.+)$|"
-                  r"^(?:jarvis[ ,]+)?(?:que|cual|cuales)\s+(.+?)\s+(?:me recomiendas|recomiendas|compro|me compro|vale la pena comprar)(?:\s+(.+))?$|"
+                  r"^(?:jarvis[ ,]+)?(?:que|cual|cuales)\s+(?!me\b)(.+?)\s+(?:me recomiendas|recomiendas|compro|me compro|vale la pena comprar)(?:\s+(.+))?$|"
                   r"^(?:jarvis[ ,]+)?(?:compara|comparame|busca|buscame)\s+(?:los\s+)?precios\s+(?:de\s+)?(.+?)\s+(?:en|entre)\s+(?:las\s+)?tiendas\b(.*)$")
 _CHEAP = re.compile(r"\b(?:leche|pan|huevos?|arroz|mercado|comida|almuerzo|domicilio|tinto|cafe|gaseosa|frutas?|verduras?|carne|pollo)\b")
 
@@ -60,6 +60,8 @@ _CHEAP = re.compile(r"\b(?:leche|pan|huevos?|arroz|mercado|comida|almuerzo|domic
 def parse_request(t):
     """→ {"producto", "presupuesto", "uso"} o None. Pide algo que valga la pena comparar (con presupuesto, o un uso)."""
     t = norm(t)
+    if re.search(r"\brecomiendas?\s+(?:ver|leer|escuchar|hacer|cocinar|comer|estudiar|visitar|jugar|regalar)\b", t):
+        return None                                     # 12.57: «¿qué me recomiendas ver en Netflix?» no es una compra
     m = _BUY.match(t)
     if not m:
         return None

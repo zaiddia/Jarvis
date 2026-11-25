@@ -157,6 +157,22 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Revisión con frases reales (v12.57)
+
+Pasé 75 frases de uso diario por Jarvis y corregí las que iban al lugar equivocado:
+
+- «Ponme una alarma **para mañana** a las 6» ahora sí queda para mañana (antes, si lo decías de día, quedaba para hoy) y ya no
+  se llama «para». También «pasado mañana».
+- «¿Cuánto falta para el puente festivo?» responde con el próximo festivo (antes decía «no hay temporizadores»).
+- «¿Qué me recomiendas ver en Netflix?» ya no abre el comprador de tiendas.
+- «Eso no era lo que te pedí» ya no busca en la memoria: lo responde la IA.
+- «Anota que gasté 15 mil en almuerzo» va a tus **gastos** (antes quedaba como nota) y «¿cuánto gasté este mes?» te responde.
+- «Prepárame la clase de ecuaciones para noveno» hace el plan de clase; «¿cuántas horas de clase tengo hoy?» mira tu horario.
+- Nuevas al instante: «sube el volumen al máximo», «volumen al mínimo», «¿cuánta memoria RAM estoy usando?», «léeme este
+  texto», «pon el modo oscuro / claro» (Windows) y «tómame una foto» (cuenta tres segundos y la guarda en Fotos).
+- La charla («te quiero, Jarvis», «eres muy lento», «estoy aburrido», «buenos días») va directo a la respuesta: una llamada a
+  la IA en vez de dos, así que contesta antes.
+
 ## Más humano y más confiable (v12.56)
 
 - **Voz colombiana por defecto**: Gonzalo (o Salomé) en lugar de Álvaro, de España. Si tenías la de España que venía por

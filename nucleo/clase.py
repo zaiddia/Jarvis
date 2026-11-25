@@ -226,7 +226,7 @@ def aula_voice(text, t):
         # palabras genéricas (actividad, tarea, prueba...) exigen decir el tema con «sobre»
         weak = not re.search(r"\b(?:taller|guia|ficha|quiz|evaluacion|examen|cuestionario|rubrica|"
                              r"plan de clase|planeacion|planificacion|secuencia didactica|saber|icfes|malla|piar|"
-                             r"ajustes razonables|periodo|lectura nivelada|niveles)\b", t)
+                             r"ajustes razonables|periodo|lectura nivelada|niveles|(?:la|una|mi) clase)\b", t)
         marker = r"\b(?:sobre|acerca)\b" if weak else r"\b(?:sobre|de|del|para|acerca)\b"
         if kind and re.search(J._AULA_VERB, t) and re.search(marker, t):
             J.generate_material(text, kind)

@@ -23,10 +23,10 @@ from nucleo import J
 
 _AMT = r"(?:\$\s*)?\d[\d.,]*\s*(?:mil|millones|millon|lucas|luca|k)?(?:\s*pesos)?|un millon|mil pesos"
 _G1 = re.compile(rf"^(?:jarvis[ ,]+)?(?:anota|apunta|registra|agrega)?\s*(?:un\s+)?gasto\s+de\s+({_AMT})\s+(?:en|de|por|para)\s+(.+)$")
-_G2 = re.compile(rf"^(?:jarvis[ ,]+)?(?:gaste|me gaste|pague|compre|di)\s+({_AMT})\s+(?:en|de|por|para)\s+(.+)$")
-_G3 = re.compile(rf"^(?:jarvis[ ,]+)?(?:gaste|me gaste|pague|compre)\s+(.+?)\s+(?:en|por|de)\s+({_AMT})$")
+_G2 = re.compile(rf"^(?:jarvis[ ,]+)?(?:(?:anota|apunta|registra) (?:que )?)?(?:gaste|me gaste|pague|compre|di)\s+({_AMT})\s+(?:en|de|por|para)\s+(.+)$")
+_G3 = re.compile(rf"^(?:jarvis[ ,]+)?(?:(?:anota|apunta|registra) (?:que )?)?(?:gaste|me gaste|pague|compre)\s+(.+?)\s+(?:en|por|de)\s+({_AMT})$")
 _G_UNDO = re.compile(r"\b(?:borra|elimina|quita|deshaz)\s+(?:el\s+)?ultimo gasto\b")
-_G_ASK = re.compile(r"\bcuanto (?:he|llevo|hemos|e) gastad[oa]\b|\bcuanto (?:llevo|va) (?:gastado )?en\b|\b(?:mis|resumen de(?: mis)?) gastos\b|"
+_G_ASK = re.compile(r"\bcuanto (?:he|llevo|hemos|e) gastad[oa]\b|\bcuanto (?:gaste|gastamos)\b(?! en (?:ia|gemini|tokens))|\bcuanto (?:llevo|va) (?:gastado )?en\b|\b(?:mis|resumen de(?: mis)?) gastos\b|"
                     r"\ben que (?:he gastado|se me va la plata|gasto mas)\b")
 _P_ADD = re.compile(rf"^(?:jarvis[ ,]+)?(?:recuerdame|avisame(?: para)?|agrega(?: el)? pago(?: de| del)?|anota(?: el)? pago(?: de| del)?)\s+(?:pagar\s+)?"
                     rf"(?:el |la |los |las )?(.+?)\s+(?:el|los|cada)\s+(\d{{1,2}})(?:\s+de\s+cada\s+mes|\s+de\s+todos\s+los\s+meses|\s+cada\s+mes)?"

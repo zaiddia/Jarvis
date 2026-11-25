@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.56"
+VERSION = "12.57"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1411,16 +1411,19 @@ def parse_clock_reminder(t, now=None):
         hours = [h % 12]
     else:
         hours = [h] if h > 12 or h == 0 else [h, (h + 12) % 24]
+    rest = t[:m.start()] + " " + t[m.end():]
+    shift = 2 if re.search(r"\bpasado manana\b", rest) else 1 if re.search(r"\bmanana\b", rest) else 0   # 12.57: «para mañana a las 6»
     best = None
     for hh in hours:
-        d = now.replace(hour=hh, minute=mi, second=0, microsecond=0)
+        d = (now + datetime.timedelta(days=shift)).replace(hour=hh, minute=mi, second=0, microsecond=0)
         if d <= now:
             d += datetime.timedelta(days=1)
         best = d if best is None or d < best else best
-    label = (t[:m.start()] + " " + t[m.end():])
-    label = re.sub(r"\b(?:pon(?:me)?|programa|crea|una|un|alarma|recordatorio|recuerdame|avisame|despiertame|por favor|hoy|manana)\b", " ", label)
-    label = re.sub(r"^\s*(?:que|de|para|a)\s+", "", re.sub(r"\s+", " ", label).strip()) or \
-        ("Despertar" if "despiertame" in t else "Recordatorio")
+    label = rest
+    label = re.sub(r"\b(?:pon(?:me)?|programa|crea|una|un|alarma|recordatorio|recuerdame|avisame|despiertame|por favor|hoy|pasado|manana)\b", " ", label)
+    label = re.sub(r"\s+", " ", label).strip()
+    label = re.sub(r"^(?:(?:que|de|para|a|el|la)\b\s*)+", "", label).strip() or \
+        ("Despertar" if "despiertame" in t else "Alarma" if "alarma" in t else "Recordatorio")
     return int((best - now).total_seconds() + 0.999), label        # redondeo hacia arriba: «a las 6» no sale 5:59
 
 
@@ -1759,6 +1762,8 @@ def process_command(text):
         return
     if cierre54_voice(text, t):                        # 12.54: acta de la comisión de evaluación, test y orientación vocacional
         return
+    if pulir57_voice(text, t):                         # 12.57: «tómame una foto»
+        return
     if humano56_voice(text, t):                        # 12.56: «usa la voz con emoción», «pon la voz colombiana», «voz de mujer»
         return
     if rapido55_voice(text, t):                        # 12.55: al instante sin la IA («gracias», «habla más despacio»…), avisos al celular
@@ -1997,7 +2002,8 @@ def process_command(text):
         reply("No había temporizadores activos." if n == 0 else
               ("Temporizador cancelado." if n == 1 else f"Cancelé {n} temporizadores."), "TIMER")
         return
-    if has(r"cuanto (?:queda|falta)|que temporizador|temporizadores (?:hay|activos)|cuanto tiempo queda", t):
+    if re.fullmatch(r"(?:jarvis )?cuanto (?:tiempo )?(?:le )?(?:queda|falta)(?: (?:del|al|en el|para el) (?:temporizador|cronometro)| para que suene)?", t) \
+            or has(r"que temporizador|temporizadores (?:hay|activos|tengo)", t):        # 12.57: «cuánto falta para el puente» no es esto
         snap = _timers_snapshot()
         if not snap:
             reply("No hay temporizadores activos.", "TIMER")
@@ -2160,7 +2166,7 @@ def process_command(text):
         return
 
     # Leer en voz alta el texto seleccionado (copia la selección y la lee frase a frase)
-    if re.fullmatch(r"(?:lee(?:me)?|leer)(?: esto| la seleccion| el texto| en voz alta| lo seleccionado| lo que seleccione)+", t) \
+    if re.fullmatch(r"(?:lee(?:me)?|leer)(?: esto| este texto| este parrafo| la seleccion| el texto| en voz alta| lo seleccionado| lo que seleccione)+", t) \
             or re.fullmatch(r"lee(?:me)?|leer", t):
         read_selection_aloud()
         return
@@ -2230,7 +2236,7 @@ def process_command(text):
             pass
         # Preguntas claras -> respuesta en streaming (más rápida, sin pasar por el enrutador).
         is_question = text.strip().endswith("?") or bool(QUESTION_RE.search(t))
-        if getattr(_tl, "nl_verdict", "") in ("pregunta", "charla"):
+        if getattr(_tl, "nl_verdict", "") in ("pregunta", "charla") or p57_chatty(t):
             is_question = True                          # 12.36: la comprensión ya vio que no es una orden: sin enrutador (una llamada menos)
         # Con conectores MCP, también las preguntas pasan por el enrutador («¿qué tengo en Notion?»).
         has_mcp = settings["ai_router"] and bool(mcp_hub.catalog(1))
@@ -2645,6 +2651,7 @@ from nucleo.colegio53 import *  # noqa: F401,F403,E402
 from nucleo.cierre54 import *  # noqa: F401,F403,E402
 from nucleo.rapido55 import *  # noqa: F401,F403,E402
 from nucleo.humano56 import *  # noqa: F401,F403,E402
+from nucleo.pulir57 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)

@@ -1033,6 +1033,20 @@ def screen_off():
     return "Apago la pantalla. Mueve el ratón o toca una tecla para encenderla."
 
 
+@skill("tema_windows", "Pone Windows en modo oscuro o en modo claro", "modo: oscuro|claro")
+def windows_theme(modo="oscuro"):
+    if os.name != "nt":
+        raise SkillError("Cambiar el tema solo funciona en Windows.")
+    light = 0 if normalize(modo).startswith("osc") else 1
+    key = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+    for name in ("AppsUseLightTheme", "SystemUsesLightTheme"):
+        r = subprocess.run(["reg", "add", key, "/v", name, "/t", "REG_DWORD", "/d", str(light), "/f"],
+                           capture_output=True, timeout=15, creationflags=CREATE_NO_WINDOW)
+        if r.returncode != 0:
+            raise SkillError("No pude cambiar el tema de Windows.")
+    return "Listo, Windows en modo " + ("claro." if light else "oscuro.")
+
+
 @skill("brillo", "Ajusta el brillo de la pantalla (portátiles)", "nivel: 0-100, o subir / bajar")
 def brightness(nivel):
     rel = normalize(str(nivel))
@@ -1703,6 +1717,10 @@ def parse(text):
     m = re.search(rf"\bvolumen (?:al|a|en)\s+{NUM_RE}", t)
     if m:
         return "volumen", {"accion": "fijar", "nivel": m.group(1)}
+    if re.search(r"\bvolumen (?:al )?(?:maximo|tope|full|a tope)\b|\b(?:sube(?:le)?|pon) (?:el )?volumen (?:al )?(?:maximo|tope|full)\b", t):
+        return "volumen", {"accion": "fijar", "nivel": 100}                                     # 12.57
+    if re.search(r"\bvolumen (?:al )?minimo\b", t):
+        return "volumen", {"accion": "fijar", "nivel": 10}
     if re.search(r"\b(?:sube(?:r|le)?|aumenta(?:r)?) (?:el )?volumen|volumen arriba|mas volumen\b", t):
         return "volumen", {"accion": "subir"}
     if re.search(r"\b(?:baja(?:r|le)?|disminuye|reduce) (?:el )?volumen|volumen abajo|menos volumen\b", t):
@@ -1733,6 +1751,9 @@ def parse(text):
     if re.fullmatch(r"(?:baja(?:le)?|disminuye|reduce|menos) (?:el |un poco (?:el )?)?brillo(?: de la pantalla)?(?: un poco)?|"
                     r"(?:pon(?:me)?|dame) menos brillo|(?:hay )?mucho brillo", t):
         return "brillo", {"nivel": "bajar"}
+    m = re.fullmatch(r"(?:pon(?:me)?|activa|usa|cambia a|pasa a) (?:el )?(?:modo|tema) (oscuro|claro|noche|dia)(?: (?:de|en) windows| en el (?:pc|computador))?", t)
+    if m:                                                                                          # 12.57
+        return "tema_windows", {"modo": "oscuro" if m.group(1) in ("oscuro", "noche") else "claro"}
     if re.fullmatch(r"(?:apaga|apagar|apague) (?:la |el )?(?:pantalla|monitor)(?: un rato| por (?:ahora|un rato))?", t):
         return "apagar_pantalla", {}
 
@@ -1758,7 +1779,8 @@ def parse(text):
     if re.search(r"\b(?:captura de pantalla|toma una captura|haz una captura|saca una captura|pantallazo|screenshot)\b", t):
         return "captura", {}
     if re.search(r"\b(?:estado del (?:sistema|equipo|pc)|uso de (?:cpu|memoria|ram|disco|procesador)|"
-                 r"como esta (?:el )?(?:pc|equipo|sistema)|nivel de bateria|cuanta bateria)\b", t):
+                 r"como esta (?:el )?(?:pc|equipo|sistema)|nivel de bateria|cuanta bateria|cuanta (?:memoria|ram|memoria ram) (?:estoy usando|uso|tengo|queda|hay)|"
+                 r"cuanto (?:procesador|cpu) (?:estoy usando|uso))\b", t):
         return "estado_sistema", {}
     if re.search(r"\bque (?:ventanas|aplicaciones|programas|apps) (?:tengo |hay |estan )?abiert[oa]s\b", t):
         return "ventanas_abiertas", {}

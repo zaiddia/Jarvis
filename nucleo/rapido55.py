@@ -108,6 +108,8 @@ _R55_ALIASES = (
      lambda m: "qué tengo pendiente"),
     (re.compile(r"^(?:lee(?:me)?|abre|mira) (?:mis|el|mi) (?:correos?|emails?|mails?)$|^revisa mis (?:correos|emails|mails)$|^mis correos$"),
      lambda m: "revisa mi correo"),
+    (re.compile(r"^(?:cuanto|cuantos dias) (?:falta|faltan|queda|quedan) para (?:el )?(?:proximo |siguiente )?(?:puente|festivo|dia festivo|lunes festivo)(?: festivo)?$"),
+     lambda m: "qué día cae el próximo festivo"),                                                     # 12.57
     (re.compile(r"^cuantos (?:estudiantes |alumnos |ninos |chicos )?(?:perdieron|pierden|van perdiendo|estan perdiendo|reprobaron|van mal)"
                 r"(?: (?:en|de) (.+))?$"),
      lambda m: "quiénes van perdiendo" + (f" en {m.group(1)}" if m.group(1) else "")),

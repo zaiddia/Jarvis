@@ -316,7 +316,7 @@ _H_NOW = re.compile(r"\b(?:que|cual|en que)\s+(?:clase|curso)\s+(?:tengo|me toca
 _H_NEXT = re.compile(r"\b(?:cual es mi|que|cual)\s+(?:es\s+)?(?:la\s+)?(?:proxima|siguiente)\s+clase\b|\bque clase sigue\b|"
                      r"\bque (?:clase )?me toca despues\b")
 _H_DAY = re.compile(r"\b(?:mi\s+)?horario(?:\s+de\s+clases)?\s+(?:de\s+|del\s+|para\s+)?(hoy|manana|lunes|martes|miercoles|jueves|viernes|sabado)\b|"
-                    r"\bque clases tengo\s+(hoy|manana|el lunes|el martes|el miercoles|el jueves|el viernes)\b")
+                    r"\b(?:que clases|cuantas clases|cuantas horas de clases?|cuantas horas de clase) tengo\s+(hoy|manana|el lunes|el martes|el miercoles|el jueves|el viernes)\b")
 _H_PREP = re.compile(r"\b(?:preparame|prepara|planea|planeame|haz(?:me)? el plan de)\s+(?:la\s+)?(?:proxima|siguiente)\s+clase"
                      r"(?:\s+(?:de|sobre)\s+(.+))?$")
 _H_ADD = re.compile(rf"^(?:los|el)\s+(?:{'|'.join(horario.DAYS)})s?\b.*\btengo\b")

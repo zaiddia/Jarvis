@@ -133,7 +133,7 @@ def nl_parse(raw):
 def nl_should_try(text, t):
     if not J.settings.get("nl_understand", True) or getattr(J._tl, "nl_pass", False):
         return False
-    if J.state.get("ai") != "ok" or len(t.split()) < 2 or _KNOW.match(t) or _CHAT.match(t):
+    if J.state.get("ai") != "ok" or len(t.split()) < 2 or _KNOW.match(t) or _CHAT.match(t) or J.p57_chatty(t):   # 12.57: la charla, sin comprensión
         return False
     return True
 

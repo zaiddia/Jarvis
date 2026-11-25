@@ -19,6 +19,8 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Pulido (12.57)", ["sube el volumen al máximo", "¿cuánta memoria RAM estoy usando?", "¿cuánto falta para el puente festivo?",
+                        "pon el modo oscuro"]),
     ("Más humano (12.56)", ["pon la voz colombiana", "voz de mujer", "usa la voz con emoción", "vuelve a la voz normal",
                             "estoy muy cansado, ¿qué tengo pendiente?"]),
     ("Más rápido y al celular (12.55)", ["pon música relajante", "baja el brillo", "habla más despacio", "¿cuántas frases has aprendido?",

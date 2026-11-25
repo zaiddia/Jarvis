@@ -324,7 +324,8 @@ KINDS = {
     "quiz": ("Evaluación", r"quiz|evaluacion|examen|prueba|cuestionario|test"),
     "taller": ("Taller", r"taller|guia|ficha|ejercicios|actividad|tarea"),
     "rubrica": ("Rúbrica", r"rubrica"),
-    "plan": ("Plan de clase", r"plan de clase|planeacion|planeador|planificacion|secuencia didactica"),
+    "plan": ("Plan de clase", r"plan de clase|planeacion|planeador|planificacion|secuencia didactica|"
+                              r"(?:prepara|preparame|planea|planeame|arma|armame|disena|disename) (?:la|una|mi) clase"),   # 12.57
     # 8.2
     "saber": ("Preguntas tipo Saber", r"(?:preguntas|prueba|simulacro|quiz|evaluacion)\s+(?:tipo\s+)?(?:saber|icfes)(?:\s+\d+)?|"
                                       r"tipo saber|tipo icfes|simulacro icfes|simulacro saber"),

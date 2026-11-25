@@ -263,8 +263,8 @@ def recall(question, topic=None):
 
 
 def recall_voice(text, t):
-    if not _RECALL_RE.search(t):
-        return False
+    if not _RECALL_RE.search(t) or re.search(r"\bno (?:era|es|fue) (?:eso )?lo que te (?:pedi|dije)\b|\bno te (?:pedi|dije) eso\b", t):
+        return False                                   # 12.57: «eso no era lo que te pedí» es una queja, no buscar en la memoria
     if not J.settings["history_enabled"]:
         J.reply("El historial de conversaciones está apagado. Lo enciendes en Ajustes, sección Memoria.", "MEMORIA")
         return True
