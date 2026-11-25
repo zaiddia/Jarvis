@@ -157,6 +157,18 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## SenseNova como IA (v12.60)
+
+- Nuevo proveedor en *Ajustes › Inteligencia artificial*: **SenseNova** (de SenseTime), con el modelo
+  `sensenova-6.8-flash`. Es gratis mientras dure su beta (unas 1.500 peticiones cada 5 horas) y puede ver imágenes.
+- **Cómo conectarlo**: crea una cuenta en https://platform.sensenova.ai, verifica el correo, entra a *Console › API Keys*,
+  crea una clave (empieza por `sk-`) y pégala en Ajustes › Inteligencia artificial › SenseNova. También sirve la variable
+  `SENSENOVA_API_KEY`.
+- Para lo corto (la voz) responde sin pensar, y para los trabajos largos piensa un poco. Entra en «compara las IA
+  gratis».
+- **Ojo**: sus servidores están en China y filtra algunos temas. Jarvis no lo usa de respaldo por su cuenta; no lo
+  escojas para trabajar con datos de estudiantes.
+
 ## El panel y los Ajustes ya no se abren y se cierran solos (v12.59)
 
 - **La causa**: al reiniciarse para actualizar, el Jarvis viejo se cerraba pero su motor de ventanas (Microsoft Edge

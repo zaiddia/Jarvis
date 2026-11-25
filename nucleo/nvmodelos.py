@@ -45,7 +45,7 @@ def nv_report(results):
     return txt + " En Ajustes › Inteligencia artificial puedes dejar uno para conversar o para los trabajos pesados."
 
 
-FREE_PROVIDERS = ("nvidia", "iteracompute")      # 12.48: las gratis con varios modelos que vale la pena comparar
+FREE_PROVIDERS = ("nvidia", "iteracompute", "sensenova")      # 12.48 (12.60: SenseNova): las gratis con varios modelos que vale la pena comparar
 
 
 def nv_pairs():
@@ -69,7 +69,7 @@ def nv_bench_run(pause=1.6):
     """Mide cada modelo con la misma pregunta corta. → lista ordenada [{"modelo", "proveedor", "s", "ok", "texto"}]."""
     pairs = nv_pairs()
     if not pairs:
-        raise ValueError("no hay claves guardadas de NVIDIA ni de IteraCompute")
+        raise ValueError("no hay claves guardadas de NVIDIA, IteraCompute ni SenseNova")
     res = []
     for i, (cfg, m) in enumerate(pairs):
         nv["msg"] = f"Probando {m.split('/')[-1]} ({i + 1} de {len(pairs)})…"

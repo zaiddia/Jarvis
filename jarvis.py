@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.59"
+VERSION = "12.60"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -649,6 +649,13 @@ PROVIDERS = {
                          key_url="https://platform.iteracompute.com", key_hint="pega aquí tu clave",
                          note="Gratis cada mes (hasta 30 millones de tokens), sin tarjeta. Es un servicio nuevo y pequeño: "
                               "Jarvis lo usa también de respaldo si otra IA se llena o falla."),
+    "sensenova": dict(label="SenseNova (SenseTime, gratis en beta)", short="SenseNova", kind="openai", group="cloud",   # 12.60
+                      base="https://token.sensenova.ai/v1", model="sensenova-6.8-flash",
+                      prefer=[r"^sensenova-6\.8-flash$", r"^sensenova-6\.8-flash-lite$", r"^sensenova-[\d.]+-flash", r"^sensenova-(?!u)"],
+                      thinks=True, reasoning_effort="low", quick_effort="none", min_tokens=2048,
+                      key_url="https://platform.sensenova.ai/console", key_hint="sk-…",
+                      note="Gratis mientras dure la beta (unas 1.500 peticiones cada 5 horas) y puede ver imágenes. "
+                           "Sus servidores están en China y filtra algunos temas: no lo uses para datos de estudiantes."),
     "xai": dict(label="Grok (xAI)", short="Grok", kind="openai", group="cloud",
                 base="https://api.x.ai/v1", model="", prefer=[r"^grok.*fast", r"^grok"],
                 key_url="https://console.x.ai", key_hint="xai-…", note="Pago por uso."),
@@ -1152,7 +1159,7 @@ ENV_ALIASES = {
     "CHATGPT_API_KEY": "chatgpt_api_key", "DEEPSEEK_API_KEY": "deepseek_api_key",
     "MOONSHOT_API_KEY": "kimi_api_key", "KIMI_API_KEY": "kimi_api_key",
     "XAI_API_KEY": "xai_api_key", "MISTRAL_API_KEY": "mistral_api_key",
-    "GROQ_API_KEY": "groq_api_key", "NVIDIA_API_KEY": "nvidia_api_key", "NVAPI_KEY": "nvidia_api_key", "ITERACOMPUTE_API_KEY": "iteracompute_api_key", "OPENROUTER_API_KEY": "openrouter_api_key",
+    "GROQ_API_KEY": "groq_api_key", "NVIDIA_API_KEY": "nvidia_api_key", "NVAPI_KEY": "nvidia_api_key", "ITERACOMPUTE_API_KEY": "iteracompute_api_key", "SENSENOVA_API_KEY": "sensenova_api_key", "OPENROUTER_API_KEY": "openrouter_api_key",
 }
 env_overrides = {}
 _file_values = {}

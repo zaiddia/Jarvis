@@ -432,6 +432,8 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
         body["chat_template_kwargs"] = {"enable_thinking": False}   # 12.48: Qwen3.8 sin pensar para lo corto: responde ya
     if sp.get("reasoning_effort") and re.search(sp.get("reasoning_re", "."), str(cfg.get("model") or ""), re.I):
         body["reasoning_effort"] = sp["reasoning_effort"]      # pensar poco: responde antes (si no lo acepta, se quita solo)
+        if sp.get("quick_effort") and asked < J.HEAVY_MIN_TOKENS:
+            body["reasoning_effort"] = sp["quick_effort"]      # 12.60: SenseNova: sin pensar para lo corto (voz)
     if cfg.get("ai_provider") == "motor":
         body["cache_prompt"] = True                    # 12.7: la IA integrada reusa lo ya leído
         body["chat_template_kwargs"] = {"enable_thinking": False}   # 12.20: sin «pensar en voz alta»: responde antes
