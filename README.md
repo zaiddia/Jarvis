@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Imágenes: si uno no tiene cupo, prueba el siguiente (v12.62)
+
+- Antes, si el proveedor de imágenes respondía «sin cupo» (pasa casi siempre con el **plan gratis de Gemini**, que no
+  incluye crear imágenes), Jarvis se quedaba ahí: «se agotó la cuota o hay demasiadas peticiones».
+- Ahora pasa solo al siguiente que tenga clave (Gemini → ChatGPT → SenseNova) y en el registro queda cuál no pudo y cuál
+  la hizo. Si ninguno puede, dice cuál falló y por qué, y si no tienes clave de SenseNova te explica cómo sacarla gratis.
+- Las fotos tuyas siguen sin ir a SenseNova en automático.
+
 ## Imágenes gratis con SenseNova (v12.61)
 
 - Jarvis ya creaba imágenes con Gemini o ChatGPT; ahora también con **SenseNova U1.5** (de SenseTime), **gratis mientras

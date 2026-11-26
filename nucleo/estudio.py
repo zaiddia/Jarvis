@@ -53,6 +53,26 @@ def image_backend(allow_cn=True):
                   "Inteligencia artificial")
 
 
+IMG_NAMES = {"gemini": "Gemini", "chatgpt": "ChatGPT", "sensenova": "SenseNova"}
+
+
+def image_backends(allow_cn=True):
+    """12.62: todos los que pueden crear la imagen, en orden: el que escogiste (o el automático) y luego los demás con
+    clave, para pasar al siguiente si uno no tiene cupo. SenseNova (China) entra solo si allow_cn o si la escogiste."""
+    first, msg = J.image_backend(allow_cn)
+    if not first:
+        return [], msg
+    out = [(first, msg)]
+    g = J._gemini_for_stt()
+    o = J._ai_cfg({"ai_provider": "chatgpt"})
+    sn = J._ai_cfg({"ai_provider": "sensenova"})
+    for name, cfg in (("gemini", g if g and J.image_model() else None), ("chatgpt", o if o.get("key") else None),
+                      ("sensenova", sn if sn.get("key") and allow_cn else None)):
+        if cfg and name not in [n for n, _ in out]:
+            out.append((name, cfg))
+    return out, ""
+
+
 def openai_image_model(cfg):
     if J.settings.get("image_model_openai", "").strip():
         return J.settings["image_model_openai"].strip()
@@ -161,30 +181,64 @@ def _sn_fetch(url, limit=25 * 1024 * 1024):
 def studio_generate(tema, estilo="", formato="", n=1, folder=None, src=None, instruccion=""):
     """Crea (o edita, con «src») n imágenes. → [rutas]. Lanza RuntimeError con un mensaje claro."""
     own_photo = bool(src) and not any(x["path"] == src for x in studio["items"])     # una foto tuya, no una creada aquí
-    prov, cfg = J.image_backend(allow_cn=not own_photo)
-    if not prov:
-        raise RuntimeError(cfg)
+    backends, msg = J.image_backends(allow_cn=not own_photo)
+    if not backends:
+        raise RuntimeError(msg)
     prompt = imagenes.edit_prompt(instruccion, estilo) if src else imagenes.build_prompt(tema, estilo, formato)
     folder = folder or os.path.join(J.settings["output_dir"], "Imágenes")
     title = (tema or instruccion or "imagen")[:50] + (f" ({imagenes.STYLE_NAMES[estilo]})" if estilo else "")
     out = []
+    fails = []
     for i in range(max(1, min(4, n))):
-        try:
-            raw, ext = J._one_image(prov, cfg, prompt, formato, src)
-        except J.AIError as e:
-            if out:
+        raw = None
+        while backends:
+            prov, cfg = backends[0]
+            try:
+                raw, ext = J._one_image(prov, cfg, prompt, formato, src)
                 break
-            raise RuntimeError(e.why or str(e))
-        except ValueError as e:
-            if out:
-                break
-            raise RuntimeError(str(e))
+            except J.AIError as e:
+                if out or e.kind not in ("quota", "server", "model", "key", "balance", "perm", "region", "bad", "net") or len(backends) == 1:
+                    if out:
+                        break
+                    fails.append((prov, e.kind, e.why or str(e)))
+                    raise RuntimeError(J.image_fail_text(fails))
+                fails.append((prov, e.kind, e.why or str(e)))       # 12.62: sin cupo, saturado o sin modelo: el siguiente
+                J.log_terminal(f"Imágenes: {IMG_NAMES[prov]} no pudo ({e.kind}); pruebo con {IMG_NAMES[backends[1][0]]}.", "IA")
+                backends.pop(0)
+            except ValueError as e:
+                if out:
+                    break
+                raise RuntimeError(str(e))
+        if raw is None:
+            break
         path = imagenes.save(raw, ext, folder, title + (f" {i + 1}" if n > 1 else ""))
         studio["items"].append({"path": path, "tema": tema or instruccion, "estilo": estilo, "formato": formato, "t": time.time()})
         del studio["items"][:-30]
         out.append(path)
         time.sleep(0.01)
     return out
+
+
+def image_fail_text(fails):
+    """El porqué, con nombre propio, cuando ninguno pudo crear la imagen."""
+    parts = []
+    for prov, kind, why in fails:
+        name = IMG_NAMES.get(prov, prov)
+        if kind == "quota" and prov == "gemini":
+            parts.append(f"{name} no tiene cupo para imágenes (en el plan gratis de Gemini crear imágenes casi nunca está incluido)")
+        elif kind == "quota":
+            parts.append(f"{name} se quedó sin cupo por ahora")
+        elif kind == "key":
+            parts.append(f"{name} no aceptó la clave")
+        elif kind == "balance":
+            parts.append(f"{name} no tiene saldo")
+        else:
+            parts.append(f"{name}: {why}")
+    tip = ""
+    if not J._ai_cfg({"ai_provider": "sensenova"}).get("key"):
+        tip = (". Para crearlas gratis, saca una clave de SenseNova en platform.sensenova.ai y ponla en Ajustes › "
+               "Inteligencia artificial: Jarvis la usará cuando las otras no puedan")
+    return "; ".join(parts) + tip
 
 
 def studio_info(path):
@@ -304,5 +358,5 @@ def studio_voice(text, t):
     return True
 
 
-__all__ = ['_AGAIN', '_FMT', '_IMG_REF', '_NOT_EDIT', '_PRINT', '_STRONG', '_WEAK', '_oa_model', '_one_image', '_png_bytes', '_post_multipart', '_sn_fetch', '_studio_source',
+__all__ = ['IMG_NAMES', 'image_backends', 'image_fail_text', '_AGAIN', '_FMT', '_IMG_REF', '_NOT_EDIT', '_PRINT', '_STRONG', '_WEAK', '_oa_model', '_one_image', '_png_bytes', '_post_multipart', '_sn_fetch', '_studio_source',
            'handle_studio_action', 'image_backend', 'openai_image_model', 'studio', 'studio_generate', 'studio_info', 'studio_run', 'studio_voice']

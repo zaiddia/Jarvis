@@ -90,3 +90,49 @@ def test_foto_propia_no_va_a_china_en_automatico(jv, monkeypatch, tmp_path):
         assert False
     except RuntimeError as e:
         assert "China" in str(e)
+
+
+# ---------------------------------------------------------------- 12.62: si uno no tiene cupo, el siguiente
+def test_sin_cupo_pasa_al_siguiente(jv, monkeypatch, tmp_path):
+    monkeypatch.setitem(jv.studio, "items", [])
+    monkeypatch.setitem(jv.settings, "image_provider", "auto")
+    monkeypatch.setitem(jv.settings, "output_dir", str(tmp_path))
+    _keys(jv, monkeypatch, gemini=True)
+    png = _png()
+    tried = []
+
+    def one(prov, cfg, prompt, aspect="", src=None):
+        tried.append(prov)
+        if prov == "gemini":
+            raise jv.AIError("429", code=429, kind="quota", why="se agotó la cuota")
+        return png, ".png"
+    monkeypatch.setattr(jv, "_one_image", one)
+    paths = jv.studio_generate("el ciclo del agua", n=2)
+    assert len(paths) == 2 and tried == ["gemini", "sensenova", "sensenova"]
+
+
+def test_ninguno_puede(jv, monkeypatch, tmp_path):
+    monkeypatch.setitem(jv.studio, "items", [])
+    monkeypatch.setitem(jv.settings, "image_provider", "auto")
+    monkeypatch.setitem(jv.settings, "output_dir", str(tmp_path))
+    _keys(jv, monkeypatch, gemini=True, sn=False)
+    monkeypatch.setattr(jv, "_one_image", lambda *a, **k: (_ for _ in ()).throw(jv.AIError("429", code=429, kind="quota", why="x")))
+    try:
+        jv.studio_generate("el ciclo del agua")
+        assert False
+    except RuntimeError as e:
+        assert "Gemini no tiene cupo para imágenes" in str(e) and "platform.sensenova.ai" in str(e)
+
+
+def test_otro_error_no_reintenta(jv, monkeypatch, tmp_path):
+    monkeypatch.setitem(jv.studio, "items", [])
+    monkeypatch.setitem(jv.settings, "output_dir", str(tmp_path))
+    _keys(jv, monkeypatch, gemini=True)
+    tried = []
+    monkeypatch.setattr(jv, "_one_image", lambda prov, *a, **k: (tried.append(prov), (_ for _ in ()).throw(
+        jv.AIError("safety", code=400, kind="safety", why="contenido bloqueado")))[1])
+    try:
+        jv.studio_generate("algo")
+        assert False
+    except RuntimeError as e:
+        assert tried == ["gemini"] and "bloqueado" in str(e)
