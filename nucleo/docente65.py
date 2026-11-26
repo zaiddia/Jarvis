@@ -564,7 +564,7 @@ def _d65_diploma_voice(text, t):
 
 
 # ============================================================================ 6. RENTA
-_D65_MONEY = r"(\d+(?:[.,]\d+)?)\s*(millones|millon|mill|m|mil)?(?:\s+de pesos)?"
+_D65_MONEY = r"(\d+(?:[.,]\d+)?)\s*(millones|millon|mill|mil|m\b)?(?:\s+de pesos)?"
 
 
 def renta_parse(t):
@@ -616,7 +616,7 @@ _D65_RENTA = re.compile(r"\b(?:debo|tengo que|me toca|estoy obligad[oa] a)\s+dec
 def _d65_renta_voice(text, t):
     if not _D65_RENTA.search(t):
         return False
-    vals = renta_parse(t)
+    vals = renta_parse(EF.norm(text))                 # con la coma decimal («4,5 millones»)
     year = datetime.date.today().year if datetime.date.today().month >= 11 else datetime.date.today().year - 1
     m = re.search(r"\b(?:por el|del|en el|ano gravable)\s+(20\d{2})\b", t)
     if m:

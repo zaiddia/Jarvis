@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.65"
+VERSION = "12.66"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1768,6 +1768,8 @@ def process_command(text):
         return
     if colegio53_voice(text, t):                       # 12.53: convivencia (Ley 1620), reglas, documentos del colegio, portafolio
         return
+    if general66_voice(text, t):                       # 12.66: reclamos, extracto, deudas, «¿esto es verdad?», exámenes, inglés
+        return
     if docente65_voice(text, t):                       # 12.65: estafas, contratos, exposiciones, diagnóstico, diplomas, renta,
         return                                         #        salidas, proyectos transversales y cronograma de evaluaciones
     if cierre54_voice(text, t):                        # 12.54: acta de la comisión de evaluación, test y orientación vocacional
@@ -2669,6 +2671,7 @@ from nucleo.pulir57 import *  # noqa: F401,F403,E402
 from nucleo.ventanas59 import *  # noqa: F401,F403,E402
 from nucleo.videoia63 import *  # noqa: F401,F403,E402
 from nucleo.docente65 import *  # noqa: F401,F403,E402
+from nucleo.general66 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)

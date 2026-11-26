@@ -150,7 +150,7 @@ def _live_system():
         recent = " Conversación reciente: " + " | ".join(
             f"{'Usuario' if m['role'] == 'user' else 'Tú'}: {str(m['content'])[:200]}" for m in hist) + "."
     return (J.settings["system_prompt"] + J.VOICE_RULE + J.style_rule() + f" Hoy es {J.fecha_hablada(now.date())}, son las "
-            f"{now:%H:%M}. Eres Jarvis versión {J.VERSION}: si te preguntan la versión, di esa y nunca otra." + J._notes_ctx() + J._user_ctx() + recent + J.LIVE_RULE + J.study_ctx())
+            f"{now:%H:%M}. Eres Jarvis versión {J.VERSION}: si te preguntan la versión, di esa y nunca otra." + J._notes_ctx() + J._user_ctx() + recent + J.LIVE_RULE + J.study_ctx() + J.g66_tutor_ctx())
 
 
 def _live_attempts():
@@ -438,6 +438,8 @@ def _live_on_closed(reason):
     J.refresh_mode()
     if was:
         J.log_terminal(f"Conversación en vivo terminada ({reason}). Di «Jarvis» para empezar otra.", "EN VIVO")
+        if J.g66_tutor["on"]:                            # 12.66: terminó la práctica de inglés: el repaso
+            J.start_job("Repaso de inglés", J.g66_tutor_review, "ingles")
 
 
 def _live_watchdog(sess):

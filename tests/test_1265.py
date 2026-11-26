@@ -169,7 +169,7 @@ def test_renta_por_voz(jv, monkeypatch):
     monkeypatch.setattr(jv.adjuntos, "recent", lambda s=1800, n=6: [])
     monkeypatch.setattr(jv, "card", lambda *a, **k: None)
     jv._rec.clear()
-    jv.process_command("¿debo declarar renta? gano 6 millones al mes")
+    jv.process_command("¿debo declarar renta? gano 6,5 millones al mes")
     assert "Sí:" in jv._rec.said() and "contador" in jv._rec.said()
     jv._rec.clear()
     jv.process_command("debo declarar renta")

@@ -157,6 +157,28 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Seis funciones para el día a día (v12.66)
+
+1. **Reclamos y derechos de petición.** «Haz un derecho de petición a la EPS Sura porque no me autorizan la resonancia»,
+   «reclama a Claro porque me cobraron de más», «haz una tutela contra…» (borrador): Jarvis lo redacta en Word (Ley 1755
+   de 2015) con lo que le contaste y deja [entre corchetes] lo que falta. «Ya radiqué el reclamo de Claro» → calcula el plazo
+   de respuesta (15 días hábiles, sin festivos) y, si se vence sin respuesta, te avisa con el siguiente paso según el sector
+   (Supersalud, SIC, Superservicios, Superfinanciera, Personería) · «me respondieron el reclamo de Claro» · «mis reclamos».
+2. **Extracto bancario.** Sube el PDF y toca *Analizar extracto* (o «analiza mi extracto»): en qué se va la plata por
+   categorías, cobros a revisar (cuota de manejo, seguros, intereses, suscripciones, cobros repetidos) y cuánto ahorrar.
+3. **Plan para salir de deudas.** «Anota una deuda: tarjeta Éxito 3 millones al 2,1 % mensual, cuota de 250 mil» (también
+   «28 % EA») · «mis deudas» · «plan para salir de deudas» (avalancha y bola de nieve: cuándo quedas libre y cuánto pagas
+   de intereses; «abonando la prima de 2 millones», «con 300 mil extra al mes») · «ya pagué la deuda de la tarjeta Éxito».
+4. **¿Esto es verdad?** Pega la cadena o la noticia («¿esto es verdad? …», «verifica esta noticia: …», «¿es cierto que…?»)
+   o sube la captura: busca en internet y responde con veredicto (falso, engañoso, sin pruebas, cierto o no se pudo
+   verificar), las fuentes y un mensaje corto para el grupo de la familia. Neutral en política.
+5. **Exámenes de laboratorio.** Sube el resultado y toca *Explicar exámenes* (o «explícame estos exámenes»): cada valor en
+   palabras sencillas con los rangos del mismo informe, lo que está fuera de rango y qué preguntarle al médico. No diagnostica.
+6. **Inglés en vivo.** «Practiquemos inglés en vivo (nivel intermedio) sobre viajes»: la práctica de conversación de 12.21,
+   pero hablando en la conversación en vivo; al terminar («terminemos la práctica»), el repaso de errores y palabras nuevas
+   en Word. Sin «en vivo» sigue la práctica escrita de siempre.
+- Arreglado: «250 mil» se leía como 250 millones en las cuentas de renta y deudas, y «4,5 millones» como 5.
+
 ## Nueve funciones nuevas (v12.65)
 
 1. **¿Esto es una estafa?** Pega el mensaje o el enlace («¿esto es una estafa? Bancolombia: su cuenta…») o sube la captura y
