@@ -157,6 +157,18 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Videos cortos con IA, gratis (v12.63)
+
+- **«Hazme un video de 5 segundos de un volcán en erupción»**, «un clip con IA de un colibrí volando», «un video realista
+  de…»: Jarvis lo crea con **NVIDIA Cosmos3 Nano**, gratis, con la **misma clave de NVIDIA** de la sección IA (la de Kimi).
+- **«Anima esta imagen»** / «convierte la imagen en video»: le da movimiento a la última imagen creada en el estudio o a la
+  foto que subiste («anima esta imagen, que el agua se mueva»).
+- 480p a 24 cuadros por segundo, de 1 a 10 segundos (5 si no dices cuánto); horizontal o vertical («para el celular»).
+  Tarda unos minutos; queda en *Documentos › Jarvis › Videos › IA* y se abre solo.
+- NVIDIA revisa el contenido y les pone su marca de agua invisible (SynthID). Los videos explicativos animados («hazme un
+  video de 2 minutos que explique…») siguen igual.
+- LongCat-Video no se puede usar en el computador (pide unos 80 GB de memoria de video) y en la nube es de pago.
+
 ## Imágenes: si uno no tiene cupo, prueba el siguiente (v12.62)
 
 - Antes, si el proveedor de imágenes respondía «sin cupo» (pasa casi siempre con el **plan gratis de Gemini**, que no
