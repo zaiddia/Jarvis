@@ -157,6 +157,14 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Video con IA: aviso claro cuando NVIDIA no da acceso (v12.64)
+
+- Muchas cuentas personales de NVIDIA reciben «404 page not found» al pedir videos a Cosmos3 Nano por programa: es una
+  falla de NVIDIA (a la cuenta le falta el permiso «Public API Endpoints»), aunque la misma clave sirva para Kimi y la
+  página del modelo funcione en el navegador. Antes Jarvis decía «el modelo no existe»; ahora explica qué pasa y abre la
+  página de Cosmos3 Nano para crear el video ahí mientras NVIDIA lo arregla (y, si es para una película, descargarlo a la
+  carpeta «clips» y decir «arma la película»).
+
 ## Videos cortos con IA, gratis (v12.63)
 
 - **«Hazme un video de 5 segundos de un volcán en erupción»**, «un clip con IA de un colibrí volando», «un video realista

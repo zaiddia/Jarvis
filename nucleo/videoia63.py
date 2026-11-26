@@ -16,6 +16,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+import webbrowser
 
 import imagenes
 from nucleo import J
@@ -25,6 +26,12 @@ VI63_STATUS = "https://api.nvcf.nvidia.com/v2/nvcf/pexec/status/"
 VI63_FPS = 24
 VI63_RES = {"16:9": "480_16_9", "1:1": "480_1_1", "3:4": "480_3_4", "9:16": "480_9_16"}
 vi63_job = {"busy": False, "tema": ""}
+VI63_PLAYGROUND = "https://build.nvidia.com/nvidia/cosmos3-nano"
+VI63_NO_ACCESS = ("NVIDIA todavía no le da acceso por programa a ese modelo de video a tu cuenta (responde «404 page not "
+                  "found»; es una falla de NVIDIA que les pasa a muchas cuentas personales: les falta el permiso «Public API "
+                  "Endpoints»). Tu clave sí sirve para Kimi. Mientras NVIDIA lo arregla, puedes crear el video en su página "
+                  f"({VI63_PLAYGROUND}), que en el navegador sí funciona, y si es para una película, descargarlo a la carpeta «clips» "
+                  "del proyecto y decirme «arma la película». Te abro la página")
 
 _VI63_NUM = {"un": 1, "uno": 1, "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6, "siete": 7, "ocho": 8, "nueve": 9, "diez": 10}
 
@@ -66,6 +73,8 @@ def _vi63_request(url, key, body=None, timeout=600):
             return r.status, dict(r.headers), r.read()
     except urllib.error.HTTPError as e:
         raw = e.read().decode("utf-8", "replace")
+        if e.code == 404 and "page not found" in raw.lower():           # 12.64: falla conocida de NVIDIA
+            raise RuntimeError(VI63_NO_ACCESS)
         if e.code == 422:
             raise RuntimeError("NVIDIA no aceptó el pedido (puede que lo haya bloqueado su filtro de contenido): "
                                + raw[:200])
@@ -137,6 +146,8 @@ def _vi63_job(tema, seconds, aspect, image_path):
         path = J.vi63_make(tema, seconds, aspect, image_path)
     except RuntimeError as e:
         J.reply(f"No pude crear el video: {e}.", "VIDEO IA")
+        if str(e) == VI63_NO_ACCESS:
+            webbrowser.open(VI63_PLAYGROUND)
         return
     finally:
         vi63_job.update(busy=False, tema="")
@@ -200,6 +211,6 @@ def videoia63_voice(text, t):
     return True
 
 
-__all__ = ['VI63_FPS', 'VI63_RES', 'VI63_STATUS', 'VI63_URL', '_VI63_ANIM', '_VI63_NUM', '_VI63_SECS', '_VI63_SIGNAL', '_VI63_TEXT',
+__all__ = ['VI63_NO_ACCESS', 'VI63_PLAYGROUND', 'VI63_FPS', 'VI63_RES', 'VI63_STATUS', 'VI63_URL', '_VI63_ANIM', '_VI63_NUM', '_VI63_SECS', '_VI63_SIGNAL', '_VI63_TEXT',
            '_vi63_job', '_vi63_key', '_vi63_orig', '_vi63_request', '_vi63_secs', 'vi63_body', 'vi63_call', 'vi63_extract', 'vi63_frames',
            'vi63_job', 'vi63_make', 'vi63_prompt', 'videoia63_voice']

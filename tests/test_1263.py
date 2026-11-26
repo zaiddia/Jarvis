@@ -89,3 +89,24 @@ def test_sin_clave(jv, monkeypatch):
     jv._rec.clear()
     jv.process_command("hazme un video de 5 segundos de un volcán")
     assert "build.nvidia.com" in jv._rec.said()
+
+
+def test_404_de_nvidia(jv, monkeypatch, tmp_path):
+    import io as _io
+    import urllib.error
+    import nucleo.videoia63 as V
+
+    def boom(req, timeout=0):
+        raise urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, _io.BytesIO(b"404 page not found"))
+    monkeypatch.setattr(V.urllib.request, "urlopen", boom)
+    try:
+        jv._vi63_request(jv.VI63_URL, "nvapi-x", {"prompt": "p"})
+        assert False
+    except RuntimeError as e:
+        assert str(e) == jv.VI63_NO_ACCESS and "Public API Endpoints" in str(e)
+    opened = []
+    monkeypatch.setattr(V.webbrowser, "open", lambda u: opened.append(u))
+    monkeypatch.setattr(jv, "vi63_make", lambda *a, **k: (_ for _ in ()).throw(RuntimeError(jv.VI63_NO_ACCESS)))
+    jv._rec.clear()
+    jv._vi63_job("un volcán", 5, "16:9", "")
+    assert opened == [jv.VI63_PLAYGROUND] and "Public API Endpoints" in jv._rec.said()
