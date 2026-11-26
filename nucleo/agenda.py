@@ -146,7 +146,7 @@ def later_tick(now=None):
 def _ag_worker():
     time.sleep(60)
     while True:
-        for fn in (J.later_tick, J.study_tick, J.watch_tick, J.nuevas52_tick, J.colegio53_tick):   # 12.40: práctica y precios · 12.52: páginas
+        for fn in (J.later_tick, J.study_tick, J.watch_tick, J.nuevas52_tick, J.colegio53_tick, J.docente65_tick):   # 12.40: práctica y precios · 12.52: páginas
             try:
                 fn()
             except Exception as e:

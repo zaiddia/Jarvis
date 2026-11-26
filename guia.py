@@ -19,6 +19,7 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Estafas, renta y colegio (12.65)", ["¿esto es una estafa?", "¿debo declarar renta?", "evalúa esta exposición de Juan"]),
     ("Música y llamadas (12.58)", ["¿qué canción está sonando?", "llama a mi mamá"]),
     ("Pulido (12.57)", ["sube el volumen al máximo", "¿cuánta memoria RAM estoy usando?", "¿cuánto falta para el puente festivo?",
                         "pon el modo oscuro"]),

@@ -157,6 +157,35 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Nueve funciones nuevas (v12.65)
+
+1. **¿Esto es una estafa?** Pega el mensaje o el enlace («¿esto es una estafa? Bancolombia: su cuenta…») o sube la captura y
+   toca *¿Es una estafa?*. Veredicto (estafa, dudoso o parece seguro), las señales concretas y qué hacer (no responder, llamar
+   al banco por su línea oficial, bloquear, denunciar en caivirtual.policia.gov.co). Sin IA, responde con las señales típicas.
+2. **Evaluar exposiciones desde un video.** Sube el video (grabado con el celular) y di «evalúa esta exposición de Juan» o
+   toca *Evaluar exposición*: Gemini lo ve y lo escucha y califica la rúbrica (dominio, claridad, expresión oral, lenguaje
+   corporal, apoyo visual y tiempo), con lo que vio en cada criterio, nota sugerida y un comentario para el estudiante, en
+   Word. Si subes también tu rúbrica (PDF o Word), usa la tuya. La nota final la pones tú. El video va a Google.
+3. **Diagnóstico de inicio de año.** «Prepara el diagnóstico de matemáticas para séptimo» (preguntas por competencia con lo
+   del grado anterior según los DBA, Word con la clave) · «abre el diagnóstico para 7A» (QR en el proyector; responden en el
+   celular) · «cierra el diagnóstico»: qué domina el curso por competencia, quién necesita refuerzo y grupos que mezclan niveles.
+4. **Revisor de contratos.** Sube el contrato (arriendo, crédito, plan de celular) y toca *Revisar contrato* o di «revisa este
+   contrato»: qué es, lo que te compromete, lo riesgoso, la ley que aplica y qué negociar antes de firmar (no reemplaza a un abogado).
+5. **Diplomas y menciones de honor.** «Haz los diplomas de los mejores de cada curso» (los primeros puestos por promedio, con
+   empates; uno por página, horizontal) · «diploma para Sofía Gómez de 9A por su liderazgo».
+6. **¿Debo declarar renta?** Con los topes oficiales en UVT del año gravable (2025: $49.799; 2026: $52.374): «¿debo
+   declarar renta? gano 6 millones al mes», o sube el certificado de ingresos y retenciones y toca *¿Debo declarar renta?*.
+   Dice si estás obligado, qué puedes restar y qué papeles reunir (orientación; consulta a un contador).
+7. **Salidas pedagógicas.** «Planea una salida pedagógica al jardín botánico con 9A el 15 de marzo»: plan (antes, durante y
+   después, con guía de observación), lista de chequeo según la Directiva Ministerial 55 de 2014 y una autorización por
+   estudiante con su nombre · «Ana Ruiz entregó la autorización» · «¿quién no ha entregado la autorización?».
+8. **Proyectos transversales.** «Formula el proyecto ambiental» (PRAE, educación sexual, democracia, tiempo libre, cátedra de
+   la paz, movilidad segura, vida saludable; con su marco legal, cronograma de febrero a noviembre e indicadores) ·
+   «evidencia del PRAE: jornada de reciclaje con sexto» · «informe final del proyecto ambiental».
+9. **Cronograma de evaluaciones.** «Organiza los exámenes de las próximas dos semanas» (o «desde el 2 de febrero»): con tu
+   horario, una por curso y asignatura, sin dos el mismo día por curso, máximo dos por día para ti, sin festivos; Word y aviso
+   la víspera.
+
 ## Video con IA: aviso claro cuando NVIDIA no da acceso (v12.64)
 
 - Muchas cuentas personales de NVIDIA reciben «404 page not found» al pedir videos a Cosmos3 Nano por programa: es una
