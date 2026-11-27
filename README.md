@@ -157,6 +157,23 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Escenas en 3D, voz de Fish Audio y «sigo en eso» (v12.68)
+
+- **Escenas en 3D para el video beam**: «constrúyeme en 3D el sistema solar», «arma en 3D la molécula de agua para séptimo»,
+  «haz una escena 3D de un volcán». Se abre en su ventana y se arma sola, parte por parte, con la explicación abajo; se gira con
+  el mouse o el dedo. Por voz: «siguiente parte», «parte anterior», «muéstralo todo», «deja de girar», «ármala de nuevo»,
+  «muéstrales la escena en el celular» (QR) y «mis escenas 3D». La IA solo describe la escena (formas, colores y movimientos) y el
+  dibujo lo hace la página de Jarvis: nada de lo que escribe la IA se ejecuta en el equipo. Antes de mostrarla, Jarvis revisa
+  cada parte (que se vea, que no quede fuera de cámara, diminuta, gigante o del color del fondo) y, si algo falla, se la devuelve
+  a la IA una vez para corregirla. «Muéstrame el cubo en 3D» sigue abriendo los sólidos de siempre.
+- **Voz de Fish Audio**: Ajustes › Voz › Fish Audio (clave de fish.audio y, si quieres, el código de una voz en español de su
+  biblioteca), o «usa la voz de Fish Audio». Usa el modelo gratis S2.1 Pro, que Fish anunció hasta el 30 de noviembre de 2026
+  (ya lo ha extendido varias veces). Si se acaba o falla, Jarvis habla con la voz de Edge y avisa una vez; con «Usar el modelo
+  de pago» sigue con Fish (unos 15 dólares por millón de letras).
+- **«Sigo en eso»**: si la respuesta tarda, además del «A ver…» del principio, a los 6 segundos dice «Sigo en eso.» y a los 16
+  «Está tardando más de lo normal, pero sigo.». En los trabajos largos que pides por voz, si a los 45 segundos lleva rato callado,
+  dice «Sigo con…; te aviso cuando termine.». Se apaga con el ajuste «ack_still».
+
 ## Cinco funciones para el aula y el carro (v12.67)
 
 - **Juegos de repaso para imprimir**: «haz una sopa de letras de la célula para sexto», «crucigrama del sistema solar», «juego de

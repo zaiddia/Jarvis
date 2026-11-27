@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>{{ scene.titulo }} · Escena 3D · Jarvis</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: {{ scene.fondo }}; color: #eef4fb; font-family: system-ui, "Segoe UI", sans-serif; }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  .top { position: fixed; left: 14px; top: 10px; right: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; z-index: 2; }
+  .top h1 { font-size: clamp(18px, 2.6vw, 34px); font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,.6); margin-right: auto; }
+  .top button { font-size: 15px; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.25); background: rgba(10,16,30,.7);
+                color: #eef4fb; cursor: pointer; }
+  .top button.on { border-color: #4fd1ff; color: #4fd1ff; }
+  #cap { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(900px, calc(100% - 24px)); z-index: 2;
+         background: rgba(8,12,24,.78); border: 1px solid rgba(255,255,255,.15); border-radius: 14px; padding: 12px 18px;
+         font-size: clamp(15px, 1.8vw, 24px); line-height: 1.35; text-align: center; transition: opacity .3s; }
+  #cap small { display: block; color: #8fb3cf; font-size: .7em; margin-bottom: 2px; letter-spacing: .04em; }
+  html body#e3d { background: {{ scene.fondo }} !important; }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body id="e3d">
+<canvas id="cv"></canvas>
+<div class="top">
+  <h1 id="ttl"></h1>
+  <button id="b-prev" title="Parte anterior">◀</button>
+  <button id="b-next" title="Siguiente parte">▶</button>
+  <button id="b-all" title="Mostrar todo">Todo</button>
+  <button id="b-play" class="on" title="Armar sola">⏯ Armar</button>
+  <button id="b-spin" class="on" title="Girar">⟳ Girar</button>
+</div>
+<div id="cap"><small id="cap-n"></small><span id="cap-t"></span></div>
+{% if not mobile %}<script src="/static/vendor/socket.io.min.js"></script>{% endif %}
+<script>
+const SCENE = {{ scene|tojson }};
+const SID = {{ sid|tojson }};
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * DPR; cv.height = H * DPR; }
+window.addEventListener("resize", resize); resize();
+document.getElementById("ttl").textContent = SCENE.titulo;
+
+// ---------------------------------------------------------------- mallas (en coordenadas del objeto)
+function sphere(r) { const v = [], t = [], la = 10, lo = 18;
+  for (let i = 0; i <= la; i++) { const a = Math.PI * i / la; for (let j = 0; j < lo; j++) { const b = 2 * Math.PI * j / lo;
+    v.push([r * Math.sin(a) * Math.cos(b), r * Math.cos(a), r * Math.sin(a) * Math.sin(b)]); } }
+  for (let i = 0; i < la; i++) for (let j = 0; j < lo; j++) { const a = i * lo + j, b = i * lo + (j + 1) % lo, c = a + lo, d = b + lo;
+    if (i > 0) t.push([a, b, d]); if (i < la - 1) t.push([a, d, c]); }
+  return { v, t }; }
+function box(w, h, d) { const x = w / 2, y = h / 2, z = d / 2;
+  const v = [[-x,-y,-z],[x,-y,-z],[x,y,-z],[-x,y,-z],[-x,-y,z],[x,-y,z],[x,y,z],[-x,y,z]];
+  const t = [[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,1,5],[0,5,4],[3,7,6],[3,6,2],[1,2,6],[1,6,5],[0,4,7],[0,7,3]]; return { v, t }; }
+function lathe(r0, r1, h, n, caps) { const v = [], t = []; for (let j = 0; j < n; j++) { const b = 2 * Math.PI * j / n;
+    v.push([r0 * Math.cos(b), -h / 2, r0 * Math.sin(b)]); v.push([r1 * Math.cos(b), h / 2, r1 * Math.sin(b)]); }
+  for (let j = 0; j < n; j++) { const a = 2 * j, b = 2 * ((j + 1) % n); t.push([a, a + 1, b + 1]); t.push([a, b + 1, b]); }
+  const bot = v.length; v.push([0, -h / 2, 0]); const top = v.length; v.push([0, h / 2, 0]);
+  if (caps) for (let j = 0; j < n; j++) { const a = 2 * j, b = 2 * ((j + 1) % n); t.push([bot, a, b]); if (r1 > 0) t.push([top, b + 1, a + 1]); }
+  return { v, t }; }
+function torus(R, rr) { const v = [], t = [], n = 28, m = 10;
+  for (let i = 0; i < n; i++) { const a = 2 * Math.PI * i / n; for (let j = 0; j < m; j++) { const b = 2 * Math.PI * j / m;
+    v.push([(R + rr * Math.cos(b)) * Math.cos(a), rr * Math.sin(b), (R + rr * Math.cos(b)) * Math.sin(a)]); } }
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) { const a = i * m + j, b = ((i + 1) % n) * m + j, c = ((i + 1) % n) * m + (j + 1) % m, d = i * m + (j + 1) % m;
+    t.push([a, b, c]); t.push([a, c, d]); }
+  return { v, t }; }
+function plane(w, d) { const x = w / 2, z = d / 2; return { v: [[-x,0,-z],[x,0,-z],[x,0,z],[-x,0,z]], t: [[0,1,2],[0,2,3]], two: true }; }
+function sub(a, b) { return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; } function add(a, b) { return [a[0]+b[0], a[1]+b[1], a[2]+b[2]]; }
+function mul(a, s) { return [a[0]*s, a[1]*s, a[2]*s]; } function dot(a, b) { return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+function cross(a, b) { return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+function nrm(a) { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0]/l, a[1]/l, a[2]/l]; }
+function rod(a, b, r, head) {      // tubo de a a b (y punta si es flecha), en coordenadas relativas al centro
+  const c = mul(add(a, b), .5), d = sub(b, a), L = Math.hypot(...d), u = nrm(d);
+  const p = Math.abs(u[1]) < .9 ? [0, 1, 0] : [1, 0, 0], e1 = nrm(cross(u, p)), e2 = cross(u, e1);
+  const v = [], t = [], n = 10, body = head ? L * .82 : L, A = sub(a, c);
+  for (let j = 0; j < n; j++) { const q = 2 * Math.PI * j / n, off = add(mul(e1, r * Math.cos(q)), mul(e2, r * Math.sin(q)));
+    v.push(add(A, off)); v.push(add(add(A, mul(u, body)), off)); }
+  for (let j = 0; j < n; j++) { const x = 2 * j, y = 2 * ((j + 1) % n); t.push([x, x + 1, y + 1]); t.push([x, y + 1, y]); }
+  if (head) { const base = v.length; for (let j = 0; j < n; j++) { const q = 2 * Math.PI * j / n;
+      v.push(add(add(A, mul(u, body)), add(mul(e1, r * 3 * Math.cos(q)), mul(e2, r * 3 * Math.sin(q))))); }
+    const tip = v.length; v.push(add(A, mul(u, L)));
+    for (let j = 0; j < n; j++) t.push([base + j, tip, base + (j + 1) % n]); }
+  return { v, t }; }
+function meshOf(o) {
+  switch (o.forma) {
+    case "esfera": return sphere(o.radio);
+    case "caja": return box(o.ancho, o.alto, o.fondo);
+    case "cilindro": return lathe(o.radio, o.radio, o.alto, 20, true);
+    case "cono": return lathe(o.radio, 0, o.alto, 20, true);
+    case "toro": return torus(o.radio, o.grosor);
+    case "plano": return plane(o.ancho, o.fondo);
+    case "linea": return rod(o.desde, o.hasta, o.grosor, false);
+    case "flecha": return rod(o.desde, o.hasta, o.grosor, true);
+    default: return { v: [], t: [] };
+  }
+}
+function hex(c) { return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; }
+function sizeOf(o) { return o.forma === "toro" ? o.radio + o.grosor : Math.max(o.radio || 0, (o.alto || 0) / 2, (o.ancho || 0) / 2, (o.fondo || 0) / 2, .4); }
+
+// ---------------------------------------------------------------- escena
+const OBJS = [];
+SCENE.pasos.forEach((st, si) => st.objetos.forEach((o, k) => {
+  const m = meshOf(o); OBJS.push({ o, m, step: si, k, rgb: hex(o.color), born: null, size: sizeOf(o) }); }));
+let shown = 0, auto = true, spin = true, lastStep = 0;
+const R = Math.max(2, SCENE.radio || 6);
+const cam = { yaw: .6, pitch: .38, dist: R * 2.05 };
+const capN = document.getElementById("cap-n"), capT = document.getElementById("cap-t");
+function setShown(n, now) {
+  n = Math.max(0, Math.min(SCENE.pasos.length, n));
+  OBJS.forEach((x) => { if (x.step < n && x.born === null) x.born = now + 140 * x.k; if (x.step >= n) x.born = null; });
+  shown = n; lastStep = now;
+  const st = SCENE.pasos[Math.max(0, n - 1)];
+  capN.textContent = n ? `Parte ${n} de ${SCENE.pasos.length}` : ""; capT.textContent = n ? st.texto : "Preparando la escena…";
+}
+function rotE(p, r) {     // rotación en grados, orden x, y, z
+  let [x, y, z] = p; const a = r[0] * Math.PI / 180, b = r[1] * Math.PI / 180, c = r[2] * Math.PI / 180;
+  [y, z] = [y * Math.cos(a) - z * Math.sin(a), y * Math.sin(a) + z * Math.cos(a)];
+  [x, z] = [x * Math.cos(b) + z * Math.sin(b), -x * Math.sin(b) + z * Math.cos(b)];
+  [x, y] = [x * Math.cos(c) - y * Math.sin(c), x * Math.sin(c) + y * Math.cos(c)];
+  return [x, y, z]; }
+function placeOf(x, ts) {   // posición, escala y giro del objeto en este momento
+  const o = x.o, a = o.anim || {}; let pos = o.pos.slice(), sc = 1, ry = 0;
+  if (a.tipo === "orbita") { const c = a.centro, ang = (a.vel * ts / 1000) * Math.PI / 180, dx = pos[0] - c[0], dz = pos[2] - c[2];
+    pos = [c[0] + dx * Math.cos(ang) - dz * Math.sin(ang), pos[1], c[2] + dx * Math.sin(ang) + dz * Math.cos(ang)]; }
+  if (a.tipo === "girar") ry = a.vel * ts / 1000;
+  if (a.tipo === "flotar") pos[1] += .25 * Math.sin(ts / 500 + x.k);
+  if (a.tipo === "latir") sc *= 1 + .07 * Math.sin(ts / 220);
+  return { pos, sc, ry }; }
+function view(p) {          // del mundo a la cámara
+  let [x, y, z] = p; const cy = Math.cos(-cam.yaw), sy = Math.sin(-cam.yaw);
+  [x, z] = [x * cy + z * sy, -x * sy + z * cy];
+  const cp = Math.cos(-cam.pitch), sp = Math.sin(-cam.pitch);
+  [y, z] = [y * cp - z * sp, y * sp + z * cp];
+  return [x, y, z + cam.dist]; }
+const LIGHT = nrm([.45, .85, -.55]);
+function frame(ts) {
+  if (spin && !drag) cam.yaw += .0022;
+  if (auto && shown < SCENE.pasos.length && ts - lastStep > (shown ? 4200 : 600)) setShown(shown + 1, ts);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  const f = Math.min(W, H) / (2 * Math.tan(25 * Math.PI / 180)), cx = W / 2, cyy = H / 2 - 10;
+  const tris = [], labels = [];
+  for (const x of OBJS) {
+    if (x.born === null || ts < x.born) continue;
+    const g = Math.min(1, (ts - x.born) / 550), ease = 1 - Math.pow(1 - g, 3);
+    const pl = placeOf(x, ts), s = ease * pl.sc, o = x.o, rot = o.rot || [0, 0, 0];
+    if (o.forma === "texto" || o.etiqueta) {
+      const lp = o.forma === "texto" ? pl.pos : add(pl.pos, [0, x.size * 1.15 + .35, 0]), q = view(lp);
+      if (q[2] > .2) labels.push({ x: cx + q[0] * f / q[2], y: cyy - q[1] * f / q[2], t: o.texto || o.etiqueta, a: ease, z: q[2], box: o.forma === "texto" });
+    }
+    if (!x.m.t.length) continue;
+    const pts = x.m.v.map((p) => { let w = rotE(mul(p, s), rot); if (pl.ry) w = rotE(w, [0, pl.ry, 0]); return add(w, pl.pos); });
+    const cam3 = pts.map(view);
+    const two = x.m.two || o.opacidad < 1;
+    for (const tr of x.m.t) {
+      const A = cam3[tr[0]], B = cam3[tr[1]], C = cam3[tr[2]];
+      if (A[2] < .1 || B[2] < .1 || C[2] < .1) continue;
+      const n = cross(sub(pts[tr[1]], pts[tr[0]]), sub(pts[tr[2]], pts[tr[0]])), nc = cross(sub(B, A), sub(C, A));
+      if (!two && dot(nc, A) >= 0) continue;                         // cara de atrás
+      let li = dot(nrm(n), LIGHT); if (two) li = Math.abs(li);
+      const k = .32 + .68 * Math.max(0, li);
+      tris.push({ z: (A[2] + B[2] + C[2]) / 3, p: [A, B, C], c: x.rgb, k, a: o.opacidad * Math.min(1, ease * 1.5) });
+    }
+  }
+  tris.sort((a, b) => b.z - a.z);
+  for (const t of tris) {
+    const c = `rgba(${Math.round(t.c[0] * t.k)},${Math.round(t.c[1] * t.k)},${Math.round(t.c[2] * t.k)},${t.a})`;
+    ctx.beginPath();
+    t.p.forEach((q, i) => { const X = cx + q[0] * f / q[2], Y = cyy - q[1] * f / q[2]; i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
+    ctx.closePath(); ctx.fillStyle = c; ctx.fill(); if (t.a >= 1) { ctx.strokeStyle = c; ctx.lineWidth = .6; ctx.stroke(); }
+  }
+  labels.sort((a, b) => b.z - a.z);
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (const l of labels) {
+    const fs = Math.max(13, Math.min(26, Math.min(W, H) / 38));
+    ctx.font = `600 ${fs}px system-ui, Segoe UI, sans-serif`; ctx.globalAlpha = l.a;
+    const w = ctx.measureText(l.t).width + 14;
+    ctx.fillStyle = l.box ? "rgba(8,12,24,.8)" : "rgba(8,12,24,.55)";
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(l.x - w / 2, l.y - fs * .75, w, fs * 1.5, 7) : ctx.rect(l.x - w / 2, l.y - fs * .75, w, fs * 1.5); ctx.fill();
+    ctx.fillStyle = "#ffffff"; ctx.fillText(l.t, l.x, l.y); ctx.globalAlpha = 1;
+  }
+  requestAnimationFrame(frame);
+}
+// ---------------------------------------------------------------- mando: mouse, dedos, botones, voz
+let drag = null, pinch = 0;
+cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing"; });
+cv.addEventListener("pointermove", (e) => { if (!drag) return; cam.yaw += (e.clientX - drag.x) * .008;
+  cam.pitch = Math.max(-1.35, Math.min(1.35, cam.pitch + (e.clientY - drag.y) * .006)); drag = { x: e.clientX, y: e.clientY }; });
+cv.addEventListener("pointerup", () => { drag = null; cv.style.cursor = "grab"; });
+cv.addEventListener("wheel", (e) => { e.preventDefault(); cam.dist = Math.max(R * .8, Math.min(R * 8, cam.dist * (e.deltaY > 0 ? 1.1 : .9))); }, { passive: false });
+cv.addEventListener("touchmove", (e) => { if (e.touches.length === 2) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+  if (pinch) cam.dist = Math.max(R * .8, Math.min(R * 8, cam.dist * pinch / d)); pinch = d; } }, { passive: true });
+cv.addEventListener("touchend", () => { pinch = 0; });
+const bPlay = document.getElementById("b-play"), bSpin = document.getElementById("b-spin");
+function cmd(c) {
+  const now = performance.now();
+  if (c === "next") { auto = false; setShown(shown + 1, now); }
+  if (c === "prev") { auto = false; setShown(shown - 1, now); }
+  if (c === "all") { auto = false; setShown(SCENE.pasos.length, now); }
+  if (c === "play") { auto = !auto; }
+  if (c === "spin") { spin = !spin; }
+  if (c === "stop_spin") { spin = false; }
+  if (c === "restart") { setShown(0, now); auto = true; }
+  bPlay.classList.toggle("on", auto); bSpin.classList.toggle("on", spin);
+}
+document.getElementById("b-next").onclick = () => cmd("next");
+document.getElementById("b-prev").onclick = () => cmd("prev");
+document.getElementById("b-all").onclick = () => cmd("all");
+bPlay.onclick = () => cmd("play"); bSpin.onclick = () => cmd("spin");
+window.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === " ") cmd("next"); if (e.key === "ArrowLeft") cmd("prev"); });
+if (window.io) { try { const s = io(); s.on("e3d", (m) => { if (!m || (m.sid && m.sid !== SID)) return; cmd(m.cmd); }); } catch (e) {} }
+setShown(0, performance.now());
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

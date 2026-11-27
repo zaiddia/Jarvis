@@ -287,7 +287,20 @@
           <label><input type="radio" name="tts_backend" value="edge" data-key="tts_backend"><span>Edge (online)</span></label>
           <label><input type="radio" name="tts_backend" value="piper" data-key="tts_backend"><span>Piper (offline)</span></label>
           <label><input type="radio" name="tts_backend" value="kokoro" data-key="tts_backend"><span>Kokoro (offline, más natural)</span></label>
+          <label><input type="radio" name="tts_backend" value="fish" data-key="tts_backend"><span>Fish Audio (muy natural)</span></label>
         </div>
+      </div>
+      <div class="field stack" data-ttsbk="fish" hidden>
+        <div class="ft"><label for="f-fish-key">Clave de Fish Audio</label><p>Créala en <b>fish.audio</b> › API. Jarvis usa el modelo gratis S2.1 Pro (Fish lo anunció gratis hasta el 30 de noviembre de 2026 y lo ha extendido varias veces). Si se acaba o falla, Jarvis habla con la voz de Edge y te avisa.</p></div>
+        <input class="inp narrow" type="password" id="f-fish-key" data-key="fish_api_key" autocomplete="off">
+      </div>
+      <div class="field stack" data-ttsbk="fish" hidden>
+        <div class="ft"><label for="f-fish-voice">Código de la voz</label><p>Escoge una voz en español en la biblioteca de fish.audio y copia el código de 32 letras y números que sale en la dirección de su página. Vacío: la voz por defecto de Fish.</p></div>
+        <input class="inp" type="text" id="f-fish-voice" data-key="fish_voice" maxlength="32" placeholder="9a9cf47702da476aa4629e2506d4a857" style="max-width:340px">
+      </div>
+      <div class="field" data-ttsbk="fish" hidden>
+        <div class="ft"><label for="f-fish-paid">Usar el modelo de pago si se acaba lo gratis</label><p>S2.1 Pro de pago: unos 15 dólares por millón de letras, cobrados en tu cuenta de Fish Audio. Apagado: vuelve a la voz de Edge.</p></div>
+        <label class="switch"><input type="checkbox" id="f-fish-paid" data-key="fish_paid"><span></span></label>
       </div>
       <div class="field stack" data-ttsbk="kokoro" hidden>
         <div class="ft"><label for="f-kvoice">Voz (Kokoro)</label><p>Opcional: di «instala la voz Kokoro» (unos 90 MB) y luego «mide las voces» para saber si en tu equipo conviene más que Piper. Sin internet, si está instalada, Jarvis la usa primero.</p></div>

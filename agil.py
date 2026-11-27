@@ -1,6 +1,7 @@
 """Jarvis más ágil (12.1). Lógica pura, sin Jarvis.
 
-  · Cero silencio: la frase corta que Jarvis dice al instante cuando la IA va a tardar («A ver…», «Voy con eso…»).
+  · Cero silencio: la frase corta que Jarvis dice al instante cuando la IA va a tardar («A ver…», «Voy con eso…»), y si
+    sigue tardando, «Sigo en eso.» (12.68).
   · Fin de turno: ¿la frase quedó completa o la persona sigue hablando («haz un quiz de… eh…»)?
   · Órdenes encadenadas: «pon un temporizador de 10 minutos, abre la pizarra y muéstrales el QR» → tres órdenes.
 """
@@ -48,8 +49,21 @@ def ack_for(text, rnd=None, last=None):
     return rnd.choice(choices)
 
 
+# 12.68: si la respuesta sigue sin llegar, una segunda frase («Sigo en eso.») y, si tarda mucho, una tercera. Nunca más.
+STILL = ["Sigo en eso.", "Ya casi.", "Un momento más, ya lo tengo."]
+LONG = ["Está tardando más de lo normal, pero sigo.", "Sigo esperando la respuesta; ya debe llegar."]
+JOB_STILL = "Sigo con {}; te aviso cuando termine."
+
+
+def still_for(n, rnd=None, last=None):
+    """La frase de espera número n (1: «sigo en eso», 2: «está tardando»), sin repetir la última."""
+    opts = STILL if n == 1 else LONG
+    rnd = rnd or random
+    return rnd.choice([o for o in opts if o != last] or opts)
+
+
 def all_acks():
-    return [a for v in ACKS.values() for a in v]
+    return [a for v in ACKS.values() for a in v] + STILL + LONG
 
 
 # ============================================================================ FIN DE TURNO

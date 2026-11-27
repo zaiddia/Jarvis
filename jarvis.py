@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.67"
+VERSION = "12.68"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -873,7 +873,11 @@ DEFAULT_SETTINGS = {
     "whatsapp_alerts": True,
     "image_model": "",             # 7.9: modelo de imágenes de Gemini (vacío = el que tenga tu cuenta)
     "image_provider": "auto",      # 11.7: "auto" (Gemini o ChatGPT, el que tenga clave), "gemini" o "chatgpt"
-    "image_model_sensenova": "",   # 12.61: modelo de imágenes de SenseNova (vacío = sensenova-u1.5-lite)
+    "image_model_sensenova": "",
+    "fish_api_key": "",            # 12.68: voz de Fish Audio (clave de fish.audio)
+    "fish_voice": "",              # 12.68: código de la voz escogida en fish.audio (vacío = la de Fish por defecto)
+    "fish_paid": False,            # 12.68: si se acaba lo gratis, usar el modelo de pago
+    "ack_still": True,             # 12.68: «sigo en eso» si la respuesta tarda   # 12.61: modelo de imágenes de SenseNova (vacío = sensenova-u1.5-lite)
     "image_model_openai": "",      # 11.7: modelo de imágenes de ChatGPT (vacío = el más nuevo de tu cuenta, p. ej. gpt-image-2)
     "sync_folder": "",             # 7.9: carpeta compartida (OneDrive…) para usar Jarvis en varios equipos
     "encrypt_secrets": True,       # 8.0: claves cifradas con la protección de Windows (no en modo USB)
@@ -1091,7 +1095,7 @@ def _validate(key, value):
                "zeti_order": ("lista", "apellido", "alfabetico"), "hud_expanded": ("estrecho", "amplio", "grande"),
                "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
-               "tts_backend": ("edge", "piper", "gemini", "kokoro"), "kokoro_voice": ("dora", "alex"), "stt_backend": ("vosk", "whisper"),
+               "tts_backend": ("edge", "piper", "gemini", "kokoro", "fish"), "kokoro_voice": ("dora", "alex"), "stt_backend": ("vosk", "whisper"),
                "gemini_tts_model": ("gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts"),
                "stt_refine": ("auto", "gemini", "whisper", "off"), "calendar_create": ("google", "ics"),
                "listen_mode": ("auto", "vivo", "clasico"),
@@ -1125,6 +1129,10 @@ def _validate(key, value):
         raise ValueError("nombre de modelo inválido")
     if key == "gemini_tts_voice" and v not in {n for n, _ in GEMINI_TTS_VOICES}:
         raise ValueError("voz de Gemini desconocida")
+    if key == "fish_voice":
+        v = v.strip().lower()
+        if v and not re.fullmatch(r"[0-9a-f]{32}", v):
+            raise ValueError("el código de la voz de Fish tiene 32 letras y números (cópialo de la dirección de la voz en fish.audio)")
     if key == "gemini_tts_style":
         v = re.sub(r"[\r\n<>]+", " ", v)[:200].strip()
     if key == "tts_voice" and not re.fullmatch(r"[a-z]{2,3}-[A-Z]{2}-\w+Neural", v):
@@ -1160,7 +1168,7 @@ ENV_ALIASES = {
     "CHATGPT_API_KEY": "chatgpt_api_key", "DEEPSEEK_API_KEY": "deepseek_api_key",
     "MOONSHOT_API_KEY": "kimi_api_key", "KIMI_API_KEY": "kimi_api_key",
     "XAI_API_KEY": "xai_api_key", "MISTRAL_API_KEY": "mistral_api_key",
-    "GROQ_API_KEY": "groq_api_key", "NVIDIA_API_KEY": "nvidia_api_key", "NVAPI_KEY": "nvidia_api_key", "ITERACOMPUTE_API_KEY": "iteracompute_api_key", "SENSENOVA_API_KEY": "sensenova_api_key", "OPENROUTER_API_KEY": "openrouter_api_key",
+    "GROQ_API_KEY": "groq_api_key", "NVIDIA_API_KEY": "nvidia_api_key", "NVAPI_KEY": "nvidia_api_key", "ITERACOMPUTE_API_KEY": "iteracompute_api_key", "SENSENOVA_API_KEY": "sensenova_api_key", "FISH_API_KEY": "fish_api_key", "OPENROUTER_API_KEY": "openrouter_api_key",
 }
 env_overrides = {}
 _file_values = {}
@@ -1767,6 +1775,8 @@ def process_command(text):
     if private_voice(text, t) or think_voice(text, t):  # 12.52: «modo privado», «piénsalo bien: …», «rápido: …»
         return
     if colegio53_voice(text, t):                       # 12.53: convivencia (Ley 1620), reglas, documentos del colegio, portafolio
+        return
+    if fish68_voice(text, t) or escena68_voice(text, t):   # 12.68: voz de Fish Audio y escenas 3D
         return
     if aula67_voice(text, t):                          # 12.67: juegos, mapas, fluidez lectora, cartas, pico y placa
         return
@@ -2675,6 +2685,8 @@ from nucleo.videoia63 import *  # noqa: F401,F403,E402
 from nucleo.docente65 import *  # noqa: F401,F403,E402
 from nucleo.general66 import *  # noqa: F401,F403,E402
 from nucleo.aula67 import *  # noqa: F401,F403,E402
+from nucleo.fish68 import *  # noqa: F401,F403,E402
+from nucleo.escena68 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)

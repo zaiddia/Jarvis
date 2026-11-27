@@ -30,6 +30,21 @@ class _Ack:
         self.t = threading.Timer(ms / 1000.0, self._fire, args=(text,))
         self.t.daemon = True
         self.t.start()
+        self.more = []                                   # 12.68: «Sigo en eso.» a los 6 s y «está tardando» a los 16 s
+        if J.settings.get("ack_still", True):
+            for n, secs in ((1, J.ACK_STILL_SECS), (2, J.ACK_LONG_SECS)):
+                tm = threading.Timer(secs, self._still, args=(n,))
+                tm.daemon = True
+                tm.start()
+                self.more.append(tm)
+
+    def _still(self, n):
+        if self.done_ev.is_set():
+            return
+        self.said = agil.still_for(n, last=_ack_state["last"])
+        _ack_state["last"] = self.said
+        J.speak(self.said)
+        J.log_terminal(f"(sigue pensando: «{self.said}»)", "RAPIDEZ")
 
     def _fire(self, text):
         if self.done_ev.is_set():
@@ -42,6 +57,8 @@ class _Ack:
     def done(self):
         self.done_ev.set()
         self.t.cancel()
+        for tm in getattr(self, "more", ()):
+            tm.cancel()
 
 
 class _NoAck:
@@ -52,6 +69,23 @@ class _NoAck:
 
 
 _ack_state = {"last": ""}
+ACK_STILL_SECS = 6.0
+ACK_LONG_SECS = 16.0
+JOB_STILL_SECS = 45.0
+
+
+def job_still(label, jid):
+    """12.68: un trabajo largo que pediste por voz: a los 45 s, si Jarvis lleva rato callado, «Sigo con…» (una vez)."""
+    def fire():
+        if jid not in J.jobs or not J.settings.get("ack_still", True) or not J.settings.get("tts_enabled", True):
+            return
+        if time.time() - J.voz_last["t"] < 15 or J.thinking:
+            return
+        J.speak(agil.JOB_STILL.format(label[:1].lower() + label[1:]))
+    tm = threading.Timer(J.JOB_STILL_SECS, fire)
+    tm.daemon = True
+    tm.start()
+    return tm
 
 
 def ack_start(text):
@@ -187,5 +221,5 @@ def panel_answer(text):
     return True
 
 
-__all__ = ['_Ack', '_NoAck', '_ack_state', '_turn_clear', 'ack_start', 'agil', 'brain', 'brain_for', 'cerebro', 'chain_split', 'fast_model',
+__all__ = ['ACK_LONG_SECS', 'ACK_STILL_SECS', 'JOB_STILL_SECS', 'job_still', '_Ack', '_NoAck', '_ack_state', '_turn_clear', 'ack_start', 'agil', 'brain', 'brain_for', 'cerebro', 'chain_split', 'fast_model',
            'panel', 'panel_answer', 'run_chain', 'turn', 'turn_hold', 'turn_merge']

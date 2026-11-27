@@ -140,6 +140,9 @@ def _clean_for_speech(text):
     return humano.spoken_list(" ".join(parts).strip())          # 12.56: «a; b; c» dicho como se habla
 
 
+voz_last = {"t": 0.0}
+
+
 def speak(text, voice=None, rate=None, volume=None, pitch=None, force=False, backend=None, gemini=None,
           prompt=False):
     if not text or not J.audio_ready:
@@ -150,6 +153,7 @@ def speak(text, voice=None, rate=None, volume=None, pitch=None, force=False, bac
         return
     if not prompt:
         rapidez.mark("respuesta")
+    voz_last["t"] = time.time()                          # 12.68: cuándo habló Jarvis por última vez («sigo con…»)
     item = {"text": text, "voice": voice, "rate": rate, "volume": volume, "pitch": pitch,
             "backend": backend, "gemini": gemini or {}, "gen": J.tts_gen["n"], "prompt": prompt}
     # La voz se genera YA, en paralelo, mientras suena la frase anterior: así no hay
@@ -259,11 +263,13 @@ def _voice_cache_key(backend, item, text, rate, volume, pitch):
         who = J.find_piper_voice() or "piper"
     elif backend == "kokoro":
         who = "kokoro|" + J.settings.get("kokoro_voice", "dora")
+    elif backend == "fish":                                # 12.68
+        who = "fish|" + J.settings.get("fish_voice", "")
     else:
         g = item.get("gemini") or {}
         who = f"{J.settings['gemini_tts_voice']}|{J.settings['gemini_tts_style']}|{json.dumps(g, sort_keys=True)}"
     raw = f"{backend}|{who}|{rate}|{volume}|{pitch}|{text}".encode("utf-8")
-    return hashlib.sha1(raw).hexdigest() + (".mp3" if backend == "edge" else ".wav")
+    return hashlib.sha1(raw).hexdigest() + (".mp3" if backend in ("edge", "fish") else ".wav")
 
 
 def _voice_cache_get(backend, item, text, rate, volume, pitch):
@@ -299,7 +305,7 @@ PREWARM_PHRASES = ["¿Sí?", "Hecho.", "Listo.", "Cancelado.", "Vale, lo dejo.",
 def prewarm_voice():
     """Al arrancar deja listas en la caché las frases que más se repiten (no con la voz de Gemini:
     gastaría tu cuota)."""
-    if not J.audio_ready or J.settings["tts_backend"] == "gemini" or J.is_offline():
+    if not J.audio_ready or J.settings["tts_backend"] in ("gemini", "fish") or J.is_offline():
         return
     for ph in J.PREWARM_PHRASES:
         try:
@@ -323,7 +329,7 @@ def _synthesize(item):
     pitch = J.settings["tts_pitch"] if item["pitch"] is None else int(item["pitch"])
     first = item.get("backend") or J.settings["tts_backend"]
     order = {"gemini": ["gemini", "edge", "piper"], "edge": ["edge", "piper"], "piper": ["piper", "edge"],
-             "kokoro": ["kokoro", "piper", "edge"]}.get(first, ["edge", "piper"])
+             "kokoro": ["kokoro", "piper", "edge"], "fish": ["fish", "edge", "piper"]}.get(first, ["edge", "piper"])
     if J.is_offline():
         order = ["kokoro", "piper", "edge"] if J.kokoro_ready() else ["piper", "edge"]   # sin internet: la voz del equipo
     last_err = None
@@ -332,6 +338,13 @@ def _synthesize(item):
         if cached:
             return cached, False
         try:
+            if b == "fish":                                 # 12.68: la voz de Fish Audio (con tu clave)
+                if not J.fish_ready():
+                    continue
+                path = os.path.join(tempfile.gettempdir(), f"jarvis_{uuid.uuid4().hex}.mp3")
+                J._fish_tts(text, path)
+                J._voice_cache_put(b, item, text, rate, volume, pitch, path)
+                return path, True
             if b == "gemini":
                 path = os.path.join(tempfile.gettempdir(), f"jarvis_{uuid.uuid4().hex}.wav")
                 out = J._gemini_tts(text, path, item.get("gemini"))
@@ -363,6 +376,8 @@ def _synthesize(item):
             return path, True
         except J.AIError as e:
             last_err = e
+            if b == "fish":
+                J.fish_failed(e)
             if b == "gemini" and e.why != "en pausa":
                 # cuota agotada, sin saldo, clave… : pausa 15 min y avisa una sola vez
                 J._gtts["pause_until"] = time.time() + (900 if e.kind in ("quota", "balance", "key", "perm", "model", "config") else 60)
@@ -494,6 +509,7 @@ def list_edge_voices():
 
 
 __all__ = [
+    'voz_last',
     'GEMINI_TTS_MODELS',
     'GEMINI_TTS_VOICES',
     'SPEECH_MAX_CHARS',

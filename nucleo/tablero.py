@@ -144,6 +144,9 @@ def start_job(label, fn, name="trabajo"):
             _emit_jobs()
     t = threading.Thread(target=run, daemon=True, name=name)
     t.start()
+    if not (getattr(J._tl, "remote", False) or getattr(J._tl, "live", False) or getattr(J._tl, "in_job", False)
+            or getattr(J._tl, "capture", None) is not None):
+        J.job_still(label, jid)                        # 12.68: si tarda mucho, «Sigo con…» una vez
     return t
 
 
