@@ -97,8 +97,8 @@ def mail_voice(text, t):
     read_m = _MAIL_READ.search(t)
     if not (_MAIL_LIST.search(t) or read_m or reply_m):
         return False
-    if not J.settings["email_read"]:
-        J.reply("Leer tu correo está apagado (Ajustes › Cuentas y mensajes › Correo).", "CORREO")
+    if not J.settings["email_read"] and not J.feature_on("email_read"):         # 12.72: se enciende solo
+        J.reply("Leer tu correo está apagado y no pude encenderlo.", "CORREO")
         return True
     if not _mail_ready():
         J.reply("Para leer tu correo pon tu dirección y la contraseña de aplicación en Ajustes › Cuentas y mensajes › Correo.", "CORREO")

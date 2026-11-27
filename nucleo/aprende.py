@@ -195,7 +195,7 @@ def learn_voice(text, t):
         return True
     if re.search(r"\b(?:deja de|no) (?:aprender|fijarte en) (?:mis costumbres|lo que hago)\b", t):
         J.apply_settings({"learn_enabled": False})
-        J.reply("Vale, dejo de fijarme en tus costumbres. Lo vuelves a activar en Ajustes, sección Memoria.", "APRENDE")
+        J.reply("Vale, dejo de fijarme en tus costumbres. Si cambias de idea, di «activa aprender mis costumbres».", "APRENDE")
         return True
     return False
 
@@ -265,8 +265,8 @@ def recall(question, topic=None):
 def recall_voice(text, t):
     if not _RECALL_RE.search(t) or re.search(r"\bno (?:era|es|fue) (?:eso )?lo que te (?:pedi|dije)\b|\bno te (?:pedi|dije) eso\b", t):
         return False                                   # 12.57: «eso no era lo que te pedí» es una queja, no buscar en la memoria
-    if not J.settings["history_enabled"]:
-        J.reply("El historial de conversaciones está apagado. Lo enciendes en Ajustes, sección Memoria.", "MEMORIA")
+    if not J.settings["history_enabled"] and not J.feature_on("history_enabled"):  # 12.72: se enciende solo
+        J.reply("El historial de conversaciones está apagado y no pude encenderlo.", "MEMORIA")
         return True
     topic = _RECALL_STRIP.sub("", t).strip(" ?")
     hits = J.recall(text, topic=topic)

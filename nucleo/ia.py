@@ -1267,7 +1267,7 @@ CAPABILITIES = [
     ("Buscar en internet", ["busca en internet qué pasó con la reforma educativa", "averigua cuándo es el día del maestro", "busca la biografía de Policarpa y resúmemela"]),
     ("Manejar el navegador", ["busca el ciclo del agua en una pestaña nueva", "cambia de pestaña", "busca la palabra fotosíntesis en la página", "baja la página", "ve atrás", "recarga la página"]),
     ("Desde el celular (Telegram)", ["escríbele a tu bot: ¿qué tengo hoy?", "abre la presentación", "recuérdame a las 3 llamar a la coordinadora"]),
-    ("Sismos y correo", ["avísame de los sismos (actívalo en Ajustes)", "escríbele un correo a la coordinadora diciendo que mañana llego a las 7"]),
+    ("Sismos y correo", ["avísame de los sismos", "escríbele un correo a la coordinadora diciendo que mañana llego a las 7"]),
     ("Personal", ["llámame profe", "trabajo en el colegio San José", "apaga el pc a las 6", "Jarvis, descansa"]),
     ("Mensajería", ["manda un whatsapp a Juan que llego tarde", "manda un telegram diciendo reunión a las 3"]),
     ("Pantalla y archivos", ["toma una captura de pantalla", "busca el archivo informe", "brillo al 70"]),
@@ -1307,7 +1307,7 @@ def _extract_json(text):
 def system_static():
     """12.7: la parte FIJA de las instrucciones va primero (igual en cada pregunta del día): así la IA local (y la de la
     nube) reusa lo ya leído y responde antes. Lo que cambia con cada orden va después."""
-    return (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + J.MATH_RULE + J.mode_rule() + J.style_rule() +
+    return (J.settings["system_prompt"] + J.ACTION_RULE + J.AUTO_RULE + J.VOICE_RULE + J.MATH_RULE + J.mode_rule() + J.style_rule() +
             f" Hoy es {J.fecha_hablada(datetime.date.today())}.")
 
 
@@ -1475,7 +1475,7 @@ def answer_question_streaming(prompt):
         # contexto y menos turnos: cada palabra de más son décimas de segundo antes de la primera frase.
         system = J.system_static() + J.motorlocal.trim_context(dynamic, 1200)
     else:
-        system = (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + J.style_rule()
+        system = (J.settings["system_prompt"] + J.ACTION_RULE + J.AUTO_RULE + J.VOICE_RULE + J.style_rule()
                   + f" Hoy es {J.fecha_hablada(datetime.date.today())}." + dynamic)
     system += J.c71_facts(prompt)                      # 12.71: cuentas, fechas y unidades exactas (nunca se recortan)
     user_msg = {"role": "user", "content": prompt}

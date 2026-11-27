@@ -143,7 +143,7 @@ def ticket_url():
 
 
 def _need_lan():
-    if J.mobile.get("server"):
+    if J.mobile.get("server") or J.mobile_on():        # 12.72: si está apagado, se enciende solo
         return False
     J.reply("Para que los estudiantes respondan desde su celular, activa el «panel del celular» en Ajustes › Windows y celular "
             "(los celulares deben estar en la misma red wifi que este computador).", "TICKET")

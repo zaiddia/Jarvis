@@ -19,6 +19,7 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Funciones que se encienden solas (12.72)", ["¿qué funciones tengo apagadas?"]),
     ("Más inteligente (12.71)", ["¿cómo me has entendido esta semana?"]),
     ("Fin de año y vacaciones (12.70)", ["¿estoy de vacaciones?", "¿cuándo vuelvo al colegio?"]),
     ("Ascenso, simulaciones y gráficas (12.69)", ["¿cómo voy en el simulacro de ascenso?", "qué simulaciones de física hay", "calcula mis puntos de ascenso: 8 años, zona urbana, ningún ascenso"]),

@@ -157,6 +157,18 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Las funciones se encienden solas (v12.72)
+
+- Si pides algo que necesita una función apagada, Jarvis la enciende, lo dice en una frase y sigue: el panel del celular para un
+  QR o un semáforo de comprensión, el diario («¿qué hice ayer?»), el historial («¿qué te dije sobre…?»), leer el correo y los
+  avisos de sismos.
+- Cualquier función de Ajustes se enciende o apaga hablando o escribiendo en el HUD: «activa el aviso antes de cada clase»,
+  «avísame de los sismos», «enciende las noticias del reporte de la mañana», «desactiva el copiloto», «activa los subtítulos»,
+  «¿qué funciones tengo apagadas?» (más de 60).
+- Lo que solo tú puedes poner (claves, tu cuenta de Google, el token de Telegram, la contraseña del correo) sigue en Ajustes, y
+  Jarvis te dice exactamente qué falta. Apagar la protección de los datos de estudiantes o dejar que otras IA usen Jarvis pide tu
+  «sí». La IA ya no te manda a Ajustes para encender funciones: te dice la orden.
+
 ## Jarvis más inteligente (v12.71)
 
 - **Datos exactos**: cuentas, porcentajes, fechas, días hábiles (con los festivos de Colombia) y conversiones de unidades los

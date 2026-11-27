@@ -93,8 +93,8 @@ def diary_voice(text, t):
         return True
     if not J._DIARY_RE.search(t):
         return False
-    if not J.settings["diary_enabled"]:
-        J.reply("El diario está apagado. Lo enciendes en Ajustes, sección Memoria.", "DIARIO")
+    if not J.settings["diary_enabled"] and not J.feature_on("diary_enabled"):     # 12.72: se enciende solo
+        J.reply("El diario está apagado y no pude encenderlo.", "DIARIO")
         return True
     today = datetime.date.today()
     if re.search(r"\bsemana\b", t):
