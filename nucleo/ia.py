@@ -250,8 +250,9 @@ def _ai_cfg(override=None):
         return dict(J._ai_cfg({"ai_provider": "ollama", "ollama_model": J.net["local_model"]}),
                     label="Ollama (sin internet)", offline=True)
     fast = getattr(J._tl, "fast_model", "") if override is None and pid not in ("ollama", "motor") else ""      # 12.1: dos cerebros
+    strong = getattr(J._tl, "strong_model", "") if override is None and pid not in ("ollama", "motor") and not fast else ""   # 12.71
     return {"ai_provider": pid, "kind": sp["kind"], "spec": sp, "label": sp["short"],
-            "model": fast or get(f"{pid}_model"), "fast": bool(fast), "key": "" if pid == "ollama" else get(f"{pid}_api_key"),
+            "model": fast or strong or get(f"{pid}_model"), "fast": bool(fast), "key": "" if pid == "ollama" else get(f"{pid}_api_key"),
             "base": base.rstrip("/"),
             "ollama_host": get("ollama_host").rstrip("/") or J.DEFAULT_SETTINGS["ollama_host"]}
 
@@ -301,6 +302,9 @@ def _gemini_body(cfg, messages, max_tokens, json_mode=False, image_path=None,
             gen["thinkingConfig"] = {"thinkingBudget": 0}
     elif "flash" in ml and "lite" not in ml:
         gen["thinkingConfig"] = {"thinkingLevel": "low"}
+    if getattr(J._tl, "think", "") == "high" and not re.match(r"gemini-[12]\.", ml):    # 12.71: lo difícil, pensando a fondo
+        gen["thinkingConfig"] = {"thinkingLevel": "high"}
+        gen["maxOutputTokens"] = max(int(max_tokens or 0), 8192)
     body = {"contents": contents, "generationConfig": gen}
     if system.strip():
         body["systemInstruction"] = {"parts": [{"text": system}]}
@@ -434,6 +438,8 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
         body["reasoning_effort"] = sp["reasoning_effort"]      # pensar poco: responde antes (si no lo acepta, se quita solo)
         if sp.get("quick_effort") and asked < J.HEAVY_MIN_TOKENS:
             body["reasoning_effort"] = sp["quick_effort"]      # 12.60: SenseNova: sin pensar para lo corto (voz)
+        if getattr(J._tl, "think", "") == "high":
+            body["reasoning_effort"] = "high"                  # 12.71: lo difícil, pensando a fondo
     if cfg.get("ai_provider") == "motor":
         body["cache_prompt"] = True                    # 12.7: la IA integrada reusa lo ya leído
         body["chat_template_kwargs"] = {"enable_thinking": False}   # 12.20: sin «pensar en voz alta»: responde antes
@@ -1316,7 +1322,7 @@ def ask_ai(prompt, route=False):
     dynamic = J._notes_ctx() + J._user_ctx(prompt) + J.lessons_ctx() + J.tutor_ctx() + J.study_ctx() + J.persona_ctx() + J.human_ctx(prompt)   # 9.4 y 12.56 (cómo suenas)
     if local:                                          # 12.7: en el equipo, menos texto que leer = respuesta más rápida
         dynamic = J.motorlocal.trim_context(dynamic, 1500)
-    system = J.system_static() + dynamic
+    system = J.system_static() + dynamic + J.c71_facts(prompt)   # 12.71: cuentas, fechas y unidades exactas (nunca se recortan)
     if route:
         # Seguridad: la IA solo ve acciones NO destructivas. Apagar, reiniciar, vaciar la
         # papelera, etc. nunca se activan por interpretación: solo con la orden directa exacta.
@@ -1471,6 +1477,7 @@ def answer_question_streaming(prompt):
     else:
         system = (J.settings["system_prompt"] + J.ACTION_RULE + J.VOICE_RULE + J.style_rule()
                   + f" Hoy es {J.fecha_hablada(datetime.date.today())}." + dynamic)
+    system += J.c71_facts(prompt)                      # 12.71: cuentas, fechas y unidades exactas (nunca se recortan)
     user_msg = {"role": "user", "content": prompt}
     keep = J.settings["history_turns"] * 2
     history = J.chat_history[-keep:] if keep else []

@@ -157,6 +157,23 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Jarvis más inteligente (v12.71)
+
+- **Datos exactos**: cuentas, porcentajes, fechas, días hábiles (con los festivos de Colombia) y conversiones de unidades los
+  calcula Jarvis, no la IA, y se los pasa como datos exactos: «¿cuánto es el 19 % de 2.350.000?», «¿cuántos días hábiles faltan
+  para el 15 de diciembre?», «¿qué día cae el 8 de diciembre?», «convierte 5 millas a km».
+- **Pensar más cuando hace falta**: lo difícil («demuestra…», «planea…», «¿qué me conviene…?», «piénsalo bien…») va con el
+  pensamiento en nivel alto y, si tu modelo es «lite», con el mejor modelo de tu misma cuenta (por ejemplo Gemini 3.8 Flash).
+  Mientras tanto dice «Déjame pensarlo bien…». Lo simple sigue igual de rápido.
+- **Doble revisión en salud, dinero y leyes**: antes de decir la respuesta, una segunda pasada busca datos inventados, normas mal
+  citadas o consejos riesgosos; si hay error lo corrige y si algo no se puede asegurar, lo dice.
+- **Mostrar, no solo decir**: si explica una función (y = …), abre la graficadora; si el tema tiene simulación PhET o escena 3D,
+  dice cómo verla.
+- **Autoexamen semanal** (domingo en la tarde): cuántas órdenes entendió a la primera, la prueba de comprensión comparada con la
+  semana anterior y las frases que fallaron vueltas a probar; propone arreglos y solo los guarda con tu «sí». «¿Cómo me has
+  entendido esta semana?» · «haz el autoexamen».
+- Se apagan por separado en los ajustes smart_tools, smart_think, smart_review, smart_visual y smart_weekly.
+
 ## Cerrar el año escolar y modo vacaciones (v12.70)
 
 - **«Cierra el año 2026»**: guarda todo en Documentos › Jarvis › Cierre del año 2026 (copia completa de Jarvis para restaurar

@@ -62,8 +62,11 @@ def still_for(n, rnd=None, last=None):
     return rnd.choice([o for o in opts if o != last] or opts)
 
 
+DEEP = "Déjame pensarlo bien…"                    # 12.71: lo difícil (piensa a fondo)
+
+
 def all_acks():
-    return [a for v in ACKS.values() for a in v] + STILL + LONG
+    return [a for v in ACKS.values() for a in v] + STILL + LONG + [DEEP]
 
 
 # ============================================================================ FIN DE TURNO

@@ -26,6 +26,7 @@ class _Ack:
     def __init__(self, text):
         self.done_ev = threading.Event()
         self.said = ""
+        self.deep = getattr(J._tl, "think", "") == "high"          # 12.71: lo difícil
         ms = int(J.settings.get("ack_ms", 700))
         self.t = threading.Timer(ms / 1000.0, self._fire, args=(text,))
         self.t.daemon = True
@@ -49,7 +50,7 @@ class _Ack:
     def _fire(self, text):
         if self.done_ev.is_set():
             return
-        self.said = agil.ack_for(text, last=_ack_state["last"])
+        self.said = agil.DEEP if self.deep else agil.ack_for(text, last=_ack_state["last"])
         _ack_state["last"] = self.said
         J.speak(self.said)
         J.log_terminal(f"(mientras pienso: «{self.said}»)", "RAPIDEZ")

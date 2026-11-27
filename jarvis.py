@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.70"
+VERSION = "12.71"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -881,6 +881,12 @@ DEFAULT_SETTINGS = {
     "vacation_until": "",          # 12.70: modo vacaciones hasta esa fecha (AAAA-MM-DD)
     "vacation_warned": "",
     "year_reminder": "",           # 12.70: el día que vuelven los docentes: cargar las listas nuevas
+    "smart_tools": True,           # 12.71: cuentas, fechas y unidades exactas para la IA
+    "smart_think": True,           # 12.71: lo difícil piensa más
+    "smart_review": True,          # 12.71: doble revisión en salud, dinero y leyes
+    "smart_visual": True,          # 12.71: mostrar la gráfica o sugerir la simulación
+    "smart_weekly": True,          # 12.71: autoexamen de los domingos
+    "smart_weekly_last": "",
     "image_model_openai": "",      # 11.7: modelo de imágenes de ChatGPT (vacío = el más nuevo de tu cuenta, p. ej. gpt-image-2)
     "sync_folder": "",             # 7.9: carpeta compartida (OneDrive…) para usar Jarvis en varios equipos
     "encrypt_secrets": True,       # 8.0: claves cifradas con la protección de Windows (no en modo USB)
@@ -1727,6 +1733,8 @@ def process_command(text):
     note_user_activity()                              # 12.39: estás hablando con Jarvis (las horas de silencio no te callan)
     _tl.cmd_text = text                               # 7.4: para aprender tus costumbres
     if not getattr(_tl, "nl_pass", False):
+        c71_note("total")                             # 12.71: para el autoexamen semanal
+    if not getattr(_tl, "nl_pass", False):
         _tl.nl_tried = ""                             # 12.29: la comprensión, una vez por frase
         _tl.nl_verdict = ""
     if session_answer(text, t):                       # 12.40: en una lección o un repaso, lo que dices es tu respuesta
@@ -1778,6 +1786,8 @@ def process_command(text):
     if private_voice(text, t) or think_voice(text, t):  # 12.52: «modo privado», «piénsalo bien: …», «rápido: …»
         return
     if colegio53_voice(text, t):                       # 12.53: convivencia (Ley 1620), reglas, documentos del colegio, portafolio
+        return
+    if listo71_voice(text, t):                         # 12.71: autoexamen
         return
     if ano70_voice(text, t):                           # 12.70: cerrar el año y modo vacaciones
         return
@@ -2275,10 +2285,17 @@ def process_command(text):
             is_question = True                          # 12.36: la comprensión ya vio que no es una orden: sin enrutador (una llamada menos)
         # Con conectores MCP, también las preguntas pasan por el enrutador («¿qué tengo en Notion?»).
         has_mcp = settings["ai_router"] and bool(mcp_hub.catalog(1))
-        _tl.fast_model = brain_for(text)                 # 12.1: dos cerebros (rápido o potente)
+        level = c71_prepare(text)                        # 12.71: lo difícil piensa más (y con el mejor modelo de tu cuenta)
+        _tl.fast_model = "" if level == "dificil" else brain_for(text)   # 12.1: dos cerebros (rápido o potente)
         try:
+            topic = c71_review_topic(text) if is_question else ""
+            if topic and not getattr(_tl, "remote", False) and not has_mcp:
+                c71_answer_reviewed(text, topic)        # 12.71: salud, dinero o leyes: se revisa antes de decirla
+                c71_after_answer(text)
+                return
             if (is_question or not settings["ai_router"]) and not getattr(_tl, "remote", False) and not has_mcp:
                 answer_question_streaming(text)
+                c71_after_answer(text)                  # 12.71: si se entiende mejor viéndolo, lo muestra
                 return
             ack = ack_start(text)                        # 12.1: cero silencio
             try:
@@ -2287,6 +2304,7 @@ def process_command(text):
                 ack.done()
         finally:
             _tl.fast_model = ""
+            c71_clear()
         if result[0] == "skill" and result[1] == "orden_asistente":      # 12.9.1: lo nuevo, directo a su orden
             log_terminal(f"La IA entendió: «{(result[2] or {}).get('orden', '')}»", "COMPRENSIÓN")
             assistant_direct((result[2] or {}).get("orden", ""))
@@ -2697,6 +2715,7 @@ from nucleo.escena68 import *  # noqa: F401,F403,E402
 from nucleo.aula69 import *  # noqa: F401,F403,E402
 from nucleo.parakeet69 import *  # noqa: F401,F403,E402
 from nucleo.ano70 import *  # noqa: F401,F403,E402
+from nucleo.listo71 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)

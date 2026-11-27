@@ -289,6 +289,7 @@ def nl_understand(text, t, early=False):
     nl_state["last"] = dict(d, frase=text, antes=early)
     J._tl.nl_verdict = d["tipo"]                          # 12.36: si no era orden, la respuesta va directo (sin enrutador)
     if d["tipo"] == "aclarar":
+        J.c71_note("aclarar")                              # 12.71: para el autoexamen
         nl_offer(d["opciones"])
         return True
     if d["tipo"] == "orden" and J.normalize(d["orden"]) == t:   # 12.33: la devolvió sin traducir: que lo intente con una de la lista
@@ -314,6 +315,7 @@ def nl_understand(text, t, early=False):
         return True
     if _nl_do(orden, text, t):
         J.r55_memo_put(t, orden)
+        J.c71_note("ia")
         return True
     try:                                                  # 12.29: segundo intento, diciéndole qué no sirvió
         d2 = _nl_ask(text, retry_of=orden)
@@ -325,7 +327,10 @@ def nl_understand(text, t, early=False):
             return False
         if _nl_do(d2["orden"], text, t):
             J.r55_memo_put(t, d2["orden"])
+            J.c71_note("ia")
             return True
+    if not early:
+        J.c71_note("fallo", text)                         # 12.71: no la supe hacer: el autoexamen la vuelve a probar
     J.log_terminal(f"«{orden}» tampoco la reconocí; " + ("sigo con las reglas." if early else "lo respondo con la IA."), "COMPRENSIÓN")
     return False
 
