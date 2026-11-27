@@ -15,6 +15,7 @@ DAYS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"
 _lock = threading.Lock()
 _path = None
 items = []          # [{"dia": 0-6, "inicio": "07:00", "fin": "07:55", "curso": "7A", "materia": "Matemáticas"}]
+off_until = None    # 12.70: modo vacaciones: hasta esa fecha (sin incluirla) no hay clases
 
 
 def norm(t):
@@ -114,8 +115,14 @@ def add(it):
     save()
 
 
+def _off(day):
+    return off_until is not None and day < off_until
+
+
 def now_class(at=None):
     at = at or datetime.datetime.now()
+    if _off(at.date()):
+        return None
     hm = at.strftime("%H:%M")
     for x in items:
         if x["dia"] == at.weekday() and x["inicio"] <= hm < x["fin"]:
@@ -128,6 +135,8 @@ def next_class(at=None):
     at = at or datetime.datetime.now()
     for d in range(0, 8):
         day = (at + datetime.timedelta(days=d)).date()
+        if _off(day):
+            continue
         for x in sorted((x for x in items if x["dia"] == day.weekday()), key=lambda x: x["inicio"]):
             if d > 0 or x["inicio"] > at.strftime("%H:%M"):
                 return x, day
@@ -136,6 +145,8 @@ def next_class(at=None):
 
 def today(at=None):
     at = at or datetime.datetime.now()
+    if _off(at.date()):
+        return []
     return sorted((x for x in items if x["dia"] == at.weekday()), key=lambda x: x["inicio"])
 
 

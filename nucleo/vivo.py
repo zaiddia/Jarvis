@@ -567,6 +567,11 @@ def notify(text, origin="JARVIS"):
     pasa a la IA de voz para que lo diga ella (así no hablan dos voces a la vez). Si la orden
     vino del celular (Telegram) hace poco, también se lo cuenta allá."""
     try:
+        if J.vac_intercept(text, origin):               # 12.70: de vacaciones, los avisos automáticos del colegio no se dicen
+            return
+    except Exception:
+        pass
+    try:
         if J.dnd_intercept(text, origin):               # 12.16: en clase o en una videollamada se guarda para después
             return
     except Exception:

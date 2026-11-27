@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.69"
+VERSION = "12.70"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -873,11 +873,14 @@ DEFAULT_SETTINGS = {
     "whatsapp_alerts": True,
     "image_model": "",             # 7.9: modelo de imágenes de Gemini (vacío = el que tenga tu cuenta)
     "image_provider": "auto",      # 11.7: "auto" (Gemini o ChatGPT, el que tenga clave), "gemini" o "chatgpt"
-    "image_model_sensenova": "",
+    "image_model_sensenova": "",   # 12.61: modelo de imágenes de SenseNova (vacío = sensenova-u1.5-lite)
     "fish_api_key": "",            # 12.68: voz de Fish Audio (clave de fish.audio)
     "fish_voice": "",              # 12.68: código de la voz escogida en fish.audio (vacío = la de Fish por defecto)
     "fish_paid": False,            # 12.68: si se acaba lo gratis, usar el modelo de pago
-    "ack_still": True,             # 12.68: «sigo en eso» si la respuesta tarda   # 12.61: modelo de imágenes de SenseNova (vacío = sensenova-u1.5-lite)
+    "ack_still": True,             # 12.68: «sigo en eso» si la respuesta tarda
+    "vacation_until": "",          # 12.70: modo vacaciones hasta esa fecha (AAAA-MM-DD)
+    "vacation_warned": "",
+    "year_reminder": "",           # 12.70: el día que vuelven los docentes: cargar las listas nuevas
     "image_model_openai": "",      # 11.7: modelo de imágenes de ChatGPT (vacío = el más nuevo de tu cuenta, p. ej. gpt-image-2)
     "sync_folder": "",             # 7.9: carpeta compartida (OneDrive…) para usar Jarvis en varios equipos
     "encrypt_secrets": True,       # 8.0: claves cifradas con la protección de Windows (no en modo USB)
@@ -1775,6 +1778,8 @@ def process_command(text):
     if private_voice(text, t) or think_voice(text, t):  # 12.52: «modo privado», «piénsalo bien: …», «rápido: …»
         return
     if colegio53_voice(text, t):                       # 12.53: convivencia (Ley 1620), reglas, documentos del colegio, portafolio
+        return
+    if ano70_voice(text, t):                           # 12.70: cerrar el año y modo vacaciones
         return
     if aula69_voice(text, t) or parakeet69_voice(text, t):   # 12.69: ascenso, pictogramas, PhET, graficadora, Parakeet
         return
@@ -2691,6 +2696,7 @@ from nucleo.fish68 import *  # noqa: F401,F403,E402
 from nucleo.escena68 import *  # noqa: F401,F403,E402
 from nucleo.aula69 import *  # noqa: F401,F403,E402
 from nucleo.parakeet69 import *  # noqa: F401,F403,E402
+from nucleo.ano70 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)
@@ -2897,6 +2903,7 @@ def main():
         modes_start()                     # 12.9: modo docente/general, disparadores y avisos de batería
         hu56_migrate()                    # 12.56: la voz colombiana (una sola vez)
         a69_migrate()                     # 12.69: el modelo en vivo que Google retiró → el actual
+        ano70_start()                     # 12.70: si estás de vacaciones, el horario descansa
         daily_start()                     # 12.9: avisos de pagos
         midia_start()                     # 12.15: vencimientos, medicamentos, citas, cumpleaños, presupuesto y viajes
         compartir_start()                 # 12.16: resumen del mes

@@ -157,6 +157,20 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Cerrar el año escolar y modo vacaciones (v12.70)
+
+- **«Cierra el año 2026»**: guarda todo en Documentos › Jarvis › Cierre del año 2026 (copia completa de Jarvis para restaurar
+  cualquier dato, Excel con notas y asistencia de cada curso y un resumen por curso en Word), deja los cursos sin estudiantes,
+  notas ni asistencia para las listas nuevas (los nombres de los cursos se quedan) y prepara el 2027 con el calendario oficial de
+  Cali (Resolución 4143.0.21.0.05592 de 2026): clases desde el 25 de enero, 40 semanas, recesos, semanas de desarrollo
+  institucional y vacaciones de docentes en el calendario escolar, y la planeación en el periodo 1. El día que vuelven los
+  docentes (11 de enero de 2027) recuerda cargar las listas. Antes de vaciar pide tu «sí». «Cierra el año sin borrar nada» solo
+  guarda y prepara el calendario.
+- **Modo vacaciones**: «activa el modo vacaciones» (hasta el regreso de los docentes según el calendario de Cali) o «… hasta el
+  20 de enero». Sin avisos automáticos del colegio (clases, preparación, turno de noche, recuperaciones, evaluaciones,
+  convivencia, Classroom…); lo personal sigue igual. Tres días antes del regreso avisa y ese día se apaga solo.
+  «Desactiva el modo vacaciones», «¿estoy de vacaciones?», «¿cuándo vuelvo al colegio?».
+
 ## Ascenso, pictogramas, PhET, graficadora y Parakeet (v12.69)
 
 - **Concurso de ascenso (Decreto 1278)**: «hagamos un simulacro de la prueba de ascenso» (10 casos; respondes «la B» y Jarvis
