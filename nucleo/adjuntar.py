@@ -86,7 +86,7 @@ def card_of(its):
             + ([{"a": "copia", "t": ACTIONS["copia"]}] if len(its) >= 2 and kinds <= {"texto", "word", "pdf"} else [])      # 12.12: ¿se copiaron?
             + ([{"a": "escritura", "t": ACTIONS["escritura"]}] if kinds <= {"texto", "word", "pdf", "imagen"}
                and not any(i["nombre"].lower().endswith(J.codigo.CODE_EXTS) for i in its) else [])      # 12.52: redacciones
-            + J.d65_card_actions(its) + J.g66_card_actions(its)}           # 12.65: estafa, contrato, renta · 12.66: extracto, exámenes
+            + J.d65_card_actions(its) + J.g66_card_actions(its) + J.a67_card_actions(its)}           # 12.65: estafa, contrato, renta · 12.66: extracto, exámenes
 
 
 @J.socketio.on("attach")
@@ -236,6 +236,8 @@ def attach_run(its, action, pregunta=""):
     try:
         if action in J.D65_ACTIONS:                    # 12.65: estafa, contrato, exposición, renta
             return J.d65_attach(its, action, pregunta)
+        if action in J.A67_ACTIONS:                    # 12.67: fluidez lectora, mapa conceptual
+            return J.a67_attach(its, action, pregunta)
         if action in J.G66_ACTIONS:                    # 12.66: extracto, exámenes de laboratorio
             return J.g66_attach(its, action, pregunta)
         mine, res = J.media_action(its, action, pregunta)      # 12.23: audio/video a texto y tamaño de imágenes

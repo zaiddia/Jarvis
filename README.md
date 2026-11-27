@@ -157,6 +157,26 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Cinco funciones para el aula y el carro (v12.67)
+
+- **Juegos de repaso para imprimir**: «haz una sopa de letras de la célula para sexto», «crucigrama del sistema solar», «juego de
+  emparejar de la Independencia» o «juegos de repaso de fracciones» (los tres juntos). Sale un Word para el estudiante y otro aparte
+  con las respuestas, en Documentos › Jarvis › Juegos de repaso. «… de lo que subí» saca las palabras del documento subido.
+- **Mapas mentales y conceptuales**: «haz un mapa conceptual de la fotosíntesis para séptimo», «mapa mental del documento que subí»
+  o el botón «Mapa conceptual» al subir un PDF o Word. Imagen y PDF, más la versión en blanco para que los estudiantes la completen.
+- **Fluidez lectora**: sube el audio de un estudiante leyendo (grabado con el celular) y di «evalúa la lectura de Juan Pérez de 3A con
+  este texto: …» (o sube también el texto), o toca «Evaluar lectura» en el audio. Da palabras por minuto, correctas por minuto,
+  precisión, palabras omitidas, cambiadas y repetidas, y el nivel del grado. «¿Cómo va la fluidez de 3A?» muestra el avance del año
+  y deja la tabla en Word. Referencia: el MEN (Todos a Aprender) solo publica cortes para 3° (óptimo 85-89) y 5° (115-124); para los
+  demás grados se usa la tabla de niveles de la SEP. Jarvis no graba: solo analiza el audio que tú subes.
+- **Cartas de recomendación**: «carta de recomendación para Ana Ruiz de 11A para la beca de la Universidad del Valle, destaca que
+  lidera el club de robótica». Usa sus notas registradas y lo que digas; Word formal con fecha, firma y cargo. Para la firma, sube
+  una foto de ella y di «guarda esta imagen como mi firma».
+- **Pico y placa en Cali**: «mi placa es ABC123» una vez; Jarvis avisa en la mañana los días que aplica (lunes a viernes de 6:00 a. m.
+  a 7:00 p. m., sin festivos; las motos no tienen). «¿Tengo pico y placa mañana?», «¿cuándo tengo pico y placa?», «ya pagué la tasa
+  por congestión», «no me avises del pico y placa». La rotación de cada semestre se verifica en internet; si aún no la encuentra,
+  lo dice.
+
 ## Seis funciones para el día a día (v12.66)
 
 1. **Reclamos y derechos de petición.** «Haz un derecho de petición a la EPS Sura porque no me autorizan la resonancia»,

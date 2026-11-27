@@ -19,6 +19,7 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Juegos, mapas, lectura y pico y placa (12.67)", ["¿tengo pico y placa hoy?", "¿cuándo tengo pico y placa?", "¿cómo va la fluidez de 3A?"]),
     ("Reclamos, deudas y verdad (12.66)", ["mis reclamos", "mis deudas", "¿esto es verdad?"]),
     ("Estafas, renta y colegio (12.65)", ["¿esto es una estafa?", "¿debo declarar renta?", "evalúa esta exposición de Juan"]),
     ("Música y llamadas (12.58)", ["¿qué canción está sonando?", "llama a mi mamá"]),
