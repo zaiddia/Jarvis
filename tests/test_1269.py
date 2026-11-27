@@ -81,8 +81,8 @@ def _png():
 
 
 def test_pictogramas(jv, monkeypatch, tmp_path):
-    monkeypatch.setattr(jv, "CONFIG_DIR", str(tmp_path))
-    monkeypatch.setitem(jv.settings, "output_dir", str(tmp_path))
+    monkeypatch.setattr(jv, "CONFIG_DIR", str(tmp_path / "cfg"))
+    monkeypatch.setitem(jv.settings, "output_dir", str(tmp_path / "docs"))
     monkeypatch.setitem(jv.state, "ai", "ok")
     monkeypatch.setattr(jv, "_open_doc", lambda p: None)
     monkeypatch.setattr(jv, "start_job", lambda label, fn, name="": fn())
@@ -101,7 +101,7 @@ def test_pictogramas(jv, monkeypatch, tmp_path):
         {"texto": "Vuela alto", "claves": ["volar"]}]}))
     jv._rec.clear()
     jv.process_command("pasa a pictogramas: saluda, saca el cuaderno y vuela alto")
-    files = list((tmp_path / "Pictogramas").iterdir())
+    files = list((tmp_path / "docs" / "Pictogramas").iterdir())
     assert len(files) == 1 and "1 no tienen dibujo" in jv._rec.said()
     import docx
     d = docx.Document(str(files[0]))

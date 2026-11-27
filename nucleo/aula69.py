@@ -226,7 +226,7 @@ def _a69_asc_voice(text, t):
 
 # ============================================================================ 2. PICTOGRAMAS
 def _a69_picto_dir():
-    p = os.path.join(J.CONFIG_DIR, "pictogramas")
+    p = os.path.join(J.CONFIG_DIR, "pictos_cache")
     os.makedirs(p, exist_ok=True)
     return p
 
