@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.68"
+VERSION = "12.69"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -1097,7 +1097,7 @@ def _validate(key, value):
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
                "tts_backend": ("edge", "piper", "gemini", "kokoro", "fish"), "kokoro_voice": ("dora", "alex"), "stt_backend": ("vosk", "whisper"),
                "gemini_tts_model": ("gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts"),
-               "stt_refine": ("auto", "gemini", "whisper", "off"), "calendar_create": ("google", "ics"),
+               "stt_refine": ("auto", "gemini", "whisper", "parakeet", "off"), "calendar_create": ("google", "ics"),
                "listen_mode": ("auto", "vivo", "clasico"),
                "live_provider": ("gemini", "openai", "deepgram"),
                "image_provider": ("auto", "gemini", "chatgpt", "sensenova"),
@@ -1775,6 +1775,8 @@ def process_command(text):
     if private_voice(text, t) or think_voice(text, t):  # 12.52: «modo privado», «piénsalo bien: …», «rápido: …»
         return
     if colegio53_voice(text, t):                       # 12.53: convivencia (Ley 1620), reglas, documentos del colegio, portafolio
+        return
+    if aula69_voice(text, t) or parakeet69_voice(text, t):   # 12.69: ascenso, pictogramas, PhET, graficadora, Parakeet
         return
     if fish68_voice(text, t) or escena68_voice(text, t):   # 12.68: voz de Fish Audio y escenas 3D
         return
@@ -2687,6 +2689,8 @@ from nucleo.general66 import *  # noqa: F401,F403,E402
 from nucleo.aula67 import *  # noqa: F401,F403,E402
 from nucleo.fish68 import *  # noqa: F401,F403,E402
 from nucleo.escena68 import *  # noqa: F401,F403,E402
+from nucleo.aula69 import *  # noqa: F401,F403,E402
+from nucleo.parakeet69 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)
@@ -2892,6 +2896,7 @@ def main():
         cloud_start()                     # 12.8: la copia cifrada de cada noche en tu Drive
         modes_start()                     # 12.9: modo docente/general, disparadores y avisos de batería
         hu56_migrate()                    # 12.56: la voz colombiana (una sola vez)
+        a69_migrate()                     # 12.69: el modelo en vivo que Google retiró → el actual
         daily_start()                     # 12.9: avisos de pagos
         midia_start()                     # 12.15: vencimientos, medicamentos, citas, cumpleaños, presupuesto y viajes
         compartir_start()                 # 12.16: resumen del mes

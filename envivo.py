@@ -18,7 +18,7 @@ LIVE_URL = ("wss://generativelanguage.googleapis.com/ws/"
             "google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent")
 IN_RATE = 16000
 OUT_RATE = 24000
-MODELS = ["gemini-3.8-live", "gemini-3.1-flash-live-preview"]
+MODELS = ["gemini-3.8-live"]            # 12.69: Google retiró gemini-3.1-flash-live-preview el 17/11/2026
 
 
 class LiveError(Exception):

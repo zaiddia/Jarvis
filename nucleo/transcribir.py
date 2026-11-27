@@ -140,6 +140,10 @@ def _tr_whisper(path):
                        capture_output=True, stdin=subprocess.DEVNULL, timeout=600, creationflags=_TR_NOWIN if J.IS_WIN else 0)
     if r.returncode != 0 or not r.stdout:
         return ""
+    if J.parakeet_ready():                                  # 12.69: Parakeet, si está instalado (más rápido en el procesador)
+        out = J._parakeet_transcribe(r.stdout)
+        if out is not None:
+            return out
     return J._whisper_transcribe(r.stdout)
 
 

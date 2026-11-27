@@ -157,6 +157,29 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Ascenso, pictogramas, PhET, graficadora y Parakeet (v12.69)
+
+- **Concurso de ascenso (Decreto 1278)**: «hagamos un simulacro de la prueba de ascenso» (10 casos; respondes «la B» y Jarvis
+  explica cada uno), «simulacro de ascenso de praxis pedagógica», «simulacro de ascenso de 20 preguntas en Word»,
+  «¿cómo voy en el simulacro de ascenso?» y «calcula mis puntos de ascenso: 8 años, zona urbana, ningún ascenso» (cuánto
+  necesitas en la prueba pedagógica para pasar de 80). Los casos cubren contexto de la práctica, reflexión y planeación, praxis
+  pedagógica y ambiente de aula. Las preguntas las escribe la IA: son práctica, no las oficiales.
+- **Pictogramas (ARASAAC)** para estudiantes con necesidades educativas especiales: «pasa a pictogramas: lávate las manos, saca
+  el cuaderno…», «pictogramas de lo que subí», «horario del lunes en pictogramas». Word para imprimir con el crédito que pide la
+  licencia (CC BY-NC-SA); los pictogramas quedan guardados para la próxima vez.
+- **Simulaciones PhET** en el video beam: «muéstrales la simulación de fracciones», «qué simulaciones de física hay»,
+  «descarga las simulaciones de matemáticas» (para usarlas sin internet). Más de 60 de matemáticas, física, química, biología y
+  ciencias de la tierra, en español cuando están traducidas.
+- **Graficadora**: «grafica y = a x² + b x + c», «grafica seno de x; coseno de x» o «abre la graficadora». Cada letra es un
+  deslizador (▶ la anima), se acerca con la rueda y marca dónde corta los ejes. Solo acepta símbolos matemáticos: nada se
+  ejecuta como código.
+- **Reconocimiento Parakeet (opcional)**: «instala el reconocimiento Parakeet» (unos 490 MB) y «usa Parakeet para entenderme».
+  Es la segunda pasada que entiende mejor tus órdenes sin internet (más rápida que Whisper en el procesador) y transcribe los
+  audios que subes cuando no hay Gemini. No abre el micrófono ni graba: el oído de Jarvis sigue siendo el mismo.
+- **Reclamos al Fomag**: los reclamos de salud del magisterio ya no se tratan como de una EPS: van al Fomag con copia a la IPS
+  y, si no responden, a la Supersalud.
+- La conversación en vivo ya no intenta el modelo que Google retiró el 17 de noviembre de 2026.
+
 ## Escenas en 3D, voz de Fish Audio y «sigo en eso» (v12.68)
 
 - **Escenas en 3D para el video beam**: «constrúyeme en 3D el sistema solar», «arma en 3D la molécula de agua para séptimo»,

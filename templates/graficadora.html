@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Graficadora · Jarvis</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #ffffff; color: #1d2433; font-family: system-ui, "Segoe UI", sans-serif; }
+  html body#gf { background: #ffffff !important; color: #1d2433 !important; }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  #side { position: fixed; left: 12px; top: 12px; width: min(380px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow-y: auto;
+          background: rgba(255,255,255,.94); border: 1px solid #d5dbe6; border-radius: 14px; padding: 12px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.08); z-index: 2; }
+  #side h1 { font-size: 18px; margin-bottom: 8px; }
+  .fx { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
+  .fx i { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+  .fx input { flex: 1; font: 600 17px ui-monospace, Consolas, monospace; padding: 7px 9px; border: 1px solid #c9d1de; border-radius: 9px; }
+  .fx input.bad { border-color: #e53935; background: #fff3f3; }
+  .fx button, .tools button { font-size: 14px; padding: 6px 10px; border-radius: 9px; border: 1px solid #c9d1de; background: #f6f8fb; cursor: pointer; }
+  .prm { display: grid; grid-template-columns: 26px 1fr 58px 30px; align-items: center; gap: 6px; margin: 6px 0; font: 600 16px ui-monospace, Consolas, monospace; }
+  .prm input[type=range] { width: 100%; accent-color: #1e88e5; }
+  .prm b { text-align: right; color: #1e88e5; font-variant-numeric: tabular-nums; }
+  .tools { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  #info { font-size: 14px; color: #44506a; margin-top: 8px; line-height: 1.45; }
+  #err { color: #e53935; font-size: 13px; min-height: 1em; }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body id="gf">
+<canvas id="cv"></canvas>
+<div id="side">
+  <h1>📈 Graficadora</h1>
+  <div id="fxs"></div>
+  <div id="err"></div>
+  <div id="prms"></div>
+  <div class="tools">
+    <button id="b-add">＋ Función</button><button id="b-home">Centrar</button><button id="b-roots" class="on">Cortes con los ejes</button>
+  </div>
+  <div id="info"></div>
+</div>
+<script>
+const INIT = {{ funcs|tojson }}, VALS = {{ vals|tojson }};
+const COLORS = ["#1e88e5", "#e53935", "#43a047"], FUN = ["sqrt", "sin", "cos", "tan", "abs", "log", "ln", "exp"], PARAMS = "abcdhkmnpqrst";
+// ---------------------------------------------------------------- analizador propio (lista cerrada de símbolos; nada de eval)
+function tokenize(s) {
+  const re = /\s*(\d+(?:\.\d+)?|sqrt|sin|cos|tan|abs|log|ln|exp|pi|[a-z]|[-+*/^()])/y, out = []; let m; re.lastIndex = 0;
+  s = String(s).toLowerCase().replace(/²/g, "^2").replace(/³/g, "^3").replace(/·|×/g, "*").replace(/÷/g, "/").replace(/−/g, "-").replace(/(\d),(\d)/g, "$1.$2").trim();
+  while (re.lastIndex < s.length) { const at = re.lastIndex; m = re.exec(s); if (!m) throw new Error("no entiendo «" + s.slice(at, at + 6) + "»"); out.push(m[1]); while (s[re.lastIndex] === " ") re.lastIndex++; }
+  const fx = []; const atomEnd = (t) => !"+-*/^(".includes(t) && !FUN.includes(t); const atomStart = (t) => !"+-*/^)".includes(t);
+  for (const t of out) { if (fx.length && atomEnd(fx[fx.length - 1]) && atomStart(t)) fx.push("*"); fx.push(t); }
+  return fx;
+}
+function compile(src) {
+  const tk = tokenize(src); let i = 0; const params = new Set();
+  const peek = () => tk[i], take = () => tk[i++];
+  function E() { let f = T(); while (peek() === "+" || peek() === "-") { const op = take(), a = f, b = T(); f = op === "+" ? (e) => a(e) + b(e) : (e) => a(e) - b(e); } return f; }
+  function T() { let f = U(); while (peek() === "*" || peek() === "/") { const op = take(), a = f, b = U(); f = op === "*" ? (e) => a(e) * b(e) : (e) => a(e) / b(e); } return f; }
+  function U() { if (peek() === "-") { take(); const a = U(); return (e) => -a(e); } if (peek() === "+") { take(); return U(); } return P(); }
+  function P() { const b = A(); if (peek() === "^") { take(); const ex = U(); return (e) => Math.pow(b(e), ex(e)); } return b; }
+  function A() {
+    const k = take(); if (k === undefined) throw new Error("la función está incompleta");
+    if (k === "(") { const v = E(); if (take() !== ")") throw new Error("falta cerrar un paréntesis"); return v; }
+    if (FUN.includes(k)) { if (take() !== "(") throw new Error("después de " + k + " van paréntesis"); const v = E(); if (take() !== ")") throw new Error("falta cerrar un paréntesis");
+      const fn = { sqrt: Math.sqrt, sin: Math.sin, cos: Math.cos, tan: Math.tan, abs: Math.abs, log: Math.log10, ln: Math.log, exp: Math.exp }[k]; return (e) => fn(v(e)); }
+    if (k === "x") return (e) => e.x;
+    if (k === "pi") return () => Math.PI;
+    if (k === "e") return () => Math.E;
+    if (/^[a-z]$/.test(k)) { if (!PARAMS.includes(k)) throw new Error("la letra «" + k + "» no puede ser parámetro"); params.add(k); return (e) => e[k]; }
+    if (/^\d/.test(k)) { const n = parseFloat(k); return () => n; }
+    throw new Error("sobra «" + k + "»");
+  }
+  const f = E(); if (i < tk.length) throw new Error("sobra «" + tk[i] + "»");
+  return { f, params: [...params] };
+}
+// ---------------------------------------------------------------- estado
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+const view = { cx: 0, cy: 0, ppu: 40 };       // centro y píxeles por unidad
+const vals = Object.assign({}, VALS);
+let funcs = [], showRoots = true;
+function resize() { DPR = Math.min(2, window.devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * DPR; cv.height = H * DPR; draw(); }
+const sx = (x) => W / 2 + (x - view.cx) * view.ppu, sy = (y) => H / 2 - (y - view.cy) * view.ppu;
+const wx = (px) => view.cx + (px - W / 2) / view.ppu, wy = (py) => view.cy - (py - H / 2) / view.ppu;
+function niceStep() { const raw = 80 / view.ppu, p = Math.pow(10, Math.floor(Math.log10(raw))); for (const m of [1, 2, 5, 10]) if (m * p >= raw) return m * p; return 10 * p; }
+function fmt(v) { return Math.abs(v) < 1e-9 ? "0" : (Math.round(v * 100) / 100).toString().replace(".", ","); }
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  const st = niceStep(); ctx.lineWidth = 1; ctx.font = "13px system-ui"; ctx.fillStyle = "#6b7487";
+  for (let x = Math.floor(wx(0) / st) * st; x <= wx(W); x += st) { ctx.strokeStyle = Math.abs(x) < 1e-9 ? "#5a6377" : "#e6eaf1"; ctx.beginPath(); ctx.moveTo(sx(x), 0); ctx.lineTo(sx(x), H); ctx.stroke();
+    if (Math.abs(x) > 1e-9) ctx.fillText(fmt(x), sx(x) + 3, Math.min(H - 6, Math.max(14, sy(0) + 14))); }
+  for (let y = Math.floor(wy(H) / st) * st; y <= wy(0); y += st) { ctx.strokeStyle = Math.abs(y) < 1e-9 ? "#5a6377" : "#e6eaf1"; ctx.beginPath(); ctx.moveTo(0, sy(y)); ctx.lineTo(W, sy(y)); ctx.stroke();
+    if (Math.abs(y) > 1e-9) ctx.fillText(fmt(y), Math.min(W - 40, Math.max(4, sx(0) + 4)), sy(y) - 3); }
+  const info = [];
+  funcs.forEach((F, k) => {
+    if (!F.c) return; const env = Object.assign({}, vals); ctx.strokeStyle = COLORS[k % 3]; ctx.lineWidth = 3; ctx.beginPath();
+    let pen = false, prevY = null, prevX = null; const roots = [];
+    for (let px = 0; px <= W; px += 1) { env.x = wx(px); const y = F.c.f(env);
+      if (!isFinite(y) || Math.abs(y - view.cy) * view.ppu > 4 * H) { pen = false; prevY = null; continue; }
+      if (prevY !== null && Math.abs(sy(y) - sy(prevY)) > H) pen = false;      // asíntota: no unir
+      if (prevY !== null && Math.sign(y) !== Math.sign(prevY) && Math.abs(y - prevY) < 5 * st) roots.push(prevX + (env.x - prevX) * Math.abs(prevY) / (Math.abs(prevY) + Math.abs(y)));
+      if (y === 0) roots.push(env.x);
+      pen ? ctx.lineTo(px, sy(y)) : ctx.moveTo(px, sy(y)); pen = true; prevY = y; prevX = env.x; }
+    ctx.stroke();
+    if (showRoots) { ctx.fillStyle = COLORS[k % 3];
+      const uniq = roots.filter((r, i) => i === 0 || Math.abs(r - roots[i - 1]) > 1e-3).slice(0, 8);
+      uniq.forEach((r) => { ctx.beginPath(); ctx.arc(sx(r), sy(0), 5, 0, 7); ctx.fill(); ctx.fillText("(" + fmt(r) + "; 0)", sx(r) + 6, sy(0) - 8); });
+      env.x = 0; const y0 = F.c.f(env); if (isFinite(y0)) { ctx.beginPath(); ctx.arc(sx(0), sy(y0), 5, 0, 7); ctx.fill(); ctx.fillText("(0; " + fmt(y0) + ")", sx(0) + 6, sy(y0) - 8); }
+      info.push(`<b style="color:${COLORS[k % 3]}">y = ${F.src.replace(/\*/g, "·")}</b>` + (uniq.length ? ` · corta el eje x en ${uniq.map(fmt).join("; ")}` : " · no corta el eje x aquí") + (isFinite(y0) ? ` · el eje y en ${fmt(y0)}` : "")); }
+  });
+  document.getElementById("info").innerHTML = info.join("<br>");
+}
+// ---------------------------------------------------------------- funciones y deslizadores
+function rebuild() {
+  const box = document.getElementById("fxs"); box.innerHTML = "";
+  funcs.forEach((F, k) => { const row = document.createElement("div"); row.className = "fx";
+    row.innerHTML = `<i style="background:${COLORS[k % 3]}"></i><span>y =</span><input value="${F.src.replace(/"/g, "")}" spellcheck="false"><button title="Quitar">✕</button>`;
+    const inp = row.querySelector("input"); inp.oninput = () => { F.src = inp.value; try { F.c = compile(F.src); inp.classList.remove("bad"); document.getElementById("err").textContent = ""; } catch (e) { F.c = null; inp.classList.add("bad"); document.getElementById("err").textContent = e.message; } sliders(); draw(); };
+    row.querySelector("button").onclick = () => { funcs.splice(k, 1); rebuild(); };
+    box.appendChild(row); });
+  sliders(); draw();
+}
+function sliders() {
+  const need = [...new Set(funcs.flatMap((F) => F.c ? F.c.params : []))].sort(), box = document.getElementById("prms");
+  if (box.dataset.k === need.join("")) return; box.dataset.k = need.join(""); box.innerHTML = "";
+  need.forEach((p) => { if (vals[p] === undefined) vals[p] = 1; const row = document.createElement("div"); row.className = "prm";
+    row.innerHTML = `<span>${p}</span><input type="range" min="-10" max="10" step="0.1" value="${vals[p]}"><b>${fmt(vals[p])}</b><button title="Animar">▶</button>`;
+    const r = row.querySelector("input"), b = row.querySelector("b"), play = row.querySelector("button"); let timer = null, dir = 1;
+    r.oninput = () => { vals[p] = parseFloat(r.value); b.textContent = fmt(vals[p]); draw(); };
+    play.onclick = () => { if (timer) { clearInterval(timer); timer = null; play.textContent = "▶"; return; } play.textContent = "⏸";
+      timer = setInterval(() => { let v = vals[p] + .1 * dir; if (v > 10 || v < -10) { dir = -dir; v = vals[p] + .1 * dir; } vals[p] = Math.round(v * 10) / 10; r.value = vals[p]; b.textContent = fmt(vals[p]); draw(); }, 60); };
+    box.appendChild(row); });
+}
+function addFunc(src) { if (funcs.length >= 3) return; const F = { src }; try { F.c = compile(src); } catch (e) { F.c = null; } funcs.push(F); }
+document.getElementById("b-add").onclick = () => { addFunc(funcs.length ? "x" : "x^2"); rebuild(); };
+document.getElementById("b-home").onclick = () => { view.cx = 0; view.cy = 0; view.ppu = 40; draw(); };
+const bRoots = document.getElementById("b-roots"); bRoots.onclick = () => { showRoots = !showRoots; bRoots.classList.toggle("on", showRoots); draw(); };
+// ---------------------------------------------------------------- mover y acercar
+let drag = null;
+cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener("pointermove", (e) => { if (!drag) return; view.cx -= (e.clientX - drag.x) / view.ppu; view.cy += (e.clientY - drag.y) / view.ppu; drag = { x: e.clientX, y: e.clientY }; draw(); });
+cv.addEventListener("pointerup", () => { drag = null; });
+cv.addEventListener("wheel", (e) => { e.preventDefault(); const k = e.deltaY > 0 ? .88 : 1.14, mx = wx(e.clientX), my = wy(e.clientY);
+  view.ppu = Math.max(2, Math.min(2000, view.ppu * k)); view.cx = mx - (e.clientX - W / 2) / view.ppu; view.cy = my + (e.clientY - H / 2) / view.ppu; draw(); }, { passive: false });
+window.addEventListener("resize", resize);
+(INIT.length ? INIT : ["x^2"]).forEach(addFunc);
+resize(); rebuild();
+</script>
+</body>
+</html>

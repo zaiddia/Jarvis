@@ -15,6 +15,10 @@ def norm(t):
 # ============================================================================ RECLAMOS Y DERECHOS DE PETICIÓN
 # (clave, patrón de la entidad, a quién se escala si no responde, cómo)
 SECTORS = (
+    ("magisterio", r"fomag|magisterio|salud del magisterio|fondo de prestaciones|horus|sumimedical|fiduprevisora|ips del magisterio",
+     "la Superintendencia Nacional de Salud (Supersalud), que vigila al Fomag, en supersalud.gov.co, con el radicado del Fomag",
+     "Los docentes están en el régimen especial del magisterio: el reclamo va al Fomag (y con copia a la IPS que te atiende), no a una "
+     "EPS. Si está en riesgo tu salud o tu vida, no esperes: puedes poner una acción de tutela (te ayudo a redactarla)."),
     ("salud", r"\beps\b|sura|sanitas|nueva eps|compensar|famisanar|salud total|coomeva|coosalud|mutual ser|savia|aliansalud|ips|hospital|clinica|medic|examen|cita|cirugia|autoriza",
      "la Superintendencia Nacional de Salud (Supersalud), en supersalud.gov.co",
      "Si está en riesgo tu salud o tu vida, no tienes que esperar: puedes poner una acción de tutela (te ayudo a redactarla)."),
@@ -64,6 +68,9 @@ def letter_prompt(kind, entidad, hechos, nombre="", ciudad=""):
             "Estructura: ciudad y fecha; destinatario; referencia; HECHOS numerados (solo los que contó; deja [entre corchetes] lo "
             "que falte, como fechas o números de radicado); PETICIONES concretas y numeradas; FUNDAMENTOS DE DERECHO (solo normas "
             "que conozcas con seguridad); ANEXOS sugeridos; NOTIFICACIONES; firma. Español formal y claro, texto plano. "
+            + ("Es un docente afiliado al régimen especial de salud del magisterio: dirígelo al FONDO NACIONAL DE PRESTACIONES SOCIALES "
+               "DEL MAGISTERIO (FOMAG), con copia a la IPS que lo atiende [NOMBRE DE LA IPS], y menciona que es afiliado al régimen "
+               "del magisterio (Ley 91 de 1989). " if sector_of(f"{entidad} {hechos}")[0] == "magisterio" else "")
             + ("Incluye el juramento de no haber presentado otra tutela por los mismos hechos y pide medida provisional si hay "
                "urgencia en salud. " if kind == "tutela" else "")
             + "No inventes hechos ni números.")

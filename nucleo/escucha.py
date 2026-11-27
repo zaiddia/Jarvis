@@ -229,6 +229,8 @@ def stt_refine_mode():
         return "off"
     if want in ("auto", "gemini") and J._gemini_for_stt() and not J.is_offline():
         return "gemini"
+    if want in ("auto", "parakeet") and J.parakeet_ready():   # 12.69: Parakeet en tu equipo (más rápido que Whisper)
+        return "parakeet"
     if want in ("auto", "whisper") and J.settings["stt_backend"] != "whisper":
         try:
             import importlib.util
@@ -247,7 +249,8 @@ def refine_speech(raw, fallback):
     if mode == "off":
         return fallback
     t0 = time.time()
-    out = J._gemini_transcribe(raw) if mode == "gemini" else J._whisper_transcribe(raw)
+    out = (J._gemini_transcribe(raw) if mode == "gemini" else J._parakeet_transcribe(raw) if mode == "parakeet"
+           else J._whisper_transcribe(raw))
     if out is None or out == "":
         return fallback
     if J.normalize(out) != J.normalize(fallback):
