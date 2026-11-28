@@ -157,6 +157,18 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Z.ai GLM: otra IA gratis (v12.73)
+
+- Nuevo proveedor en Ajustes › Inteligencia artificial: **«Z.ai GLM (GLM-4.7 Flash gratis)»**. Crea la clave en
+  `z.ai/manage-apikey/apikey-list` y pégala allí (se guarda solo en tu equipo).
+- Modelos gratis: **GLM-4.7 Flash** (el de siempre), **GLM-4.5 Flash** y **GLM-4.6V Flash**, que ve imágenes: cuando
+  le pides mirar la pantalla o una foto, Jarvis se la manda a ese, también gratis. GLM-5.3 Flash y GLM-5.3 son de pago.
+- La versión gratis atiende pocas peticiones a la vez; si se llena, Jarvis responde con otro modelo gratis de Z.ai.
+- Para la voz responde sin «pensar»; en lo difícil (o en trabajos largos) piensa a fondo.
+- «Comparar velocidad» ahora también mide GLM-4.7 Flash y GLM-4.5 Flash. Por voz: «usa GLM», «cambia a la IA Z.ai».
+- Si tu clave es del «GLM Coding Plan», enciende el interruptor que aparece bajo el modelo.
+- Es una empresa china: como con toda IA en la nube, Jarvis no le manda nombres de estudiantes.
+
 ## Las funciones se encienden solas (v12.72)
 
 - Si pides algo que necesita una función apagada, Jarvis la enciende, lo dice en una frase y sigue: el panel del celular para un

@@ -243,6 +243,8 @@ def _ai_cfg(override=None):
         return str(o.get(k, J.settings.get(k, "")) or "").strip()
 
     base = get("openai_base_url") if sp.get("custom") else sp.get("base", "")
+    if sp.get("coding_base") and str(o.get("zai_coding", J.settings.get("zai_coding", ""))).lower() in ("1", "true", "on", "yes"):
+        base = sp["coding_base"]                       # 12.73: clave del «GLM Coding Plan» de Z.ai: otra dirección
     if override is None and pid not in ("ollama", "motor") and J.is_offline() and J.net["local_model"]:
         # sin internet: la IA de tu equipo responde mientras vuelve la conexión (12.6: la integrada primero; si no, Ollama)
         if J.net["local_model"].startswith("motor:"):
@@ -431,7 +433,13 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
         max_tokens = max(asked, sp["min_tokens"])
     if sp.get("max_out"):
         max_tokens = min(max_tokens, sp["max_out"])     # 12.48: IteraCompute: hasta 8.192 por respuesta
-    body = {"model": cfg["model"], "messages": msgs, tp: max_tokens}
+    model = cfg["model"]
+    if image_path and sp.get("vision_model") and not re.search(sp.get("vision_re", "$^"), str(model or ""), re.I):
+        model = sp["vision_model"]                     # 12.73: GLM-4.7 Flash no ve: la foto va a GLM-4.6V Flash (también gratis)
+    body = {"model": model, "messages": msgs, tp: max_tokens}
+    if sp.get("glm_thinking"):                         # 12.73: GLM piensa solo en lo difícil; lo corto (voz) sale ya
+        deep = getattr(J._tl, "think", "") == "high" or asked >= J.HEAVY_MIN_TOKENS
+        body["thinking"] = {"type": "enabled" if deep else "disabled"}
     if sp.get("quick_no_think") and asked < J.HEAVY_MIN_TOKENS:
         body["chat_template_kwargs"] = {"enable_thinking": False}   # 12.48: Qwen3.8 sin pensar para lo corto: responde ya
     if sp.get("reasoning_effort") and re.search(sp.get("reasoning_re", "."), str(cfg.get("model") or ""), re.I):
@@ -451,7 +459,7 @@ def _oa_body(cfg, messages, max_tokens, json_mode=False, stream=False, image_pat
         body["stream"] = True
     return body, (("temperature", ("temperature",)), ("response_format", ("response_format", "json")),
                   (tp, (tp,)), ("chat_template_kwargs", ("chat_template_kwargs", "enable_thinking")),
-                  ("reasoning_effort", ("reasoning_effort", "reasoning")))
+                  ("reasoning_effort", ("reasoning_effort", "reasoning")), ("thinking", ("thinking",)))
 
 
 def openai_chat(cfg, messages, json_mode=False, max_tokens=1024, image_path=None):
@@ -541,10 +549,19 @@ def ai_list_models(cfg):
     if kind == "anthropic":
         data = J._http("GET", cfg["base"] + "/models?limit=100", J._anthropic_headers(cfg), timeout=10)
         return sorted(m["id"] for m in data.get("data", []) if m.get("id"))
-    data = J._http("GET", cfg["base"] + "/models", J._oa_headers(cfg), timeout=10)
+    fixed = list(cfg["spec"].get("models") or [])
+    try:
+        data = J._http("GET", cfg["base"] + "/models", J._oa_headers(cfg), timeout=10)
+    except J.AIError as e:
+        if not fixed or e.kind in ("key", "perm", "region"):
+            raise
+        return fixed                                   # 12.73: Z.ai no publica la lista: la fija (primero los gratis)
     items = data.get("data", data if isinstance(data, list) else [])
     ids = [m.get("id", "") for m in items if isinstance(m, dict)]
-    return sorted(i for i in ids if i and not J.MODEL_EXCLUDE.search(i))
+    ids = sorted(i for i in ids if i and not J.MODEL_EXCLUDE.search(i))
+    if fixed:
+        return fixed + [i for i in ids if i not in fixed]
+    return ids
 
 
 def _version_key(name):

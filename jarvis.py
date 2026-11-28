@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.72"
+VERSION = "12.73"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -656,6 +656,19 @@ PROVIDERS = {
                       key_url="https://platform.sensenova.ai/console", key_hint="sk-…",
                       note="Gratis mientras dure la beta (unas 1.500 peticiones cada 5 horas) y puede ver imágenes. "
                            "Sus servidores están en China y filtra algunos temas: no lo uses para datos de estudiantes."),
+    "zai": dict(label="Z.ai GLM (GLM-4.7 Flash gratis)", short="Z.ai GLM", kind="openai", group="cloud",     # 12.73
+                base="https://api.z.ai/api/paas/v4", model="glm-4.7-flash",
+                coding_base="https://api.z.ai/api/coding/paas/v4",
+                # Z.ai no publica la lista de modelos de la cuenta: va fija, primero los gratis
+                models=["glm-4.7-flash", "glm-4.5-flash", "glm-4.6v-flash", "glm-5.3-flash", "glm-5.3-flashx", "glm-5.3"],
+                free_models=["glm-4.7-flash", "glm-4.5-flash", "glm-4.6v-flash"],
+                prefer=[r"^glm-4\.7-flash$", r"^glm-4\.5-flash$", r"^glm-4\.6v-flash$"],
+                vision=True, vision_model="glm-4.6v-flash", vision_re=r"\dv-|\dv$|^glm-5\.3-flash",
+                glm_thinking=True,
+                key_url="https://z.ai/manage-apikey/apikey-list", key_hint="pega aquí tu clave",
+                note="GLM-4.7 Flash, GLM-4.5 Flash y GLM-4.6V Flash (este ve imágenes) son gratis; GLM-5.3 es de pago "
+                     "y necesita saldo. La versión gratis atiende pocas peticiones a la vez: si se llena, Jarvis pasa "
+                     "a otro modelo gratis. Empresa china (antes Zhipu AI): no la uses para datos de estudiantes."),
     "xai": dict(label="Grok (xAI)", short="Grok", kind="openai", group="cloud",
                 base="https://api.x.ai/v1", model="", prefer=[r"^grok.*fast", r"^grok"],
                 key_url="https://console.x.ai", key_hint="xai-…", note="Pago por uso."),
@@ -876,6 +889,7 @@ DEFAULT_SETTINGS = {
     "image_model_sensenova": "",   # 12.61: modelo de imágenes de SenseNova (vacío = sensenova-u1.5-lite)
     "fish_api_key": "",            # 12.68: voz de Fish Audio (clave de fish.audio)
     "fish_voice": "",              # 12.68: código de la voz escogida en fish.audio (vacío = la de Fish por defecto)
+    "zai_coding": False,           # 12.73: la clave de Z.ai es del «GLM Coding Plan» (usa su otra dirección)
     "fish_paid": False,            # 12.68: si se acaba lo gratis, usar el modelo de pago
     "ack_still": True,             # 12.68: «sigo en eso» si la respuesta tarda
     "vacation_until": "",          # 12.70: modo vacaciones hasta esa fecha (AAAA-MM-DD)
@@ -1030,7 +1044,7 @@ API_KEY_FIELDS = tuple(k for k in DEFAULT_SETTINGS if k.endswith("_api_key"))
 SECRET_FIELDS = API_KEY_FIELDS + ("calendar_urls", "telegram_token", "email_app_password", "mobile_token",
                                    "classroom_client_secret", "classroom_refresh", "whatsapp_apikey", "data_key", "cloud_pass", "ha_token") + (
     ("spotify_client_secret",) if "spotify_client_secret" in DEFAULT_SETTINGS else ())
-AI_SETTING_KEYS = ({"ai_provider", "ollama_host", "ollama_model", "openai_base_url"}
+AI_SETTING_KEYS = ({"ai_provider", "ollama_host", "ollama_model", "openai_base_url", "zai_coding"}
                    | set(API_KEY_FIELDS) | {f"{p}_model" for p in PROVIDERS})
 # Modelos por defecto antiguos que ya no admiten claves nuevas: se migran al actual.
 LEGACY_DEFAULT_MODELS = {"gemini_model": ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash")}
@@ -1177,7 +1191,7 @@ ENV_ALIASES = {
     "CHATGPT_API_KEY": "chatgpt_api_key", "DEEPSEEK_API_KEY": "deepseek_api_key",
     "MOONSHOT_API_KEY": "kimi_api_key", "KIMI_API_KEY": "kimi_api_key",
     "XAI_API_KEY": "xai_api_key", "MISTRAL_API_KEY": "mistral_api_key",
-    "GROQ_API_KEY": "groq_api_key", "NVIDIA_API_KEY": "nvidia_api_key", "NVAPI_KEY": "nvidia_api_key", "ITERACOMPUTE_API_KEY": "iteracompute_api_key", "SENSENOVA_API_KEY": "sensenova_api_key", "FISH_API_KEY": "fish_api_key", "OPENROUTER_API_KEY": "openrouter_api_key",
+    "GROQ_API_KEY": "groq_api_key", "NVIDIA_API_KEY": "nvidia_api_key", "NVAPI_KEY": "nvidia_api_key", "ITERACOMPUTE_API_KEY": "iteracompute_api_key", "SENSENOVA_API_KEY": "sensenova_api_key", "ZAI_API_KEY": "zai_api_key", "ZHIPUAI_API_KEY": "zai_api_key", "FISH_API_KEY": "fish_api_key", "OPENROUTER_API_KEY": "openrouter_api_key",
 }
 env_overrides = {}
 _file_values = {}

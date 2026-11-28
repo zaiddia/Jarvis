@@ -429,7 +429,7 @@ def ai_pick_voice(text, t):
         J.reply("Tengo " + ", ".join(names) + "." + (f" Ahora uso {cur}." if cur else "") +
                 " Para cambiar di «cambia a la IA …» o toca el botón de IA del HUD.", "IA")
         return True
-    if not re.search(r"\b(?:ia|inteligencia artificial|modelo|cerebro)\b", t) and not re.search(r"\b(?:usa|cambia a|pasate a)\s+(?:gemini|claude|chatgpt|gpt|deepseek|grok|mistral|groq|ollama|llama|qwen|gemma|phi)\b", t):
+    if not re.search(r"\b(?:ia|inteligencia artificial|modelo|cerebro)\b", t) and not re.search(r"\b(?:usa|cambia a|pasate a)\s+(?:gemini|claude|chatgpt|gpt|deepseek|grok|mistral|groq|ollama|llama|qwen|gemma|phi|glm|z ?ai|zeta ai)\b", t):
         return False
     m = _IL_PICK.search(t)
     if not m:
@@ -453,7 +453,7 @@ def ai_pick_voice(text, t):
 
     def key(s):
         return re.sub(r"[^a-z0-9]", "", J.normalize(s))
-    w = key(want)
+    w = key(want).replace("zetaai", "zai").replace("zetaia", "zai")   # 12.73: «usa zeta ai»
     hits = [i for i in items if w and (w in key(i["nombre"]) or w in key(i["id"]) or (i["tipo"] == "nube" and key(i["nombre"]) in w))]
     if not hits:
         return False

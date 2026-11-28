@@ -549,7 +549,7 @@
         </select>
       </div>
       <div class="field stack">
-        <div class="ft"><label>IA gratis: compara y escoge (12.47)</label><p>Con tu clave de NVIDIA hay varios modelos gratis (Kimi, Qwen y otros), y con la de IteraCompute, Qwen3.8 27B. «Comparar velocidad» les hace la misma pregunta y los ordena del más rápido al más lento; después eliges uno para conversar o para los trabajos pesados. También: «Jarvis, compara los modelos de NVIDIA».</p>
+        <div class="ft"><label>IA gratis: compara y escoge (12.47)</label><p>Con tu clave de NVIDIA hay varios modelos gratis (Kimi, Qwen y otros); con la de IteraCompute, Qwen3.8 27B, y con la de Z.ai, GLM-4.7 Flash y GLM-4.5 Flash. «Comparar velocidad» les hace la misma pregunta y los ordena del más rápido al más lento; después eliges uno para conversar o para los trabajos pesados. También: «Jarvis, compara los modelos de NVIDIA».</p>
           <p class="status" id="nv-status"></p></div>
         <div class="row"><button class="btn btn-ghost" type="button" id="btn-nv-bench">Comparar velocidad</button></div>
         <div id="nv-list"></div>
@@ -567,6 +567,12 @@
           <div class="ft"><label for="f-{{ pid }}-model">Modelo</label><p>{% if p.model %}Recomendado: <code>{{ p.model }}</code>. {% endif %}Pulsa «Probar» para ver los de tu cuenta. Si el elegido deja de funcionar, Jarvis cambia solo a otro disponible.</p></div>
           <input class="inp" type="text" id="f-{{ pid }}-model" data-key="{{ pid }}_model" data-model list="models-list" placeholder="{{ p.model or 'se elige automáticamente' }}">
         </div>
+        {% if p.coding_base %}
+        <div class="field">
+          <div class="ft"><label for="f-{{ pid }}-coding">Mi clave es del «GLM Coding Plan»</label><p>Solo si pagas ese plan mensual de Z.ai: usa su otra dirección. Las claves normales (las de los modelos gratis) lo dejan apagado.</p></div>
+          <label class="switch"><input type="checkbox" id="f-{{ pid }}-coding" data-key="zai_coding"><span></span></label>
+        </div>
+        {% endif %}
       </div>
       {% endfor %}
       <div data-provider="ollama">
