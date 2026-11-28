@@ -14,6 +14,7 @@ import urllib.request
 
 import adjuntos
 import imagenes
+import imagenlocal
 from nucleo import J
 
 studio = {"items": []}          # las imágenes creadas: [{"path", "tema", "estilo", "formato", "t"}]
@@ -23,7 +24,7 @@ _oa_model = {"name": "", "checked": 0.0}
 # ============================================================================ QUIÉN LAS CREA
 def image_backend(allow_cn=True):
     """(proveedor, cfg) o (None, mensaje). allow_cn=False: en automático no manda una foto tuya a SenseNova (China)."""
-    pref = J.settings.get("image_provider", "auto")
+    pref = getattr(J._tl, "img_pref", "") or J.settings.get("image_provider", "auto")     # 12.74: o el que escogiste en el Estudio
     g = J._gemini_for_stt()
     o = J._ai_cfg({"ai_provider": "chatgpt"})
     o = o if o.get("key") else None
@@ -35,6 +36,16 @@ def image_backend(allow_cn=True):
         return ("gemini", g) if g else (None, "para crear imágenes con Gemini necesito su clave (Ajustes › Inteligencia artificial)")
     if pref == "chatgpt":
         return ("chatgpt", o) if o else (None, "para crear imágenes con ChatGPT necesito su clave (Ajustes › Inteligencia artificial)")
+    nv = J._ai_cfg({"ai_provider": "nvidia"})
+    nv = nv if nv.get("key") else None
+    local = {"label": "PC"} if J.im73_ready() else None
+    if pref == "nvidia":                                   # 12.74: FLUX en NVIDIA Build (gratis con la clave de NVIDIA)
+        return ("nvidia", nv) if nv else (None, "para crear imágenes con FLUX necesito la clave de NVIDIA (Ajustes › Inteligencia artificial)")
+    if pref == "local":                                    # 12.74: el generador de tu PC
+        return ("local", local) if local else (None, "el generador de imágenes de tu PC no está instalado (di «instala el generador de imágenes»)")
+    if J.net.get("offline") or (J.settings.get("img_private") and not allow_cn):
+        return ("local", local) if local else (None, "sin internet (o con una foto protegida) solo puedo con el generador de tu PC, "
+                                                     "y no está instalado: di «instala el generador de imágenes»")
     order = [("chatgpt", o), ("gemini", g)] if J.settings.get("ai_provider") == "chatgpt" else [("gemini", g), ("chatgpt", o)]
     for name, cfg in order:
         if not cfg:
@@ -42,8 +53,14 @@ def image_backend(allow_cn=True):
         if name == "gemini" and not J.image_model():
             continue
         return name, cfg
+    if nv and not allow_cn and local:
+        return "local", local                              # 12.74: una foto tuya: FLUX no edita fotos; la de tu PC sí
+    if nv and allow_cn:
+        return "nvidia", nv                                # 12.74: FLUX gratis con la clave de NVIDIA
     if sn and allow_cn:
         return "sensenova", sn                             # 12.61: si no hay Gemini ni ChatGPT con imágenes, la gratis
+    if local:
+        return "local", local                              # 12.74: el de tu PC, de último
     if sn:
         return None, ("para editar una foto tuya en automático no uso SenseNova (sus servidores están en China); escógela "
                       "en Ajustes › Imágenes si quieres, o pon una clave de Gemini o ChatGPT")
@@ -53,23 +70,19 @@ def image_backend(allow_cn=True):
                   "Inteligencia artificial")
 
 
-IMG_NAMES = {"gemini": "Gemini", "chatgpt": "ChatGPT", "sensenova": "SenseNova"}
+IMG_NAMES = dict(imagenlocal.NAMES)       # 12.74: + FLUX (NVIDIA) y el generador de tu PC
 
 
-def image_backends(allow_cn=True):
-    """12.62: todos los que pueden crear la imagen, en orden: el que escogiste (o el automático) y luego los demás con
-    clave, para pasar al siguiente si uno no tiene cupo. SenseNova (China) entra solo si allow_cn o si la escogiste."""
-    first, msg = J.image_backend(allow_cn)
+def image_backends(allow_cn=True, tema=""):
+    """12.62: todos los que pueden crear la imagen, en orden, para pasar al siguiente si uno no tiene cupo.
+    12.74: el orden lo decide Jarvis según el pedido (letras, foto tuya, sin internet) y quién falló hace poco;
+    si escogiste uno en Ajustes, ese va primero."""
+    first, cfg = J.image_backend(allow_cn)
     if not first:
-        return [], msg
-    out = [(first, msg)]
-    g = J._gemini_for_stt()
-    o = J._ai_cfg({"ai_provider": "chatgpt"})
-    sn = J._ai_cfg({"ai_provider": "sensenova"})
-    for name, cfg in (("gemini", g if g and J.image_model() else None), ("chatgpt", o if o.get("key") else None),
-                      ("sensenova", sn if sn.get("key") and allow_cn else None)):
-        if cfg and name not in [n for n, _ in out]:
-            out.append((name, cfg))
+        return [], cfg
+    out = J.im73_order(tema, own_photo=not allow_cn)
+    if (getattr(J._tl, "img_pref", "") or J.settings.get("image_provider", "auto")) != "auto" or first not in [n for n, _ in out]:
+        out = [(first, cfg)] + [(n, c) for n, c in out if n != first]
     return out, ""
 
 
@@ -115,6 +128,12 @@ def _png_bytes(path, max_side=2048):
 
 def _one_image(prov, cfg, prompt, aspect="", src=None):
     """(bytes, extensión) de una imagen nueva o editada."""
+    if prov == "nvidia":                               # 12.74: FLUX no edita fotos: solo imágenes nuevas
+        if src:
+            raise J.AIError("FLUX no edita fotos", kind="model", why="FLUX solo crea imágenes nuevas")
+        return J.im73_nvidia(cfg, J.im73_english(prompt), aspect)
+    if prov == "local":
+        return J.im73_local(J.im73_english(prompt), aspect, src)
     if prov == "gemini":
         b64 = base64.b64encode(_png_bytes(src)).decode() if src else ""
 
@@ -181,7 +200,7 @@ def _sn_fetch(url, limit=25 * 1024 * 1024):
 def studio_generate(tema, estilo="", formato="", n=1, folder=None, src=None, instruccion=""):
     """Crea (o edita, con «src») n imágenes. → [rutas]. Lanza RuntimeError con un mensaje claro."""
     own_photo = bool(src) and not any(x["path"] == src for x in studio["items"])     # una foto tuya, no una creada aquí
-    backends, msg = J.image_backends(allow_cn=not own_photo)
+    backends, msg = J.image_backends(allow_cn=not own_photo, tema=tema or instruccion)
     if not backends:
         raise RuntimeError(msg)
     prompt = imagenes.edit_prompt(instruccion, estilo) if src else imagenes.build_prompt(tema, estilo, formato)
@@ -203,6 +222,7 @@ def studio_generate(tema, estilo="", formato="", n=1, folder=None, src=None, ins
                     fails.append((prov, e.kind, e.why or str(e)))
                     raise RuntimeError(J.image_fail_text(fails))
                 fails.append((prov, e.kind, e.why or str(e)))       # 12.62: sin cupo, saturado o sin modelo: el siguiente
+                J.im73_failed(prov, e.kind)                        # 12.74: descansa un rato para no esperar por él
                 J.log_terminal(f"Imágenes: {IMG_NAMES[prov]} no pudo ({e.kind}); pruebo con {IMG_NAMES[backends[1][0]]}.", "IA")
                 backends.pop(0)
             except ValueError as e:

@@ -617,6 +617,12 @@ def _with_fallback(cfg, fn):
     """Ejecuta fn(cfg). Si el modelo no existe o la cuenta no tiene acceso (p. ej. Gemini 2.5
     con claves nuevas), cambia solo al mejor modelo disponible y reintenta."""
     cfg = J._ensure_model(cfg)
+    if cfg.get("ai_provider") and J.c73_is_down(cfg["ai_provider"]) and not J._is_local_ai(cfg):
+        for bk in J.c73_backups(cfg):                  # 12.74: la tuya falló hace un momento: directo a la que responde
+            try:
+                return fn(J._ensure_model(bk))
+            except J.AIError as e0:
+                J.c73_mark(bk, e0.kind)
     if J._alt["for"] == cfg["model"] and time.time() < J._alt["until"]:
         try:
             return fn(dict(cfg, model=J._alt["model"]))        # hace poco el elegido estaba saturado: directo al que sí respondió
@@ -626,16 +632,24 @@ def _with_fallback(cfg, fn):
         return fn(cfg)
     except J.AIError as e:
         if e.kind in ("server", "quota", "balance") and not J._is_local_ai(cfg):
+            J.c73_mark(cfg, e.kind)                    # 12.74: descansa un momento; las siguientes van directo al respaldo
             try:
                 if e.kind == "balance":
                     raise e
                 return J._try_other_models(cfg, fn, e)     # 12.22: saturado o sin cuota: prueba con otro modelo, solo esta vez
             except J.AIError as e2:
-                bk = J.backup_cfg(cfg)                 # 12.48: tampoco: otra IA gratis que tengas configurada
-                if not bk:
+                chain = J.c73_backups(cfg)             # 12.48: tampoco: otra IA que tengas (12.74: una cadena, nunca parado)
+                if not chain:
                     raise
-                J.log_terminal(f"{cfg['label']} está {J._SHORT_REASON.get(e2.kind, 'sin responder')}; respondo con {bk['label']}.", "IA")
-                return fn(J._ensure_model(bk))
+                last = e2
+                for bk in chain:
+                    J.log_terminal(f"{cfg['label']} está {J._SHORT_REASON.get(last.kind, 'sin responder')}; respondo con {bk['label']}.", "IA")
+                    try:
+                        return fn(J._ensure_model(bk))
+                    except J.AIError as e3:
+                        J.c73_mark(bk, e3.kind)
+                        last = e3
+                raise last
         if e.kind != "model" or cfg["kind"] == "ollama":
             raise
         try:
@@ -779,13 +793,15 @@ def ai_chat(messages, json_mode=False, max_tokens=None):
     if not J._is_local_ai(cfg) and J.net_preflight():  # 12.20: se cayó el internet: cambia ya, sin esperar a la nube
         cfg = J._ai_cfg()
     hv = None if J._is_local_ai(cfg) and cfg.get("offline") else J.heavy_pick(max_tokens, cfg)
-    if hv:
-        cfg = hv
+    cp = None if hv else J.code_pick(cfg, messages)    # 12.74: para programar, la mejor para código que tengas
+    if hv or cp:
+        cfg = hv or cp
     if cfg["kind"] == "ollama" and not cfg["model"]:
         raise J.AIError("No hay modelo seleccionado. Elige uno en Ajustes › Inteligencia artificial.", kind="config",
                       why="no hay modelo elegido. Elige uno en Ajustes, sección IA")
     mp = None
-    if cfg["kind"] != "ollama" and J.privacy_names_in(json.dumps(messages, ensure_ascii=False)):   # 12.32: datos de estudiantes
+    J._tl.c73_names = cfg["kind"] != "ollama" and bool(J.privacy_names_in(json.dumps(messages, ensure_ascii=False)))
+    if J._tl.c73_names:                                # 12.32: datos de estudiantes
         loc = J.privacy_local_cfg()
         if loc:
             cfg = loc                                  # elegiste que no salgan: la IA de tu equipo
@@ -821,6 +837,14 @@ def ai_chat(messages, json_mode=False, max_tokens=None):
             return J.privacy_restore(out, mp) if mp else out
         except J.AIError as e:
             J.usage_add(cfg, messages, "", ok=False, kind=e.kind)
+            if cfg.get("code"):                        # 12.74: la de código no pudo: lo hace tu IA de siempre
+                J.c73_mark(cfg, e.kind)
+                J.log_terminal(f"{cfg['label']} no pudo con el código ({e.why if hasattr(e, 'why') else e}); lo hago con tu IA de siempre.", "IA")
+                J._tl.no_code = True
+                try:
+                    return J.ai_chat(messages, json_mode, max_tokens)
+                finally:
+                    J._tl.no_code = False
             if cfg.get("heavy"):                       # 12.46: la de trabajos pesados falló o se llenó: lo hace tu IA de siempre
                 if e.kind in ("quota", "balance", "server", "net", "key"):
                     heavy["pause_until"] = time.time() + (120 if e.kind in ("quota", "server", "net") else 3600)

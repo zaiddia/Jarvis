@@ -19,6 +19,7 @@ _RULES = [
     ("casa", r"casa|musica|spotify|audio y musica|radio"),
 ]
 EXTRA = [
+    ("Estudio creativo e IA según el trabajo (12.74)", ["¿qué generadores de imágenes tengo?"]),
     ("Z.ai GLM gratis (12.73)", ["¿qué IA tengo?"]),
     ("Funciones que se encienden solas (12.72)", ["¿qué funciones tengo apagadas?"]),
     ("Más inteligente (12.71)", ["¿cómo me has entendido esta semana?"]),

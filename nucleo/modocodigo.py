@@ -11,6 +11,7 @@ import re
 
 import adjuntos
 import codigo
+import enrutador
 from nucleo import J
 
 _CODE_ASK = re.compile(r"^(?:jarvis\s+)?(?:por favor\s+)?(revisa(?:me)?|explica(?:me)?|corrige(?:me)?|analiza(?:me)?|mejora(?:me)?|depura(?:me)?|"
@@ -105,14 +106,79 @@ def _cd_report(name, lang, code, r, exercises=None):
     return path
 
 
+class _CodeTask:
+    """12.74: marca el trabajo como «código», para que lo haga la mejor IA para programar que tengas."""
+    def __enter__(self):
+        self.prev = getattr(J._tl, "task", "")
+        J._tl.task = "code"
+
+    def __exit__(self, *a):
+        J._tl.task = self.prev
+
+
+def code_review_data(code, name="", goal="revisar"):
+    """12.74: la revisión como datos (para la pantalla del Estudio). → (r, lenguaje, errores del analizador). Lanza si no hay IA."""
+    lang = codigo.lang_of(name, code)
+    findings = codigo.syntax_check(code, lang)
+    with _CodeTask():
+        raw = J.ai_chat([{"role": "user", "content": codigo.review_prompt(code, lang, name, findings, goal)}], json_mode=True, max_tokens=4000)
+    return codigo.review_validate(J._extract_json(raw), findings), lang, findings
+
+
+def code_generate(desc, lang="", curso=""):
+    """12.74: escribe un programa a partir de lo que pides y lo revisa: el analizador busca errores de sintaxis y, si hay,
+    la IA lo corrige sola (hasta 2 veces). Nunca lo ejecuta. → dict con codigo, explicacion, como_probarlo, nombre,
+    lenguaje, errores (los que queden), ruta (el archivo guardado)."""
+    lang = lang or enrutador.lang_from(desc)
+    with _CodeTask():
+        raw = J.ai_chat([{"role": "user", "content": enrutador.gen_prompt(desc, lang, curso)}], json_mode=True, max_tokens=6000)
+        g = enrutador.gen_validate(J._extract_json(raw), lang)
+        if not g["codigo"]:
+            raise ValueError("la IA no devolvió el código")
+        findings = codigo.syntax_check(g["codigo"], lang)
+        fixes = 0
+        while findings and fixes < 2:
+            fixes += 1
+            try:
+                fixed = J._extract_json(J.ai_chat([{"role": "user", "content": enrutador.fix_prompt(g["codigo"], lang, findings)}],
+                                                  json_mode=True, max_tokens=6000))
+            except Exception:
+                break
+            new = enrutador.gen_validate(fixed, lang)["codigo"]
+            if not new:
+                break
+            g["codigo"] = new
+            findings = codigo.syntax_check(new, lang)
+    folder = os.path.join(J.settings["output_dir"], "Código", "Generado")
+    os.makedirs(folder, exist_ok=True)
+    base, ext = os.path.splitext(g["nombre"])
+    path = os.path.join(folder, f"{base} {datetime.datetime.now():%Y-%m-%d %H%M}{ext}")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(g["codigo"])
+    J.generated_files.add(path)
+    g.update(errores=findings, ruta=path, correcciones=fixes)
+    return g
+
+
+def code_generate_text(g):
+    n = len(g["codigo"].splitlines())
+    msg = f"Listo el programa «{os.path.basename(g['ruta'])}» ({g['lenguaje']}, {n} líneas). {g['explicacion']}"
+    if g["errores"]:
+        msg += " Ojo: el analizador todavía ve " + "; ".join((f"línea {e['linea']}: " if e["linea"] else "") + e["problema"] for e in g["errores"][:3]) + "."
+    elif g["lenguaje"] in ("Python", "HTML", "JSON"):
+        msg += " Lo revisé con el analizador: no tiene errores de sintaxis" + (f" (corregí {g['correcciones']} vez/veces)" if g["correcciones"] else "") + "."
+    if g["como_probarlo"]:
+        msg += " Para probarlo: " + g["como_probarlo"][0]
+    return msg + " Quedó en Documentos › Jarvis › Código › Generado (no lo ejecuté)."
+
+
 def code_review(code, name="", goal="revisar", origin="CÓDIGO"):
     """Revisa el código (analizador + IA). → (texto para el chat, ruta del informe o "")."""
     lang = codigo.lang_of(name, code)
     findings = codigo.syntax_check(code, lang)
     n = len(code.splitlines())
     try:
-        raw = J.ai_chat([{"role": "user", "content": codigo.review_prompt(code, lang, name, findings, goal)}], json_mode=True, max_tokens=4000)
-        r = codigo.review_validate(J._extract_json(raw), findings)
+        r = J.code_review_data(code, name, goal)[0]
     except Exception as e:                             # sin IA: al menos los errores reales del analizador
         J.log_terminal(f"Modo Código sin IA: {str(e)[:80]}", "CÓDIGO")
         r = codigo.review_validate({}, findings)
@@ -126,7 +192,8 @@ def code_review(code, name="", goal="revisar", origin="CÓDIGO"):
 
 def code_exercises(code, name="", origin="CÓDIGO"):
     lang = codigo.lang_of(name, code)
-    raw = J.ai_chat([{"role": "user", "content": codigo.exercises_prompt(code, lang, J.agent.get("curso", ""))}], json_mode=True, max_tokens=4000)
+    with _CodeTask():
+        raw = J.ai_chat([{"role": "user", "content": codigo.exercises_prompt(code, lang, J.agent.get("curso", ""))}], json_mode=True, max_tokens=4000)
     ex = codigo.exercises_validate(J._extract_json(raw))
     if not ex:
         return "No pude armar los ejercicios; prueba otra vez.", ""
@@ -151,7 +218,40 @@ def _cd_run(fn, code, name, *args):
         J.start_job("Revisando el código", work, "codigo")
 
 
+_CODE_GEN = re.compile(r"^(?:jarvis\s+)?(?:por favor\s+)?(?:escribe(?:me)?|haz(?:me)?|crea(?:me)?|genera(?:me)?|programa(?:me)?|dame|arma(?:me)?)\s+"
+                       r"(?:un|una|el|la)?\s*(programa|codigo|script|funcion|pagina web)"
+                       r"(?:\s+(?:en|de)\s+(?:lenguaje\s+)?(python|javascript|html|arduino|java|c\+\+|c|sql|css|pseint|scratch))?"
+                       r"\s+(que|para que|para|donde|con el que|con la que)\s+(.{5,600})$")
+
+
+def _cd_gen_job(desc, lang):
+    def work():
+        try:
+            msg = J.code_generate_text(J.code_generate(desc, lang, J.agent.get("curso", "")))
+        except J.AIError as e:
+            msg = J.ai_error_reply(e)
+        except Exception as e:
+            J.note_error("CÓDIGO", e)
+            msg = f"No pude escribir el programa: {str(e)[:150]}"
+        J.notify(msg, "CÓDIGO")
+    if getattr(J._tl, "capture", None) is not None:
+        work()
+    else:
+        J.start_job("Escribiendo el programa", work, "codigo")
+
+
 def code_review_voice(text, t):
+    g = _CODE_GEN.match(t)
+    if g:
+        noun, lang_w, conn = g.group(1), g.group(2) or "", g.group(3)
+        if noun == "programa" and not lang_w and conn != "que":
+            g = None                                   # «crea un programa para el área de…» es otra cosa
+    if g:
+        lang = enrutador.lang_from(lang_w) if lang_w else ("HTML" if noun == "pagina web" else enrutador.lang_from(t))
+        desc = re.sub(r"^\s*jarvis[\s,]+", "", text.strip(), flags=re.I)
+        J.reply(f"Escribo el programa en {lang} y lo reviso con el analizador antes de entregártelo…", "CÓDIGO")
+        J._cd_gen_job(desc, lang)
+        return True
     ask, ex = _CODE_ASK.match(t), _CODE_EX.search(t)
     if not (ask or ex):
         return False
@@ -184,4 +284,4 @@ def code_attach_action(it, action):
         _cd_run(code_review, code, it["nombre"], "revisar")
 
 
-__all__ = ['_CODE_ASK', '_CODE_EX', 'code_attach_action', 'code_exercises', 'code_review', 'code_review_voice']
+__all__ = ['_CODE_ASK', '_CODE_EX', '_CODE_GEN', '_CodeTask', '_cd_gen_job', 'code_attach_action', 'code_exercises', 'code_generate', 'code_generate_text', 'code_review', 'code_review_data', 'code_review_voice']

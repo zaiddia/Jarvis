@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es" data-look="{{ look|default('clasico') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estudio creativo · Jarvis</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg: #0e1116; --panel: #161b23; --line: #263040; --txt: #e6ebf2; --dim: #93a0b4; --acc: #4fc3f7; --ok: #66bb6a; --bad: #ef5350; --warn: #ffb74d; }
+  html, body { min-height: 100%; background: var(--bg); color: var(--txt); font: 15px/1.5 system-ui, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); z-index: 3; }
+  header h1 { font-size: 18px; font-weight: 650; }
+  nav { display: flex; gap: 6px; }
+  nav button { background: transparent; color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font: inherit; cursor: pointer; }
+  nav button.on { background: var(--acc); color: #06202c; border-color: var(--acc); font-weight: 650; }
+  #ia { margin-left: auto; color: var(--dim); font-size: 13px; text-align: right; }
+  main { padding: 18px; max-width: 1240px; margin: 0 auto; }
+  section { display: none; } section.on { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card h2 { font-size: 15px; margin-bottom: 10px; }
+  label { display: block; color: var(--dim); font-size: 13px; margin: 10px 0 4px; }
+  textarea, input, select { width: 100%; background: #0b0f14; color: var(--txt); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; font: inherit; }
+  textarea.code, pre { font: 13px/1.45 ui-monospace, Consolas, monospace; }
+  textarea { resize: vertical; }
+  .row { display: flex; gap: 8px; } .row > * { flex: 1; }
+  .btn { background: var(--acc); color: #06202c; border: 0; border-radius: 10px; padding: 10px 14px; font: 650 15px system-ui, sans-serif; cursor: pointer; margin-top: 12px; width: 100%; }
+  .btn.ghost { background: transparent; color: var(--txt); border: 1px solid var(--line); width: auto; margin: 0; padding: 6px 10px; font-weight: 500; font-size: 13px; }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .gens { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; font-size: 13px; }
+  .gen { display: flex; justify-content: space-between; border: 1px solid var(--line); border-radius: 9px; padding: 6px 9px; }
+  .st-listo { color: var(--ok); } .st-sin { color: var(--dim); } .st-desc { color: var(--warn); }
+  .msg { min-height: 1.4em; margin-top: 10px; font-size: 14px; color: var(--dim); white-space: pre-wrap; }
+  .msg.err { color: var(--bad); } .msg.ok { color: var(--ok); }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .pic { background: #0b0f14; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .pic img { width: 100%; display: block; aspect-ratio: 1/1; object-fit: contain; background: #fff; cursor: zoom-in; }
+  .pic .cap { padding: 8px; font-size: 13px; color: var(--dim); }
+  .pic .acts { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 8px 8px; }
+  .out pre { background: #0b0f14; border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow: auto; max-height: 60vh; white-space: pre; }
+  .out h3 { font-size: 14px; margin: 14px 0 6px; } .out ul { padding-left: 20px; } .out li { margin: 3px 0; }
+  .err-l { color: var(--bad); } .tag { display: inline-block; font-size: 12px; color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; margin-right: 6px; }
+  video { width: 100%; border-radius: 10px; background: #000; }
+  #zoom { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; align-items: center; justify-content: center; z-index: 9; cursor: zoom-out; }
+  #zoom img { max-width: 94vw; max-height: 94vh; background: #fff; }
+  .hint { color: var(--dim); font-size: 13px; margin-top: 8px; }
+  @media (max-width: 860px) { section.on { grid-template-columns: 1fr; } }
+</style>
+<style>{% include "_aurora.css" %}</style>
+</head>
+<body>
+<header>
+  <h1>✨ Estudio creativo</h1>
+  <nav>
+    <button data-tab="imagenes">🖼️ Imágenes</button>
+    <button data-tab="codigo">💻 Código</button>
+    <button data-tab="video">🎬 Video</button>
+  </nav>
+  <div id="ia"></div>
+</header>
+<main>
+  <!-- ============================== IMÁGENES -->
+  <section id="t-imagenes">
+    <div class="card">
+      <h2>Crear una imagen</h2>
+      <label for="im-tema">¿Qué imagen quieres?</label>
+      <textarea id="im-tema" rows="4" placeholder="Ej.: el ciclo del agua para niños de 3°, con etiquetas en español"></textarea>
+      <div class="row">
+        <div><label for="im-estilo">Estilo</label><select id="im-estilo"><option value="">automático</option></select></div>
+        <div><label for="im-formato">Formato</label><select id="im-formato"><option value="">automático</option></select></div>
+        <div><label for="im-n">Cuántas</label><select id="im-n"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+      </div>
+      <label for="im-gen">Generador</label>
+      <select id="im-gen"><option value="auto">Automático: Jarvis escoge según el pedido</option></select>
+      <button class="btn" id="im-go">Crear</button>
+      <div class="msg" id="im-msg"></div>
+      <h2 style="margin-top:18px">Generadores</h2>
+      <div class="gens" id="gens"></div>
+      <button class="btn ghost" id="im-inst" style="margin-top:8px" hidden>Instalar el generador de mi PC (2 GB, sin internet)</button>
+      <p class="hint" id="im-orden"></p>
+    </div>
+    <div class="card">
+      <h2>Galería</h2>
+      <div class="gallery" id="gal"></div>
+      <p class="hint" id="gal-empty">Aquí aparecen las imágenes que crees (también las que pides por voz).</p>
+    </div>
+  </section>
+
+  <!-- ============================== CÓDIGO -->
+  <section id="t-codigo">
+    <div class="card">
+      <h2>¿Qué hago con el código?</h2>
+      <div class="row">
+        <button class="btn ghost on-acc" data-acc="generar">Generar</button>
+        <button class="btn ghost" data-acc="revisar">Revisar</button>
+        <button class="btn ghost" data-acc="corregir">Corregir</button>
+        <button class="btn ghost" data-acc="explicar">Explicar</button>
+      </div>
+      <div id="cd-gen">
+        <label for="cd-desc">¿Qué debe hacer el programa?</label>
+        <textarea id="cd-desc" rows="5" placeholder="Ej.: pedir 3 notas, sacar el promedio y decir si el estudiante aprobó (nota mínima 3,0)"></textarea>
+        <label for="cd-lang">Lenguaje</label>
+        <select id="cd-lang"><option value="">el que mejor sirva</option><option>Python</option><option>JavaScript</option><option>HTML</option>
+          <option>Arduino</option><option>Java</option><option>C++</option><option>C</option><option>SQL</option><option>PSeInt</option></select>
+      </div>
+      <div id="cd-rev" hidden>
+        <label for="cd-name">Nombre del archivo (opcional, ayuda a saber el lenguaje)</label>
+        <input id="cd-name" placeholder="ej.: promedio.py">
+        <label for="cd-code">Pega el código</label>
+        <textarea id="cd-code" class="code" rows="14" spellcheck="false"></textarea>
+      </div>
+      <button class="btn" id="cd-go">Generar</button>
+      <div class="msg" id="cd-msg"></div>
+      <p class="hint">El código nunca se ejecuta: el analizador revisa la sintaxis y la IA busca errores de lógica. Lo hace la mejor IA para programar que tengas.</p>
+    </div>
+    <div class="card out" id="cd-out"><p class="hint">Aquí aparece el resultado.</p></div>
+  </section>
+
+  <!-- ============================== VIDEO -->
+  <section id="t-video">
+    <div class="card">
+      <h2>Video corto con IA</h2>
+      <label for="vd-tema">¿Qué se ve en el video?</label>
+      <textarea id="vd-tema" rows="4" placeholder="Ej.: un colibrí tomando néctar de una flor, en cámara lenta"></textarea>
+      <div class="row">
+        <div><label for="vd-seg">Segundos</label><select id="vd-seg"><option>3</option><option selected>5</option><option>8</option><option>10</option></select></div>
+        <div><label for="vd-fmt">Formato</label><select id="vd-fmt"><option value="16:9">horizontal</option><option value="9:16">vertical</option><option value="1:1">cuadrado</option></select></div>
+      </div>
+      <label for="vd-img">Animar una imagen de la galería (opcional)</label>
+      <select id="vd-img"><option value="">no, desde el texto</option></select>
+      <button class="btn" id="vd-go">Crear el video</button>
+      <div class="msg" id="vd-msg"></div>
+      <p class="hint" id="vd-hint">Con NVIDIA Cosmos (gratis con tu clave de NVIDIA). Tarda unos minutos.</p>
+    </div>
+    <div class="card">
+      <h2>Videos</h2>
+      <div id="vids"></div>
+    </div>
+  </section>
+</main>
+<div id="zoom"><img alt=""></div>
+<script>
+const TAB0 = {{ tab|tojson }};
+const $ = (s) => document.querySelector(s);
+let S = null, acc = "generar";
+const pending = {};
+
+function tab(name) {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("on", s.id === "t-" + name));
+  history.replaceState(null, "", "?tab=" + name);
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => tab(b.dataset.tab));
+tab(TAB0);
+
+async function post(path, body) {
+  const r = await fetch("/estudio/api/" + path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body || {})});
+  return r.json();
+}
+function say(el, txt, kind) { el.textContent = txt || ""; el.className = "msg" + (kind ? " " + kind : ""); }
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c])); }
+
+function fillOnce(sel, obj) {
+  if (sel.dataset.filled) return;
+  for (const [k, v] of Object.entries(obj)) { const o = document.createElement("option"); o.value = k; o.textContent = v; sel.appendChild(o); }
+  sel.dataset.filled = "1";
+}
+
+function render() {
+  if (!S) return;
+  $("#ia").innerHTML = "IA: <b>" + esc(S.ia.actual) + "</b> · código: <b>" + esc(S.ia.codigo) + "</b>" +
+    (S.ia.descansando.length ? "<br>descansando: " + S.ia.descansando.map(d => esc(d.nombre) + " (" + d.min + " min)").join(", ") : "");
+  fillOnce($("#im-estilo"), S.estilos); fillOnce($("#im-formato"), S.formatos);
+  const gsel = $("#im-gen");
+  if (!gsel.dataset.filled) {
+    S.imagenes.items.forEach(i => { const o = document.createElement("option"); o.value = i.id; o.textContent = i.nombre; gsel.appendChild(o); });
+    gsel.value = S.imagenes.elegido || "auto"; gsel.dataset.filled = "1";
+  }
+  $("#gens").innerHTML = S.imagenes.items.map(i => {
+    const cls = i.estado === "listo" ? "st-listo" : i.estado.startsWith("descans") ? "st-desc" : "st-sin";
+    return `<div class="gen"><span>${esc(i.nombre)}</span><span class="${cls}">${esc(i.estado)}</span></div>`;
+  }).join("");
+  const local = S.imagenes.items.find(i => i.id === "local");
+  $("#im-inst").hidden = !local || local.estado !== "sin configurar";
+  $("#im-orden").textContent = (S.imagenes.msg ? S.imagenes.msg + " · " : "") + (S.imagenes.orden.length ? "Orden ahora: " + S.imagenes.orden.join(" → ") : "Pon una clave de Gemini, ChatGPT, NVIDIA o SenseNova en Ajustes, o instala el generador de tu PC.");
+  const gal = $("#gal");
+  const sig = S.galeria.map(g => g.i + ":" + g.t).join(",");
+  if (gal.dataset.sig !== sig) {
+    gal.dataset.sig = sig;
+    gal.innerHTML = S.galeria.map(g => `<div class="pic"><img src="/estudio/archivo/${g.i}?t=${g.t}" alt="${esc(g.tema)}" loading="lazy">
+      <div class="cap">${esc(g.tema)} ${g.estilo ? "<span class='tag'>" + esc(g.estilo) + "</span>" : ""}</div>
+      <div class="acts"><button class="btn ghost" data-a="otra" data-i="${g.i}">Otra versión</button>
+      <button class="btn ghost" data-a="formato" data-i="${g.i}">Horizontal</button>
+      <button class="btn ghost" data-a="editar" data-i="${g.i}">Editar…</button>
+      <button class="btn ghost" data-a="carta" data-i="${g.i}">Imprimir</button>
+      <a class="btn ghost" href="/estudio/archivo/${g.i}" download>Descargar</a></div></div>`).join("");
+    $("#gal-empty").hidden = S.galeria.length > 0;
+    const vimg = $("#vd-img"), keep = vimg.value;
+    vimg.innerHTML = '<option value="">no, desde el texto</option>' + S.galeria.map(g => `<option value="${g.i}">${esc(g.tema).slice(0, 60)}</option>`).join("");
+    vimg.value = keep;
+  }
+  $("#vids").innerHTML = S.videos.length ? S.videos.map(v => `<p class="hint">${esc(v.tema)}</p><video controls src="/estudio/video/${v.i}"></video>`).join("") :
+    '<p class="hint">Aquí aparecen los videos que crees.</p>';
+  if (!S.nvidia) $("#vd-hint").textContent = "Para videos con IA gratis necesito la clave de NVIDIA (Ajustes › Inteligencia artificial › NVIDIA).";
+  for (const [jid, p] of Object.entries(pending)) {
+    const j = S.jobs[jid];
+    if (!j || j.estado === "trabajando") continue;
+    delete pending[jid];
+    p.btn.disabled = false;
+    if (j.estado === "error") say(p.msg, "No se pudo: " + j.msg, "err");
+    else p.done(j.res);
+  }
+}
+
+async function refresh() {
+  try { S = await (await fetch("/estudio/api/estado")).json(); render(); } catch (e) {}
+}
+setInterval(() => { if (Object.keys(pending).length || document.visibilityState === "visible") refresh(); }, 2500);
+refresh();
+
+function track(r, btn, msg, working, done) {
+  if (!r.ok) { say(msg, r.error || "No se pudo.", "err"); return; }
+  if (!r.job) { say(msg, r.msg || "Listo.", "ok"); refresh(); return; }
+  btn.disabled = true; say(msg, working);
+  pending[r.job] = {btn, msg, done};
+}
+
+// ---------- imágenes
+$("#im-go").onclick = async () => {
+  const b = $("#im-go");
+  const r = await post("imagen", {tema: $("#im-tema").value, estilo: $("#im-estilo").value, formato: $("#im-formato").value,
+                                  n: +$("#im-n").value, generador: $("#im-gen").value});
+  track(r, b, $("#im-msg"), "Creando… (si un generador no puede, sigo con el siguiente)", (res) => say($("#im-msg"), res.n > 1 ? `Listas ${res.n} imágenes.` : "Lista la imagen.", "ok"));
+};
+$("#im-gen").onchange = () => post("generador", {id: $("#im-gen").value}).then(refresh);
+$("#im-inst").onclick = async () => { const r = await post("instalar"); say($("#im-msg"), r.msg || r.error, r.ok ? "ok" : "err"); };
+$("#gal").onclick = async (ev) => {
+  const t = ev.target;
+  if (t.tagName === "IMG") { $("#zoom img").src = t.src; $("#zoom").style.display = "flex"; return; }
+  const a = t.dataset.a; if (!a) return;
+  let texto = "";
+  if (a === "editar") { texto = prompt("¿Qué le cambio?"); if (!texto) return; }
+  if (a === "formato") texto = "horizontal";
+  const r = await post("accion", {i: +t.dataset.i, action: a, texto});
+  track(r, t, $("#im-msg"), a === "carta" ? "Preparando la hoja carta…" : "Trabajando la imagen…",
+        (res) => say($("#im-msg"), res.pdf ? "Lista la hoja carta (la abrí en el equipo)." : "Listo.", "ok"));
+};
+$("#zoom").onclick = () => $("#zoom").style.display = "none";
+
+// ---------- código
+document.querySelectorAll("[data-acc]").forEach(b => b.onclick = () => {
+  acc = b.dataset.acc;
+  document.querySelectorAll("[data-acc]").forEach(x => x.style.borderColor = x === b ? "var(--acc)" : "");
+  $("#cd-gen").hidden = acc !== "generar"; $("#cd-rev").hidden = acc === "generar";
+  $("#cd-go").textContent = {generar: "Generar", revisar: "Revisar", corregir: "Corregir", explicar: "Explicar"}[acc];
+});
+document.querySelector("[data-acc=generar]").style.borderColor = "var(--acc)";
+$("#cd-go").onclick = async () => {
+  const r = await post("codigo", {accion: acc, descripcion: $("#cd-desc").value, lenguaje: $("#cd-lang").value,
+                                  codigo: $("#cd-code").value, nombre: $("#cd-name").value});
+  track(r, $("#cd-go"), $("#cd-msg"), acc === "generar" ? "Escribiendo el programa y revisándolo…" : "Revisando… (sin ejecutar nada)", showCode);
+};
+function codeBlock(title, code) {
+  return `<h3>${title} <button class="btn ghost" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent)">Copiar</button></h3><pre>${esc(code)}</pre>`;
+}
+function errList(errs) {
+  return errs.length ? "<ul>" + errs.map(e => `<li class="err-l">${e.linea ? "Línea " + e.linea + ": " : ""}${esc(e.problema)}${e.arreglo ? " → " + esc(e.arreglo) : ""}</li>`).join("") + "</ul>" : "<p>No encontré errores.</p>";
+}
+function showCode(res) {
+  say($("#cd-msg"), "Listo (lo hizo " + res.ia + ").", "ok");
+  let h = `<span class="tag">${esc(res.lenguaje)}</span><span class="tag">IA: ${esc(res.ia)}</span>`;
+  if (res.accion === "generar") {
+    h += `<h3>Qué hace</h3><p>${esc(res.explicacion)}</p>`;
+    h += `<h3>Revisión del analizador</h3>` + (res.errores.length ? errList(res.errores) : `<p>Sin errores de sintaxis${res.correcciones ? " (lo corregí " + res.correcciones + " vez)" : ""}.</p>`);
+    if (res.como_probarlo.length) h += "<h3>Cómo probarlo</h3><ul>" + res.como_probarlo.map(x => `<li>${esc(x)}</li>`).join("") + "</ul>";
+    h += codeBlock(esc(res.archivo), res.codigo);
+    h += '<p class="hint">Quedó guardado en Documentos › Jarvis › Código › Generado.</p>';
+  } else {
+    if (res.resumen) h += `<h3>Qué hace</h3><p>${esc(res.resumen)}</p>`;
+    h += "<h3>Errores</h3>" + errList(res.errores);
+    if (res.mejoras.length) h += "<h3>Mejoras</h3><ul>" + res.mejoras.map(x => `<li>${esc(x)}</li>`).join("") + "</ul>";
+    if (res.pasos.length && res.accion === "explicar") h += "<h3>Paso a paso</h3><ol style='padding-left:20px'>" + res.pasos.map(x => `<li>${esc(x)}</li>`).join("") + "</ol>";
+    if (res.corregido) h += codeBlock("Código corregido", res.corregido);
+  }
+  $("#cd-out").innerHTML = h;
+}
+
+// ---------- video
+$("#vd-go").onclick = async () => {
+  const r = await post("video", {tema: $("#vd-tema").value, segundos: +$("#vd-seg").value, formato: $("#vd-fmt").value, img: $("#vd-img").value});
+  track(r, $("#vd-go"), $("#vd-msg"), "Haciendo el video… tarda unos minutos.", () => say($("#vd-msg"), "¡Listo el video!", "ok"));
+};
+</script>
+</body>
+</html>

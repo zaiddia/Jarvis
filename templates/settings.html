@@ -879,13 +879,19 @@
     <div class="sgroup" id="g-imagenes-para-la-clase">
       <div class="group">Imágenes para la clase</div>
       <p class="pane-intro">«Jarvis, hazme una ilustración del ciclo del agua», «tres opciones de un afiche del día del idioma en acuarela», «dibújame un triángulo rectángulo para colorear», «una imagen horizontal de la célula para proyectar». Después: «otra versión», «cámbiale el fondo a azul», «hazla vertical», «imprímela». También puedes editar una foto que subas al chat. Se guardan en <code>Documentos\Jarvis\Imágenes</code>.</p>
-      <div class="field stack"><div class="ft"><label for="f-img-provider">Quién crea las imágenes</label><p><b>Automático</b>: Gemini si tienes su clave (y tu cuenta tiene modelo de imágenes); si no, ChatGPT; si no, SenseNova (gratis en su beta, servidores en China: en automático nunca le manda una foto tuya para editar). Las claves se ponen en la sección IA. Crear imágenes puede tener costo según tu cuenta.</p></div>
+      <div class="field stack"><div class="ft"><label for="f-img-provider">Quién crea las imágenes</label><p><b>Automático</b>: Jarvis escoge según el pedido: con letras (carteles, títulos) Gemini o ChatGPT; si no tienen cupo, FLUX en NVIDIA (gratis con tu clave de NVIDIA), SenseNova (servidores en China: nunca le manda una foto tuya) y el generador de tu PC. El que falla descansa un rato para no esperar por él. Las claves se ponen en la sección IA. Crear imágenes puede tener costo según tu cuenta.</p></div>
         <select class="inp" id="f-img-provider" data-key="image_provider" style="max-width:340px">
           <option value="auto">Automático</option>
           <option value="gemini">Gemini (Google)</option>
           <option value="chatgpt">ChatGPT (OpenAI)</option>
           <option value="sensenova">SenseNova (gratis en beta)</option>
+          <option value="nvidia">FLUX en NVIDIA (gratis con la clave de NVIDIA)</option>
+          <option value="local">El generador de mi PC (sin internet)</option>
         </select></div>
+      <div class="field"><div class="ft"><label for="f-img-private">Fotos privadas: editarlas solo en mi PC</label><p>Las fotos que subes (por ejemplo, con estudiantes) nunca salen a internet: las edita el generador de tu PC («Jarvis, instala el generador de imágenes», unos 2 GB). La calidad es más sencilla.</p></div>
+        <label class="switch"><input type="checkbox" id="f-img-private" data-key="img_private"><span></span></label></div>
+      <div class="field"><div class="ft"><label>Estudio creativo (12.74)</label><p>Una pantalla para imágenes, código y video: «Jarvis, abre el estudio creativo».</p></div>
+        <a class="btn btn-ghost" href="/estudio" target="_blank">Abrir el Estudio</a></div>
       <div class="field stack"><div class="ft"><label for="f-img-model">Modelo de imágenes de Gemini</label><p>Déjalo vacío para que Jarvis use el que tenga tu cuenta.</p></div>
         <input class="inp mono narrow" type="text" id="f-img-model" data-key="image_model" placeholder="automático"></div>
       <div class="field stack"><div class="ft"><label for="f-img-model-oa">Modelo de imágenes de ChatGPT</label><p>Vacío: el más nuevo de tu cuenta (por ejemplo gpt-image-2).</p></div>

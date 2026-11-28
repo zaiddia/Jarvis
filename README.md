@@ -157,6 +157,27 @@ Si existe un `.env` junto a `jarvis.py` o `jarvis.exe`, sus valores mandan sobre
 
 Pon `sirena.mp3` en `recursos` (o elige otro archivo en *Ajustes › Rutinas*). Sonará antes de que Jarvis lea cada recordatorio, también con la voz desactivada.
 
+## Estudio creativo, imágenes sin parar y la IA según el trabajo (v12.74)
+
+- **Estudio creativo**: una pantalla para imágenes, código y video. «Jarvis, abre el estudio creativo» (o «abre el estudio de
+  código», «… de video»). También desde Ajustes › Imágenes. Solo responde en este equipo.
+  - *Imágenes*: describe, escoge estilo, formato y cuántas; galería con otra versión, horizontal, editar, imprimir y descargar.
+  - *Código*: **generar** un programa a partir de lo que pides, **revisar**, **corregir** o **explicar** el que pegas. El
+    analizador revisa la sintaxis y, si el código generado tiene errores, la IA lo corrige sola. Nunca se ejecuta.
+  - *Video*: clips cortos con NVIDIA Cosmos, desde el texto o animando una imagen de la galería.
+- **Dos generadores de imágenes nuevos**:
+  - **FLUX en NVIDIA**: gratis con la misma clave de NVIDIA de la IA.
+  - **El generador de tu PC** (stable-diffusion.cpp + SD-Turbo, unos 2 GB): «Jarvis, instala el generador de imágenes».
+    Funciona sin internet; prueba solo si va mejor con la tarjeta gráfica (Vulkan) o con el procesador. Calidad sencilla.
+- **Jarvis escoge el generador según el pedido**: con letras (carteles, títulos) Gemini o ChatGPT; sin internet, el de tu PC;
+  una foto tuya nunca va a SenseNova y, con «Fotos privadas» (Ajustes › Imágenes), solo se edita en tu PC. El que falla
+  descansa un rato y se pasa al siguiente: nunca se queda parado. «¿Qué generadores de imágenes tengo?», «crea las imágenes con flux».
+- **La IA según el trabajo**: para generar y revisar código usa la mejor para programar que tengas (Claude, ChatGPT o DeepSeek
+  si son la tuya; si no, Kimi K3.1 Pro en NVIDIA o GLM en Z.ai). «Escribe un programa en Python que…», «hazme una página web que…».
+- **Nunca parado y más rápido**: si tu IA se llena o se cae, sigue una cadena de respaldos (las gratis, las demás con clave,
+  las de servidores en China solo sin nombres de estudiantes, y la IA de tu PC de última). La que falló descansa un momento:
+  mientras tanto las preguntas van directo a la que responde, sin esperar.
+
 ## Z.ai GLM: otra IA gratis (v12.73)
 
 - Nuevo proveedor en Ajustes › Inteligencia artificial: **«Z.ai GLM (GLM-4.7 Flash gratis)»**. Crea la clave en

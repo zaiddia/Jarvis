@@ -113,6 +113,9 @@ def _modo_docente(request, monkeypatch):
         # 12.55: las frases que una prueba «enseñó» no se cuelan en la siguiente
         monkeypatch.setitem(jarvis.r55_memo, "data", {})
         monkeypatch.setattr(jarvis, "_r55_memo_save", lambda: None)
+        # 12.74: un generador de imágenes o una IA que «descansa» en una prueba no se cuela en la siguiente
+        monkeypatch.setitem(jarvis.im73, "cool", {})
+        monkeypatch.setitem(jarvis.c73, "down", {})
 
 
 @pytest.fixture

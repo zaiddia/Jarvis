@@ -49,7 +49,7 @@ nucleo.J = sys.modules[__name__]
 
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
-VERSION = "12.73"
+VERSION = "12.74"
 HOST = "127.0.0.1"
 IS_WIN = os.name == "nt"
 CREATE_NO_WINDOW = 0x08000000 if IS_WIN else 0
@@ -890,6 +890,9 @@ DEFAULT_SETTINGS = {
     "fish_api_key": "",            # 12.68: voz de Fish Audio (clave de fish.audio)
     "fish_voice": "",              # 12.68: código de la voz escogida en fish.audio (vacío = la de Fish por defecto)
     "zai_coding": False,           # 12.73: la clave de Z.ai es del «GLM Coding Plan» (usa su otra dirección)
+    "img_local_backend": "gpu",    # 12.74: el generador de imágenes de tu PC: "gpu" (Vulkan) o "cpu" (el más rápido en la prueba)
+    "img_private": False,          # 12.74: las fotos que subes se editan solo en tu PC (nunca salen a internet)
+    "ai_code_provider": "auto",    # 12.74: la IA para generar y revisar código: "auto" (la mejor que tengas), "off" o un proveedor
     "fish_paid": False,            # 12.68: si se acaba lo gratis, usar el modelo de pago
     "ack_still": True,             # 12.68: «sigo en eso» si la respuesta tarda
     "vacation_until": "",          # 12.70: modo vacaciones hasta esa fecha (AAAA-MM-DD)
@@ -1115,6 +1118,7 @@ def _validate(key, value):
                "assistant_style": ("normal", "breve", "amable", "divertido", "formal"),
                "ai_heavy_provider": ("auto", "off") + tuple(p for p, sp in PROVIDERS.items() if sp["group"] == "cloud"),
                "ai_backup_provider": ("auto", "off") + tuple(p for p, sp in PROVIDERS.items() if sp["group"] == "cloud"),
+               "ai_code_provider": ("auto", "off") + tuple(p for p, sp in PROVIDERS.items() if sp["group"] == "cloud"),
                "zeti_order": ("lista", "apellido", "alfabetico"), "hud_expanded": ("estrecho", "amplio", "grande"),
                "weekly_day": ("lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"),
                "hud_start_size": HUD_SIZES, "hud_position": HUD_POSITIONS,
@@ -1123,7 +1127,8 @@ def _validate(key, value):
                "stt_refine": ("auto", "gemini", "whisper", "parakeet", "off"), "calendar_create": ("google", "ics"),
                "listen_mode": ("auto", "vivo", "clasico"),
                "live_provider": ("gemini", "openai", "deepgram"),
-               "image_provider": ("auto", "gemini", "chatgpt", "sensenova"),
+               "image_provider": ("auto", "gemini", "chatgpt", "sensenova", "nvidia", "local"),
+               "img_local_backend": ("gpu", "cpu"),
                "hud_text_size": ("normal", "grande", "proyector"),
                "openai_live_voice": tuple(v for v, _ in envivo.OPENAI_VOICES),
                "deepgram_voice": tuple(v for v, _ in envivo.DEEPGRAM_VOICES),
@@ -1800,6 +1805,8 @@ def process_command(text):
     if private_voice(text, t) or think_voice(text, t):  # 12.52: «modo privado», «piénsalo bien: …», «rápido: …»
         return
     if colegio53_voice(text, t):                       # 12.53: convivencia (Ley 1620), reglas, documentos del colegio, portafolio
+        return
+    if imagen73_voice(text, t) or estudio73_voice(text, t):   # 12.74: generadores de imágenes, «abre el estudio creativo»
         return
     if auto72_early(text, t) or listo71_voice(text, t):   # 12.72 · 12.71                         # 12.71: autoexamen
         return
@@ -2733,6 +2740,9 @@ from nucleo.parakeet69 import *  # noqa: F401,F403,E402
 from nucleo.ano70 import *  # noqa: F401,F403,E402
 from nucleo.listo71 import *  # noqa: F401,F403,E402
 from nucleo.auto72 import *  # noqa: F401,F403,E402
+from nucleo.imagen73 import *  # noqa: F401,F403,E402
+from nucleo.cerebro73 import *  # noqa: F401,F403,E402
+from nucleo.estudio73 import *  # noqa: F401,F403,E402
 
 # ── 12.0: turno de noche (prepara las clases de mañana, califica y redacta; todo queda por aprobar)
 # → nucleo/turnonoche.py (lógica en nocturno.py)
